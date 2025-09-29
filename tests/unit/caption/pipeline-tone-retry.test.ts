@@ -154,7 +154,7 @@ describe('Gemini pipelines keep persona tone on retry', () => {
     const textModel = createTextModelMock();
     const visionModel = { generateContent: vi.fn() };
 
-    vi.doMock('../../../server/lib/gemini.js', () => ({ textModel, visionModel }));
+    vi.doMock('../../../server/lib/gemini.js', () => ({ textModel, visionModel, isGeminiAvailable: () => true }));
 
     const fetchMock = vi.spyOn(global, 'fetch');
     fetchMock.mockResolvedValue({
@@ -198,7 +198,7 @@ describe('Gemini pipelines keep persona tone on retry', () => {
     const textModel = createTextModelMock();
     const visionModel = { generateContent: vi.fn() };
 
-    vi.doMock('../../../server/lib/gemini.js', () => ({ textModel, visionModel }));
+    vi.doMock('../../../server/lib/gemini.js', () => ({ textModel, visionModel, isGeminiAvailable: () => true }));
 
     const rewriteModule = await import('../../../server/caption/rewritePipeline.ts');
 

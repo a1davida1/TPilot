@@ -95,7 +95,7 @@ export function getAccessibleTextColor(backgroundColor: [number, number, number]
  * CSS custom property helpers
  */
 export function getCSSCustomProperty(property: string): string {
-  if (typeof window === 'undefined') return '';
+  if (typeof document === 'undefined') return '';
   
   return getComputedStyle(document.documentElement)
     .getPropertyValue(property)
@@ -103,7 +103,7 @@ export function getCSSCustomProperty(property: string): string {
 }
 
 export function setCSSCustomProperty(property: string, value: string): void {
-  if (typeof window === 'undefined') return;
+  if (typeof document === 'undefined') return;
   
   document.documentElement.style.setProperty(property, value);
 }

@@ -1,5 +1,5 @@
 /* eslint-env node, jest */
-import { describe, test, expect, vi, beforeEach, type MockInstance, type Mock } from 'vitest';
+import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import fs from 'fs/promises';

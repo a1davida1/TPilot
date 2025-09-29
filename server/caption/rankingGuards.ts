@@ -23,7 +23,9 @@ const GENERIC_HASHTAGS = new Set<string>([
   '#media',
   '#online',
   '#digital',
-  '#internet'
+  '#internet',
+  '#creative',
+  '#amazing'
 ]);
 
 /**
@@ -62,17 +64,40 @@ export const bannedExamples = [
 function sanitizeHashtags(tags: readonly string[]): string[] {
   const cleaned = tags
     .filter(tag => typeof tag === 'string' && tag.trim().length > 0)
-    .map(tag => tag.toLowerCase().replace(/[^a-z0-9]/g, ''))
-    .filter(tag => tag.length >= 2 && tag.length <= 30)
-    .filter(tag => !GENERIC_HASHTAGS.has(`#${tag}`))
+    .filter(tag => !GENERIC_HASHTAGS.has(tag.toLowerCase()))
     .filter(tag => !bannedExamples.some(banned => 
-      tag.includes(banned.toLowerCase().replace(/[^a-z0-9]/g, ''))
+      tag.toLowerCase().includes(banned.toLowerCase())
     ));
 
   return cleaned.length > 0 
-    ? Array.from(new Set(cleaned)).slice(0, 10).map(tag => `#${tag}`)
-    : Array.from(SAFE_FALLBACK_HASHTAG_SET);
+    ? Array.from(new Set(cleaned)).slice(0, 10)
+    : [...safeFallbackHashtags];
 }
+
+/**
+ * Patterns that indicate sparkle filler content
+ */
+const SPARKLE_FILLER_PATTERNS = [
+  /check out this amazing content/i,
+  /✨\s*enhanced/i,
+  /amazing content/i,
+  /incredible/i,
+  /stunning/i,
+  /absolutely gorgeous/i,
+  /mind-blowing/i
+];
+
+/**
+ * Common repeated CTA templates
+ */
+const REPEATED_CTA_PATTERNS = [
+  /check it out/i,
+  /click the link/i,
+  /link in bio/i,
+  /swipe up/i,
+  /tap the link/i,
+  /more in comments/i
+];
 
 /**
  * Detect content that violates ranking guidelines
@@ -83,6 +108,29 @@ export function detectRankingViolations(variant: CaptionVariant): string[] {
   const caption = variant.caption || '';
   const cta = variant.cta || '';
   const hashtags = variant.hashtags || [];
+
+  // Check for sparkle filler phrases in caption
+  for (const pattern of SPARKLE_FILLER_PATTERNS) {
+    const match = caption.match(pattern);
+    if (match) {
+      violations.push(`sparkle filler "${match[0]}"`);
+    }
+  }
+
+  // Check for generic hashtags
+  for (const hashtag of hashtags) {
+    if (GENERIC_HASHTAGS.has(hashtag.toLowerCase())) {
+      violations.push(`generic hashtag "${hashtag}"`);
+    }
+  }
+
+  // Check for repeated CTA templates
+  for (const pattern of REPEATED_CTA_PATTERNS) {
+    const match = cta.match(pattern);
+    if (match) {
+      violations.push(`repeated CTA "${match[0]}"`);
+    }
+  }
 
   // Check for banned phrases
   const allText = `${caption} ${cta} ${hashtags.join(' ')}`.toLowerCase();
@@ -116,8 +164,25 @@ export function hasRankingViolations(variant: CaptionVariant): boolean {
  * Clean up variant to meet ranking guidelines
  */
 export function sanitizeVariantForRanking(variant: CaptionVariant): CaptionVariant {
-  const caption = (variant.caption || '').slice(0, 2200);
-  const cta = variant.cta || safeFallbackCta;
+  let caption = (variant.caption || '').slice(0, 2200);
+  let cta = variant.cta || safeFallbackCta;
+  
+  // Remove sparkle filler phrases from caption
+  for (const pattern of SPARKLE_FILLER_PATTERNS) {
+    if (pattern.test(caption)) {
+      caption = safeFallbackCaption;
+      break;
+    }
+  }
+  
+  // Replace problematic CTAs
+  for (const pattern of REPEATED_CTA_PATTERNS) {
+    if (pattern.test(cta)) {
+      cta = safeFallbackCta;
+      break;
+    }
+  }
+
   const hashtags = sanitizeHashtags(variant.hashtags || []);
 
   return {
@@ -135,7 +200,7 @@ export function formatViolations(violations: readonly string[]): string {
   if (violations.length === 0) return '';
   if (violations.length === 1) return violations[0];
   
-  return violations.slice(0, -1).join(', ') + ` and ${violations[violations.length - 1]}`;
+  return violations.join(', ');
 }
 
 /**

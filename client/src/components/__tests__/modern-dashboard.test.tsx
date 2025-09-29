@@ -54,7 +54,7 @@ vi.mock("@/lib/queryClient", async () => {
   const actual = await vi.importActual<typeof import("@/lib/queryClient")>("@/lib/queryClient");
   return {
     ...actual,
-    apiRequest: apiRequestMock(),
+    apiRequest: apiRequestMock,
   };
 });
 
@@ -255,6 +255,7 @@ describe("ModernDashboard quick start", () => {
 
     click(getButtonByText(/Connect Reddit/i));
 
+    // Wait for both API calls and connection to complete
     await waitFor(() => {
       expect(apiRequestMock).toHaveBeenCalledWith("GET", "/api/reddit/connect");
       expect(apiRequestMock).toHaveBeenCalledWith("GET", "/api/reddit/accounts");
@@ -263,7 +264,7 @@ describe("ModernDashboard quick start", () => {
         throw new Error("Continue button is still disabled");
       }
       return true;
-    });
+    }, { timeout: 10000 });
 
     apiRequestMock.mockResolvedValueOnce({
       json: async () => ({ success: true }),

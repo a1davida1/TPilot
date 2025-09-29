@@ -35,8 +35,8 @@ process.env.ADMIN_PASSWORD_HASH =
 const buildResponse = () => {
   const res: Partial<express.Response> = {};
   res.status = vi.fn(() => res as express.Response);
-  res.json = vi.fn();
-  res.clearCookie = vi.fn();
+  res.json = vi.fn(() => res as express.Response);
+  res.clearCookie = vi.fn(() => res as express.Response);
   return res as express.Response & {
     status: ReturnType<typeof vi.fn> & ((code: number) => express.Response);
     json: ReturnType<typeof vi.fn> & ((payload: unknown) => express.Response);

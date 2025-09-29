@@ -54,7 +54,7 @@ describe('theme system accessibility', () => {
   it('converts HSL values to RGB triplets', () => {
     expect(hslToRgb(0, 0, 0)).toEqual([0, 0, 0]);
     expect(hslToRgb(0, 0, 100)).toEqual([255, 255, 255]);
-    expect(hslToRgb(120, 60, 50)).toEqual([102, 204, 102]);
+    expect(hslToRgb(120, 60, 50)).toEqual([51, 204, 51]);
   });
 
   it('computes sufficient contrast ratios for accessible color pairs', () => {

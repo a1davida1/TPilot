@@ -1,6 +1,5 @@
 
-import { useState } from "react";
-import { useMemo } from "react";
+import { useState, useMemo, type FormEvent } from "react";
 import type { UploadResult } from "@uppy/core";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
@@ -185,7 +184,7 @@ export default function SampleUpload() {
   const ensurePlatform = (value: string): SamplePlatform =>
     isSamplePlatform(value) ? value : "reddit";
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError(null);
     addMutation.mutate({
