@@ -278,10 +278,24 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
 
   const fetchVariants = async (varietyHint: string | undefined, existingCaptions: string[]) => {
     const user = buildUserPrompt(varietyHint, existingCaptions);
+    
+    // Apply tone to system prompt if available
+    const toneLines: string[] = [];
+    if (params.style) toneLines.push(`STYLE: ${params.style}`);
+    if (params.mood) toneLines.push(`MOOD: ${params.mood}`);
+    const sysWithTone = toneLines.length > 0 ? `${sys}\n${toneLines.join('\n')}` : sys;
+    
     try {
       const res = await textModel.generateContent([
-        { text: `${sys}\n${guard}\n${prompt}\n${user}` }
+        { text: `${sysWithTone}\n${guard}\n${prompt}\n${user}` }
       ]);
+      
+      // Check for empty response
+      if (!res || !res.response?.text) {
+        console.error('Gemini: empty response received in text-only pipeline');
+        throw new Error('Gemini: empty response');
+      }
+      
       const json = stripToJSON(res.response.text());
       return Array.isArray(json) ? json : [];
     } catch (error) {
