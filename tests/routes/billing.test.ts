@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { storage } from '../../server/storage.ts';
+import { storage } from '../../server/storage.js';
 
 // Mock dependencies
-vi.mock('../../server/storage.ts', () => ({
+vi.mock('../../server/storage.js', () => ({
   storage: {
     getUserById: vi.fn(),
     updateUserTier: vi.fn(),

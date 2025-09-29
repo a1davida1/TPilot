@@ -2,7 +2,7 @@ import express from 'express';
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createCancelSubscriptionHandler } from '../../server/routes/subscription-management.ts';
+import { createCancelSubscriptionHandler } from '../../server/routes/subscription-management.js';
 
 type RequestWithUser = express.Request & { user?: { id: number } };
 

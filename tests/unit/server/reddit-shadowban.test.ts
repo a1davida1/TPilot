@@ -21,9 +21,37 @@ interface MockRedditClient {
   getMe: () => Promise<MockRedditUser>;
 }
 
-// Mock snoowrap
+// Mock request-promise-core (snoowrap's HTTP client)
+const mockRequest = vi.fn();
+vi.mock('request-promise-core', () => {
+  return {
+    __esModule: true,
+    default: mockRequest,
+  };
+});
+
+// Mock snoowrap entirely to prevent any real HTTP requests
+vi.mock('snoowrap', () => {
+  return {
+    __esModule: true,
+    default: vi.fn().mockImplementation(() => ({
+      getMe: vi.fn(),
+      requestOAuth: vi.fn(),
+      refreshToken: vi.fn(),
+    })),
+  };
+});
+
+// Mock snoowrap instance for test
 const mockReddit = {
   getMe: vi.fn(),
+  getUser: vi.fn(() => ({
+    getSubmissions: vi.fn().mockResolvedValue([])
+  })),
+  requestOAuth: vi.fn().mockResolvedValue(undefined),
+  refreshToken: vi.fn().mockResolvedValue(undefined),
+  getSubmissions: vi.fn(),
+  getSubreddit: vi.fn(),
 };
 
 // Mock fetch for public Reddit API
@@ -49,6 +77,18 @@ describe('RedditManager shadowban detection', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    
+    // Create a proper mock user object that will be returned by getUser
+    const mockUserSubmissions = vi.fn().mockResolvedValue([]);
+    const mockUser = {
+      getSubmissions: mockUserSubmissions
+    };
+    
+    // Update mockReddit with proper methods before creating manager
+    mockReddit.getMe = vi.fn().mockResolvedValue({
+      getSubmissions: vi.fn().mockResolvedValue([])
+    });
+    mockReddit.getUser = vi.fn().mockReturnValue(mockUser);
     
     // Create a test instance with mocked reddit client
     manager = new RedditManager('mock_access_token', 'mock_refresh_token', testUserId, mockReddit as unknown as snoowrap);
@@ -88,10 +128,11 @@ describe('RedditManager shadowban detection', () => {
         }
       ];
 
-      const mockUser: MockRedditUser = {
+      // Set up the mock to return these submissions
+      const mockUser = {
         getSubmissions: vi.fn().mockResolvedValue(privateSubmissions)
       };
-      mockReddit.getMe.mockResolvedValue(mockUser);
+      mockReddit.getUser.mockReturnValue(mockUser);
 
       // Mock public submissions (what Reddit's public API returns)
       const publicApiResponse = {
@@ -153,10 +194,11 @@ describe('RedditManager shadowban detection', () => {
         }
       ];
 
-      const mockUser: MockRedditUser = {
+      // Set up the mock to return these submissions
+      const mockUser = {
         getSubmissions: vi.fn().mockResolvedValue(privateSubmissions)
       };
-      mockReddit.getMe.mockResolvedValue(mockUser);
+      mockReddit.getUser.mockReturnValue(mockUser);
 
       // Mock empty public API response (all posts hidden)
       const publicApiResponse = {
@@ -207,10 +249,11 @@ describe('RedditManager shadowban detection', () => {
         }
       ];
 
-      const mockUser: MockRedditUser = {
+      // Set up the mock to return these submissions
+      const mockUser = {
         getSubmissions: vi.fn().mockResolvedValue(privateSubmissions)
       };
-      mockReddit.getMe.mockResolvedValue(mockUser);
+      mockReddit.getUser.mockReturnValue(mockUser);
 
       // Mock public API response with only 1 of 3 posts visible
       const publicApiResponse = {
@@ -247,10 +290,10 @@ describe('RedditManager shadowban detection', () => {
 
     it('should return unknown status when no recent submissions found', async () => {
       // Mock empty private submissions
-      const mockUser: MockRedditUser = {
+      const mockUser = {
         getSubmissions: vi.fn().mockResolvedValue([])
       };
-      mockReddit.getMe.mockResolvedValue(mockUser);
+      mockReddit.getUser.mockReturnValue(mockUser);
 
       // Mock empty public API response
       const publicApiResponse = {
@@ -275,7 +318,9 @@ describe('RedditManager shadowban detection', () => {
 
     it('should handle Reddit API errors gracefully', async () => {
       // Mock Reddit API failure
-      mockReddit.getMe.mockRejectedValue(new Error('Reddit API error'));
+      mockReddit.getUser.mockImplementation(() => {
+        throw new Error('Reddit API error');
+      });
 
       const result: ShadowbanCheckApiResponse = await manager.checkShadowbanStatus();
 
@@ -337,10 +382,11 @@ describe('RedditManager shadowban detection', () => {
         subreddit: { display_name: 'test' }
       }));
 
-      const mockUser: MockRedditUser = {
+      // Set up the mock to return these submissions
+      const mockUser = {
         getSubmissions: vi.fn().mockResolvedValue(privateSubmissions)
       };
-      mockReddit.getMe.mockResolvedValue(mockUser);
+      mockReddit.getUser.mockReturnValue(mockUser);
 
       // Mock public API response with 4 of 5 posts visible (only 1 missing = 20%, under 50% threshold)
       const publicApiResponse = {

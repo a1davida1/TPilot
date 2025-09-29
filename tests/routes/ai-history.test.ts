@@ -2,7 +2,7 @@ import express, { type NextFunction, type Response } from 'express';
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createAiHistoryHandler } from '../../server/api-routes.ts';
+import { createAiHistoryHandler } from '../../server/api-routes.js';
 import type { AuthRequest } from '../../server/middleware/auth.js';
 
 describe('GET /api/ai/history', () => {

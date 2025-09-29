@@ -1,7 +1,7 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import type { Expense, ExpenseCategory } from '../../../shared/schema.js';
-import { DatabaseStorage } from '../../../server/storage.ts';
+import { DatabaseStorage } from '../../../server/storage.js';
 
 const updateMock = vi.hoisted(() => vi.fn());
 const setMock = vi.hoisted(() => vi.fn());

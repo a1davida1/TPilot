@@ -11,7 +11,7 @@ import { buildStorageMock } from '../../_helpers/buildStorageMock.js';
 // Mock the storage module
 const mockStorage = buildStorageMock();
 
-vi.mock('../../../server/storage.ts', () => ({
+vi.mock('../../../server/storage.js', () => ({
   storage: mockStorage
 }));
 
@@ -23,7 +23,7 @@ describe('Expense Operations Unit Tests', () => {
   beforeAll(async () => {
     vi.resetModules();
     // Import storage dynamically after mocks are set up
-    const storageModule = await import('../../../server/storage.ts');
+    const storageModule = await import('../../../server/storage.js');
     storage = storageModule.storage;
   });
 
