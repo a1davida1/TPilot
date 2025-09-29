@@ -109,18 +109,30 @@ export function setCSSCustomProperty(property: string, value: string): void {
 }
 
 /**
- * Theme validation helper
+ * Theme validation helper - Enhanced
  */
 export function validateThemeColors(): Record<string, boolean> {
   const results: Record<string, boolean> = {};
   
-  // Test key color combinations
+  // Test comprehensive color combinations
   const tests = [
+    // Base surfaces
     { bg: '--background', fg: '--foreground', name: 'background-foreground' },
     { bg: '--card', fg: '--card-foreground', name: 'card-foreground' },
+    { bg: '--popover', fg: '--popover-foreground', name: 'popover-foreground' },
+    
+    // Interactive elements
     { bg: '--primary', fg: '--primary-foreground', name: 'primary-foreground' },
     { bg: '--secondary', fg: '--secondary-foreground', name: 'secondary-foreground' },
     { bg: '--muted', fg: '--muted-foreground', name: 'muted-foreground' },
+    
+    // State colors
+    { bg: '--destructive', fg: '--destructive-foreground', name: 'destructive-foreground' },
+    { bg: '--success', fg: '--success-foreground', name: 'success-foreground' },
+    { bg: '--warning', fg: '--warning-foreground', name: 'warning-foreground' },
+    
+    // Accent colors
+    { bg: '--accent', fg: '--accent-foreground', name: 'accent-foreground' },
   ];
   
   tests.forEach(test => {
@@ -146,4 +158,95 @@ export function validateThemeColors(): Record<string, boolean> {
   });
   
   return results;
+}
+
+/**
+ * Enhanced theme utility functions
+ */
+
+// Get theme-aware color for dynamic styling
+export function getThemeColor(cssVariable: string): string {
+  return `hsl(var(${cssVariable}))`;
+}
+
+// Get theme-aware color with alpha
+export function getThemeColorWithAlpha(cssVariable: string, alpha: number): string {
+  return `hsl(var(${cssVariable}) / ${alpha})`;
+}
+
+// Generate theme-aware gradient
+export function createThemeGradient(colors: string[], direction = '135deg'): string {
+  const themeColors = colors.map(color => `hsl(var(${color}))`).join(', ');
+  return `linear-gradient(${direction}, ${themeColors})`;
+}
+
+// Validate if current theme meets accessibility standards
+export function validateCurrentTheme(): { isValid: boolean; failedPairs: string[] } {
+  const results = validateThemeColors();
+  const failedPairs = Object.entries(results)
+    .filter(([, isValid]) => !isValid)
+    .map(([pair]) => pair);
+  
+  return {
+    isValid: failedPairs.length === 0,
+    failedPairs
+  };
+}
+
+// Get optimal text color for a background
+export function getOptimalTextColor(backgroundColor: string): 'light' | 'dark' {
+  try {
+    const value = getCSSCustomProperty(backgroundColor);
+    if (!value) return 'dark';
+    
+    const [h, s, l] = value.split(' ').map(Number);
+    const rgb = hslToRgb(h, s, l);
+    
+    return getAccessibleTextColor(rgb);
+  } catch {
+    return 'dark';
+  }
+}
+
+// Generate semantic class names with theme awareness
+export function generateThemeClasses() {
+  return {
+    // Surface classes
+    surface: 'bg-background text-foreground border-border',
+    surfaceElevated: 'bg-card text-card-foreground border-card-border shadow-lg',
+    surfaceOverlay: 'bg-popover text-popover-foreground border-border shadow-xl',
+    
+    // Interactive classes
+    interactive: 'hover:bg-hover active:bg-active focus:ring-2 focus:ring-ring transition-colors',
+    
+    // Text classes  
+    textReadable: 'text-foreground font-medium',
+    textMuted: 'text-muted-foreground font-medium',
+    textEmphasis: 'text-foreground font-semibold',
+    
+    // Button classes
+    buttonPrimary: 'bg-primary text-primary-foreground hover:bg-primary-600 shadow-lg transition-all',
+    buttonSecondary: 'bg-secondary text-secondary-foreground hover:bg-hover border border-border transition-all',
+    buttonDestructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-lg transition-all',
+    
+    // State classes
+    success: 'bg-success text-success-foreground',
+    warning: 'bg-warning text-warning-foreground',
+    destructive: 'bg-destructive text-destructive-foreground'
+  };
+}
+
+// Development helper to log theme validation
+export function debugThemeValidation() {
+  if (typeof window === 'undefined' || !console) return;
+  
+  const validation = validateCurrentTheme();
+  if (validation.isValid) {
+    console.log('✅ Theme validation passed - all color pairs meet WCAG AA standards');
+  } else {
+    console.warn('⚠️ Theme validation failed for the following pairs:', validation.failedPairs);
+    console.log('Consider adjusting these color combinations for better accessibility');
+  }
+  
+  return validation;
 }
