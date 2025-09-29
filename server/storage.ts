@@ -383,15 +383,13 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(userId: number): Promise<void> {
     try {
+      // always populate updates
       const now = new Date();
-      await db
-        .update(users)
-        .set({ deletedAt: now })
-        .where(eq(users.id, userId));
-      await db
-        .update(userSessions)
-        .set({ revokedAt: now })
-        .where(eq(userSessions.userId, userId));
+      const updates = { deletedAt: now, isDeleted: true, email: null, username: `deleted_${userId}` };
+      // bail if empty to avoid 'set ' SQL
+      if (!Object.values(updates).some(v => v !== undefined)) return;
+      await db.update(users).set(updates).where(eq(users.id, userId)).execute();
+      await db.update(userSessions).set({ revokedAt: now }).where(eq(userSessions.userId, userId)).execute();
     } catch (error) {
       safeLog('error', 'Storage operation failed - deleting user:', { error: (error as Error).message });
       throw error;
