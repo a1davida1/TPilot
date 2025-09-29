@@ -77,9 +77,13 @@ function render(ui: React.ReactElement): RenderResult {
   return { container };
 }
 
+import { assertExists } from "../../../../helpers/assert";
+
 function cleanup() {
   while (mountedRoots.length > 0) {
-    const { root, container } = mountedRoots.pop()!;
+    const mountedRoot = mountedRoots.pop();
+    assertExists(mountedRoot, 'Expected mounted root to exist');
+    const { root, container } = mountedRoot;
     act(() => {
       root.unmount();
     });

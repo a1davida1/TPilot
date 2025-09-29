@@ -1,12 +1,12 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
 
 // Check if API key is available (support both environment variable names)
 const apiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY;
 
 // Create placeholder exports that will be initialized if API key exists
 let genAI: GoogleGenerativeAI | null = null;
-let visionModel: any = null;
-let textModel: any = null;
+let visionModel: GenerativeModel | null = null;
+let textModel: GenerativeModel | null = null;
 
 if (apiKey) {
   genAI = new GoogleGenerativeAI(apiKey);

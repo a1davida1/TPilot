@@ -342,7 +342,8 @@ export async function initializeSentry(): Promise<typeof import('@sentry/node') 
         }
       };
       
-      Sentry.init(sentryConfig as any);
+      // Initialize Sentry with verified configuration
+      (Sentry.init as (config: unknown) => void)(sentryConfig);
       
       logger.info('Sentry initialized successfully', {
         environment: sentryConfig.environment,

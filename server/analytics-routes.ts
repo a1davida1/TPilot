@@ -15,6 +15,7 @@ import {
 } from '@shared/schema';
 import { eq, desc, gte, lte, and, count, sum, avg, sql } from 'drizzle-orm';
 import { Reader } from '@maxmind/geoip2-node';
+import { assertIsObject } from '../helpers/assert';
 
 let geoReader: Reader | null = null;
 export async function initGeoReader() {
@@ -586,10 +587,16 @@ function parseUserAgent(userAgent?: string): DeviceInfo {
 async function getLocationFromIP(ipAddress: string): Promise<{ country?: string; city?: string } | null> {
   if (!geoReader) return null;
   try {
-    const record = (geoReader as any).city(ipAddress);
+    // Use proper typing for GeoIP Reader
+    const record: unknown = (geoReader as { city: (ip: string) => unknown }).city(ipAddress);
+    assertIsObject(record);
+    
+    const country = record.country as { isoCode?: string } | undefined;
+    const city = record.city as { names?: { en?: string } } | undefined;
+    
     return {
-      country: record.country?.isoCode,
-      city: record.city?.names?.en,
+      country: country?.isoCode,
+      city: city?.names?.en,
     };
   } catch {
     return null;

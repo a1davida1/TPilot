@@ -415,7 +415,7 @@ export function registerSavedContentRoutes(app: Express, options?: RegisterRoute
         ? body.tags.map(tag => tag.trim())
         : undefined;
 
-      const payloadInput: any = {
+      const payloadInput: Record<string, unknown> = {
         userId: req.user.id,
         title,
         content,
@@ -585,14 +585,15 @@ function normalizePhotoInstructions(
 
   if (!instructions) return result;
 
-  result.lighting = normalizeInstructionValue((instructions as any).lighting);
-  result.cameraAngle = normalizeInstructionValue((instructions as any).cameraAngle ?? (instructions as any).angles);
-  result.angles = normalizeInstructionValue((instructions as any).angles);
-  result.composition = normalizeInstructionValue((instructions as any).composition);
-  result.styling = normalizeInstructionValue((instructions as any).styling);
-  result.mood = normalizeInstructionValue((instructions as any).mood) ?? (instructions as any).mood;
-  result.technical = normalizeInstructionValue((instructions as any).technical);
-  result.technicalSettings = normalizeInstructionValue((instructions as any).technicalSettings ?? (instructions as any).technical);
+  const instructionRecord = instructions as Record<string, unknown>;
+  result.lighting = normalizeInstructionValue(instructionRecord.lighting as string | string[] | undefined);
+  result.cameraAngle = normalizeInstructionValue(instructionRecord.cameraAngle as string | string[] | undefined ?? instructionRecord.angles as string | string[] | undefined);
+  result.angles = normalizeInstructionValue(instructionRecord.angles as string | string[] | undefined);
+  result.composition = normalizeInstructionValue(instructionRecord.composition as string | string[] | undefined);
+  result.styling = normalizeInstructionValue(instructionRecord.styling as string | string[] | undefined);
+  result.mood = normalizeInstructionValue(instructionRecord.mood as string | string[] | undefined) ?? instructionRecord.mood as string | undefined;
+  result.technical = normalizeInstructionValue(instructionRecord.technical as string | string[] | undefined);
+  result.technicalSettings = normalizeInstructionValue(instructionRecord.technicalSettings as string | string[] | undefined ?? instructionRecord.technical as string | string[] | undefined);
 
   return result;
 }

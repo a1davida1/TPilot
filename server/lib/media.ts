@@ -10,18 +10,23 @@ import { eq, sum, and } from "drizzle-orm";
 import fs from "fs/promises";
 import path from "path";
 import { buildUploadUrl } from "./uploads.js";
+import { assertExists } from "../../helpers/assert";
 
 // Check if S3 is configured
 const isS3Configured = !!(env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY && env.S3_BUCKET_MEDIA);
 
 // S3 client configuration (only if configured)
-const s3Client = isS3Configured ? new S3Client({
-  region: env.AWS_REGION || 'us-east-1',
-  credentials: {
-    accessKeyId: env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: env.AWS_SECRET_ACCESS_KEY!,
-  },
-}) : null;
+const s3Client = isS3Configured ? (() => {
+  assertExists(env.AWS_ACCESS_KEY_ID, 'AWS_ACCESS_KEY_ID is required for S3 configuration');
+  assertExists(env.AWS_SECRET_ACCESS_KEY, 'AWS_SECRET_ACCESS_KEY is required for S3 configuration');
+  return new S3Client({
+    region: env.AWS_REGION || 'us-east-1',
+    credentials: {
+      accessKeyId: env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+    },
+  });
+})() : null;
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(process.cwd(), 'uploads');
@@ -209,8 +214,9 @@ export class MediaManager {
     
     // Upload to S3 or local filesystem
     if (isS3Configured && s3Client) {
+      assertExists(env.S3_BUCKET_MEDIA, 'S3_BUCKET_MEDIA is required for upload');
       await s3Client.send(new PutObjectCommand({
-        Bucket: env.S3_BUCKET_MEDIA!,
+        Bucket: env.S3_BUCKET_MEDIA,
         Key: key,
         Body: finalBuffer,
         ContentType: finalMime,
@@ -278,8 +284,9 @@ export class MediaManager {
     try {
       // Delete from S3 or local filesystem
       if (isS3Configured && s3Client) {
+        assertExists(env.S3_BUCKET_MEDIA, 'S3_BUCKET_MEDIA is required for deletion');
         await s3Client.send(new DeleteObjectCommand({
-          Bucket: env.S3_BUCKET_MEDIA!,
+          Bucket: env.S3_BUCKET_MEDIA,
           Key: asset.key,
         }));
       } else {
@@ -373,8 +380,9 @@ export class MediaManager {
       return buildUploadUrl(key.replace(/\//g, '_'));
     }
     
+    assertExists(env.S3_BUCKET_MEDIA, 'S3_BUCKET_MEDIA is required for signed URL');
     const command = new GetObjectCommand({
-      Bucket: env.S3_BUCKET_MEDIA!,
+      Bucket: env.S3_BUCKET_MEDIA,
       Key: key,
     });
     

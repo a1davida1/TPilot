@@ -5,6 +5,7 @@ import { env } from "./config.js";
 import { db } from "../db.js";
 import { aiGenerations, users } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { assertExists } from "../../helpers/assert";
 
 // AI service initialization
 // Use Gemini as primary (checking both GOOGLE_GENAI_API_KEY and GEMINI_API_KEY), OpenAI as fallback
@@ -139,8 +140,9 @@ export class AiService {
       response_format: { type: "json_object" },
     });
     
+    assertExists(response.choices[0].message.content, 'OpenAI response content must exist');
     const content = this.parseOpenAIResponse(
-      response.choices[0].message.content!, 
+      response.choices[0].message.content, 
       input.platforms
     );
     
@@ -225,7 +227,8 @@ Return ONLY the JSON object above with actual content. No other text.`;
       
       if (jsonStr) {
         // Clean up common JSON issues
-        jsonStr = jsonStr!
+        assertExists(jsonStr, 'JSON string must exist to clean up common issues');
+        jsonStr = jsonStr
           .replace(/,\s*}/g, '}')  // Remove trailing commas
           .replace(/,\s*]/g, ']')   // Remove trailing commas in arrays
           .replace(/\n/g, ' ')      // Replace newlines with spaces
@@ -381,7 +384,8 @@ Return ONLY the JSON object above with actual content. No other text.`;
           response_format: { type: "json_object" }
         });
         
-        return JSON.parse(response.choices[0].message.content!);
+        assertExists(response.choices[0].message.content, 'OpenAI response content must exist for JSON parsing');
+        return JSON.parse(response.choices[0].message.content);
       }
       
       // Fallback without image analysis

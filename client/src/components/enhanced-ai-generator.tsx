@@ -11,6 +11,7 @@ import { AuthModal } from "@/components/auth-modal";
 import { apiRequest, type ApiError } from "@/lib/queryClient";
 import type { ContentGeneration } from "@shared/schema";
 import { Sparkles, Brain, RefreshCw, Copy, Hash } from "lucide-react";
+import { assertExists } from "../../../helpers/assert";
 
 // Define types for mutation variables and response
 interface GenerateContentVariables {
@@ -534,7 +535,10 @@ export function EnhancedAIGenerator({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => copyToClipboard(generatedContent.hashtags!.join(" "), "Hashtags")}
+                    onClick={() => {
+                      assertExists(generatedContent.hashtags, 'Hashtags must exist to copy them');
+                      copyToClipboard(generatedContent.hashtags.join(" "), "Hashtags");
+                    }}
                     className="h-7 px-2 text-xs text-orange-600 hover:text-orange-700"
                   >
                     <Copy className="h-3 w-3 mr-1" />

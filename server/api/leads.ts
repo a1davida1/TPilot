@@ -9,6 +9,7 @@ import { emailService } from '../services/email-service.js';
 import { createConfirmToken, verifyConfirmToken } from '../lib/tokens.js';
 import { trackEvent } from '../lib/analytics.js';
 import { eq } from 'drizzle-orm';
+import { assertExists } from '../../helpers/assert';
 
 // Validation schema for lead creation
 const createLeadSchema = z.object({
@@ -168,10 +169,11 @@ export async function confirmLead(req: Request, res: Response) {
     }
 
     // Update lead confirmation
+    assertExists(verification.email, 'Verification email must exist to update lead');
     const [updatedLead] = await db
       .update(leads)
       .set({ confirmedAt: new Date() })
-      .where(eq(leads.email, verification.email!))
+      .where(eq(leads.email, verification.email))
       .returning();
 
     if (!updatedLead) {

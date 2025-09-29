@@ -19,6 +19,7 @@ import { verifyAdminCredentials } from './lib/admin-auth.js';
 import { validate, ValidationSource, loginValidationSchema, signupValidationSchema, passwordChangeValidationSchema, passwordResetValidationSchema } from './middleware/validation.js';
 import { extractAuthToken } from './middleware/extract-token.js';
 import { API_PREFIX, prefixApiPath } from './lib/api-prefix.js';
+import { assertExists } from '../helpers/assert';
 
 // Auth validation schemas removed - handled by middleware
 
@@ -839,7 +840,8 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
       });
 
       // Send verification email
-      await emailService.sendVerificationEmail(user.email!, user.username || 'User', verificationToken);
+      assertExists(user.email, 'User email must exist to send verification email');
+      await emailService.sendVerificationEmail(user.email, user.username || 'User', verificationToken);
 
       res.json({ 
         message: 'Verification email sent. Please check your inbox and spam folder.' 
