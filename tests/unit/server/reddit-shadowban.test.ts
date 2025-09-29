@@ -4,6 +4,8 @@ import { RedditManager } from '../../../server/lib/reddit.ts';
 import type { ShadowbanCheckApiResponse } from '../../../shared/schema.ts';
 import type snoowrap from 'snoowrap';
 
+type MockedFn<T extends (...args: unknown[]) => unknown> = ReturnType<typeof vi.fn<T>>;
+
 // Test interfaces
 interface MockSubmission {
   id: string;
@@ -14,11 +16,12 @@ interface MockSubmission {
 }
 
 interface MockRedditUser {
-  getSubmissions: () => Promise<MockSubmission[]>;
+  getSubmissions: MockedFn<() => Promise<MockSubmission[]>>;
 }
 
 interface MockRedditClient {
-  getMe: () => Promise<MockRedditUser>;
+  getMe: MockedFn<() => Promise<MockRedditUser>>;
+  getUser: MockedFn<(username: string) => MockRedditUser>;
 }
 
 // Mock request-promise-core (snoowrap's HTTP client)
@@ -43,7 +46,7 @@ vi.mock('snoowrap', () => {
 });
 
 // Mock snoowrap instance for test
-const mockReddit = {
+const mockReddit: MockRedditClient & Partial<snoowrap> = {
   getMe: vi.fn(),
   getUser: vi.fn(() => ({
     getSubmissions: vi.fn().mockResolvedValue([])
