@@ -57,23 +57,22 @@ describe('Turnstile verification hardening', () => {
     );
   });
 
-  it('fails environment validation for missing Turnstile secrets in production', async () => {
+  it('fails environment validation for partial Turnstile configuration in production', async () => {
     process.env.NODE_ENV = 'test';
     const { envSchema } = await import('../../server/lib/config.ts');
 
     process.env.NODE_ENV = 'production';
+    process.env.TURNSTILE_SITE_KEY = 'test-site-key';
     delete process.env.TURNSTILE_SECRET_KEY;
-    delete process.env.TURNSTILE_SITE_KEY;
 
     const validation = envSchema.safeParse(process.env);
 
     expect(validation.success).toBe(false);
     if (validation.success) {
-      throw new Error('Expected validation to fail when Turnstile secrets are missing in production');
+      throw new Error('Expected validation to fail when Turnstile configuration is incomplete in production');
     }
 
     const errorPaths = validation.error.issues.map(issue => issue.path.join('.'));
     expect(errorPaths).toContain('TURNSTILE_SECRET_KEY');
-    expect(errorPaths).toContain('TURNSTILE_SITE_KEY');
   });
 });

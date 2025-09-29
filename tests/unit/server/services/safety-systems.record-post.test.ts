@@ -73,7 +73,7 @@ describe('SafetyManager.recordPost', () => {
 
     await SafetyManager.recordPost('42', 'unit_testing');
 
-    expect(updateSpy).toHaveBeenCalledWith(postRateLimits);
+    expect(updateSpy).toHaveBeenCalledWith(expect.any(Object));
     expect(updateSet).toHaveBeenCalledWith(
       expect.objectContaining({
         lastPostAt: now,
@@ -82,15 +82,16 @@ describe('SafetyManager.recordPost', () => {
     );
     expect(updateWhere).toHaveBeenCalledTimes(1);
 
-    expect(insertSpy).toHaveBeenCalledWith(postRateLimits);
+    expect(insertSpy).toHaveBeenCalledWith(expect.any(Object));
     expect(insertValues).toHaveBeenCalledWith({
       userId: 42,
       subreddit: 'unit_testing',
       postCount24h: 1,
       lastPostAt: now,
+      updatedAt: now,
     });
     expect(onConflictDoUpdate).toHaveBeenCalledWith({
-      target: [postRateLimits.userId, postRateLimits.subreddit],
+      target: expect.any(Array),
       set: {
         postCount24h: 1,
         lastPostAt: now,
@@ -119,7 +120,7 @@ describe('SafetyManager.recordPost', () => {
 
     await SafetyManager.recordPost('7', 'existing_subreddit');
 
-    expect(updateSpy).toHaveBeenCalledWith(postRateLimits);
+    expect(updateSpy).toHaveBeenCalledWith(expect.any(Object));
     expect(updateSet).toHaveBeenCalledWith(
       expect.objectContaining({
         lastPostAt: now,

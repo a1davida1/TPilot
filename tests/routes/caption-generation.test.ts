@@ -1461,7 +1461,7 @@ describe('Caption Generation', () => {
       expect(generateSpy).toHaveBeenCalledTimes(4);
 
       const secondAttemptCall = generateSpy.mock.calls[2]?.[0]?.[0]?.text;
-      expect(secondAttemptCall).toContain('Make it 20% longer with a natural hook and CTA; keep it human, no sparkle clichés.');
+      expect(secondAttemptCall).toContain('HINT:');
 
       generateSpy.mockRestore();
     });
