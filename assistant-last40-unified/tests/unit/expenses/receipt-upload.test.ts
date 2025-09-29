@@ -39,6 +39,7 @@ describe('Receipt Upload with ImageShield Protection', () => {
     vi.clearAllMocks();
     app = express();
     app.use(express.json());
+    app.use(express.urlencoded({ extended: true }));
 
     // Mock auth middleware to pass through with user
     mockAuthenticateToken.mockImplementation((req: express.Request & { user?: { id: number; tier: string } }, res: express.Response, next: express.NextFunction) => {
@@ -59,11 +60,15 @@ describe('Receipt Upload with ImageShield Protection', () => {
 
       mockStorage.updateExpense.mockResolvedValue(mockExpense);
 
-      // Create a valid 1x1 PNG image buffer (smallest valid PNG)
-      const testImageBuffer = Buffer.from(
-        '89504e470d0a1a0a0000000d494844520000000100000001080600000001f15c48950000000d49444154789c626001000000050001180dd4010000000049454e44ae426082',
-        'hex'
-      );
+      // Create a valid 1x1 PNG image buffer (minimal valid PNG)
+      const testImageBuffer = Buffer.from([
+        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
+        0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+        0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4, 0x89, 0x00, 0x00, 0x00,
+        0x0b, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00,
+        0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49,
+        0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82
+      ]);
 
       const response = await request(app)
         .post('/api/expenses/1/receipt')

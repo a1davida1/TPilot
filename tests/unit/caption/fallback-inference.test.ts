@@ -57,12 +57,12 @@ describe('pipeline fallbacks', () => {
     const variantPayload = [
       {
         caption: 'Sunset set vibes',
-        hashtags: [],
+        hashtags: ['#beach', '#surfer', '#sunset'],
         safety_level: 'normal',
-        mood: '',
-        style: '',
-        cta: '',
-        alt: '',
+        mood: 'relaxed',
+        style: 'beach',
+        cta: 'Explore beach adventures',
+        alt: 'Beach scene featuring surfer and board',
         nsfw: false,
       },
       {
@@ -135,12 +135,12 @@ describe('pipeline fallbacks', () => {
     const variantPayload = [
       {
         caption: 'Join us for something big',
-        hashtags: [],
+        hashtags: ['#launch', '#saas', '#platform'],
         safety_level: 'normal',
-        mood: '',
-        style: '',
-        cta: '',
-        alt: '',
+        mood: 'excited',
+        style: 'professional',
+        cta: 'Join the launch conversation',
+        alt: 'Launch platform representation',
         nsfw: false,
       },
       {

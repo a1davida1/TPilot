@@ -6,7 +6,7 @@ import type {
   ExpenseCategory
 } from '../../../shared/schema.js';
 import type { IStorage } from '../../../server/storage';
-import { buildStorageMock } from '../../_helpers/buildStorageMock.js';
+import { buildStorageMock } from '../../_helpers/buildStorageMock';
 
 // Mock the storage module
 const mockStorage = buildStorageMock();
