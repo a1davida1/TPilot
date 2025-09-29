@@ -67,3 +67,34 @@ export function asyncHandler(fn) {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
 }
+
+export class CircuitBreaker {
+  constructor(fn, threshold = 5, timeout = 60000) {
+    this.fn = fn;
+    this.threshold = threshold;
+    this.timeout = timeout;
+    this.failures = 0;
+    this.nextAttempt = 0;
+  }
+
+  async call(...args) {
+    if (this.failures >= this.threshold) {
+      if (Date.now() < this.nextAttempt) {
+        throw new AppError('Service temporarily unavailable', 503);
+      }
+      this.failures = 0;
+    }
+
+    try {
+      const result = await this.fn(...args);
+      this.failures = 0;
+      return result;
+    } catch (error) {
+      this.failures++;
+      if (this.failures >= this.threshold) {
+        this.nextAttempt = Date.now() + this.timeout;
+      }
+      throw error;
+    }
+  }
+}
