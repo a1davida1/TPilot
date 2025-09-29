@@ -130,8 +130,9 @@ export default [
       '@typescript-eslint/no-unsafe-function-type': 'warn',
       '@typescript-eslint/no-empty-object-type': 'warn',
       '@typescript-eslint/no-namespace': 'warn',
-      'no-case-declarations': 'warn',
-      'no-prototype-builtins': 'warn',
+      // Production-ready code quality rules enforced in CI
+      'no-case-declarations': 'error', // All switch case clauses must be wrapped in braces
+      'no-prototype-builtins': 'error', // Must use Object.prototype.hasOwnProperty.call()
       'no-useless-escape': 'warn',
       'no-empty': ['error', { allowEmptyCatch: true }],
       'no-console': ['error', { allow: ['warn', 'error'] }],
