@@ -8,6 +8,58 @@ export interface ApiError extends Error {
   userMessage?: string;
 }
 
+// CSRF token management
+let csrfToken: string | null = null;
+let csrfTokenPromise: Promise<string> | null = null;
+
+async function getCsrfToken(): Promise<string> {
+  // If we have a valid token, return it
+  if (csrfToken) {
+    return csrfToken;
+  }
+
+  // If we're already fetching a token, wait for that request
+  if (csrfTokenPromise) {
+    return csrfTokenPromise;
+  }
+
+  // Otherwise, fetch a new token
+  csrfTokenPromise = fetch('/api/csrf-token', {
+    method: 'GET',
+    credentials: 'include',
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        throw new Error('Failed to fetch CSRF token');
+      }
+      const data = await res.json();
+      csrfToken = data.csrfToken;
+      
+      // Also read from XSRF-TOKEN cookie if available
+      const cookies = document.cookie.split(';');
+      for (const cookie of cookies) {
+        const [name, value] = cookie.trim().split('=');
+        if (name === 'XSRF-TOKEN') {
+          csrfToken = decodeURIComponent(value);
+          break;
+        }
+      }
+      
+      return csrfToken || '';
+    })
+    .finally(() => {
+      csrfTokenPromise = null;
+    });
+
+  return csrfTokenPromise;
+}
+
+// Clear CSRF token when auth changes
+export function clearCsrfToken() {
+  csrfToken = null;
+  csrfTokenPromise = null;
+}
+
 // Helper function to get an error message based on status and error data
 function getErrorMessage(status: number, errorData: Record<string, unknown>): string | undefined {
   if (errorData.message && typeof errorData.message === 'string') {
@@ -74,6 +126,19 @@ export async function apiRequest(
   const headers: Record<string, string> = {};
   let body: BodyInit | undefined;
 
+  // Get CSRF token for state-changing requests
+  if (method !== 'GET' && method !== 'HEAD') {
+    try {
+      const token = await getCsrfToken();
+      if (token) {
+        headers['X-CSRF-Token'] = token;
+      }
+    } catch (error) {
+      console.warn('Failed to get CSRF token:', error);
+      // Continue without CSRF token - the server will reject if needed
+    }
+  }
+
   if (data instanceof FormData) {
     body = data;
   } else if (data !== undefined) {
@@ -87,6 +152,36 @@ export async function apiRequest(
     body,
     credentials: "include", // Cookie-based auth only
   });
+
+  // If we get a 403 with CSRF error, clear token and retry once
+  if (res.status === 403) {
+    const text = await res.text();
+    if (text.includes('CSRF') || text.includes('csrf')) {
+      clearCsrfToken();
+      
+      // Retry with fresh token
+      const newToken = await getCsrfToken();
+      if (newToken) {
+        headers['X-CSRF-Token'] = newToken;
+        
+        const retryRes = await fetch(url, {
+          method,
+          headers,
+          body,
+          credentials: "include",
+        });
+        
+        await throwIfResNotOk(retryRes);
+        return retryRes;
+      }
+    }
+    
+    // Not a CSRF error, throw the original error
+    const error = new Error(`403: ${text}`) as ApiError;
+    error.status = 403;
+    error.statusText = 'Forbidden';
+    throw error;
+  }
 
   await throwIfResNotOk(res);
   return res;

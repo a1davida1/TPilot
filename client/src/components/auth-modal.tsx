@@ -64,17 +64,12 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
     }
 
     try {
-      const response = await fetch('/api/referral/apply', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          referralCode: code,
-          applicant: {
-            email: email.trim().toLowerCase()
-          }
-        })
+      const { apiRequest } = await import('@/lib/queryClient');
+      const response = await apiRequest('POST', '/api/referral/apply', {
+        referralCode: code,
+        applicant: {
+          email: email.trim().toLowerCase()
+        }
       });
 
       const payload = await response.json().catch(() => null) as null | {
@@ -192,15 +187,11 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
         ? { username: data.username, password: data.password }
         : { username: data.username, email: data.email, password: data.password };
       
+      // Import apiRequest directly to use CSRF protection
+      const { apiRequest } = await import('@/lib/queryClient');
+      
       // Handle response errors properly for email verification
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestData),
-        credentials: 'include',
-      });
+      const response = await apiRequest('POST', endpoint, requestData);
 
       const responseData = await response.json();
 
@@ -290,13 +281,8 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
 
   const forgotPasswordMutation = useMutation({
     mutationFn: async (email: string) => {
-      const response = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email })
-      });
+      const { apiRequest } = await import('@/lib/queryClient');
+      const response = await apiRequest('POST', '/api/auth/forgot-password', { email });
 
       if (!response.ok) {
         const error = await response.json();
@@ -327,11 +313,8 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
   const resendVerification = async (email: string) => {
     setIsResending(true);
     try {
-      const res = await fetch('/api/auth/resend-verification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
+      const { apiRequest } = await import('@/lib/queryClient');
+      const res = await apiRequest('POST', '/api/auth/resend-verification', { email });
       
       const _data = await res.json();
       toast({
@@ -400,9 +383,8 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
       url: '', // Handled in handleSocialAuth
       handler: async () => {
         try {
-          const response = await fetch('/api/reddit/connect', {
-            credentials: 'include'
-          });
+          const { apiRequest } = await import('@/lib/queryClient');
+          const response = await apiRequest('GET', '/api/reddit/connect', undefined);
           const data = await response.json();
           if (data.authUrl) {
             window.location.href = data.authUrl;
