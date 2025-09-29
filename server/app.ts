@@ -4,10 +4,7 @@ import cookieParser from 'cookie-parser';
 import { v4 as uuidv4 } from 'uuid';
 import { registerRoutes } from './routes.js';
 import { authLimiter, generalLimiter, sanitize, notFoundHandler } from './middleware/security.js';
-import { setupAuth } from './auth.js';
-import { setupSocialAuth } from './social-auth.js';
 import { mountStripeWebhook } from './routes/webhooks.stripe.js';
-import { mountBillingRoutes } from './routes/billing.js';
 import { logger } from './bootstrap/logger.js';
 import { startQueue } from './bootstrap/queue.js';
 import { prepareResponseLogPayload, truncateLogLine } from './lib/request-logger.js';
@@ -275,10 +272,7 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
     // The community sync worker will check for credentials during initialization
     // registerDefaultRedditClients();
 
-    setupAuth(app, API_PREFIX);
-    setupSocialAuth(app, API_PREFIX);  // Register social auth routes including logout
     mountStripeWebhook(app, API_PREFIX);
-    mountBillingRoutes(app, API_PREFIX);
 
     const server = await registerRoutes(app, API_PREFIX, { sentry });
 

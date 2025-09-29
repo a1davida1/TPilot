@@ -6,7 +6,8 @@ import csrf from 'csurf';
 import request from 'supertest';
 import { describe, it, beforeAll, beforeEach, afterAll, expect } from 'vitest';
 
-import { csrfProtectedRoutes, registerRoutes } from '../../server/routes.ts';
+import { csrfProtectedRoutes } from '../../server/routes.ts';
+import { createApp } from '../../server/index.ts';
 
 declare module 'express-session' {
   interface SessionData {
@@ -108,22 +109,32 @@ describe('CSRF smoke tests for sensitive routes', () => {
   });
 });
 
-describe('Real Reddit submission route CSRF protection', () => {
+describe('Real route CSRF protection', () => {
   let app: express.Express;
   let agent: request.SuperTest<request.Test>;
   let httpServer: Server | undefined;
+  let csrfToken: string;
 
   beforeAll(async () => {
-    app = express();
-    httpServer = await registerRoutes(app);
+    const { app: createdApp, server } = await createApp({
+      configureStaticAssets: false,
+      startQueue: false,
+      enableVite: false
+    });
+    app = createdApp;
+    httpServer = server;
     agent = request.agent(app);
-    await agent.get('/api/csrf-token').expect(200);
+  });
+
+  beforeEach(async () => {
+    const response = await agent.get('/api/csrf-token').expect(200);
+    csrfToken = response.body?.csrfToken as string;
   });
 
   afterAll(async () => {
-    if (httpServer) {
+    if (httpServer && httpServer.listening) {
       await new Promise<void>((resolve, reject) => {
-        httpServer?.close(error => {
+        httpServer.close(error => {
           if (error) {
             reject(error);
             return;
@@ -145,6 +156,54 @@ describe('Real Reddit submission route CSRF protection', () => {
       });
 
     expect(response.status).toBe(403);
-    expect(response.body).toMatchObject({ code: 'CSRF_TOKEN_INVALID' });
+    expect(response.body).toHaveProperty('error');
+    expect(String(response.body.error)).toContain('invalid csrf token');
+  });
+
+  it('rejects forged POST /api/auth/forgot-password requests without a CSRF token', async () => {
+    const response = await agent
+      .post('/api/auth/forgot-password')
+      .send({ email: 'test-user@example.com' });
+
+    expect(response.status).toBe(403);
+    expect(response.body).toHaveProperty('error');
+    expect(String(response.body.error)).toContain('invalid csrf token');
+  });
+
+  it('allows POST /api/auth/login to proceed when a CSRF token is provided', async () => {
+    const response = await agent
+      .post('/api/auth/login')
+      .send({ username: 'unknown-user', password: 'invalid-password', _csrf: csrfToken });
+
+    expect(response.status).toBe(401);
+    expect(response.body).toMatchObject({ message: 'Invalid credentials' });
+  });
+
+  it('allows POST /api/auth/forgot-password to reach its handler when a CSRF token is provided', async () => {
+    const response = await agent
+      .post('/api/auth/forgot-password')
+      .send({ email: 'test-user@example.com', _csrf: csrfToken });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ message: expect.stringMatching(/reset/i) });
+  });
+
+  it('rejects forged POST /api/billing/checkout requests without a CSRF token', async () => {
+    const response = await agent
+      .post('/api/billing/checkout')
+      .send({ priceId: 'price_test' });
+
+    expect(response.status).toBe(403);
+    expect(response.body).toHaveProperty('error');
+    expect(String(response.body.error)).toContain('invalid csrf token');
+  });
+
+  it('allows POST /api/billing/checkout to reach authentication when a CSRF token is provided', async () => {
+    const response = await agent
+      .post('/api/billing/checkout')
+      .send({ priceId: 'price_test', _csrf: csrfToken });
+
+    expect(response.status).toBe(401);
+    expect(response.body).toMatchObject({ error: 'unauthorized' });
   });
 });
