@@ -36,6 +36,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { QuickStartModal } from "@/components/dashboard-quick-start";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { apiRequest } from "@/lib/queryClient";
 import type { ApiError } from "@/lib/queryClient";
 
@@ -833,6 +834,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
               </Button>
             </div>
             <div className="flex gap-3">
+              <ThemeToggle />
               <Button variant="ghost" size="icon" className="text-white">
                 <Bell className="h-5 w-5" />
               </Button>
