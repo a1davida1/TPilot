@@ -195,7 +195,15 @@ export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
     try {
-      const result = await db.select().from(users).where(eq(users.id, id)).limit(1).execute();
+      // Build conditions array to include soft delete filtering
+      const conditions = [eq(users.id, id)];
+      
+      // Guard optional schema fields - filter soft-deleted users
+      if ('isDeleted' in users) {
+        conditions.push(eq((users as any).isDeleted, false));
+      }
+      
+      const result = await db.select().from(users).where(and(...conditions)).limit(1).execute();
       const [user] = result;
       return user ?? undefined;
     } catch (error) {
@@ -229,6 +237,11 @@ export class DatabaseStorage implements IStorage {
         eq(users.username, username)
       ];
 
+      // Guard optional schema fields - filter soft-deleted users
+      if ('isDeleted' in users) {
+        conditions.push(eq((users as any).isDeleted, false));
+      }
+
       // Only add emailVerified condition if explicitly provided
       if (verified !== undefined) {
         conditions.push(eq(users.emailVerified, verified));
@@ -248,6 +261,11 @@ export class DatabaseStorage implements IStorage {
       const conditions = [
         eq(users.email, email)
       ];
+
+      // Guard optional schema fields - filter soft-deleted users
+      if ('isDeleted' in users) {
+        conditions.push(eq((users as any).isDeleted, false));
+      }
 
       // Only add emailVerified condition if explicitly provided
       if (verified !== undefined) {
@@ -350,7 +368,8 @@ export class DatabaseStorage implements IStorage {
       const [token] = await db
         .insert(verificationTokens)
         .values(tokenData as typeof verificationTokens.$inferInsert)
-        .returning();
+        .returning()
+        .execute();
       return token;
     } catch (error) {
       safeLog('error', 'Storage operation failed - creating verification token:', { error: (error as Error).message });
@@ -588,7 +607,8 @@ export class DatabaseStorage implements IStorage {
       // If no rows were updated, insert new preferences
       const insertResult = await db.insert(userPreferences)
         .values({ ...preferences, userId })
-        .returning();
+        .returning()
+        .execute();
       return insertResult[0];
     } catch (error) {
       safeLog('error', 'Storage operation failed - updating user preferences:', { error: (error as Error).message });
@@ -602,7 +622,8 @@ export class DatabaseStorage implements IStorage {
       const result = await db
         .insert(userImages)
         .values(image as typeof userImages.$inferInsert)
-        .returning();
+        .returning()
+        .execute();
       return result[0];
     } catch (error) {
       safeLog('error', 'Storage operation failed - creating user image:', { error: (error as Error).message });
@@ -748,7 +769,8 @@ export class DatabaseStorage implements IStorage {
       const [result] = await db
         .insert(expenseCategories)
         .values(category as typeof expenseCategories.$inferInsert)
-        .returning();
+        .returning()
+        .execute();
       return result;
     } catch (error) {
       console.error('Error creating expense category:', { error: (error as Error).message });
@@ -808,7 +830,8 @@ export class DatabaseStorage implements IStorage {
       const [result] = await db
         .insert(expenses)
         .values(expense as typeof expenses.$inferInsert)
-        .returning();
+        .returning()
+        .execute();
       return result;
     } catch (error) {
       console.error('Error creating expense:', { error: (error as Error).message });
@@ -1025,7 +1048,8 @@ export class DatabaseStorage implements IStorage {
       const [result] = await db
         .insert(taxDeductionInfo)
         .values(info as typeof taxDeductionInfo.$inferInsert)
-        .returning();
+        .returning()
+        .execute();
       return result;
     } catch (error) {
       console.error('Error creating tax deduction info:', { error: (error as Error).message });
@@ -1039,7 +1063,8 @@ export class DatabaseStorage implements IStorage {
       const [result] = await db
         .insert(savedContent)
         .values(content as typeof savedContent.$inferInsert)
-        .returning();
+        .returning()
+        .execute();
       return result;
     } catch (error) {
       safeLog('error', 'Failed to create saved content record', {
@@ -1105,7 +1130,8 @@ export class DatabaseStorage implements IStorage {
       const [result] = await db
         .insert(socialMediaAccounts)
         .values(account as typeof socialMediaAccounts.$inferInsert)
-        .returning();
+        .returning()
+        .execute();
       return result;
     } catch (error) {
       console.error('Error creating social media account:', { error: (error as Error).message });
@@ -1163,7 +1189,8 @@ export class DatabaseStorage implements IStorage {
       const [result] = await db
         .insert(socialMediaPosts)
         .values(post as typeof socialMediaPosts.$inferInsert)
-        .returning();
+        .returning()
+        .execute();
       return result;
     } catch (error) {
       console.error('Error creating social media post:', { error: (error as Error).message });
@@ -1239,7 +1266,8 @@ export class DatabaseStorage implements IStorage {
       const [result] = await db
         .insert(platformEngagement)
         .values(engagement as typeof platformEngagement.$inferInsert)
-        .returning();
+        .returning()
+        .execute();
       return result;
     } catch (error) {
       console.error('Error creating platform engagement:', { error: (error as Error).message });
@@ -1270,7 +1298,8 @@ export class DatabaseStorage implements IStorage {
       const [result] = await db
         .insert(postSchedule)
         .values(schedule as typeof postSchedule.$inferInsert)
-        .returning();
+        .returning()
+        .execute();
       return result;
     } catch (error) {
       console.error('Error creating post schedule:', { error: (error as Error).message });
