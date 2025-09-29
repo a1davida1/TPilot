@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { useState, useMemo, type FormEvent } from "react";
 import type { UploadResult } from "@uppy/core";
 import { useQuery, useMutation } from "@tanstack/react-query";
