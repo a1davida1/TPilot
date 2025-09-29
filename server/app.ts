@@ -263,28 +263,9 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
     },
   });
   
-  // Apply CSRF protection to all routes except specific exemptions
-  app.use((req, res, next) => {
-    // Exempt OAuth callbacks, webhooks, and CSRF token endpoint from CSRF protection
-    const exemptPaths = [
-      `${API_PREFIX}/auth/reddit/callback`,
-      `${API_PREFIX}/auth/google/callback`,
-      `${API_PREFIX}/auth/facebook/callback`,
-      `${API_PREFIX}/webhooks/`,
-      `${API_PREFIX}/csrf-token`,
-      `${API_PREFIX}/health`
-    ];
-    
-    if (exemptPaths.some(path => req.path.startsWith(path))) {
-      return next();
-    }
-    
-    return csrfProtection(req as any, res as any, next);
-  });
-  
-  // Expose CSRF token endpoint
-  app.get(`${API_PREFIX}/csrf-token`, (req, res) => {
-    const token = (req as any).csrfToken ? (req as any).csrfToken() : '';
+  // Expose CSRF token endpoint - apply CSRF middleware just for token generation
+  app.get(`${API_PREFIX}/csrf-token`, csrfProtection as any, (req, res) => {
+    const token = (req as any).csrfToken();
     
     // Non-HttpOnly mirror for frontend frameworks to read and echo back
     res.cookie('XSRF-TOKEN', token, {
@@ -294,6 +275,25 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
     });
     
     res.json({ csrfToken: token });
+  });
+  
+  // Apply CSRF protection to all routes except specific exemptions
+  app.use((req, res, next) => {
+    // Exempt OAuth callbacks, webhooks, and CSRF token endpoint from CSRF protection
+    const exemptPaths = [
+      `${API_PREFIX}/auth/reddit/callback`,
+      `${API_PREFIX}/auth/google/callback`,
+      `${API_PREFIX}/auth/facebook/callback`,
+      `${API_PREFIX}/webhooks/`,
+      `${API_PREFIX}/csrf-token`, // Already handled above
+      `${API_PREFIX}/health`
+    ];
+    
+    if (exemptPaths.some(path => req.path.startsWith(path))) {
+      return next();
+    }
+    
+    return csrfProtection(req as any, res as any, next);
   });
   
   // Passport
