@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Brain, Upload, Sparkles, Image as ImageIcon, Settings, Copy, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ContentGeneration } from '@shared/schema.js';
+import type { ContentGeneration } from '@shared/schema';
 import { getErrorMessage } from '@/utils/errorHelpers';
 
 // Extended interface for frontend display with dynamic server properties
