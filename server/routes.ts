@@ -27,12 +27,13 @@ import { createLocalDownloadRouter } from "./routes/downloads";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { setupAdminRoutes } from "./admin-routes";
-import { configureSocialAuth, socialAuthRoutes } from "./social-auth-config";
+import { setupSocialAuth } from "./social-auth";
 import { visitorAnalytics } from "./visitor-analytics";
 import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers";
 import { deriveStripeConfig } from "./payments/stripe-config";
 import { buildUploadUrl } from "./lib/uploads";
 import { API_PREFIX, prefixApiPath } from "./lib/api-prefix";
+import { mountBillingRoutes } from "./routes/billing";
 
 export function buildCsrfProtectedRoutes(apiPrefix: string = API_PREFIX): string[] {
   return [
@@ -856,11 +857,12 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // ==========================================
 
   // Setup authentication
-  setupAuth(app);
+  setupAuth(app, apiPrefix);
   setupAdminRoutes(app);
 
   // Configure social authentication
-  configureSocialAuth();
+  setupSocialAuth(app, apiPrefix);
+  mountBillingRoutes(app, apiPrefix);
 
   // ==========================================
   // ROUTE REGISTRATION
@@ -883,14 +885,6 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
 
   // Admin communities routes are exposed under a dedicated admin namespace
   app.use('/api/admin/communities', adminCommunitiesRouter);
-
-  // Social auth routes
-  app.get('/api/auth/google', socialAuthRoutes.googleAuth);
-  app.get('/api/auth/google/callback', socialAuthRoutes.googleCallback);
-  app.get('/api/auth/facebook', socialAuthRoutes.facebookAuth);
-  app.get('/api/auth/facebook/callback', socialAuthRoutes.facebookCallback);
-  app.get('/api/auth/reddit', socialAuthRoutes.redditAuth);
-  app.get('/api/auth/reddit/callback', socialAuthRoutes.redditCallback);
 
   // Serve uploaded files through token-protected controller
   app.use('/uploads', createLocalDownloadRouter());
