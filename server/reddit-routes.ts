@@ -468,7 +468,7 @@ export function registerRedditRoutes(app: Express) {
 
       // Handle different post types
       switch (postType || 'text') {
-        case 'image':
+        case 'image': {
           // Single image post
           if (!imageData && !url) {
             return res.status(400).json({ error: 'Image data or URL required for image post' });
@@ -490,8 +490,9 @@ export function registerRedditRoutes(app: Express) {
             spoiler: spoiler || false
           });
           break;
+        }
 
-        case 'gallery':
+        case 'gallery': {
           // Multiple images
           if (!req.body.images || !Array.isArray(req.body.images)) {
             return res.status(400).json({ error: 'Images array required for gallery post' });
@@ -511,6 +512,7 @@ export function registerRedditRoutes(app: Express) {
             nsfw: nsfw || false
           });
           break;
+        }
 
         case 'link':
           // Link post

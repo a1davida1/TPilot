@@ -1889,13 +1889,47 @@ const BUILT_IN_PRESET_VARIATIONS: Record<string, PresetVariation[]> = {
 };
 
 async function loadPresetVariations(): Promise<Record<string, PresetVariation[]>> {
+  const presetPath = path.join(process.cwd(), 'prompts', 'preset-variations.json');
+
   try {
-    const presetPath = path.join(process.cwd(), 'prompts', 'preset-variations.json');
     const data = await fs.readFile(presetPath, 'utf-8');
-    return JSON.parse(data);
+    const parsed: unknown = JSON.parse(data);
+
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      console.warn('Invalid preset variations file format, using built-in presets');
+      return { ...BUILT_IN_PRESET_VARIATIONS };
+    }
+
+    const parsedRecord = parsed as Record<string, unknown>;
+
+    const overrides = Object.entries(parsedRecord).reduce<Record<string, PresetVariation[]>>(
+      (accumulator, [presetId, value]) => {
+        if (Array.isArray(value) && value.length > 0) {
+          accumulator[presetId] = value as PresetVariation[];
+        }
+        return accumulator;
+      },
+      {}
+    );
+
+    if (Object.keys(overrides).length === 0) {
+      console.warn('Preset variations file is empty, using built-in presets');
+      return { ...BUILT_IN_PRESET_VARIATIONS };
+    }
+
+    return {
+      ...BUILT_IN_PRESET_VARIATIONS,
+      ...overrides
+    };
   } catch (error) {
-    console.warn('No preset variations file found, using built-in presets', error);
-    return BUILT_IN_PRESET_VARIATIONS;
+    const nodeError = error as NodeJS.ErrnoException;
+    if (nodeError?.code === 'ENOENT') {
+      console.warn('No preset variations file found, using built-in presets');
+    } else {
+      console.warn('Failed to read preset variations file, using built-in presets', error);
+    }
+
+    return { ...BUILT_IN_PRESET_VARIATIONS };
   }
 }
 
@@ -1908,7 +1942,7 @@ async function getPresetVariations(): Promise<Record<string, PresetVariation[]>>
   return presetVariationsCache;
 }
 
-function getRandomPresetVariation(presetId: string): PresetVariation | null {
+export function getRandomPresetVariation(presetId: string): PresetVariation | null {
   if (!presetId) {
     return null;
   }
@@ -1926,11 +1960,16 @@ function getRandomPresetVariation(presetId: string): PresetVariation | null {
   }
 
   const variations = presetVariationsCache[presetId];
-  if (!variations || variations.length === 0) {
+  if (variations && variations.length > 0) {
+    return pickRandom(variations);
+  }
+
+  const fallbackVariations = BUILT_IN_PRESET_VARIATIONS[presetId];
+  if (!fallbackVariations || fallbackVariations.length === 0) {
     return null;
   }
 
-  return pickRandom(variations);
+  return pickRandom(fallbackVariations);
 }
 
 function generateTitles(

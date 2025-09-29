@@ -1,18 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Card } from "@/components/ui/card";
+// Card component removed from imports
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+// Badge component removed from imports
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { FaGoogle, FaFacebook, FaReddit } from "react-icons/fa";
 import { 
-  X, 
+  // X removed from lucide imports 
   Mail, 
   Lock, 
   User,
@@ -333,14 +333,14 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
         body: JSON.stringify({ email })
       });
       
-      const data = await res.json();
+      const _data = await res.json();
       toast({
         title: "Verification email sent",
         description: "Please check your inbox and spam folder",
         variant: "default",
       });
       setShowResendVerification(false);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to resend verification email",
@@ -351,7 +351,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
     }
   };
 
-  const resendVerificationMutation = useMutation({
+  const _resendVerificationMutation = useMutation({
     mutationFn: async (email: string) => {
       const response = await fetch('/api/auth/resend-verification', {
         method: 'POST',

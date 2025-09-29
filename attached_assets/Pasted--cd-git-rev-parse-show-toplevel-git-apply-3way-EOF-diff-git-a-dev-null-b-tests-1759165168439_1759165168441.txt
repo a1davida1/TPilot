@@ -1,0 +1,53 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a//dev/null b/tests/unit/server/advanced-content-generator.presets.test.ts
+index 0000000000000000000000000000000000000000..95770e8d3ad729d201a407f9df29c89ba02f2b37 100644
+--- a//dev/null
++++ b/tests/unit/server/advanced-content-generator.presets.test.ts
+@@ -0,0 +1,44 @@
++import * as fs from 'fs/promises';
++
++import { afterEach, describe, expect, it, vi } from 'vitest';
++
++describe('getRandomPresetVariation', () => {
++  afterEach(() => {
++    vi.restoreAllMocks();
++    vi.resetModules();
++  });
++
++  it('falls back to built-in presets when the overrides file is missing', async () => {
++    const readFileSpy = vi.spyOn(fs, 'readFile').mockRejectedValueOnce(
++      Object.assign(new Error('Missing presets file'), { code: 'ENOENT' })
++    );
++
++    const module = await import('../../../server/advanced-content-generator');
++    const { getRandomPresetVariation } = module;
++
++    const variation = getRandomPresetVariation('office-glam');
++
++    expect(readFileSpy).toHaveBeenCalled();
++    expect(variation).not.toBeNull();
++    expect(variation?.titles).toContain('Boardroom energy hits different ⚡');
++  });
++
++  it('retains built-in presets when overrides provide no entries', async () => {
++    vi.spyOn(fs, 'readFile').mockResolvedValueOnce('{}');
++
++    const module = await import('../../../server/advanced-content-generator');
++    const { getRandomPresetVariation } = module;
++
++    const firstVariation = getRandomPresetVariation('morning-coffee');
++    expect(firstVariation).not.toBeNull();
++    expect(firstVariation?.titles).toContain('Morning coffee and cozy vibes ☕');
++
++    await new Promise(resolve => {
++      setTimeout(resolve, 0);
++    });
++
++    const cachedVariation = getRandomPresetVariation('workout-motivation');
++    expect(cachedVariation).not.toBeNull();
++    expect(cachedVariation?.titles).toContain('Post-workout glow hits different 💪');
++  });
++});
+ 
+EOF
+)

@@ -1276,7 +1276,7 @@ export function getRandomTemplates(
   }
   
   if (promotionLevel) {
-    filtered = filtered.filter(t => (t as ContentTemplate).promotionLevel === promotionLevel || !t.hasOwnProperty('promotionLevel'));
+    filtered = filtered.filter(t => (t as ContentTemplate).promotionLevel === promotionLevel || !Object.prototype.hasOwnProperty.call(t, 'promotionLevel'));
   }
   
   if (subCategory) {

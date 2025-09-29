@@ -74,38 +74,23 @@ vi.mock('../../../shared/schema.js', () => ({
     createdAt: 'createdAt'
   },
   engagementEvents: {
-<<<<<<< ours
+    id: 'id',
     userId: 'userId',
     createdAt: 'createdAt',
+    eventType: 'eventType',
   },
   pageViews: {
+    id: 'id',
     userId: 'userId',
     createdAt: 'createdAt',
+    path: 'path',
   },
   userSessions: {
+    id: 'id',
     userId: 'userId',
     startedAt: 'startedAt',
     duration: 'duration',
-  },
-=======
-    id: 'id',
-    userId: 'userId',
-    createdAt: 'createdAt',
-    eventType: 'eventType'
-  },
-  pageViews: {
-    id: 'id',
-    userId: 'userId',
-    createdAt: 'createdAt',
-    path: 'path'
-  },
-  userSessions: {
-    id: 'id',
-    userId: 'userId',
-    duration: 'duration',
-    startedAt: 'startedAt'
   }
->>>>>>> theirs
 }));
 
 // Mock drizzle-orm functions

@@ -217,7 +217,7 @@ Return ONLY the JSON object above with actual content. No other text.`;
       
       // Strategy 3: Find JSON between certain markers
       if (!jsonStr) {
-        const markerMatch = cleanText.match(/(?:json|response|result)?\s*[:\-]?\s*(\{[\s\S]*\})/i);
+        const markerMatch = cleanText.match(/(?:json|response|result)?\s*[:->]?\s*(\{[\s\S]*\})/i);
         if (markerMatch) {
           jsonStr = markerMatch[1];
         }

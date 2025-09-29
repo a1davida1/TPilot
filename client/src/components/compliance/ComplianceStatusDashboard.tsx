@@ -24,8 +24,11 @@ export default function ComplianceStatusDashboard() {
   const { data, isLoading, isError, error, refetch, isFetching } =
     useQuery<ComplianceDashboardResponse>({
       queryKey: ['/api/admin/compliance/dashboard'],
-      queryFn: async () => {
-        const res = await fetch('/api/admin/compliance/dashboard');
+      queryFn: async ({ signal }) => {
+        const res = await fetch('/api/admin/compliance/dashboard', {
+          credentials: 'include',
+          signal,
+        });
         if (!res.ok) throw new Error('Failed to load compliance insights');
         return res.json();
       },

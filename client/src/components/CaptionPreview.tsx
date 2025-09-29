@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Copy, Check, AlertCircle, Info } from "lucide-react";
-import type { CaptionObject, RankedResult, CaptionPreviewData } from '@shared/types/caption';
+import type { CaptionPreviewData } from '@shared/types/caption';
 
 // Re-export types from shared module for backward compatibility
 export type { CaptionObject, RankedResult, CaptionPreviewData } from '@shared/types/caption';

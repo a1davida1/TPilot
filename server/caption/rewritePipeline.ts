@@ -82,7 +82,7 @@ export function extractKeyEntities(existingCaption: string): string[] {
   collectMatches(/@[A-Za-z0-9_.]+/g, 1, { protect: true });
   collectMatches(/#[A-Za-z0-9_]+/g, 2, { protect: true });
   collectMatches(/"[^"]+"|"[^"]+"|'[^']+'|'[^']+'/g, 3, { protect: true });
-  collectMatches(/\b\d{1,4}(?:[\/.-]\d{1,4})+\b/g, 4, { protect: true });
+  collectMatches(/\b\d{1,4}(?:[/.-]\d{1,4})+\b/g, 4, { protect: true });
   collectMatches(/\b\d+(?:[.,]\d+)?%?\b/g, 5, {
     filter: (match) => {
       const index = match.index ?? 0;

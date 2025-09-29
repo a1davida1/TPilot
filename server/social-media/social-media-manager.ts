@@ -119,7 +119,7 @@ export class SocialMediaManager {
           return { ...result, clientKey: key };
         }
 
-        case 'tiktok':
+        case 'tiktok': {
           if (!content.mediaUrls?.[0]?.includes('.mp4')) {
             return {
               success: false,
@@ -134,8 +134,9 @@ export class SocialMediaManager {
             hashtags: content.hashtags,
           });
           return { ...tiktokResult, clientKey: key };
+        }
 
-        case 'youtube':
+        case 'youtube': {
           if (!content.mediaUrls?.[0]?.includes('.mp4')) {
             return {
               success: false,
@@ -151,6 +152,7 @@ export class SocialMediaManager {
             tags: content.hashtags,
           });
           return { ...youtubeResult, clientKey: key };
+        }
         case 'linkedin': {
           const result = await (api as LinkedInAPI).createPost({
             text: content.text,

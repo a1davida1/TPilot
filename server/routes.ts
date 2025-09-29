@@ -462,7 +462,9 @@ interface RedditSessionData {
 }
 
 declare module 'express-session' {
-  interface SessionData extends RedditSessionData {}
+  interface SessionData extends RedditSessionData {
+    // Extended with Reddit OAuth properties
+  }
 }
 
 // Service imports

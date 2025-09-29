@@ -38,6 +38,7 @@ BUILD_DIR="dist"
 CLIENT_BUILD_DIR="client/dist"
 SERVER_BUILD_DIR="server/dist"
 NODE_VERSION_REQUIRED="18"
+PROJECT_ROOT_DIR="$(pwd)"
 
 # Command line options
 SKIP_TESTS=${SKIP_TESTS:-false}
@@ -263,11 +264,34 @@ fi
 
 # Normalize import specifiers for Node's ESM resolver. TypeScript leaves
 # extensionless relative imports, so we post-process to append the .js suffix.
-log "Rewriting relative import extensions for server bundle compatibility..."
-if [ "$VERBOSE" = true ]; then
-    npm run fix-imports
+IMPORT_REWRITE_SOURCE=""
+if [ -d "$SERVER_BUILD_DIR" ]; then
+    IMPORT_REWRITE_SOURCE="$SERVER_BUILD_DIR"
+elif [ -d "$BUILD_DIR/server" ]; then
+    IMPORT_REWRITE_SOURCE="$BUILD_DIR/server"
+fi
+
+if [ -z "$IMPORT_REWRITE_SOURCE" ]; then
+    error "Server build output not found for import rewrite. Checked $SERVER_BUILD_DIR and $BUILD_DIR/server"
+    exit 1
+fi
+
+log "Rewriting relative import extensions for server bundle compatibility in $IMPORT_REWRITE_SOURCE..."
+
+if [ "$IMPORT_REWRITE_SOURCE" = "$SERVER_BUILD_DIR" ]; then
+    pushd "$(dirname "$SERVER_BUILD_DIR")" >/dev/null
+    if [ "$VERBOSE" = true ]; then
+        bash "$PROJECT_ROOT_DIR/fix-all-imports.sh"
+    else
+        bash "$PROJECT_ROOT_DIR/fix-all-imports.sh" >/dev/null
+    fi
+    popd >/dev/null
 else
-    npm run fix-imports >/dev/null
+    if [ "$VERBOSE" = true ]; then
+        bash "$PROJECT_ROOT_DIR/fix-all-imports.sh"
+    else
+        bash "$PROJECT_ROOT_DIR/fix-all-imports.sh" >/dev/null
+    fi
 fi
 
 # Verify server build
