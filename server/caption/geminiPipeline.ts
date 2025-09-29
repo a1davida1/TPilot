@@ -716,7 +716,7 @@ type GeminiVariantParams = {
   nsfw?: boolean;
   style?: string;
   mood?: string;
-};
+} & Omit<ToneOptions, 'style' | 'mood' | keyof Record<string, unknown>>;
 
 export async function generateVariants(params: GeminiVariantParams): Promise<z.infer<typeof CaptionArray>> {
   const [sys, guard, prompt] = await Promise.all([
@@ -1153,8 +1153,20 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
     }
 
     const tone = extractToneOptions(toneRest);
+    const personaTone: ToneOptions = {
+      ...tone,
+      ...(typeof style === "string" ? { style } : {}),
+      ...(typeof mood === "string" ? { mood } : {}),
+    };
     const facts = await extractFacts(imageUrl);
-    let variants = await generateVariants({ platform, voice, facts, nsfw, ...tone });
+    const baseVariantParams = {
+      platform,
+      voice,
+      facts,
+      nsfw,
+      ...personaTone,
+    } satisfies GeminiVariantParams;
+    let variants = await generateVariants({ ...baseVariantParams });
     variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
     let ranked = await rankAndSelect(variants, { platform, facts });
     let out = ranked.final;
@@ -1164,7 +1176,7 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
       let coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
       while (!coverage.ok && coverage.hint && attempts < 2) {
         attempts += 1;
-        variants = await generateVariants({ platform, voice, facts, hint: coverage.hint, nsfw, ...tone });
+        variants = await generateVariants({ ...baseVariantParams, hint: coverage.hint });
         variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
         ranked = await rankAndSelect(variants, { platform, facts });
         out = ranked.final;
@@ -1177,14 +1189,8 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
     const err = platformChecks(platform, out);
     if (err) {
       variants = await generateVariants({
-        platform,
-        voice,
-        style,
-        mood,
-        facts,
+        ...baseVariantParams,
         hint: `Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.`,
-        nsfw,
-        ...tone
       });
       variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
       ranked = await rankAndSelect(variants, { platform, facts });

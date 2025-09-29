@@ -663,6 +663,134 @@ describe('Caption Generation', () => {
       expect(retryTitles?.length).toBeGreaterThan(0);
     });
 
+    it('should include persona cues during coverage enforcement retries', async () => {
+      const mockImageUrl =
+        'data:image/jpeg;base64,' +
+        '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP///////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8Af//Z';
+      const style = 'runway_poise';
+      const mood = 'dramatic_energy';
+
+      const mockFactsResponse = {
+        response: {
+          text: () =>
+            JSON.stringify({
+              objects: ['runway'],
+              colors: ['gold'],
+              setting: 'backstage',
+            }),
+        },
+      } satisfies MockResponse;
+
+      const initialVariants = {
+        response: {
+          text: () =>
+            JSON.stringify([
+              {
+                caption: 'City lights ignite every pose tonight',
+                hashtags: ['#nightshoot', '#couture'],
+                safety_level: 'normal',
+                mood,
+                style,
+                cta: 'Join me after the show',
+                alt: 'Model preparing under bright lights before the fashion show begins.',
+                nsfw: false,
+              },
+            ]),
+        },
+      } satisfies MockResponse;
+
+      const initialRank = {
+        response: {
+          text: () =>
+            JSON.stringify({
+              winner_index: 0,
+              scores: [5, 4, 3, 2, 1],
+              reason: 'Initial persona-aligned caption',
+              final: {
+                caption: 'City lights ignite every pose tonight',
+                hashtags: ['#nightshoot', '#couture'],
+                safety_level: 'normal',
+                mood,
+                style,
+                cta: 'Join me after the show',
+                alt: 'Model preparing under bright lights before the fashion show begins.',
+                nsfw: false,
+              },
+            }),
+        },
+      } satisfies MockResponse;
+
+      const coverageVariants = {
+        response: {
+          text: () =>
+            JSON.stringify([
+              {
+                caption: 'Runway gold steals the city lights tonight',
+                hashtags: ['#nightshoot', '#couture', '#runway'],
+                safety_level: 'normal',
+                mood,
+                style,
+                cta: 'Join me after the show',
+                alt: 'Golden runway shimmer frames the model striding backstage with confidence.',
+                nsfw: false,
+              },
+            ]),
+        },
+      } satisfies MockResponse;
+
+      const coverageRank = {
+        response: {
+          text: () =>
+            JSON.stringify({
+              winner_index: 0,
+              scores: [5, 4, 3, 2, 1],
+              reason: 'Coverage retry with runway facts included',
+              final: {
+                caption: 'Runway gold steals the city lights tonight',
+                hashtags: ['#nightshoot', '#couture', '#runway'],
+                safety_level: 'normal',
+                mood,
+                style,
+                cta: 'Join me after the show',
+                alt: 'Golden runway shimmer frames the model striding backstage with confidence.',
+                nsfw: false,
+              },
+            }),
+        },
+      } satisfies MockResponse;
+
+      const { textModel, visionModel } = await import('../../server/lib/gemini.ts');
+      (visionModel.generateContent as Mock).mockResolvedValueOnce(mockFactsResponse);
+      (textModel.generateContent as Mock)
+        .mockResolvedValueOnce(initialVariants)
+        .mockResolvedValueOnce(initialRank)
+        .mockResolvedValueOnce(coverageVariants)
+        .mockResolvedValueOnce(coverageRank);
+
+      const result = await pipeline({
+        imageUrl: mockImageUrl,
+        platform: 'instagram',
+        voice: 'flirty_playful',
+        style,
+        mood,
+      });
+
+      const coverageCall = (textModel.generateContent as Mock).mock.calls.find(call => {
+        const prompt = call?.[0]?.[0]?.text;
+        return typeof prompt === 'string' && prompt.includes('Work in IMAGE_FACTS');
+      });
+
+      expect(coverageCall).toBeDefined();
+      const coveragePrompt = coverageCall?.[0]?.[0]?.text as string;
+      expect(coveragePrompt).toContain(`STYLE: ${style}`);
+      expect(coveragePrompt).toContain(`MOOD: ${mood}`);
+
+      expect(result.final.caption).toContain('Runway gold steals the city lights tonight');
+      expect(result.final.hashtags).toContain('#runway');
+      expect(result.final.style).toBe(style);
+      expect(result.final.mood).toBe(mood);
+    });
+
     it('should verify all returned variants are unique', async () => {
       const variantPayload = [
         {
