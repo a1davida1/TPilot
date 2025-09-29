@@ -261,6 +261,15 @@ else
     npm run build:server >/dev/null
 fi
 
+# Normalize import specifiers for Node's ESM resolver. TypeScript leaves
+# extensionless relative imports, so we post-process to append the .js suffix.
+log "Rewriting relative import extensions for server bundle compatibility..."
+if [ "$VERBOSE" = true ]; then
+    npm run fix-imports
+else
+    npm run fix-imports >/dev/null
+fi
+
 # Verify server build
 if [ ! -d "$SERVER_BUILD_DIR" ]; then
     error "Server build failed - $SERVER_BUILD_DIR directory not created"
