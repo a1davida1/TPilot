@@ -1,5 +1,5 @@
-import { authenticateToken } from "./middleware/auth.js";
-import { lintCaption } from "./lib/policy-linter.js";
+import { authenticateToken } from "./middleware/auth.ts";
+import { lintCaption } from "./lib/policy-linter.ts";
 import { z } from "zod";
 
 // Request validation schemas

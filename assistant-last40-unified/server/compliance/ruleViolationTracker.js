@@ -45,9 +45,5 @@ export function getRecordedOutcomes(userId) {
 }
 
 export function clearRecordedOutcomes(userId) {
-  if (typeof userId === 'number') {
-    outcomeStore.delete(userId);
-    return;
-  }
-  outcomeStore.clear();
+  outcomeStore.delete(userId);
 }
