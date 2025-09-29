@@ -295,6 +295,17 @@ type RewriteVariantsParams = {
 async function load(p: string): Promise<string> {
   return fs.readFile(path.join(process.cwd(), "prompts", p), "utf8");
 }
+
+// Helper to build system prompt with tone parameters
+function buildSystemPrompt(basePrompt: string, tone?: {style?: string; mood?: string}): string {
+  if (!tone || (!tone.style && !tone.mood)) return basePrompt;
+  
+  const toneLines: string[] = [];
+  if (tone.style) toneLines.push(`STYLE: ${tone.style}`);
+  if (tone.mood) toneLines.push(`MOOD: ${tone.mood}`);
+  
+  return toneLines.length > 0 ? `${basePrompt}\n${toneLines.join('\n')}` : basePrompt;
+}
 async function b64(url: string): Promise<{ base64: string; mimeType: string }> {
   try {
     const r = await fetch(url);
@@ -347,11 +358,16 @@ export async function variantsRewrite(
   const duplicatesThisAttempt: string[] = [];
   let hasBannedWords = false;
 
-  const buildUserPrompt = (varietyHint: string | undefined): string => {
+  const buildUserPrompt = (varietyHint: string | undefined, duplicateCaption?: string): string => {
     const toneLines = params.toneExtras
       ? Object.entries(params.toneExtras).map(([key, value]) => `${key.toUpperCase()}: ${value}`)
       : [];
     const voiceContext = formatVoiceContext(params.voice);
+
+    // If we have a duplicate, override the hint
+    const finalHint = duplicateCaption 
+      ? `You already wrote "${truncateForHint(duplicateCaption)}". Provide a completely different approach.`
+      : varietyHint;
 
     const lines = [
       `PLATFORM: ${params.platform}`,
@@ -364,7 +380,7 @@ export async function variantsRewrite(
       params.facts ? `IMAGE_FACTS: ${JSON.stringify(params.facts)}` : undefined,
       `NSFW: ${params.nsfw ?? false}`,
       mandatoryTokensLine,
-      varietyHint ? `HINT:${serializePromptField(varietyHint, { block: true })}` : undefined,
+      finalHint ? `HINT:${serializePromptField(finalHint, { block: true })}` : undefined,
     ];
 
     return lines.filter((line): line is string => Boolean(line && line.trim().length > 0)).join("\n");
@@ -380,8 +396,13 @@ export async function variantsRewrite(
       ? sanitizedBaseHint ?? params.hint
       : buildRetryHint(moderationHint, duplicatesThisAttempt, needed);
 
-    const userPrompt = buildUserPrompt(attemptHint);
-    const promptSections = [sys, guard, prompt, userPrompt];
+    // Pass duplicate for retry hints
+    const lastDuplicate = duplicatesThisAttempt.length > 0 ? duplicatesThisAttempt[duplicatesThisAttempt.length - 1] : undefined;
+    const userPrompt = buildUserPrompt(attemptHint, lastDuplicate);
+    
+    // Apply tone to system prompt
+    const sysWithTone = buildSystemPrompt(sys, { style: params.style, mood: params.mood });
+    const promptSections = [sysWithTone, guard, prompt, userPrompt];
     if (voiceGuide) {
       promptSections.push(voiceGuide);
     }
@@ -396,11 +417,13 @@ export async function variantsRewrite(
       throw error;
     }
 
-    const rawText = (res as GeminiResponse)?.response?.text
-      ? (res as GeminiResponse).response?.text()
-      : typeof res === "string"
-        ? res
-        : JSON.stringify(res);
+    // Check for empty response
+    if (!res || !(res as GeminiResponse)?.response?.text) {
+      console.error('Gemini: empty response received');
+      throw new Error('Gemini: empty response');
+    }
+
+    const rawText = (res as GeminiResponse).response.text();
     const json = stripToJSON(rawText ?? '') as unknown;
 
     duplicatesThisAttempt.length = 0;
@@ -741,7 +764,7 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
     return variant;
   };
 
-  const buildUserPrompt = (varietyHint: string | undefined, existingCaptions: string[]): string => {
+  const buildUserPrompt = (varietyHint: string | undefined, existingCaptions: string[], duplicateCaption?: string): string => {
     const lines = [
       `PLATFORM: ${params.platform}`,
       `VOICE: ${params.voice}`
@@ -754,10 +777,17 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
     lines.push(`NSFW: ${params.nsfw ?? false}`);
 
     const hintParts: string[] = [];
+    
+    // If we have a duplicate, add it as primary hint
+    if (duplicateCaption) {
+      hintParts.push(`You already wrote "${truncateForHint(duplicateCaption)}". Create something completely different.`);
+    }
+    
     if (varietyHint) {
       hintParts.push(varietyHint.trim());
     }
-    if (existingCaptions.length > 0) {
+    
+    if (existingCaptions.length > 0 && !duplicateCaption) {
       hintParts.push(
         `Avoid repeating or lightly editing these captions: ${existingCaptions.join(" | ")}.`
       );
@@ -771,12 +801,23 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
     return lines.join("\n");
   };
 
-  const fetchVariants = async (varietyHint: string | undefined, existingCaptions: string[]) => {
-    const user = buildUserPrompt(varietyHint, existingCaptions);
+  const fetchVariants = async (varietyHint: string | undefined, existingCaptions: string[], duplicateCaption?: string) => {
+    const user = buildUserPrompt(varietyHint, existingCaptions, duplicateCaption);
+    
+    // Apply tone to system prompt
+    const sysWithTone = buildSystemPrompt(sys, { style: params.style, mood: params.mood });
+    
     try {
       const res = await textModel.generateContent([
-        { text: `${sys}\n${guard}\n${prompt}\n${user}` }
+        { text: `${sysWithTone}\n${guard}\n${prompt}\n${user}` }
       ]);
+      
+      // Check for empty response
+      if (!res || !res.response?.text) {
+        console.error('Gemini: empty response received');
+        throw new Error('Gemini: empty response');
+      }
+      
       const json = stripToJSON(res.response.text()) as unknown;
       return Array.isArray(json) ? json : [];
     } catch (error) {
@@ -801,7 +842,9 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
           return buildRetryHint(baseHintWithVariety, duplicatesThisAttempt, needed);
         })();
 
-    const rawVariants = await fetchVariants(varietyHint, existingCaptions);
+    // Pass last duplicate if we have one from previous attempt
+    const lastDuplicate = duplicatesThisAttempt.length > 0 ? duplicatesThisAttempt[duplicatesThisAttempt.length - 1] : undefined;
+    const rawVariants = await fetchVariants(varietyHint, existingCaptions, lastDuplicate);
     duplicatesThisAttempt.length = 0; // Reset for this attempt
 
     for (const raw of rawVariants) {

@@ -1,0 +1,80 @@
+Yes—these point to 4 concrete fixes. Do these next, in order:
+
+1) Gemini pipeline: forward tone + duplicate hint on retries
+
+Your retry call isn’t carrying STYLE/MOOD or the “You already wrote …” hint.
+
+// server/caption/geminiPipeline.ts
+- function buildSystemPrompt() {
++ function buildSystemPrompt(tone?: {style?: string; mood?: string}) {
+   const base = 'You are a senior social copywriter...';
+-  return base;
++  const t = [tone?.style && `STYLE: ${tone.style}`, tone?.mood && `MOOD: ${tone.mood}`]
++    .filter(Boolean).join('\n');
++  return t ? `${base}\n${t}` : base;
+}
+
+- function buildUserPrompt(varietyHint?: string) {
+-   return varietyHint ? `HINT:${varietyHint}` : '';
++ function buildUserPrompt(varietyHint?: string, duplicate?: string) {
++   if (duplicate) return `HINT:You already wrote "${duplicate}"`;
++   return varietyHint ? `HINT:${varietyHint}` : '';
+}
+
+- const res = await textModel.generateContent([{ text: `${sys}\n${guard}\n${prompt}\n${user}` }]);
+- const txt = res.response.text();
++ const res = await textModel.generateContent([{ text: `${sys}\n${guard}\n${prompt}\n${user}` }]);
++ if (!res?.response?.text) throw new Error('Gemini: empty response');
++ const txt = res.response.text();
+
+// retry path (enforceCoverage / pipeline)
+- const retrySys = buildSystemPrompt();
+- const retryUser = buildUserPrompt(varietyHint);
++ const retrySys = buildSystemPrompt(tone);
++ const retryUser = buildUserPrompt(varietyHint, duplicateCaption);
+
+2) Reddit community picker: actually gate ineligible options + default to eligible
+
+Your test can’t see disabled attrs.
+
+// client/src/pages/reddit-posting.tsx (or the picker component)
+ const reason = getIneligibleReason(c);
+ const disabled = Boolean(reason);
+-<Option key={c.id} value={c.id}>{c.displayName}</Option>
++<Option
++  key={c.id}
++  value={c.id}
++  disabled={disabled}
++  aria-disabled={disabled}
++  data-disabled={disabled}
++  data-testid={`community-${c.id}`}
++>
++  {c.displayName}
++</Option>
++{disabled && (
++  <div data-testid={`community-${c.id}-gated-reason`}>{reason}</div>
++)}
+
+-useEffect(() => { setValue('communityId', communities[0]?.id); }, [communities]);
++useEffect(() => {
++  const firstEligible = communities.find(c => !getIneligibleReason(c));
++  if (firstEligible) setValue('communityId', firstEligible.id);
++}, [communities]);
+
+3) Referral page: add test ids (your query selector returns undefined)
+-<span>{stats.totalReferrals}</span>
++<span data-testid="referral-total">{stats.totalReferrals}</span>
+-<span>{stats.totalCommissionFormatted}</span>
++<span data-testid="referral-commission">{stats.totalCommissionFormatted}</span>
+-<span>{stats.conversionRate}</span>
++<span data-testid="referral-conversion">{stats.conversionRate}</span>
+
+4) React is not defined (tests)
+
+Easiest unblock: add explicit imports to the affected files.
+
+// client/src/components/theme-toggle.tsx
++import React from 'react';
+
+// client/src/components/sample-upload.tsx
++import React from 'react';
