@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Mock all external dependencies for integration testing
-vi.mock('../../server/lib/gemini.js', () => ({
+vi.mock('../../server/lib/gemini', () => ({
   textModel: {
     generateContent: vi.fn().mockResolvedValue({
       response: {
@@ -31,7 +31,7 @@ vi.mock('../../server/lib/gemini.js', () => ({
   }
 }));
 
-vi.mock('../../server/storage.js', () => ({
+vi.mock('../../server/storage', () => ({
   storage: {
     getUserById: vi.fn().mockResolvedValue({
       id: 1,
@@ -49,9 +49,9 @@ vi.mock('../../server/storage.js', () => ({
   }
 }));
 
-import { pipeline } from '../../server/caption/geminiPipeline.js';
-import { pipelineTextOnly } from '../../server/caption/textOnlyPipeline.js';
-import { pipelineRewrite } from '../../server/caption/rewritePipeline.js';
+import { pipeline } from '../../server/caption/geminiPipeline';
+import { pipelineTextOnly } from '../../server/caption/textOnlyPipeline';
+import { pipelineRewrite } from '../../server/caption/rewritePipeline';
 
 describe('End-to-End Content Generation Workflow', () => {
   beforeEach(() => {

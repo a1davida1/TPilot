@@ -7,32 +7,32 @@ import Stripe from 'stripe';
 import passport from 'passport';
 
 // Security and middleware
-import { validateEnvironment, securityMiddleware, ipLoggingMiddleware, errorHandler, logger, generationLimiter } from "./middleware/security.js";
-import { AppError, CircuitBreaker } from "./lib/errors.js";
-import { authenticateToken } from "./middleware/auth.js";
-import { createSessionMiddleware } from "./bootstrap/session.js";
+import { validateEnvironment, securityMiddleware, ipLoggingMiddleware, errorHandler, logger, generationLimiter } from "./middleware/security";
+import { AppError, CircuitBreaker } from "./lib/errors";
+import { authenticateToken } from "./middleware/auth";
+import { createSessionMiddleware } from "./bootstrap/session";
 
 // Route modules
 // import { authRoutes } from "./routes/auth.js"; // Removed - using server/auth.ts instead
-import { uploadRoutes, applyImageShieldProtection, protectionPresets } from "./routes/upload.js";
-import { mediaRoutes } from "./routes/media.js";
-import { analyticsRouter } from "./routes/analytics.js";
-import { referralRouter } from "./routes/referrals.js";
-import { registerExpenseRoutes } from "./expense-routes.js";
-import { adminCommunitiesRouter } from "./routes/admin-communities.js";
-import { createCancelSubscriptionHandler } from "./routes/subscription-management.js";
-import { createLocalDownloadRouter } from "./routes/downloads.js";
+import { uploadRoutes, applyImageShieldProtection, protectionPresets } from "./routes/upload";
+import { mediaRoutes } from "./routes/media";
+import { analyticsRouter } from "./routes/analytics";
+import { referralRouter } from "./routes/referrals";
+import { registerExpenseRoutes } from "./expense-routes";
+import { adminCommunitiesRouter } from "./routes/admin-communities";
+import { createCancelSubscriptionHandler } from "./routes/subscription-management";
+import { createLocalDownloadRouter } from "./routes/downloads";
 
 // Core imports
-import { storage } from "./storage.js";
-import { setupAuth } from "./auth.js";
-import { setupAdminRoutes } from "./admin-routes.js";
-import { configureSocialAuth, socialAuthRoutes } from "./social-auth-config.js";
-import { visitorAnalytics } from "./visitor-analytics.js";
-import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers.js";
-import { deriveStripeConfig } from "./payments/stripe-config.js";
-import { buildUploadUrl } from "./lib/uploads.js";
-import { API_PREFIX, prefixApiPath } from "./lib/api-prefix.js";
+import { storage } from "./storage";
+import { setupAuth } from "./auth";
+import { setupAdminRoutes } from "./admin-routes";
+import { configureSocialAuth, socialAuthRoutes } from "./social-auth-config";
+import { visitorAnalytics } from "./visitor-analytics";
+import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers";
+import { deriveStripeConfig } from "./payments/stripe-config";
+import { buildUploadUrl } from "./lib/uploads";
+import { API_PREFIX, prefixApiPath } from "./lib/api-prefix";
 
 export function buildCsrfProtectedRoutes(apiPrefix: string = API_PREFIX): string[] {
   return [

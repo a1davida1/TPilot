@@ -5,6 +5,12 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node', // Default to Node for server tests
+    exclude: [
+      'assistant-last40-unified/**',
+      'unified-tasks-snapshot/**',
+      '**/node_modules/**',
+      '**/dist/**'
+    ],
     environmentMatchGlobs: [
       ['client/**', 'jsdom'], // Use jsdom for client tests
       ['tests/**/*.{tsx,jsx}', 'jsdom'], // Use jsdom for React tests

@@ -18,7 +18,7 @@ const authState: { user: TestUser | undefined } = {
 };
 
 // Mock database and related dependencies
-vi.mock('../../server/db.js', () => ({
+vi.mock('../../server/db', () => ({
   db: {
     select: vi.fn().mockReturnValue({
       from: vi.fn().mockReturnValue({
@@ -33,12 +33,12 @@ vi.mock('../../server/db.js', () => ({
   }
 }));
 
-vi.mock('../../shared/schema.js', () => ({
+vi.mock('../../shared/schema', () => ({
   users: {},
   contentGenerations: {}
 }));
 
-vi.mock('../../server/lib/logger-utils.js', () => ({
+vi.mock('../../server/lib/logger-utils', () => ({
   safeLog: vi.fn()
 }));
 
@@ -68,7 +68,7 @@ const createGenerationMock = vi.fn();
 
 class MockInvalidImageError extends Error {}
 
-vi.mock('../../server/caption/geminiPipeline.js', () => ({
+vi.mock('../../server/caption/geminiPipeline', () => ({
   pipeline: pipelineMock,
   InvalidImageError: MockInvalidImageError
 }));

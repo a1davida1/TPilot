@@ -2,7 +2,7 @@ import { pgTable, serial, varchar, text, integer, timestamp, jsonb, boolean, uni
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
-import { growthTrendSchema, type GrowthTrend } from "./growth-trends.js";
+import { growthTrendSchema, type GrowthTrend } from "./growth-trends";
 
 // ==========================================
 // PROTECTION LEVEL VALIDATION SCHEMAS

@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
-import { pipeline } from '../../server/caption/geminiPipeline.js';
-import { pipelineRewrite, extractKeyEntities } from '../../server/caption/rewritePipeline.js';
-import { pipelineTextOnly } from '../../server/caption/textOnlyPipeline.js';
+import { pipeline } from '../../server/caption/geminiPipeline';
+import { pipelineRewrite, extractKeyEntities } from '../../server/caption/rewritePipeline';
+import { pipelineTextOnly } from '../../server/caption/textOnlyPipeline';
 
 // Mock dependencies
-vi.mock('../../server/lib/gemini.js', () => ({
+vi.mock('../../server/lib/gemini', () => ({
   textModel: {
     generateContent: vi.fn(),
   },
@@ -14,9 +14,9 @@ vi.mock('../../server/lib/gemini.js', () => ({
   isGeminiAvailable: vi.fn(() => true),
 }));
 
-import { generationResponseSchema } from '../../shared/types/caption.js';
+import { generationResponseSchema } from '../../shared/types/caption';
 
-vi.mock('../../server/caption/openaiFallback.js', () => ({
+vi.mock('../../server/caption/openaiFallback', () => ({
   openAICaptionFallback: vi.fn().mockResolvedValue({
     caption: 'Fallback caption',
     hashtags: ['#fallback1', '#fallback2', '#fallback3'],
