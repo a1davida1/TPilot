@@ -1,0 +1,136 @@
+Yep—your logs point to two concrete problems:
+
+1) OpenAI vision call: bad image_url (invalid base64)
+
+You’re sometimes sending a truncated/space-containing data URL, so OpenAI returns invalid_base64. Fix by normalizing every incoming image to a clean data URL or a plain https URL before the request, and by using the correct payload shape.
+
+Minimal hardening helper:
+
+// server/caption/lib/images.ts
+export function toOpenAIImageUrl(input: string, fallbackMime = 'image/jpeg') {
+  if (!input) return '';
+  // If it's already an https URL, pass through.
+  if (/^https?:\/\//i.test(input)) return input;
+
+  // If it's a data URL, strip whitespace from the base64 tail.
+  if (input.startsWith('data:')) {
+    const [head, data = ''] = input.split(',', 2);
+    const clean = data.replace(/\s+/g, '');
+    return `${head},${clean}`;
+  }
+
+  // If it's raw base64, wrap as a data URL.
+  if (/^[A-Za-z0-9+/=]+$/.test(input)) {
+    return `data:${fallbackMime};base64,${input}`;
+  }
+
+  // Anything else: return as-is (lets you spot bad inputs in logs)
+  return input;
+}
+
+
+Use it in your OpenAI request (Responses API style):
+
+// server/caption/providers/openai.ts (or wherever you call OpenAI)
+import { toOpenAIImageUrl } from '../lib/images';
+
+const imageUrl = toOpenAIImageUrl(payload.image);
+
+const resp = await openai.responses.create({
+  model: 'gpt-4o-mini', // or your model
+  input: [
+    { role: 'user', content: [
+      { type: 'input_text', text: prompt },
+      { type: 'input_image', image_url: imageUrl }
+    ] }
+  ]
+});
+
+
+If you’re using Chat Completions:
+
+const resp = await openai.chat.completions.create({
+  model: 'gpt-4o-mini',
+  messages: [{
+    role: 'user',
+    content: [
+      { type: 'text', text: prompt },
+      { type: 'image_url', image_url: { url: imageUrl } }
+    ]
+  }]
+});
+
+
+Also add a guard to never down-sample data URLs in the browser with newline-split strings (keep it on one line), and log the first/last 16 chars of the base64 only.
+
+2) Gemini pipeline retries: prompt pieces dropped
+
+Your retry calls aren’t carrying tone + hint through, and you sometimes do res.response.text() on an undefined res. Patch both pipelines:
+
+Carry tone & hint on retry
+
+// server/caption/geminiPipeline.ts
+function buildVariantUserPrompt({ platform, style, mood, varietyHint, existingCaptions, voiceGuide }: {
+  platform: string; style?: string; mood?: string;
+  varietyHint?: string; existingCaptions?: string[]; voiceGuide?: string;
+}) {
+  const tone = [
+    style ? `STYLE: ${style}` : null,
+    mood ? `MOOD: ${mood}` : null,
+  ].filter(Boolean).join('\n');
+
+  const dupHint = existingCaptions?.length
+    ? `HINT:You already wrote "${existingCaptions[0]}". Deliver a fresh angle.`
+    : '';
+
+  const extraHint = varietyHint ? `HINT:${varietyHint}` : '';
+
+  return [tone, dupHint, extraHint, voiceGuide].filter(Boolean).join('\n');
+}
+
+// …on first call and on *every* retry:
+const user = buildVariantUserPrompt({ platform, style, mood, varietyHint, existingCaptions, voiceGuide });
+const res = await textModel.generateContent([{ text: `${sys}\n${guard}\n${prompt}\n${user}` }]);
+
+
+Defensive unwrap for Gemini SDK
+
+// server/caption/geminiPipeline.ts & server/caption/textOnlyPipeline.ts
+function safeText(res: any) {
+  try { return res?.response?.text?.() ?? ''; } catch { return ''; }
+}
+const raw = safeText(res);
+if (!raw) throw new Error('Gemini empty response');
+
+3) Reddit auth still “broken” + CSRF/JWT logs
+
+“jwt malformed” → ensure your middleware only enforces JWT on protected routes and reads Authorization: Bearer <token> or the auth cookie. If you set a cookie, make sure it’s parseable on the API domain.
+
+“misconfigured csrf” → put middleware in this order:
+
+cookieParser()
+
+session middleware (if any)
+
+csurf({ cookie: { httpOnly: true, sameSite: 'strict', secure: true } })
+
+routes
+Exempt 3rd-party callbacks (e.g., /api/auth/reddit/callback, Stripe webhooks) from CSRF.
+
+Auth cookie (your test shows SameSite=Lax): in prod set
+
+res.cookie('authToken', token, {
+  httpOnly: true,
+  secure: true,
+  sameSite: 'strict', // fix failing test & prevent CSRF
+  maxAge: 86400_000,
+  path: '/',
+});
+
+4) Quick sanity checks to keep prod flowing
+
+If the browser sends an https image URL, don’t convert to base64—just pass the URL to OpenAI/Gemini.
+
+Cap upload size; refuse data URLs with whitespace or < 100 chars.
+
+Log which branch (data URL vs https) you used per request ID; your log already prints the OpenAI x-request-id, keep that.

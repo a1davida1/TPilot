@@ -6,6 +6,7 @@ import { safeFallbackCaption, safeFallbackCta, safeFallbackHashtags } from './ra
 import { CaptionItem } from './schema';
 import { serializePromptField } from './promptUtils';
 import { formatVoiceContext } from './voiceTraits';
+import { toOpenAIImageUrl, validateImageUrl, logImageInfo } from './lib/images';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
 
@@ -109,13 +110,22 @@ export async function openAICaptionFallback({
   if (imageUrl && openai) {
     try {
       console.error('OpenAI fallback: Analyzing image for accurate captions');
-
-      if (imageUrl.startsWith('data:')) {
-        // For data URLs, we can send directly to OpenAI vision
-        messages = [
-          {
-            role: "system",
-            content: `You are an expert social media caption writer. Analyze the image carefully and create engaging ${voice} content for ${platform} that directly relates to what you see.${systemVoiceSuffix}
+      
+      // Normalize and validate the image URL
+      const normalizedImageUrl = toOpenAIImageUrl(imageUrl);
+      if (!validateImageUrl(normalizedImageUrl)) {
+        throw new Error('Invalid or too short image data');
+      }
+      
+      // Log image info for debugging
+      const requestId = `openai-${Date.now()}`;
+      logImageInfo(normalizedImageUrl, requestId);
+      
+      // Use normalized URL - works for both data URLs and HTTPS URLs
+      messages = [
+        {
+          role: "system",
+          content: `You are an expert social media caption writer. Analyze the image carefully and create engaging ${voice} content for ${platform} that directly relates to what you see.${systemVoiceSuffix}
 
 Return ONLY a JSON object with this structure:
 {
@@ -128,36 +138,23 @@ Return ONLY a JSON object with this structure:
   "alt": "detailed description of what's actually in the image",
   "nsfw": false
 }`
-          },
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: sanitizedExistingCaption
-                  ? `Analyze this image and rewrite this caption to better match what you see: ${sanitizedExistingCaption}`
-                  : `Analyze this image and create a caption that describes what you actually see`
-              },
-              {
-                type: "image_url",
-                image_url: { url: imageUrl }
-              }
-            ]
-          }
-        ];
-      } else {
-        // For regular URLs, describe the image request
-        messages = [
-          {
-            role: "system",
-            content: `Create engaging ${voice} content for ${platform} based on the image.${systemVoiceSuffix}`
-          },
-          {
-            role: "user",
-            content: `Create a caption for an image at: ${imageUrl.substring(0, 100)}...`
-          }
-        ];
-      }
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: sanitizedExistingCaption
+                ? `Analyze this image and rewrite this caption to better match what you see: ${sanitizedExistingCaption}`
+                : `Analyze this image and create a caption that describes what you actually see`
+            },
+            {
+              type: "image_url",
+              image_url: { url: normalizedImageUrl }
+            }
+          ]
+        }
+      ];
     } catch (error) {
       console.warn('Image analysis failed, using text-only fallback:', error);
       messages = [
