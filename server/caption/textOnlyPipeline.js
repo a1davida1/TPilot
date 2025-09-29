@@ -1,2 +1,2 @@
 
-export * from './textOnlyPipeline.ts';
+export * from './textOnlyPipeline.js';

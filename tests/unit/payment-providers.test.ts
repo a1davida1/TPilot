@@ -390,7 +390,7 @@ describe('Payment Providers', () => {
 
       // Re-import to get fresh providers array
       vi.resetModules();
-      const { providers } = await import('../../server/payments/payment-providers.ts');
+      const { providers } = await import('../../server/payments/payment-providers.js');
       
       expect(providers).toHaveLength(0);
       expect(providers.every((p: { enabled: boolean }) => p.enabled)).toBe(true);
@@ -402,7 +402,7 @@ describe('Payment Providers', () => {
 
       // Re-import to get fresh providers array
       vi.resetModules();
-      const { providers } = await import('../../server/payments/payment-providers.ts');
+      const { providers } = await import('../../server/payments/payment-providers.js');
       
       expect(providers.length).toBeGreaterThan(0);
       expect(providers.every((p: { enabled: boolean }) => p.enabled)).toBe(true);

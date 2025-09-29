@@ -51,7 +51,7 @@ interface CaptionResult {
 
 const asMock = <T>(fn: T) => fn as unknown as Mock;
 
-vi.mock('../../server/storage.ts', () => ({
+vi.mock('../../server/storage.js', () => ({
   storage: {
     getUserById: vi.fn(),
     createContentGeneration: vi.fn(),

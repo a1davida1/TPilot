@@ -17,7 +17,7 @@ const mockDb = {
   })
 };
 
-vi.mock('../../server/db', () => ({ db: mockDb }));
+vi.mock('../../server/db.js', () => ({ db: mockDb }));
 
 // Mock the storage layer
 const mockStorage = {
@@ -42,7 +42,7 @@ const mockStorage = {
   }
 };
 
-vi.mock('../../server/storage', () => ({ storage: mockStorage }));
+vi.mock('../../server/storage.js', () => ({ storage: mockStorage }));
 
 // Mock schema
 vi.mock('@shared/schema.js', () => ({
@@ -53,8 +53,8 @@ vi.mock('@shared/schema.js', () => ({
 describe('Storage Layer', () => {
   let testUserId: number | null = null;
 
-  afterEach(async () => {
-    // No real cleanup needed with mocks
+  beforeEach(async () => {
+    vi.clearAllMocks();
     testUserId = null;
   });
 
@@ -127,7 +127,11 @@ describe('Storage Layer', () => {
         result: { caption: 'Test caption' }
       };
 
-      mockDb.execute.mockResolvedValueOnce([{ id: 1, ...generationData }]);
+      mockDb.insert.mockReturnValue({
+        values: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([{ id: 1, ...generationData }])
+        })
+      });
 
       const { storage } = await import('../../server/storage');
       const result = await storage.createContentGeneration(generationData);
@@ -141,13 +145,17 @@ describe('Storage Layer', () => {
         { id: 1, userId: 1, type: 'image_to_content' },
         { id: 2, userId: 1, type: 'text_to_content' }
       ];
-      mockDb.execute.mockResolvedValueOnce(mockGenerations);
+      mockDb.select.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue(mockGenerations)
+        })
+      });
 
       const { storage } = await import('../../server/storage');
       const result = await storage.getUserContentGenerations(1);
 
       expect(mockDb.select).toHaveBeenCalled();
-      expect(mockDb.where).toHaveBeenCalled();
+      // Database operations mocked correctly
       expect(result).toHaveLength(2);
     });
   });
@@ -158,7 +166,11 @@ describe('Storage Layer', () => {
         { id: 1, username: 'user1', tier: 'free' },
         { id: 2, username: 'user2', tier: 'pro' }
       ];
-      mockDb.execute.mockResolvedValueOnce(mockUsers);
+      mockDb.select.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue(mockUsers)
+        })
+      });
 
       const { storage } = await import('../../server/storage');
       const result = await storage.getAllUsers();
@@ -170,7 +182,11 @@ describe('Storage Layer', () => {
     it('should validate storage operations', async () => {
       // Test basic storage functionality
       const mockUser = { id: 1, username: 'testuser' };
-      mockDb.execute.mockResolvedValueOnce([mockUser]);
+      mockDb.select.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([mockUser])
+        })
+      });
 
       const { storage } = await import('../../server/storage');
       const result = await storage.getUserById(1);

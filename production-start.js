@@ -63,7 +63,7 @@ const startServer = async () => {
   await import('tsx/cjs');
 
   // Dynamically import and run the server
-  await import('./server/index.ts');
+  await import('./server/index.js');
 };
 
 // Start the server

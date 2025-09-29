@@ -506,7 +506,7 @@ type GeminiVariantParams = {
   toneExtras?: Record<string, string>;
 };
 
-async function generateVariants(params: GeminiVariantParams): Promise<z.infer<typeof CaptionArray>> {
+export async function generateVariants(params: GeminiVariantParams): Promise<z.infer<typeof CaptionArray>> {
   const [sys, guard, prompt] = await Promise.all([
     load("system.txt"),
     load("guard.txt"),
@@ -761,6 +761,8 @@ async function invokeTextModel(prompt: Array<{ text: string }>): Promise<unknown
 function truncateReason(reason: string, maxLength = 100): string {
   return reason.length > maxLength ? `${reason.slice(0, maxLength - 3)}...` : reason;
 }
+
+
 
 async function requestGeminiRanking(
   variantsInput: z.infer<typeof CaptionArray>,

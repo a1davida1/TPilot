@@ -68,7 +68,7 @@ const startServer = async () => {
   await import('tsx/cjs');
 
   // Load and run the main server
-  await import('./server/index.ts');
+  await import('./server/index.js');
 };
 
 startServer().catch(err => {

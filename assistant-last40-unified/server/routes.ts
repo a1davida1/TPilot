@@ -4,6 +4,7 @@ import { createServer, type Server } from "http";
 import path from 'path';
 import Stripe from 'stripe';
 import passport from 'passport';
+import { createSessionMiddleware } from './bootstrap/session.js';
 
 // Security and middleware
 import { validateEnvironment, securityMiddleware, ipLoggingMiddleware, errorHandler, logger, generationLimiter } from "./middleware/security.js";

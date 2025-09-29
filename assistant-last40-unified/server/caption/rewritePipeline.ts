@@ -339,3 +339,185 @@ export async function pipelineRewrite(args:RewritePipelineArgs){
     return { provider: 'openai', final } as CaptionResult;
   }
 }
+
+type RewriteVariantsParams = {
+  platform: "instagram" | "x" | "reddit" | "tiktok";
+  voice: string;
+  existingCaption: string;
+  facts?: Record<string, unknown>;
+  hint?: string;
+  nsfw?: boolean;
+  doNotDrop?: string[];
+  style?: string;
+  mood?: string;
+  toneExtras?: Record<string, string>;
+};
+
+const VARIANT_RETRY_LIMIT = 3;
+
+const sanitizeHintForRetry = (hint: string | undefined): string | undefined => {
+  if (!hint) return undefined;
+  let sanitized = "";
+  for (let index = 0; index < hint.length; index += 1) {
+    const char = hint[index];
+    const code = hint.charCodeAt(index);
+    if (char === "\n") {
+      sanitized += char;
+    } else if (code < 32 || code === 127) {
+      sanitized += " ";
+    } else {
+      sanitized += char;
+    }
+  }
+  return sanitized;
+};
+
+export async function variantsRewrite(params: RewriteVariantsParams) {
+  const [sys, guard, prompt] = await Promise.all([
+    load("system.txt"),
+    load("guard.txt"),
+    load("rewrite.txt")
+  ]);
+
+  let attempts = 0;
+  const baseHint = sanitizeHintForRetry(params.hint);
+  let currentHint = baseHint;
+  const mandatoryTokens = params.doNotDrop && params.doNotDrop.length > 0
+    ? `MANDATORY TOKENS: ${params.doNotDrop.join(" | ")}`
+    : "";
+
+  const collected: Array<Record<string, unknown>> = [];
+
+  while (attempts < VARIANT_RETRY_LIMIT && collected.length < VARIANT_TARGET) {
+    attempts += 1;
+
+    const voiceContext = formatVoiceContext(params.voice);
+    const lines: string[] = [
+      `PLATFORM: ${params.platform}`,
+      `VOICE: ${params.voice}`,
+      voiceContext
+    ];
+
+    if (params.style) lines.push(`STYLE: ${params.style}`);
+    if (params.mood) lines.push(`MOOD: ${params.mood}`);
+    if (params.toneExtras) {
+      for (const [key, value] of Object.entries(params.toneExtras)) {
+        lines.push(`${key.toUpperCase()}: ${value}`);
+      }
+    }
+
+    lines.push(`EXISTING_CAPTION: ${serializePromptField(params.existingCaption)}`);
+    if (params.facts) {
+      lines.push(`IMAGE_FACTS: ${JSON.stringify(params.facts)}`);
+    }
+    lines.push(`NSFW: ${params.nsfw ?? false}`);
+    if (mandatoryTokens) {
+      lines.push(mandatoryTokens);
+    }
+    if (currentHint && currentHint.trim().length > 0) {
+      lines.push(`HINT:${serializePromptField(currentHint, { block: true })}`);
+    }
+
+    const promptLines = lines.filter((line): line is string => Boolean(line && line.trim()));
+    const voiceGuide = buildVoiceGuideBlock(params.voice);
+    const promptSections = [sys, guard, prompt, promptLines.join("\n")];
+    if (voiceGuide) {
+      promptSections.push(voiceGuide);
+    }
+
+    let response;
+    try {
+      response = await textModel.generateContent([{ text: promptSections.join("\n") }]);
+    } catch (error) {
+      console.error('Gemini textModel.generateContent failed:', error);
+      throw error;
+    }
+
+    const parsed = stripToJSON(response.response.text());
+    let hasBannedWords = false;
+
+    if (Array.isArray(parsed)) {
+      for (const entry of parsed) {
+        if (!entry || typeof entry !== "object") {
+          continue;
+        }
+
+        const variant = { ...(entry as Record<string, unknown>) };
+
+        variant.safety_level = normalizeSafetyLevel(
+          typeof variant.safety_level === "string" ? variant.safety_level : "normal"
+        );
+
+        if (typeof variant.mood !== "string" || variant.mood.trim().length < 2) {
+          variant.mood = params.mood ?? "engaging";
+        }
+        if (typeof variant.style !== "string" || variant.style.trim().length < 2) {
+          variant.style = params.style ?? "authentic";
+        }
+
+        const fallback = ensureFallbackCompliance(
+          {
+            caption: typeof variant.caption === "string" ? variant.caption : undefined,
+            hashtags: Array.isArray(variant.hashtags)
+              ? variant.hashtags.filter((tag): tag is string => typeof tag === "string")
+              : undefined,
+            cta: typeof variant.cta === "string" ? variant.cta : undefined,
+            alt: typeof variant.alt === "string" ? variant.alt : undefined
+          },
+          {
+            platform: params.platform,
+            facts: params.facts,
+            existingCaption: params.existingCaption
+          }
+        );
+
+        variant.hashtags = fallback.hashtags;
+        variant.cta = fallback.cta;
+        variant.alt = fallback.alt;
+
+        if (typeof variant.caption !== "string" || variant.caption.trim().length < 1) {
+          variant.caption = params.existingCaption || "Here's something I'm proud of today.";
+        }
+
+        variant.nsfw = typeof variant.nsfw === "boolean" ? variant.nsfw : Boolean(params.nsfw);
+
+        if (variantContainsBannedWord(variant)) {
+          hasBannedWords = true;
+          continue;
+        }
+
+        collected.push(variant);
+        if (collected.length >= VARIANT_TARGET) {
+          break;
+        }
+      }
+    }
+
+    if (collected.length < VARIANT_TARGET) {
+      const needed = VARIANT_TARGET - collected.length;
+      const retryParts: string[] = [`Generate ${needed} more unique, distinct variants.`];
+      if (hasBannedWords) {
+        retryParts.push(BANNED_WORDS_HINT);
+      }
+      currentHint = retryParts.join(" ");
+    }
+  }
+
+  if (collected.length === 0) {
+    // Fallback: create default variants
+    for (let i = 0; i < VARIANT_TARGET; i++) {
+      collected.push({
+        caption: `${params.existingCaption} (rewrite ${i + 1})`,
+        alt: "Detailed alt text describing the scene",
+        hashtags: ["#content", "#creative"],
+        cta: "Check it out",
+        mood: params.mood ?? "engaging",
+        style: params.style ?? "authentic",
+        safety_level: "normal",
+        nsfw: Boolean(params.nsfw)
+      });
+    }
+  }
+
+  return CaptionArray.parse(collected.slice(0, VARIANT_TARGET));
+}

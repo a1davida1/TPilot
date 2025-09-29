@@ -7,8 +7,9 @@ import { aiGenerations, users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 // AI service initialization
-// Use Gemini as primary (with GEMINI_API_KEY), OpenAI as fallback
-const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || env.GOOGLE_GENAI_API_KEY || '');
+// Use Gemini as primary (checking both GOOGLE_GENAI_API_KEY and GEMINI_API_KEY), OpenAI as fallback
+const geminiApiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY || env.GOOGLE_GENAI_API_KEY || env.GEMINI_API_KEY || '';
+const gemini = geminiApiKey ? new GoogleGenerativeAI(geminiApiKey) : null;
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
 
 export interface ContentGenerationRequest {
@@ -100,6 +101,10 @@ export class AiService {
   }
   
   private static async generateWithGemini(input: GenerationInput): Promise<Omit<AiResponse, 'cached'>> {
+    if (!gemini) {
+      throw new Error("Gemini API not configured - API key is missing");
+    }
+    
     const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash" });
     
     const systemPrompt = this.buildSystemPrompt(input.platforms, input.styleHints);
@@ -339,23 +344,9 @@ Return ONLY the JSON object above with actual content. No other text.`;
     } catch (error: unknown) {
       console.warn('Failed to cache AI result (non-fatal):', (error as Error).message);
       // Check for foreign key constraint violation
-      if (
-        typeof error === 'object' &&
-        error &&
-        'code' in error &&
-        typeof error.code === 'string' &&
-        error.code === '23503'
-      ) {
-        const err = error;
-        if (
-          typeof err === 'object' &&
-          err &&
-          'constraint' in err &&
-          typeof err.constraint === 'string' &&
-          err.constraint.includes('user_id')
-        ) {
-          console.warn(`User ID ${userId} not found in database, skipping cache`);
-        }
+      const err = error as Record<string, unknown>;
+      if (err?.code === '23503' && typeof err?.constraint === 'string' && err.constraint.includes('user_id')) {
+        console.warn(`User ID ${userId} not found in database, skipping cache`);
       }
       // Non-fatal error, continue without caching
     }

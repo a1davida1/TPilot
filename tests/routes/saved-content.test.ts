@@ -8,7 +8,7 @@ const getSocialMediaPostMock = vi.fn();
 const authenticateTokenMock = vi.fn();
 const loggerErrorMock = vi.fn();
 
-vi.mock('../../server/storage.ts', () => ({
+vi.mock('../../server/storage.js', () => ({
   storage: {
     getUserContentGenerations: getUserContentGenerationsMock,
     getSocialMediaPost: getSocialMediaPostMock,

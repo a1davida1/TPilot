@@ -84,3 +84,23 @@ export function getStyleToken(token: unknown): StyleToken | undefined {
 export function getVoiceGuide(token: StyleToken): VoiceGuide {
   return VOICE_GUIDES[token];
 }
+
+export function isStyleToken(value: string): value is StyleToken {
+  return STYLE_TOKEN_SET.has(value);
+}
+
+export function buildVoiceGuideBlock(voice: string): string | undefined {
+  const guide = getVoiceGuide(voice as StyleToken);
+  if (!guide) return undefined;
+  const taboo = guide.tabooPhrases.length > 0
+    ? `[${guide.tabooPhrases.map(phrase => `"${phrase}"`).join(", ")}]`
+    : "[]";
+  return [
+    "VOICE_GUIDE:",
+    `- PERSONA: ${guide.persona}`,
+    `- VOCABULARY: ${guide.vocabulary}`,
+    `- PACING: ${guide.pacing}`,
+    `- EMOJI_POLICY: ${guide.emojiPolicy}`,
+    `- TABOO_PHRASES: ${taboo}`
+  ].join("\n");
+}

@@ -11,4 +11,4 @@ if (process.env.REPLIT_DEPLOYMENT !== '1') {
 }
 
 // Use tsx to run TypeScript directly
-import('./index.ts');
+import('./index.js');

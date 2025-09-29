@@ -31,7 +31,7 @@ vi.mock('../../server/lib/gemini.js', () => ({
   }
 }));
 
-vi.mock('../../server/storage.ts', () => ({
+vi.mock('../../server/storage.js', () => ({
   storage: {
     getUserById: vi.fn().mockResolvedValue({
       id: 1,

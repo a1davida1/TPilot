@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 const users: Array<Record<string, unknown>> = [];
 const tokens: Array<Record<string, unknown>> = [];
 
-vi.mock('../../server/storage', () => ({
+vi.mock('../../server/storage.js', () => ({
   storage: {
     getUser: vi.fn().mockImplementation(async (id: number) => users.find(u => u.id === id)),
     getUserByUsername: vi.fn().mockImplementation(async (username: string) => users.find(u => u.username === username)),
@@ -35,7 +35,7 @@ vi.mock('../../server/storage', () => ({
   }
 }));
 
-vi.mock('../../server/services/email-service', () => ({
+vi.mock('../../server/services/email-service.js', () => ({
   emailService: { 
     sendPasswordResetEmail: vi.fn(), 
     sendWelcomeEmail: vi.fn(),

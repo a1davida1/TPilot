@@ -1,2 +1,2 @@
 
-export * from './rewritePipeline.ts';
+export * from './rewritePipeline.js';

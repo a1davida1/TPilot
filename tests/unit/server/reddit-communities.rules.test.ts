@@ -203,7 +203,7 @@ describe('Reddit Communities Rules Unit Tests', () => {
   describe('Schema validation', () => {
     it('should validate RedditCommunityRuleSet schema correctly', async () => {
       // Import schema components
-      const { redditCommunityRuleSetSchema, createDefaultRules } = await import('../../../shared/schema.ts');
+      const { redditCommunityRuleSetSchema, createDefaultRules } = await import('../../../shared/schema.js');
       
       // Test valid rule set
       const validRules = {
@@ -225,7 +225,7 @@ describe('Reddit Communities Rules Unit Tests', () => {
     });
 
     it('should create proper default rules', async () => {
-      const { createDefaultRules } = await import('../../../shared/schema.ts');
+      const { createDefaultRules } = await import('../../../shared/schema.js');
       
       const defaults = createDefaultRules();
       
@@ -245,7 +245,7 @@ describe('Reddit Communities Rules Unit Tests', () => {
     });
 
     it('should validate sellingAllowed enum values', async () => {
-      const { redditCommunityRuleSetSchema } = await import('../../../shared/schema.ts');
+      const { redditCommunityRuleSetSchema } = await import('../../../shared/schema.js');
       
       const validValues = ['allowed', 'limited', 'not_allowed', 'unknown'];
       

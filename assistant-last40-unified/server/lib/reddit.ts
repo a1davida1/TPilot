@@ -1,4 +1,5 @@
 import snoowrap from 'snoowrap';
+import { z } from 'zod';
 import { db } from '../db.js';
 import { creatorAccounts, subredditRules, postRateLimits, redditCommunities, users } from '@shared/schema';
 import { eq, and, gt, or } from 'drizzle-orm';
@@ -7,6 +8,7 @@ import { SafetyManager } from './safety-systems.js';
 import { getEligibleCommunitiesForUser, type CommunityEligibilityCriteria } from '../reddit-communities.js';
 import type { RedditCommunity, ShadowbanStatusType, ShadowbanSubmissionSummary, ShadowbanEvidenceResponse, ShadowbanCheckApiResponse } from '@shared/schema';
 import { lookup } from 'dns/promises';
+import { logger } from './logger.js';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
@@ -381,6 +383,126 @@ function getEnvOrDefault(name: string, defaultValue?: string): string {
   return value || defaultValue || '';
 }
 
+const DEFAULT_REDDIT_SERVICE_USER_AGENT = 'ThottoPilot/1.0 (Community sync bot)';
+
+export const REDDIT_SERVICE_CLIENT_KEYS = {
+  COMMUNITY_SYNC: 'community-sync',
+} as const;
+
+export type RedditServiceClientKey = typeof REDDIT_SERVICE_CLIENT_KEYS[keyof typeof REDDIT_SERVICE_CLIENT_KEYS];
+
+type RedditServiceClientMap = Map<RedditServiceClientKey, snoowrap>;
+
+const redditServiceClients: RedditServiceClientMap = new Map();
+
+const redditServiceEnvSchema = z
+  .object({
+    REDDIT_CLIENT_ID: z.string().min(1, 'REDDIT_CLIENT_ID is required'),
+    REDDIT_CLIENT_SECRET: z.string().min(1, 'REDDIT_CLIENT_SECRET is required'),
+    REDDIT_USER_AGENT: z
+      .string()
+      .min(1, 'REDDIT_USER_AGENT must not be empty')
+      .optional()
+      .default(DEFAULT_REDDIT_SERVICE_USER_AGENT),
+    REDDIT_REFRESH_TOKEN: z.string().min(1, 'REDDIT_REFRESH_TOKEN must not be empty').optional(),
+    REDDIT_USERNAME: z.string().min(1, 'REDDIT_USERNAME must not be empty').optional(),
+    REDDIT_PASSWORD: z.string().min(1, 'REDDIT_PASSWORD must not be empty').optional(),
+  })
+  .superRefine((data, ctx) => {
+    const hasRefreshToken = typeof data.REDDIT_REFRESH_TOKEN === 'string' && data.REDDIT_REFRESH_TOKEN.length > 0;
+    const hasUserCredentials =
+      typeof data.REDDIT_USERNAME === 'string' && data.REDDIT_USERNAME.length > 0 &&
+      typeof data.REDDIT_PASSWORD === 'string' && data.REDDIT_PASSWORD.length > 0;
+
+    if (!hasRefreshToken && !hasUserCredentials) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['REDDIT_REFRESH_TOKEN'],
+        message: 'Provide REDDIT_REFRESH_TOKEN or both REDDIT_USERNAME and REDDIT_PASSWORD.',
+      });
+    }
+  });
+
+type RedditServiceEnv = z.infer<typeof redditServiceEnvSchema>;
+
+let hasLoggedIncompleteRedditCredentials = false;
+
+function readOptionalEnv(name: string): string | undefined {
+  const value = process.env[name];
+  if (!value) {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function parseRedditServiceEnv(): z.SafeParseReturnType<RedditServiceEnv, RedditServiceEnv> {
+  return redditServiceEnvSchema.safeParse({
+    REDDIT_CLIENT_ID: readOptionalEnv('REDDIT_CLIENT_ID'),
+    REDDIT_CLIENT_SECRET: readOptionalEnv('REDDIT_CLIENT_SECRET'),
+    REDDIT_USER_AGENT: readOptionalEnv('REDDIT_USER_AGENT'),
+    REDDIT_REFRESH_TOKEN: readOptionalEnv('REDDIT_REFRESH_TOKEN'),
+    REDDIT_USERNAME: readOptionalEnv('REDDIT_USERNAME'),
+    REDDIT_PASSWORD: readOptionalEnv('REDDIT_PASSWORD'),
+  });
+}
+
+function createRedditServiceClient(env: RedditServiceEnv): snoowrap {
+  const baseConfig = {
+    userAgent: env.REDDIT_USER_AGENT,
+    clientId: env.REDDIT_CLIENT_ID,
+    clientSecret: env.REDDIT_CLIENT_SECRET,
+  };
+
+  if (env.REDDIT_REFRESH_TOKEN) {
+    return new snoowrap({
+      ...baseConfig,
+      refreshToken: env.REDDIT_REFRESH_TOKEN,
+    });
+  }
+
+  const username = env.REDDIT_USERNAME;
+  const password = env.REDDIT_PASSWORD;
+
+  if (!username || !password) {
+    throw new Error('Reddit service credentials missing username or password after validation');
+  }
+
+  return new snoowrap({
+    ...baseConfig,
+    username,
+    password,
+  });
+}
+
+export function registerDefaultRedditClients(): void {
+  const parseResult = parseRedditServiceEnv();
+
+  if (!parseResult.success) {
+    if (!hasLoggedIncompleteRedditCredentials) {
+      const issues = parseResult.error.issues.map((issue) => issue.message);
+      logger.warn('Reddit service credentials incomplete; community sync client not registered.', { issues });
+      hasLoggedIncompleteRedditCredentials = true;
+    }
+    return;
+  }
+
+  hasLoggedIncompleteRedditCredentials = false;
+
+  const existingClient = redditServiceClients.get(REDDIT_SERVICE_CLIENT_KEYS.COMMUNITY_SYNC);
+  if (existingClient) {
+    return;
+  }
+
+  const client = createRedditServiceClient(parseResult.data);
+  redditServiceClients.set(REDDIT_SERVICE_CLIENT_KEYS.COMMUNITY_SYNC, client);
+  logger.info('Registered Reddit service client for community sync workloads.');
+}
+
+export function getRedditServiceClient(key: RedditServiceClientKey): snoowrap | undefined {
+  return redditServiceClients.get(key);
+}
+
 // These will be validated when actually needed, not at startup
 const REDDIT_CLIENT_ID = getEnvOrDefault('REDDIT_CLIENT_ID');
 const REDDIT_CLIENT_SECRET = getEnvOrDefault('REDDIT_CLIENT_SECRET');
@@ -499,91 +621,6 @@ function deriveDailyLimit(rules?: NormalizedSubredditRules): number | null {
 interface RedditSubmission {
   id: string;
   permalink: string;
-  name?: string;
-  score?: number;
-  upvote_ratio?: number;
-  num_comments?: number;
-  view_count?: number;
-}
-
-interface SnoowrapSubmissionDetails {
-  id?: string;
-  name?: string;
-  permalink?: string;
-  score?: number;
-  upvote_ratio?: number;
-  num_comments?: number;
-  view_count?: number;
-}
-
-function normalizeSubmissionId(submission: SnoowrapSubmissionDetails, fallbackId: string): string {
-  if (submission.id && submission.id.trim().length > 0) {
-    return submission.id;
-  }
-
-  if (submission.name && submission.name.startsWith('t3_')) {
-    const derivedId = submission.name.slice(3);
-    if (derivedId.trim().length > 0) {
-      return derivedId;
-    }
-  }
-
-  return fallbackId;
-}
-
-function normalizeSubmissionPermalink(submission: SnoowrapSubmissionDetails, normalizedId: string): string {
-  const permalink = submission.permalink;
-
-  if (typeof permalink === 'string' && permalink.trim().length > 0) {
-    const trimmed = permalink.trim();
-    if (/^https?:\/\//i.test(trimmed)) {
-      return trimmed;
-    }
-
-    if (trimmed.startsWith('/')) {
-      return `https://www.reddit.com${trimmed}`;
-    }
-
-    return `https://www.reddit.com/${trimmed}`;
-  }
-
-  return `https://www.reddit.com/comments/${normalizedId}`;
-}
-
-function coerceNumber(value: number | undefined, fallback: number): number {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
-  }
-
-  return fallback;
-}
-
-function coerceOptionalNumber(value: number | undefined): number | undefined {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
-  }
-
-  return undefined;
-}
-
-function normalizeSubmissionDetails(submission: SnoowrapSubmissionDetails, fallbackId: string): RedditSubmission {
-  const normalizedId = normalizeSubmissionId(submission, fallbackId);
-
-  const normalized: RedditSubmission = {
-    id: normalizedId,
-    name: submission.name,
-    permalink: normalizeSubmissionPermalink(submission, normalizedId),
-    score: coerceNumber(submission.score, 0),
-    upvote_ratio: coerceNumber(submission.upvote_ratio, 0),
-    num_comments: coerceNumber(submission.num_comments, 0),
-  };
-
-  const viewCount = coerceOptionalNumber(submission.view_count);
-  if (typeof viewCount === 'number') {
-    normalized.view_count = viewCount;
-  }
-
-  return normalized;
 }
 
 function normalizeSubredditNameForComparison(value: string | null | undefined): string | null {
@@ -676,8 +713,7 @@ export class RedditManager {
         return null;
       }
 
-      const manager: RedditManager = new RedditManager(accessToken, refreshToken, userId);
-      return manager;
+      return new RedditManager(accessToken, refreshToken, userId);
     } catch (error) {
       console.error('Failed to create Reddit manager for user:', error);
       return null;
@@ -794,27 +830,6 @@ export class RedditManager {
         error: errorMessage,
         decision: permission,
       };
-    }
-  }
-
-  async getSubmission(postId: string): Promise<RedditSubmission> {
-    const trimmedId = postId.trim();
-    if (!trimmedId) {
-      throw new Error('Post ID is required to fetch submission metrics');
-    }
-
-    try {
-      const reddit = await this.initReddit();
-      const submission = await (reddit as unknown as {
-        getSubmission(id: string): {
-          fetch(): Promise<SnoowrapSubmissionDetails>;
-        };
-      }).getSubmission(trimmedId).fetch();
-
-      return normalizeSubmissionDetails(submission, trimmedId);
-    } catch (error) {
-      console.error('Failed to fetch Reddit submission metrics:', error);
-      throw error;
     }
   }
 

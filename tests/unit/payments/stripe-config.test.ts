@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { deriveStripeConfig, stripeErrorMessages } from "../../../server/payments/stripe-config.ts";
+import { deriveStripeConfig, stripeErrorMessages } from "../../../server/payments/stripe-config.js";
 import type { Logger } from "winston";
 
 // Test interfaces - Create a proper mock that matches Pick<Logger, "error">

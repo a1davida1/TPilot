@@ -1,2 +1,2 @@
 
-export * from './stylePack.ts';
+export * from './stylePack.js';

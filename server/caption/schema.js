@@ -1,2 +1,2 @@
 
-export * from './schema.ts';
+export * from './schema.js';
