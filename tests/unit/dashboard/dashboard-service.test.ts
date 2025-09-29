@@ -1,5 +1,25 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
+interface MockMediaAsset {
+  id: number;
+  filename: string;
+  signedUrl: string | null;
+  downloadUrl: string | null;
+  createdAt: Date;
+}
+
+const createMockMediaAsset = (
+  id: number,
+  overrides: Partial<MockMediaAsset> = {}
+): MockMediaAsset => ({
+  id,
+  filename: `asset-${id}.jpg`,
+  signedUrl: null,
+  downloadUrl: `/api/media/${id}`,
+  createdAt: new Date('2024-01-01T00:00:00.000Z'),
+  ...overrides,
+});
+
 // Hoisted mock database instance
 const mockDbInstance = vi.hoisted(() => ({
   select: vi.fn().mockReturnThis(),
@@ -10,40 +30,62 @@ const mockDbInstance = vi.hoisted(() => ({
   limit: vi.fn().mockReturnThis(),
 }));
 
+const mockMediaManager = vi.hoisted(() => ({
+  getAsset: vi.fn(async (id: number) => createMockMediaAsset(id)),
+}));
+
+vi.mock('../../../server/database.js', () => ({
+  db: mockDbInstance,
+}));
+
 vi.mock('../../../server/db.js', () => ({
   db: mockDbInstance,
 }));
 
 // Mock the schema imports
 vi.mock('../../../shared/schema.js', () => ({
-  contentGenerations: { 
+  contentGenerations: {
     id: 'id',
-    userId: 'userId', 
+    userId: 'userId',
     createdAt: 'createdAt',
     platform: 'platform'
   },
-  socialMetrics: { 
+  socialMetrics: {
     contentId: 'contentId',
-    likes: 'likes', 
+    likes: 'likes',
     comments: 'comments',
     shares: 'shares',
     views: 'views'
   },
-  contentFlags: { 
+  contentFlags: {
     reportedById: 'reportedById'
   },
-  expenses: { 
+  expenses: {
     userId: 'userId',
     amount: 'amount',
-    deductionPercentage: 'deductionPercentage'
+    deductionPercentage: 'deductionPercentage',
+    taxYear: 'taxYear'
   },
-  mediaAssets: { 
+  mediaAssets: {
     id: 'id',
     userId: 'userId',
     filename: 'filename',
     key: 'key',
     createdAt: 'createdAt'
-  }
+  },
+  engagementEvents: {
+    userId: 'userId',
+    createdAt: 'createdAt',
+  },
+  pageViews: {
+    userId: 'userId',
+    createdAt: 'createdAt',
+  },
+  userSessions: {
+    userId: 'userId',
+    startedAt: 'startedAt',
+    duration: 'duration',
+  },
 }));
 
 // Mock drizzle-orm functions
@@ -55,20 +97,26 @@ vi.mock('drizzle-orm', () => ({
   sql: vi.fn((template, ...values) => ({ template, values, type: 'sql' }))
 }));
 
-// Import will be handled dynamically in tests
+vi.mock('../../../server/lib/media.js', () => ({
+  MediaManager: {
+    getAsset: mockMediaManager.getAsset,
+  },
+}));
+
+const { dashboardService } = await import('../../../server/services/dashboard-service.js');
 
 describe('DashboardService', () => {
-  let dashboardService: typeof import('../../../server/services/dashboard-service.js')['dashboardService'];
-
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.clearAllMocks();
-    ({ dashboardService } = await import('../../../server/services/dashboard-service.js'));
+    mockMediaManager.getAsset.mockImplementation(async (id: number) =>
+      createMockMediaAsset(id)
+    );
   });
 
   describe('getDashboardStats', () => {
     it('should return dashboard stats for a user', async () => {
       // Mock database responses
-      const { db: mockDb } = await import('../../../server/db.js');
+      const { db: mockDb } = await import('../../../server/database.js');
 
       // Mock posts count query
       mockDb.select.mockReturnValueOnce({
@@ -115,7 +163,7 @@ describe('DashboardService', () => {
     });
 
     it('should handle database errors gracefully', async () => {
-      const { db: mockDb } = await import('../../../server/db.js');
+      const { db: mockDb } = await import('../../../server/database.js');
       
       // Mock database error
       mockDb.select.mockReturnValueOnce({
@@ -126,21 +174,25 @@ describe('DashboardService', () => {
 
       const userId = 1;
       const result = await dashboardService.getDashboardStats(userId);
-      
+
       // Should return default values on error
       expect(result).toEqual({
         postsToday: 0,
         engagementRate: 0,
         takedownsFound: 0,
-        estimatedTaxSavings: 0
+        estimatedTaxSavings: 0,
+        sessionCount: 0,
+        averageSessionDuration: 0,
+        pageViewsToday: 0,
+        interactionsToday: 0,
       });
     });
   });
 
   describe('getDashboardActivity', () => {
     it('should return dashboard activity for a user', async () => {
-      const { db: mockDb } = await import('../../../server/db.js');
-      
+      const { db: mockDb } = await import('../../../server/database.js');
+
       // Mock media assets query
       mockDb.select.mockReturnValueOnce({
         from: vi.fn().mockReturnValueOnce({
@@ -158,6 +210,13 @@ describe('DashboardService', () => {
           })
         })
       });
+
+      mockMediaManager.getAsset.mockResolvedValueOnce(
+        createMockMediaAsset(1, {
+          filename: 'test.jpg',
+          createdAt: new Date('2025-09-22T00:00:00.000Z'),
+        })
+      );
 
       const userId = 1;
       const result = await dashboardService.getDashboardActivity(userId);
@@ -177,7 +236,7 @@ describe('DashboardService', () => {
     });
 
     it('should handle database errors gracefully', async () => {
-      const { db: mockDb } = await import('../../../server/db.js');
+      const { db: mockDb } = await import('../../../server/database.js');
       
       // Mock database error
       mockDb.select.mockReturnValueOnce({
@@ -200,7 +259,7 @@ describe('DashboardService', () => {
 
   describe('getAdminDashboardStats', () => {
     it('should return admin dashboard stats', async () => {
-      const { db: mockDb } = await import('../../../server/db.js');
+      const { db: mockDb } = await import('../../../server/database.js');
       
       // Mock various queries for admin stats
       mockDb.select.mockReturnValue({
@@ -225,8 +284,8 @@ describe('DashboardService', () => {
 
   describe('getAdminDashboardActivity', () => {
     it('should return admin dashboard activity', async () => {
-      const { db: mockDb } = await import('../../../server/db.js');
-      
+      const { db: mockDb } = await import('../../../server/database.js');
+
       // Mock media assets query for admin
       mockDb.select.mockReturnValueOnce({
         from: vi.fn().mockReturnValueOnce({
@@ -249,11 +308,25 @@ describe('DashboardService', () => {
         })
       });
 
+      mockMediaManager.getAsset
+        .mockResolvedValueOnce(
+          createMockMediaAsset(1, {
+            filename: 'admin-test.jpg',
+            signedUrl: 'https://cdn.example.com/admin-test.jpg',
+          })
+        )
+        .mockResolvedValueOnce(
+          createMockMediaAsset(2, {
+            filename: 'admin-test2.jpg',
+            downloadUrl: '/api/media/2/download',
+          })
+        );
+
       const result = await dashboardService.getAdminDashboardActivity();
-      
+
       expect(result).toHaveProperty('recentMedia');
       expect(Array.isArray(result.recentMedia)).toBe(true);
-      
+
       // Admin should potentially see more items
       expect(result.recentMedia.length).toBeLessThanOrEqual(8);
     });
