@@ -35,10 +35,10 @@ router.get('/', async (req: AdminRequest, res: express.Response) => {
       bestPostingTimes: community.bestPostingTimes
     }));
 
-    res.json(adminCommunities);
+    res.json({ success: true, data: adminCommunities });
   } catch (error) {
     console.error('Failed to list communities:', error);
-    res.status(500).json({ message: 'Failed to load communities' });
+    res.status(500).json({ success: false, error: 'Failed to load communities' });
   }
 });
 
@@ -70,11 +70,12 @@ router.post('/', async (req: AdminRequest, res: express.Response) => {
       bestPostingTimes: community.bestPostingTimes
     };
 
-    res.status(201).json(adminCommunity);
+    res.status(201).json({ success: true, data: adminCommunity });
   } catch (error) {
     console.error('Failed to create community:', error);
     res.status(400).json({
-      message: error instanceof Error ? error.message : 'Failed to create community'
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create community'
     });
   }
 });
@@ -88,7 +89,7 @@ router.put('/:id', async (req: AdminRequest, res: express.Response) => {
     const community = await updateCommunity(id, validatedData);
     
     if (!community) {
-      return res.status(404).json({ message: 'Community not found' });
+      return res.status(404).json({ success: false, error: 'Community not found' });
     }
     
     const adminCommunity = {
@@ -112,11 +113,12 @@ router.put('/:id', async (req: AdminRequest, res: express.Response) => {
       bestPostingTimes: community.bestPostingTimes
     };
 
-    res.json(adminCommunity);
+    res.json({ success: true, data: adminCommunity });
   } catch (error) {
     console.error('Failed to update community:', error);
     res.status(400).json({
-      message: error instanceof Error ? error.message : 'Failed to update community'
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update community'
     });
   }
 });
@@ -131,15 +133,15 @@ router.delete('/:id', async (req: AdminRequest, res: express.Response) => {
     const existingCommunity = communities.find(c => c.id === id);
     
     if (!existingCommunity) {
-      return res.status(404).json({ message: 'Community not found' });
+      return res.status(404).json({ success: false, error: 'Community not found' });
     }
     
     await deleteCommunity(id);
     
-    res.json({ message: 'Community deleted successfully' });
+    res.json({ success: true, message: 'Community deleted successfully' });
   } catch (error) {
     console.error('Failed to delete community:', error);
-    res.status(500).json({ message: 'Failed to delete community' });
+    res.status(500).json({ success: false, error: 'Failed to delete community' });
   }
 });
 

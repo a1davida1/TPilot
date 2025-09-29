@@ -31,13 +31,20 @@ type QueryResult<Data> = {
 const mockUseQuery = vi.fn();
 const mockUseMutation = vi.fn();
 const toastMock = vi.fn();
-const invalidateQueriesMock = vi.fn();
-const apiRequestMock = vi.fn();
+const invalidateQueriesMock = vi.hoisted(() => vi.fn());
+const apiRequestMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: { queryKey: unknown; queryFn: () => Promise<unknown> }) =>
     mockUseQuery(options),
   useMutation: (options: MutationOptions) => mockUseMutation(options),
+  QueryClient: vi.fn(() => ({
+    getQueryData: vi.fn(),
+    setQueryData: vi.fn(),
+    invalidateQueries: vi.fn(),
+    removeQueries: vi.fn(),
+  })),
+  QueryFunction: vi.fn(),
 }));
 
 vi.mock("@/hooks/use-toast", () => ({
@@ -48,10 +55,10 @@ vi.mock("@/lib/queryClient", async () => {
   const actual = await vi.importActual<typeof import("@/lib/queryClient")>("@/lib/queryClient");
   return {
     ...actual,
-    apiRequest: apiRequestMock,
+    apiRequest: apiRequestMock(),
     queryClient: {
       ...actual.queryClient,
-      invalidateQueries: invalidateQueriesMock,
+      invalidateQueries: invalidateQueriesMock(),
     },
   };
 });

@@ -13,16 +13,27 @@ interface AIProvider {
   available: boolean;
 }
 
-const providers: AIProvider[] = [
-  { name: 'gemini-flash', inputCost: 0.075, outputCost: 0.30, available: !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY) },
-  { name: 'claude-haiku', inputCost: 0.80, outputCost: 4.00, available: !!process.env.ANTHROPIC_API_KEY },
-  { name: 'openai-gpt4o', inputCost: 5.00, outputCost: 15.00, available: !!process.env.OPENAI_API_KEY }
-];
+function getProviders(): AIProvider[] {
+  return [
+    { name: 'gemini-flash', inputCost: 0.075, outputCost: 0.30, available: !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY) },
+    { name: 'claude-haiku', inputCost: 0.80, outputCost: 4.00, available: !!process.env.ANTHROPIC_API_KEY },
+    { name: 'openai-gpt4o', inputCost: 5.00, outputCost: 15.00, available: !!process.env.OPENAI_API_KEY }
+  ];
+}
 
-// Initialize clients only if API keys are available
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
-const anthropic = process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null;
-const gemini = (process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY) ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || '') : null;
+// Initialize clients dynamically when needed
+function getOpenAI() {
+  return process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
+}
+
+function getAnthropic() {
+  return process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null;
+}
+
+function getGemini() {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY;
+  return apiKey ? new GoogleGenerativeAI(apiKey) : null;
+}
 
 interface MultiAIRequest {
   user: { id: number; email?: string; tier?: string };
@@ -54,7 +65,7 @@ export async function generateWithMultiProvider(request: MultiAIRequest): Promis
   const prompt = buildPrompt(request);
 
   // Try providers in order of cost efficiency
-  for (const provider of providers) {
+  for (const provider of getProviders()) {
     if (!provider.available) continue;
 
     try {
@@ -97,6 +108,7 @@ export async function generateWithMultiProvider(request: MultiAIRequest): Promis
 }
 
 async function generateWithGemini(prompt: string) {
+  const gemini = getGemini();
   if (!gemini) return null;
 
   try {
@@ -120,6 +132,7 @@ async function generateWithGemini(prompt: string) {
       safeLog('warn', 'Gemini provider returned empty response', {});
       return null;
     }
+
 
     let text = '';
 
@@ -201,6 +214,7 @@ async function generateWithGemini(prompt: string) {
 }
 
 async function generateWithClaude(prompt: string) {
+  const anthropic = getAnthropic();
   if (!anthropic) return null;
 
   const response = await anthropic.messages.create({
@@ -224,6 +238,7 @@ async function generateWithClaude(prompt: string) {
 }
 
 async function generateWithOpenAI(prompt: string) {
+  const openai = getOpenAI();
   if (!openai) return null;
 
   const response = await openai.chat.completions.create({
@@ -347,7 +362,7 @@ function calculateCost(prompt: string, content: string, provider: AIProvider): n
 
 
 export function getProviderStatus() {
-  return providers.map(p => ({
+  return getProviders().map(p => ({
     name: p.name,
     available: p.available,
     inputCost: p.inputCost,

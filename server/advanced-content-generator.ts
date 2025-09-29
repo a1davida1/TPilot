@@ -43,6 +43,7 @@ export interface ContentParameters {
   customPrompt?: string;
   platform: string;
   humanization?: HumanizationConfig;
+  humanizedLevel?: number;
   targetCommunity?: string;
   conversationalOverrides?: Partial<ConversationalToneConfig>;
   experiment?: ExperimentRequest;
@@ -267,6 +268,7 @@ const SPELLING_VARIATIONS: Array<{ pattern: RegExp; replacement: string }> = [
   { pattern: /\bwant to\b/i, replacement: 'wanna' }
 ];
 
+
 export function applyHumanization(content: string, toneStyle: ToneStyle, options?: HumanizationOptions): string {
   if (content.trim().length === 0) {
     return content;
@@ -309,6 +311,69 @@ export function applyHumanization(content: string, toneStyle: ToneStyle, options
       }
     }
   }
+
+  return result;
+}
+
+export interface ManualTypingOptions {
+  humanizedLevel: number;
+  rng?: () => number;
+}
+
+export function simulateManualTyping(content: string, toneStyle: ToneStyle, options: ManualTypingOptions): string {
+  if (options.humanizedLevel === 0) {
+    return content;
+  }
+
+  const random = options.rng ?? Math.random;
+  let result = content;
+
+  // Preserve URLs and hashtags by temporarily replacing them
+  const urlPattern = /https?:\/\/[^\s]+/g;
+  const hashtagPattern = /#\w+/g;
+  const urls: string[] = [];
+  const hashtags: string[] = [];
+
+  // Extract URLs and hashtags
+  result = result.replace(urlPattern, (match) => {
+    urls.push(match);
+    return `__URL_${urls.length - 1}__`;
+  });
+
+  result = result.replace(hashtagPattern, (match) => {
+    hashtags.push(match);
+    return `__HASHTAG_${hashtags.length - 1}__`;
+  });
+
+  // Add manual typing artifacts
+  if (random() < 0.8) {
+    result = result.replace(/\b(\w+)\b/, '$1 no wait');
+  }
+
+  if (random() < 0.6) {
+    result += '  ';
+  }
+
+  if (random() < 0.7) {
+    result += '— wait, let me brag for a sec —';
+  }
+
+  if (random() < 0.5) {
+    result += ' (oops meant extra glow)';
+  }
+
+  if (random() < 0.6) {
+    result = result.replace(/\b(\w+)\b/, '~~$1~~');
+  }
+
+  // Restore URLs and hashtags
+  hashtags.forEach((hashtag, index) => {
+    result = result.replace(`__HASHTAG_${index}__`, hashtag);
+  });
+
+  urls.forEach((url, index) => {
+    result = result.replace(`__URL_${index}__`, url);
+  });
 
   return result;
 }
@@ -1454,9 +1519,37 @@ export function generateAdvancedContent(params: ContentParameters): GeneratedCon
     communityPack: mainContent.communityPack
   });
 
+  // Apply manual typing if humanizedLevel is specified
+  let finalContent = mainContent.content;
+  if (params.humanizedLevel && params.humanizedLevel > 0) {
+    finalContent = simulateManualTyping(finalContent, toneStyle, {
+      humanizedLevel: params.humanizedLevel,
+      rng: random
+    });
+  }
+
+  // Wrap custom prompt with contextual connectors
+  if (params.customPrompt) {
+    const allConnectors = [
+      ...toneFragmentPools[params.textTone]?.connectors || [],
+      ...photoTypeFragmentPools[params.photoType]?.connectors || [],
+      ...generalConnectors
+    ];
+    const connector = allConnectors[Math.floor(random() * allConnectors.length)];
+    const wrappedPrompt = random() < 0.5 
+      ? `${connector} ${params.customPrompt}`
+      : `${params.customPrompt} ${connector}`;
+    finalContent = `${finalContent} ${wrappedPrompt}`;
+  }
+
+  // Append selected hashtags
+  if (params.selectedHashtags && params.selectedHashtags.length > 0) {
+    finalContent = `${finalContent} ${params.selectedHashtags.join(' ')}`;
+  }
+
   return {
     titles,
-    content: mainContent.content,
+    content: finalContent,
     photoInstructions,
     tags,
     diagnostics: {

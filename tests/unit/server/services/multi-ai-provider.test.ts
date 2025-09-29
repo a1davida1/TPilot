@@ -1,8 +1,12 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+const mockModel = {
+  generateContent: vi.fn()
+};
+
 const mockGemini = vi.hoisted(() => ({
-  generate: vi.fn()
+  getGenerativeModel: vi.fn(() => mockModel)
 }));
 
 const mockAnthropic = vi.hoisted(() => ({
@@ -25,7 +29,7 @@ const googleGenAIConstructor = vi.hoisted(() => vi.fn(() => mockGemini));
 const openAIConstructor = vi.hoisted(() => vi.fn(() => mockOpenAI));
 const anthropicConstructor = vi.hoisted(() => vi.fn(() => mockAnthropic));
 
-vi.mock('@google/genai', () => ({ GoogleGenAI: googleGenAIConstructor }));
+vi.mock('@google/generative-ai', () => ({ GoogleGenerativeAI: googleGenAIConstructor }));
 vi.mock('openai', () => ({ default: openAIConstructor }));
 vi.mock('@anthropic-ai/sdk', () => ({ default: anthropicConstructor }));
 vi.mock('../../../../server/lib/logger-utils.ts', () => ({ safeLog: mockSafeLog }));
@@ -43,7 +47,8 @@ const originalEnv: Record<EnvKey, string | undefined> = {
 describe('generateWithMultiProvider provider selection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockGemini.generate.mockReset();
+    mockModel.generateContent.mockReset();
+    mockGemini.getGenerativeModel.mockReset();
     mockAnthropic.messages.create.mockReset();
     mockOpenAI.chat.completions.create.mockReset();
     googleGenAIConstructor.mockReset();
@@ -75,19 +80,21 @@ describe('generateWithMultiProvider provider selection', () => {
     vi.resetModules();
     const { generateWithMultiProvider } = await import('../../../../server/services/multi-ai-provider');
 
-    mockGemini.generate.mockResolvedValueOnce({
-      text: JSON.stringify({
-        titles: ['Gemini wins'],
-        content: 'Gemini content that clearly exceeds the fallback length requirement.',
-        photoInstructions: {
-          lighting: 'soft',
-          cameraAngle: 'eye-level',
-          composition: 'balanced',
-          styling: 'casual',
-          mood: 'relaxed',
-          technicalSettings: 'auto'
-        }
-      })
+    mockModel.generateContent.mockResolvedValueOnce({
+      response: {
+        text: () => JSON.stringify({
+          titles: ['Gemini wins'],
+          content: 'Gemini content that clearly exceeds the fallback length requirement.',
+          photoInstructions: {
+            lighting: 'soft',
+            cameraAngle: 'eye-level',
+            composition: 'balanced',
+            styling: 'casual',
+            mood: 'relaxed',
+            technicalSettings: 'auto'
+          }
+        })
+      }
     });
 
     const response = await generateWithMultiProvider({
@@ -97,7 +104,7 @@ describe('generateWithMultiProvider provider selection', () => {
     });
 
     expect(response.provider).toBe('gemini-flash');
-    expect(mockGemini.generate).toHaveBeenCalledTimes(1);
+    expect(mockModel.generateContent).toHaveBeenCalledTimes(1);
     expect(mockAnthropic.messages.create).not.toHaveBeenCalled();
     expect(mockOpenAI.chat.completions.create).not.toHaveBeenCalled();
   });
@@ -136,7 +143,7 @@ describe('generateWithMultiProvider provider selection', () => {
     });
 
     expect(result.provider).toBe('claude-haiku');
-    expect(mockGemini.generate).not.toHaveBeenCalled();
+    expect(mockGemini.getGenerativeModel).not.toHaveBeenCalled();
     expect(mockAnthropic.messages.create).toHaveBeenCalledTimes(1);
     expect(mockOpenAI.chat.completions.create).not.toHaveBeenCalled();
   });
@@ -177,7 +184,7 @@ describe('generateWithMultiProvider provider selection', () => {
     });
 
     expect(response.provider).toBe('openai-gpt4o');
-    expect(mockGemini.generate).not.toHaveBeenCalled();
+    expect(mockGemini.getGenerativeModel).not.toHaveBeenCalled();
     expect(mockAnthropic.messages.create).toHaveBeenCalledTimes(1);
     expect(mockOpenAI.chat.completions.create).toHaveBeenCalledTimes(1);
 

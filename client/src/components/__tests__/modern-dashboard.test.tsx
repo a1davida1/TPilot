@@ -16,7 +16,7 @@ import { ModernDashboard } from "@/components/modern-dashboard";
 import { QuickStartModal } from "@/components/dashboard-quick-start";
 
 const mockUseQuery = vi.fn();
-const apiRequestMock = vi.fn();
+const apiRequestMock = vi.hoisted(() => vi.fn());
 const toastMock = vi.fn();
 const setLocationMock = vi.fn();
 let mockedAuthUser: { id: number; username: string; tier?: string; isAdmin?: boolean; role?: string } | null = {
@@ -27,6 +27,13 @@ let mockedAuthUser: { id: number; username: string; tier?: string; isAdmin?: boo
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: { queryKey: unknown }) => mockUseQuery(options),
+  QueryClient: vi.fn(() => ({
+    getQueryData: vi.fn(),
+    setQueryData: vi.fn(),
+    invalidateQueries: vi.fn(),
+    removeQueries: vi.fn(),
+  })),
+  QueryFunction: vi.fn(),
 }));
 
 vi.mock("@/hooks/useAuth", () => ({
@@ -47,7 +54,7 @@ vi.mock("@/lib/queryClient", async () => {
   const actual = await vi.importActual<typeof import("@/lib/queryClient")>("@/lib/queryClient");
   return {
     ...actual,
-    apiRequest: apiRequestMock,
+    apiRequest: apiRequestMock(),
   };
 });
 
