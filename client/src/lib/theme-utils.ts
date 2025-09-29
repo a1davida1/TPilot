@@ -242,9 +242,11 @@ export function debugThemeValidation() {
   
   const validation = validateCurrentTheme();
   if (validation.isValid) {
+    // eslint-disable-next-line no-console
     console.log('✅ Theme validation passed - all color pairs meet WCAG AA standards');
   } else {
     console.warn('⚠️ Theme validation failed for the following pairs:', validation.failedPairs);
+    // eslint-disable-next-line no-console
     console.log('Consider adjusting these color combinations for better accessibility');
   }
   

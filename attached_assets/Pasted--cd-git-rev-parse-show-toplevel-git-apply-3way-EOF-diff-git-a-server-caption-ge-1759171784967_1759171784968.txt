@@ -1,0 +1,158 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/server/caption/geminiPipeline.ts b/server/caption/geminiPipeline.ts
+index d9e9fc47d1cfe41ea7ce37eafda27ae12c091b09..50202ae609a49b100aa034b54344652bcd0d3873 100644
+--- a/server/caption/geminiPipeline.ts
++++ b/server/caption/geminiPipeline.ts
+@@ -669,53 +669,51 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
+           colors: ['colorful', 'dynamic'],
+           vibe: 'animated',
+           setting: 'digital',
+           wardrobe: ['various'],
+           angles: ['dynamic'],
+           mood: 'playful',
+           style: 'animated'
+         };
+       }
+ 
+       throw error;
+     }
+   } catch (error) {
+     console.error('Error in extractFacts:', error);
+     if (error instanceof InvalidImageError) throw error;
+     throw new Error(`Failed to extract facts: ${error instanceof Error ? error.message : String(error)}`);
+   }
+ }
+ 
+ type GeminiVariantParams = {
+   platform: "instagram" | "x" | "reddit" | "tiktok";
+   voice: string;
+   facts: Record<string, unknown>;
+   hint?: string;
+   nsfw?: boolean;
+-  style?: string;
+-  mood?: string;
+-};
++} & ToneOptions;
+ 
+ export async function generateVariants(params: GeminiVariantParams): Promise<z.infer<typeof CaptionArray>> {
+   const [sys, guard, prompt] = await Promise.all([
+     load("system.txt"),
+     load("guard.txt"),
+     load("variants.txt")
+   ]);
+ 
+   const sanitizeVariant = (item: Record<string, unknown>): Record<string, unknown> => {
+     const variant = { ...item } as Record<string, unknown>;
+ 
+     variant.safety_level = normalizeSafetyLevel(
+       typeof variant.safety_level === "string" ? variant.safety_level : "normal"
+     );
+ 
+     const caption = typeof variant.caption === "string" && variant.caption.trim().length > 0
+       ? variant.caption
+       : "Check out this amazing content!";
+     variant.caption = caption;
+ 
+     variant.mood = typeof variant.mood === "string" && variant.mood.trim().length >= 2
+       ? variant.mood
+       : "engaging";
+     variant.style = typeof variant.style === "string" && variant.style.trim().length >= 2
+       ? variant.style
+diff --git a/server/caption/geminiPipeline.ts b/server/caption/geminiPipeline.ts
+index d9e9fc47d1cfe41ea7ce37eafda27ae12c091b09..50202ae609a49b100aa034b54344652bcd0d3873 100644
+--- a/server/caption/geminiPipeline.ts
++++ b/server/caption/geminiPipeline.ts
+@@ -1088,75 +1086,81 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
+     });
+     const enriched = enrichWithTitleCandidates(ranked.final, { ranked });
+     const enrichedRanked = enriched.ranked ?? ranked;
+     return {
+       provider: 'openai',
+       final: enriched.final,
+       ranked: enrichedRanked,
+       titles: enriched.final.titles,
+     } as CaptionResult;
+   };
+ 
+   try {
+     let geminiEnabled = false;
+     try {
+       geminiEnabled = isGeminiAvailable();
+     } catch (availabilityError) {
+       console.warn('Gemini availability check failed, falling back to OpenAI', availabilityError);
+     }
+ 
+     if (!geminiEnabled) {
+       console.warn("Gemini API not available, falling back to OpenAI");
+       return resolveWithOpenAIFallback('OpenAI fallback selected because Gemini API is not configured');
+     }
+ 
+     const tone = extractToneOptions(toneRest);
++    const personaTone: ToneOptions = {
++      ...tone,
++      ...(typeof style === "string" ? { style } : {}),
++      ...(typeof mood === "string" ? { mood } : {}),
++    };
+     const facts = await extractFacts(imageUrl);
+-    let variants = await generateVariants({ platform, voice, facts, nsfw, ...tone });
++    const baseVariantParams = {
++      platform,
++      voice,
++      facts,
++      nsfw,
++      ...personaTone,
++    } satisfies GeminiVariantParams;
++    let variants = await generateVariants({ ...baseVariantParams });
+     variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
+     let ranked = await rankAndSelect(variants, { platform, facts });
+     let out = ranked.final;
+ 
+     const enforceCoverage = async () => {
+       let attempts = 0;
+       let coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
+       while (!coverage.ok && coverage.hint && attempts < 2) {
+         attempts += 1;
+-        variants = await generateVariants({ platform, voice, facts, hint: coverage.hint, nsfw, ...tone });
++        variants = await generateVariants({ ...baseVariantParams, hint: coverage.hint });
+         variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
+         ranked = await rankAndSelect(variants, { platform, facts });
+         out = ranked.final;
+         coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
+       }
+     };
+ 
+     await enforceCoverage();
+ 
+     const err = platformChecks(platform, out);
+     if (err) {
+       variants = await generateVariants({
+-        platform,
+-        voice,
+-        style,
+-        mood,
+-        facts,
++        ...baseVariantParams,
+         hint: `Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.`,
+-        nsfw,
+-        ...tone
+       });
+       variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
+       ranked = await rankAndSelect(variants, { platform, facts });
+       out = ranked.final;
+     }
+ 
+     const enriched = enrichWithTitleCandidates(out, { variants, ranked });
+     out = enriched.final;
+     if (enriched.ranked) {
+       ranked = enriched.ranked;
+     }
+ 
+     return { provider: 'gemini', facts, variants, ranked, final: out, titles: out.titles };
+   } catch (error) {
+     console.error('Gemini pipeline failed, using OpenAI fallback:', error);
+     return resolveWithOpenAIFallback('OpenAI fallback selected after Gemini pipeline error');
+   }
+ }
+ 
+EOF
+)

@@ -1,0 +1,187 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/tests/routes/caption-generation.test.ts b/tests/routes/caption-generation.test.ts
+index 40b01a37697d1cfe9752179161dfaa0ac4f67747..1d955025d8244dd3bd73a559464a21c81fae88d6 100644
+--- a/tests/routes/caption-generation.test.ts
++++ b/tests/routes/caption-generation.test.ts
+@@ -641,50 +641,178 @@ describe('Caption Generation', () => {
+       const result = await pipeline({
+         imageUrl: mockImageUrl,
+         platform: 'instagram',
+         voice: 'flirty_playful',
+         style,
+         mood,
+       });
+ 
+       const variantRetryCall = (textModel.generateContent as Mock).mock.calls[2]?.[0]?.[0]?.text;
+       expect(variantRetryCall).toContain(`STYLE: ${style}`);
+       expect(variantRetryCall).toContain(`MOOD: ${mood}`);
+ 
+       expect(result.final).toMatchObject({
+         hashtags: ['#vibe', '#luxury', '#runwayready'],
+         style,
+         mood,
+       });
+       expect(result.final.hashtags).toHaveLength(3);
+       expect(result.titles).toBeDefined();
+       expect(result.titles?.length).toBeGreaterThan(0);
+       const retryTitles = (result.final as { titles?: string[] }).titles;
+       expect(retryTitles).toBeDefined();
+       expect(retryTitles?.length).toBeGreaterThan(0);
+     });
+ 
++    it('should include persona cues during coverage enforcement retries', async () => {
++      const mockImageUrl =
++        'data:image/jpeg;base64,' +
++        '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP///////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8Af//Z';
++      const style = 'runway_poise';
++      const mood = 'dramatic_energy';
++
++      const mockFactsResponse = {
++        response: {
++          text: () =>
++            JSON.stringify({
++              objects: ['runway'],
++              colors: ['gold'],
++              setting: 'backstage',
++            }),
++        },
++      } satisfies MockResponse;
++
++      const initialVariants = {
++        response: {
++          text: () =>
++            JSON.stringify([
++              {
++                caption: 'City lights ignite every pose tonight',
++                hashtags: ['#nightshoot', '#couture'],
++                safety_level: 'normal',
++                mood,
++                style,
++                cta: 'Join me after the show',
++                alt: 'Model preparing under bright lights before the fashion show begins.',
++                nsfw: false,
++              },
++            ]),
++        },
++      } satisfies MockResponse;
++
++      const initialRank = {
++        response: {
++          text: () =>
++            JSON.stringify({
++              winner_index: 0,
++              scores: [5, 4, 3, 2, 1],
++              reason: 'Initial persona-aligned caption',
++              final: {
++                caption: 'City lights ignite every pose tonight',
++                hashtags: ['#nightshoot', '#couture'],
++                safety_level: 'normal',
++                mood,
++                style,
++                cta: 'Join me after the show',
++                alt: 'Model preparing under bright lights before the fashion show begins.',
++                nsfw: false,
++              },
++            }),
++        },
++      } satisfies MockResponse;
++
++      const coverageVariants = {
++        response: {
++          text: () =>
++            JSON.stringify([
++              {
++                caption: 'Runway gold steals the city lights tonight',
++                hashtags: ['#nightshoot', '#couture', '#runway'],
++                safety_level: 'normal',
++                mood,
++                style,
++                cta: 'Join me after the show',
++                alt: 'Golden runway shimmer frames the model striding backstage with confidence.',
++                nsfw: false,
++              },
++            ]),
++        },
++      } satisfies MockResponse;
++
++      const coverageRank = {
++        response: {
++          text: () =>
++            JSON.stringify({
++              winner_index: 0,
++              scores: [5, 4, 3, 2, 1],
++              reason: 'Coverage retry with runway facts included',
++              final: {
++                caption: 'Runway gold steals the city lights tonight',
++                hashtags: ['#nightshoot', '#couture', '#runway'],
++                safety_level: 'normal',
++                mood,
++                style,
++                cta: 'Join me after the show',
++                alt: 'Golden runway shimmer frames the model striding backstage with confidence.',
++                nsfw: false,
++              },
++            }),
++        },
++      } satisfies MockResponse;
++
++      const { textModel, visionModel } = await import('../../server/lib/gemini.ts');
++      (visionModel.generateContent as Mock).mockResolvedValueOnce(mockFactsResponse);
++      (textModel.generateContent as Mock)
++        .mockResolvedValueOnce(initialVariants)
++        .mockResolvedValueOnce(initialRank)
++        .mockResolvedValueOnce(coverageVariants)
++        .mockResolvedValueOnce(coverageRank);
++
++      const result = await pipeline({
++        imageUrl: mockImageUrl,
++        platform: 'instagram',
++        voice: 'flirty_playful',
++        style,
++        mood,
++      });
++
++      const coverageCall = (textModel.generateContent as Mock).mock.calls.find(call => {
++        const prompt = call?.[0]?.[0]?.text;
++        return typeof prompt === 'string' && prompt.includes('Work in IMAGE_FACTS');
++      });
++
++      expect(coverageCall).toBeDefined();
++      const coveragePrompt = coverageCall?.[0]?.[0]?.text as string;
++      expect(coveragePrompt).toContain(`STYLE: ${style}`);
++      expect(coveragePrompt).toContain(`MOOD: ${mood}`);
++
++      expect(result.final.caption).toContain('Runway gold steals the city lights tonight');
++      expect(result.final.hashtags).toContain('#runway');
++      expect(result.final.style).toBe(style);
++      expect(result.final.mood).toBe(mood);
++    });
++
+     it('should verify all returned variants are unique', async () => {
+       const variantPayload = [
+         {
+           caption: 'Feeling gorgeous tonight ✨',
+           hashtags: ['#lingerie', '#confidence', '#style'],
+           safety_level: 'spicy_safe',
+           mood: 'confident',
+           style: 'authentic',
+           cta: 'What do you think?',
+           alt: 'A glamorous example alt text to satisfy schema requirements',
+           nsfw: false,
+         },
+         {
+           caption: 'Midnight sparkle with satin swagger',
+           hashtags: ['#midnight', '#glow', '#style'],
+           safety_level: 'normal',
+           mood: 'playful',
+           style: 'bold',
+           cta: 'Slide into the night',
+           alt: 'Another richly detailed alt text for validation flow',
+           nsfw: false,
+         },
+         {
+           caption: 'Soft lighting, bold confidence in lace',
+           hashtags: ['#confidence', '#lace', '#nightout'],
+ 
+EOF
+)
