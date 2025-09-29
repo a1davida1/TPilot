@@ -256,7 +256,7 @@ function registerProResourcesRoutes(app: Express, apiPrefix: string = API_PREFIX
 
 
   // GET /api/pro-resources - List all perks for authenticated users
-  app.get(route('/pro-resources'), authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get(route('/pro-resources'), authenticateToken(true), async (req: AuthenticatedRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(403).json({
@@ -297,7 +297,7 @@ function registerProResourcesRoutes(app: Express, apiPrefix: string = API_PREFIX
   });
 
   // GET /api/pro-resources/:id/signup-instructions - Get detailed signup instructions
-  app.get(route('/pro-resources/:id/signup-instructions'), authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get(route('/pro-resources/:id/signup-instructions'), authenticateToken(true), async (req: AuthenticatedRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
@@ -343,7 +343,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> => (
 
 
 export function registerSavedContentRoutes(app: Express, options?: RegisterRoutesOptions): void {
-  app.post('/api/saved-content', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/saved-content', authenticateToken(true), async (req: AuthenticatedRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: 'Authentication required' });
@@ -887,7 +887,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   app.use('/api/referral', referralRouter);
 
   // Admin communities routes are exposed under a dedicated admin namespace
-  app.use('/api/admin/communities', adminCommunitiesRouter);
+  app.use('/api/admin/communities', authenticateToken(true), adminCommunitiesRouter);
 
   // Serve uploaded files through token-protected controller
   app.use('/uploads', createLocalDownloadRouter());
@@ -897,7 +897,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // ==========================================
 
   // Create subscription payment intent
-  app.post("/api/create-subscription", authenticateToken, async (req: AuthRequest, res) => {
+  app.post("/api/create-subscription", authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       if (!stripe) {
         return res.status(503).json({
@@ -989,7 +989,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   });
 
   // Get subscription status
-  app.get("/api/subscription-status", authenticateToken, async (req: AuthRequest, res) => {
+  app.get("/api/subscription-status", authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       if (!stripe) {
         return res.json({ hasSubscription: false, plan: 'free' });
@@ -1056,7 +1056,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   const unifiedBreaker = new CircuitBreaker(generateUnifiedAIContent);
 
   // Generate content with rate limiting
-  app.post("/api/generate-content", generationLimiter, authenticateToken, async (req: AuthRequest, res, next) => {
+  app.post("/api/generate-content", generationLimiter, authenticateToken(true), async (req: AuthRequest, res, next) => {
     if (!req.user?.id) {
       return res.status(401).json({ message: "Authentication required" });
     }
@@ -1205,7 +1205,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
     });
   });
 
-  app.get("/api/user-stats", authenticateToken, async (req: AuthRequest, res) => {
+  app.get("/api/user-stats", authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
@@ -1267,7 +1267,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   });
 
   // Get content generation history
-  app.get("/api/content-generation-history", authenticateToken, async (req: AuthRequest, res) => {
+  app.get("/api/content-generation-history", authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
@@ -1341,7 +1341,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   app.post('/api/saved-content', authenticateToken, createSaveContentHandler());
 
   // Get user's content generation history
-  app.get('/api/content-generations', authenticateToken, async (req: AuthRequest, res) => {
+  app.get('/api/content-generations', authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
@@ -1359,7 +1359,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   });
 
   // Delete a content generation
-  app.delete('/api/content-generations/:id', authenticateToken, async (req: AuthRequest, res) => {
+  app.delete('/api/content-generations/:id', authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
@@ -1412,7 +1412,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // DISABLED - Using MediaManager endpoint from api-routes.ts instead
   // This endpoint was conflicting with the proper implementation that uses MediaManager
   /*
-  app.get('/api/media', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/media', authenticateToken(true), async (req: AuthenticatedRequest, res) => {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -1460,7 +1460,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
 
   // DISABLED - Using MediaManager endpoint from api-routes.ts instead
   /*
-  app.delete('/api/media/:id', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.delete('/api/media/:id', authenticateToken(true), async (req: AuthenticatedRequest, res) => {
     try {
       const imageId = parseInt(req.params.id);
       const userId = req.user.id;
@@ -1484,7 +1484,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   */
 
   // Storage usage endpoint - REAL
-  app.get('/api/storage/usage', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/storage/usage', authenticateToken(true), async (req: AuthenticatedRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
@@ -1524,7 +1524,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   });
 
   // AI generation endpoint - REAL
-  app.post('/api/ai/generate', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/ai/generate', authenticateToken(true), async (req: AuthenticatedRequest, res) => {
     try {
       const { prompt, platforms, styleHints, variants } = req.body;
 
@@ -1583,7 +1583,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   });
 
   // Billing payment link endpoint - REAL
-  app.post('/api/billing/payment-link', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/billing/payment-link', authenticateToken(true), async (req: AuthenticatedRequest, res) => {
     try {
       const { plan, provider = 'stripe' } = req.body;
       const engines = {
@@ -1615,7 +1615,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   });
 
   // User settings endpoints - REAL
-  app.get('/api/user/settings', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/user/settings', authenticateToken(true), async (req: AuthenticatedRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
@@ -1640,7 +1640,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
     }
   });
 
-  app.patch('/api/user/settings', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.patch('/api/user/settings', authenticateToken(true), async (req: AuthenticatedRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
@@ -1657,7 +1657,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   });
 
   // Subscription status endpoint - REAL
-  app.get('/api/subscription', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/subscription', authenticateToken(true), async (req: AuthenticatedRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
@@ -1722,7 +1722,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   });
 
   // Social media quick post endpoint - REAL
-  app.post('/api/social-media/quick-post', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/social-media/quick-post', authenticateToken(true), async (req: AuthenticatedRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
@@ -1796,7 +1796,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   });
 
   // Social media posts history - REAL
-  app.get('/api/social-media/posts', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/social-media/posts', authenticateToken(true), async (req: AuthenticatedRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
@@ -1819,7 +1819,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   });
 
   // Image protection endpoint
-  app.post('/api/protect-image/:imageId', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/protect-image/:imageId', authenticateToken(true), async (req: AuthenticatedRequest, res) => {
     try {
       const imageId = Number.parseInt(req.params.imageId, 10);
       if (Number.isNaN(imageId)) return res.status(400).json({ message: 'Invalid image id' });

@@ -102,73 +102,103 @@ if (!ADMIN_EMAIL) {
   logger.warn('ADMIN_EMAIL environment variable is not set. Admin login is disabled.');
 }
 
-export const authenticateToken = async (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
-  const authHeader = req.headers['authorization'];
-  let token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+// Cookie options for clearing bad auth cookies
+const isProd = process.env.NODE_ENV === 'production';
+const cookieOpts = {
+  httpOnly: true,
+  secure: isProd,
+  sameSite: (isProd ? 'strict' : 'lax') as 'strict' | 'lax',
+  path: '/',
+};
 
-  // Fall back to JWT stored in httpOnly cookie
-  if (!token && req.cookies?.authToken) {
-    token = req.cookies.authToken;
-  }
+export const authenticateToken = (required = true) => {
+  return async (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
+    // Check for bearer token in Authorization header
+    const authHeader = req.get('authorization');
+    const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    
+    // Check for token in signed or unsigned cookies
+    const cookieToken = req.signedCookies?.authToken || req.cookies?.authToken;
+    
+    // Use bearer token if available, otherwise fall back to cookie
+    const token = bearer || cookieToken;
 
-  // Try JWT token first
-  if (token) {
-    if (await isTokenBlacklisted(token)) {
-      return res.status(401).json({ error: 'Token revoked' });
+    // Try JWT token first
+    if (token) {
+      if (await isTokenBlacklisted(token)) {
+        // Clear poisoned cookie
+        res.clearCookie('authToken', cookieOpts);
+        if (required) return res.status(401).json({ error: 'Token revoked' });
+        return next();
+      }
+      
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId?: number; id?: number; email?: string; isAdmin?: boolean; username?: string; role?: string; tier?: string; iat: number; exp: number };
+
+        // All users must exist in database - no hardcoded admin backdoors
+        // Admin status is verified from database isAdmin/role fields only
+
+        // For regular users, fetch from database
+        const userId = decoded.userId || decoded.id;
+        if (!userId) {
+          // Clear poisoned cookie
+          res.clearCookie('authToken', cookieOpts);
+          if (required) return res.status(401).json({ error: 'Invalid token: missing user ID' });
+          return next();
+        }
+
+        const [user] = await db.select().from(users).where(eq(users.id, userId));
+
+        if (!user) {
+          // Clear poisoned cookie
+          res.clearCookie('authToken', cookieOpts);
+          if (required) return res.status(401).json({ error: 'User not found' });
+          return next();
+        }
+
+        if (!user.emailVerified) {
+          return EMAIL_NOT_VERIFIED_RESPONSE(res, user.email || '');
+        }
+
+        const restrictionResponse = handleAccountRestrictions(user, res);
+        if (restrictionResponse) {
+          return restrictionResponse;
+        }
+
+        req.user = user;
+        return next();
+      } catch (error) {
+        logger.error('Auth error:', error);
+        // Clear poisoned cookie so repeated requests don't keep failing
+        res.clearCookie('authToken', cookieOpts);
+        if (required) return res.status(401).json({ error: 'Invalid or expired token' });
+        return next();
+      }
     }
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { userId?: number; id?: number; email?: string; isAdmin?: boolean; username?: string; role?: string; tier?: string; iat: number; exp: number };
 
-      // All users must exist in database - no hardcoded admin backdoors
-      // Admin status is verified from database isAdmin/role fields only
+    // Fallback to session-based auth
+    if (req.session && (req.session as { user?: UserType }).user) {
+      const sessionUser = (req.session as { user?: UserType }).user as UserType;
 
-      // For regular users, fetch from database
-      const userId = decoded.userId || decoded.id;
-      if (!userId) {
-        return res.status(401).json({ error: 'Invalid token: missing user ID' });
+      if (!sessionUser.emailVerified) {
+        return EMAIL_NOT_VERIFIED_RESPONSE(res, sessionUser.email || '');
       }
 
-      const [user] = await db.select().from(users).where(eq(users.id, userId));
-
-      if (!user) {
-        return res.status(401).json({ error: 'User not found' });
-      }
-
-      if (!user.emailVerified) {
-        return EMAIL_NOT_VERIFIED_RESPONSE(res, user.email || '');
-      }
-
-      const restrictionResponse = handleAccountRestrictions(user, res);
+      const restrictionResponse = handleAccountRestrictions(sessionUser, res);
       if (restrictionResponse) {
         return restrictionResponse;
       }
 
-      req.user = user;
+      req.user = sessionUser;
       return next();
-    } catch (error) {
-      logger.error('Auth error:', error);
-      return res.status(401).json({ error: 'Invalid token' });
-    }
-  }
-
-  // Fallback to session-based auth
-  if (req.session && (req.session as { user?: UserType }).user) {
-    const sessionUser = (req.session as { user?: UserType }).user as UserType;
-
-    if (!sessionUser.emailVerified) {
-      return EMAIL_NOT_VERIFIED_RESPONSE(res, sessionUser.email || '');
     }
 
-    const restrictionResponse = handleAccountRestrictions(sessionUser, res);
-    if (restrictionResponse) {
-      return restrictionResponse;
+    if (required) {
+      return res.status(401).json({ error: 'Access token required' });
     }
-
-    req.user = sessionUser;
+    
     return next();
-  }
-
-  return res.status(401).json({ error: 'Access token required' });
+  };
 };
 
 export const createToken = (user: UserType): string => {

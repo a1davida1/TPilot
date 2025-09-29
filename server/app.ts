@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import csrf from 'csurf';
 import { v4 as uuidv4 } from 'uuid';
 import { registerRoutes } from './routes.js';
 import { authLimiter, generalLimiter, sanitize, notFoundHandler } from './middleware/security.js';
@@ -237,11 +238,65 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   });
 
   app.post(`${API_PREFIX}/webhooks/stripe`, express.raw({ type: 'application/json' }), (_req, _res, next) => next());
-  app.use(cookieParser());
+  
+  // Cookie parser MUST come before CSRF
+  const cookieSecret = process.env.COOKIE_SECRET || process.env.SESSION_SECRET || 'dev-cookie-secret';
+  app.use(cookieParser(cookieSecret));
+  
+  // Body parsers
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+  
+  // Session middleware
   app.use(createSessionMiddleware());
   app.set('sessionConfigured', true);
+  
+  // CSRF protection (double-submit cookie pattern)
+  const isProd = process.env.NODE_ENV === 'production';
+  const csrfProtection = csrf({
+    cookie: {
+      key: '_csrf',
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'strict' : 'lax',
+      path: '/',
+    },
+  });
+  
+  // Apply CSRF protection to all routes except specific exemptions
+  app.use((req, res, next) => {
+    // Exempt OAuth callbacks, webhooks, and CSRF token endpoint from CSRF protection
+    const exemptPaths = [
+      `${API_PREFIX}/auth/reddit/callback`,
+      `${API_PREFIX}/auth/google/callback`,
+      `${API_PREFIX}/auth/facebook/callback`,
+      `${API_PREFIX}/webhooks/`,
+      `${API_PREFIX}/csrf-token`,
+      `${API_PREFIX}/health`
+    ];
+    
+    if (exemptPaths.some(path => req.path.startsWith(path))) {
+      return next();
+    }
+    
+    return csrfProtection(req as any, res as any, next);
+  });
+  
+  // Expose CSRF token endpoint
+  app.get(`${API_PREFIX}/csrf-token`, (req, res) => {
+    const token = (req as any).csrfToken ? (req as any).csrfToken() : '';
+    
+    // Non-HttpOnly mirror for frontend frameworks to read and echo back
+    res.cookie('XSRF-TOKEN', token, {
+      secure: isProd,
+      sameSite: isProd ? 'strict' : 'lax',
+      path: '/',
+    });
+    
+    res.json({ csrfToken: token });
+  });
+  
+  // Passport
   app.use(passport.initialize());
   app.use(passport.session());
 

@@ -66,10 +66,11 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
       // For production, require email verification
       const isDevelopment = process.env.NODE_ENV === 'development';
 
+      const isProd = process.env.NODE_ENV === 'production';
       const cookieOptions = {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict' as const, // Use 'strict' for CSRF protection in production
+        secure: isProd,
+        sameSite: (isProd ? 'strict' : 'lax') as 'strict' | 'lax',
         maxAge: 24 * 60 * 60 * 1000, // 24 hours (86400000 ms)
         path: '/' // Explicitly set path to root
       };
@@ -226,10 +227,11 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
       );
 
       // Set JWT in HttpOnly cookie
+      const isProd = process.env.NODE_ENV === 'production';
       res.cookie('authToken', token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict', // Use 'strict' for CSRF protection in production
+        secure: isProd,
+        sameSite: (isProd ? 'strict' : 'lax') as 'strict' | 'lax',
         maxAge: 24 * 60 * 60 * 1000, // 24 hours (86400000 ms)
         path: '/' // Explicitly set path to root
       });
@@ -468,10 +470,11 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
         { expiresIn: '24h' }
       );
 
+      const isProd = process.env.NODE_ENV === 'production';
       res.cookie('authToken', token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict', // Use 'strict' for CSRF protection in production
+        secure: isProd,
+        sameSite: (isProd ? 'strict' : 'lax') as 'strict' | 'lax',
         maxAge: 24 * 60 * 60 * 1000, // 24 hours (86400000 ms)
         path: '/' // Explicitly set path to root
       });
