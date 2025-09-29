@@ -34,6 +34,12 @@
     --popover: 318 60 99;
     --popover-foreground: 327 45 18;
 
+    /* Secondary and muted surfaces - MISSING TOKENS ADDED */
+    --secondary: 320 50 92;
+    --secondary-foreground: 327 45 18;
+    --muted: 315 30 94;
+    --muted-foreground: 327 35 35;
+
     /* Primary brand colors - Bubblegum gradient */
     --primary: 320 90 72;
     --primary-foreground: 0 0 100;
@@ -250,11 +256,11 @@
     font-weight: 600 !important;
   }
 
-  /* Button text - always readable */
+  /* Button text - always readable with guaranteed contrast */
   button, .btn, .button {
     font-weight: 700 !important;
     letter-spacing: -0.01em !important;
-    color: inherit !important;
+    /* Removed problematic color: inherit !important */
   }
 
   /* Selection colors - Bubblegum */
@@ -269,20 +275,21 @@
   }
 }
 
-/* Premium Bubble Glass Effects - Enhanced */
+/* Premium Bubble Glass Effects - Enhanced with Theme Tokens */
 .glass-panel {
-  @apply bg-white/90 dark:bg-gray-900/90 backdrop-blur-3xl border border-pink-200/60 dark:border-pink-500/40;
+  background: hsl(var(--card) / 0.9);
+  border: 1px solid hsl(var(--border) / 0.6);
   backdrop-filter: saturate(220%) blur(32px) brightness(1.1);
   -webkit-backdrop-filter: saturate(220%) blur(32px) brightness(1.1);
   border-radius: 1.75rem;
   position: relative;
   overflow: hidden;
   box-shadow: 
-    0 12px 40px rgba(236, 72, 153, 0.15),
-    0 8px 24px rgba(244, 114, 182, 0.12),
-    0 4px 12px rgba(251, 191, 36, 0.08),
-    inset 0 2px 0 rgba(255, 255, 255, 0.3),
-    inset 0 -1px 0 rgba(236, 72, 153, 0.1);
+    0 12px 40px hsl(var(--primary) / 0.15),
+    0 8px 24px hsl(var(--accent) / 0.12),
+    0 4px 12px hsl(var(--accent-indigo) / 0.08),
+    inset 0 2px 0 hsl(var(--card) / 0.3),
+    inset 0 -1px 0 hsl(var(--primary) / 0.1);
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -299,14 +306,17 @@
 .glass-panel:hover {
   transform: translateY(-2px);
   box-shadow: 
-    0 16px 50px rgba(236, 72, 153, 0.2),
-    0 12px 30px rgba(244, 114, 182, 0.15),
-    0 8px 16px rgba(251, 191, 36, 0.1),
-    inset 0 2px 0 rgba(255, 255, 255, 0.4);
+    0 16px 50px hsl(var(--primary) / 0.2),
+    0 12px 30px hsl(var(--accent) / 0.15),
+    0 8px 16px hsl(var(--accent-indigo) / 0.1),
+    inset 0 2px 0 hsl(var(--card) / 0.4);
 }
 
 .text-gradient {
-  @apply bg-gradient-to-r from-pink-500 via-rose-400 to-pink-600 bg-clip-text text-transparent;
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--primary-600)));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   font-weight: 700;
 }
 
@@ -324,14 +334,14 @@ button, .btn, .button {
   border-radius: 1.25rem !important;
   font-weight: 600 !important;
   letter-spacing: -0.01em !important;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+  text-shadow: 0 1px 3px hsl(var(--overlay) / 0.15) !important;
   position: relative;
   overflow: hidden;
   box-shadow: 
-    0 4px 12px rgba(236, 72, 153, 0.2),
-    0 2px 6px rgba(244, 114, 182, 0.15),
-    inset 0 2px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -1px 0 rgba(236, 72, 153, 0.1);
+    0 4px 12px hsl(var(--primary) / 0.2),
+    0 2px 6px hsl(var(--accent) / 0.15),
+    inset 0 2px 0 hsl(var(--card) / 0.2),
+    inset 0 -1px 0 hsl(var(--primary) / 0.1);
 }
 
 button::after, .btn::after, .button::after {
@@ -351,10 +361,10 @@ button::after, .btn::after, .button::after {
 button:hover, .btn:hover, .button:hover {
   transform: translateY(-3px) scale(1.02) !important;
   box-shadow: 
-    0 8px 25px rgba(236, 72, 153, 0.3),
-    0 4px 12px rgba(244, 114, 182, 0.2),
-    0 2px 8px rgba(251, 191, 36, 0.1),
-    inset 0 2px 0 rgba(255, 255, 255, 0.3) !important;
+    0 8px 25px hsl(var(--primary) / 0.3),
+    0 4px 12px hsl(var(--accent) / 0.2),
+    0 2px 8px hsl(var(--accent-indigo) / 0.1),
+    inset 0 2px 0 hsl(var(--card) / 0.3) !important;
 }
 
 button:hover::after, .btn:hover::after, .button:hover::after {
@@ -372,8 +382,8 @@ table {
   border-radius: 1rem !important;
   overflow: hidden !important;
   box-shadow: 
-    0 4px 20px rgba(236, 72, 153, 0.08),
-    0 2px 8px rgba(244, 114, 182, 0.05);
+    0 4px 20px hsl(var(--primary) / 0.08),
+    0 2px 8px hsl(var(--accent) / 0.05);
 }
 
 th {
@@ -605,7 +615,7 @@ td {
 
   /* Button utilities with guaranteed readability */
   .btn-premium {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-pink)));
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-purple)));
     color: hsl(var(--primary-foreground)) !important;
     font-weight: 600 !important;
     border: none;
@@ -615,7 +625,7 @@ td {
   }
 
   .btn-premium:hover {
-    background: linear-gradient(135deg, hsl(var(--primary-600)), hsl(var(--accent-pink)));
+    background: linear-gradient(135deg, hsl(var(--primary-600)), hsl(var(--accent-purple)));
     transform: translateY(-2px) scale(1.02);
     box-shadow: 0 8px 30px hsl(var(--primary) / 0.35);
   }
@@ -664,7 +674,7 @@ td {
 
   /* Typography utilities with bubble theme */
   .text-gradient-animate {
-    background: linear-gradient(45deg, hsl(var(--primary)), hsl(var(--accent-pink)), hsl(var(--accent-yellow)), hsl(var(--primary)));
+    background: linear-gradient(45deg, hsl(var(--primary)), hsl(var(--accent-purple)), hsl(var(--accent-indigo)), hsl(var(--primary)));
     background-size: 300% 300%;
     background-clip: text;
     -webkit-background-clip: text;
@@ -675,7 +685,7 @@ td {
   }
 
   .text-gradient-static {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-pink)));
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-purple)));
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -830,7 +840,7 @@ td {
 /* Premium Bubble Button Styles */
 .btn-premium {
   @apply relative overflow-hidden font-bold tracking-tight;
-  background: linear-gradient(135deg, #ec4899 0%, #f472b6 30%, #f9a8d4 70%, #fbbf24 100%);
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 30%, hsl(var(--accent-purple)) 70%, hsl(var(--accent-indigo)) 100%);
   border-radius: 2rem;
   padding: 1rem 2rem;
   font-size: 1.1rem;
@@ -1010,21 +1020,21 @@ td {
 .particle-1 {
   width: 8px;
   height: 8px;
-  background: linear-gradient(45deg, rgba(236, 72, 153, 0.6), rgba(244, 114, 182, 0.4));
+  background: linear-gradient(45deg, hsl(var(--primary) / 0.6), hsl(var(--accent) / 0.4));
   animation: particles-float-1 12s ease-in-out infinite;
 }
 
 .particle-2 {
   width: 6px;
   height: 6px;
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.5), rgba(236, 72, 153, 0.3));
+  background: linear-gradient(135deg, hsl(var(--accent-indigo) / 0.5), hsl(var(--primary) / 0.3));
   animation: particles-float-2 15s ease-in-out infinite;
 }
 
 .particle-3 {
   width: 4px;
   height: 4px;
-  background: linear-gradient(225deg, rgba(244, 114, 182, 0.4), rgba(251, 191, 36, 0.2));
+  background: linear-gradient(225deg, hsl(var(--accent) / 0.4), hsl(var(--accent-indigo) / 0.2));
   animation: particles-float-3 18s ease-in-out infinite;
 }
 
@@ -1101,40 +1111,40 @@ td {
 
 /* Premium Glass Morphism Classes */
 .glass-card {
-  background: rgba(255, 255, 255, 0.25);
+  background: hsl(var(--card) / 0.25);
   backdrop-filter: blur(20px);
   border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid hsl(var(--border) / 0.3);
   box-shadow: 
-    0 8px 32px rgba(236, 72, 153, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    0 8px 32px hsl(var(--primary) / 0.15),
+    inset 0 1px 0 hsl(var(--card) / 0.4);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card:hover {
   transform: translateY(-4px);
   box-shadow: 
-    0 16px 48px rgba(236, 72, 153, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    0 16px 48px hsl(var(--primary) / 0.25),
+    inset 0 1px 0 hsl(var(--card) / 0.5);
 }
 
 .dark .glass-card {
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: hsl(var(--card) / 0.4);
+  border: 1px solid hsl(var(--border) / 0.1);
   box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    0 8px 32px hsl(var(--overlay) / 0.3),
+    inset 0 1px 0 hsl(var(--card) / 0.1);
 }
 
 /* Premium Button Animations */
 .btn-premium {
-  background: linear-gradient(135deg, #ec4899, #a855f7, #ec4899);
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-purple)), hsl(var(--primary)));
   background-size: 200% 200%;
   animation: gradient-shift 3s ease infinite;
   border-radius: 16px;
   padding: 12px 24px;
   font-weight: 600;
-  color: white;
+  color: hsl(var(--primary-foreground));
   border: none;
   cursor: pointer;
   position: relative;
@@ -1153,7 +1163,7 @@ td {
 
 /* Premium Text Gradients */
 .text-gradient-premium {
-  background: linear-gradient(135deg, #ec4899, #a855f7, #f59e0b);
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-purple)), hsl(var(--accent-indigo)));
   background-size: 200% 200%;
   -webkit-background-clip: text;
   background-clip: text;
@@ -1572,34 +1582,34 @@ button[role="combobox"] {
   opacity: 0.7;
 }
 
-/* Custom Purple Gradient Theme */
+/* Custom Purple Gradient Theme - Updated with Theme Tokens */
 .bg-gradient-purple {
-  background: linear-gradient(135deg, #6B46C1 0%, #9333EA 100%);
+  background: linear-gradient(135deg, hsl(var(--accent-purple)) 0%, hsl(var(--accent-violet)) 100%);
 }
 
 .bg-gradient-purple-dark {
-  background: linear-gradient(135deg, #4C1D95 0%, #7C3AED 100%);
+  background: linear-gradient(135deg, hsl(var(--accent-purple) / 0.8) 0%, hsl(var(--accent-violet) / 0.9) 100%);
 }
 
 .bg-card-dark {
-  background: #1F2937;
+  background: hsl(var(--card));
 }
 
 .bg-card-darker {
-  background: #111827;
+  background: hsl(var(--popover));
 }
 
 .dark .bg-card-dark {
-  background: #111827;
+  background: hsl(var(--card));
 }
 
 .dark .bg-card-darker {
-  background: #0F172A;
+  background: hsl(var(--popover));
 }
 
 .text-purple-gradient {
-   color: #C084FC;
-  background: linear-gradient(135deg, #A78BFA 0%, #C084FC 100%);
+   color: hsl(var(--accent-purple));
+  background: linear-gradient(135deg, hsl(var(--accent-violet)) 0%, hsl(var(--accent-purple)) 100%);
   -webkit-background-clip: text;
   -moz-background-clip: text;
   -webkit-text-fill-color: transparent;
