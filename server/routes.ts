@@ -5,6 +5,9 @@ import { createServer, type Server } from "http";
 import path from 'path';
 import Stripe from 'stripe';
 import passport from 'passport';
+import process from 'node:process';
+import { Pool } from 'pg';
+import Redis from 'ioredis';
 
 // Security and middleware
 import { validateEnvironment, securityMiddleware, ipLoggingMiddleware, errorHandler, logger, generationLimiter } from "./middleware/security";
@@ -818,6 +821,46 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // CSRF token endpoint
   app.get(route('/csrf-token'), csrfProtection, (req, res) => {
     res.json({ csrfToken: req.csrfToken() });
+  });
+
+  // -------- Liveness and Readiness --------
+  app.get(route('/health'), (_req, res) => {
+    res.json({ status: 'ok' });
+  });
+
+  app.get(route('/ready'), async (_req, res) => {
+    const checks: Record<string, { ok: boolean; skipped?: boolean; error?: string }> = {};
+
+    // DB check
+    try {
+      if (!process.env.DATABASE_URL) {
+        checks.db = { ok: true, skipped: true };
+      } else {
+        const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+        await pool.query('SELECT 1');
+        await pool.end();
+        checks.db = { ok: true };
+      }
+    } catch (e) {
+      checks.db = { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+
+    // Redis check
+    try {
+      if (!process.env.REDIS_URL) {
+        checks.redis = { ok: true, skipped: true };
+      } else {
+        const r = new Redis(process.env.REDIS_URL);
+        const pong = await r.ping();
+        await r.quit();
+        checks.redis = { ok: pong === 'PONG' };
+      }
+    } catch (e) {
+      checks.redis = { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+
+    const allOk = Object.values(checks).every(c => c.ok);
+    res.status(allOk ? 200 : 503).json({ status: allOk ? 'ready' : 'degraded', checks });
   });
 
   // CSRF error handling middleware must be registered after the CSRF-protected
