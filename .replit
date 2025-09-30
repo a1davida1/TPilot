@@ -4,7 +4,7 @@ hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["vim", "nano", "nmh", "imagemagick"]
+packages = ["vim", "nano", "nmh", "imagemagick", "yakut"]
 
 [deployment]
 deploymentTarget = "autoscale"
@@ -33,6 +33,10 @@ externalPort = 3001
 [[ports]]
 localPort = 38835
 externalPort = 6000
+
+[[ports]]
+localPort = 40971
+externalPort = 5000
 
 [[ports]]
 localPort = 41751

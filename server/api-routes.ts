@@ -17,6 +17,8 @@ import multer from "multer";
 import type { Request, NextFunction } from 'express';
 import { authenticateToken, type AuthRequest } from './middleware/auth.js';
 import { z, ZodError } from "zod";
+import { API_PREFIX } from './lib/api-prefix.js';
+import { mountMetrics } from './observability/metrics.js';
 
 type AiHistoryDependencies = {
   getUserHistory?: (userId: number, limit?: number) => Promise<unknown[]>;
@@ -84,7 +86,9 @@ const upload = multer({
   },
 });
 
-export function registerApiRoutes(app: Express) {
+export function registerApiRoutes(app: Express, apiPrefix: string = API_PREFIX) {
+
+  mountMetrics(app, apiPrefix);
 
   const aiServiceBreaker = new CircuitBreaker(AiService.generateContent);
   const enhancedContentBreaker = new CircuitBreaker(generateEnhancedContent);
@@ -470,23 +474,4 @@ export function registerApiRoutes(app: Express) {
   // AI Generation History
   app.get('/api/ai/history', authenticateToken, createAiHistoryHandler());
 
-  // Public metrics for landing pages
-  app.get('/api/metrics', async (_req, res) => {
-    try {
-      const [userCount, postCount, engagement] = await Promise.all([
-        db.select({ count: sql<number>`count(*)` }).from(users),
-        db.select({ count: sql<number>`count(*)` }).from(postJobs),
-        db.select({ avg: sql<number>`COALESCE(AVG(${userSamples.performanceScore}), 0)` }).from(userSamples)
-      ]);
-
-      res.json({
-        creators: userCount[0]?.count || 0,
-        posts: postCount[0]?.count || 0,
-        engagement: Math.round(engagement[0]?.avg || 0)
-      });
-    } catch (error: unknown) {
-      console.error('Failed to fetch metrics:', error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  });
 }

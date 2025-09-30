@@ -1330,7 +1330,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // ==========================================
 
   // Register new enterprise API routes
-  registerApiRoutes(app);
+  registerApiRoutes(app, apiPrefix);
 
   // Register Policy Routes
   registerPolicyRoutes(app);
