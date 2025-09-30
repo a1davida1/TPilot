@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useTransition } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,7 +24,8 @@ import {
   Zap,
   ListChecks,
   Command,
-  CheckCircle2
+  CheckCircle2,
+  Loader2
 } from "lucide-react";
 import { FaReddit } from "react-icons/fa";
 import { cn } from "@/lib/utils";
@@ -187,6 +188,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { user: authUser } = useAuth();
+  const [isNavigatingToScheduler, startSchedulerNavigation] = useTransition();
   
   const resolvedTier = (authUser?.tier as ModernDashboardProps['userTier'] | undefined) ?? userTier;
   const resolvedUser = authUser ?? user;
@@ -563,6 +565,12 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     } catch (_error) {
       // Ignore localStorage errors
     }
+  };
+
+  const handleManageSchedule = () => {
+    startSchedulerNavigation(() => {
+      setLocation('/enterprise?tab=scheduler');
+    });
   };
 
   // Get current onboarding stage for hero card
@@ -1165,17 +1173,22 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                   </div>
                 </div>
               </div>
-              <Button 
+              <Button
                 className="w-full mt-4 bg-purple-600 hover:bg-purple-700"
-                onClick={() => {
-                  toast({
-                    title: "Scheduler",
-                    description: "Post scheduler coming soon!",
-                  });
-                }}
+                onClick={handleManageSchedule}
+                disabled={isNavigatingToScheduler}
               >
-                Manage Schedule
-                <ChevronRight className="h-4 w-4 ml-2" />
+                {isNavigatingToScheduler ? (
+                  <>
+                    Opening Scheduler
+                    <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                  </>
+                ) : (
+                  <>
+                    Manage Schedule
+                    <ChevronRight className="h-4 w-4 ml-2" />
+                  </>
+                )}
               </Button>
             </CardContent>
           </Card>
