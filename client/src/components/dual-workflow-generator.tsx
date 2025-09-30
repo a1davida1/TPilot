@@ -2,17 +2,14 @@ import { useState, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { 
   Upload, 
   Camera, 
   FileText, 
   Sparkles,
-  ArrowRight,
   Copy,
-  Download,
   Image,
   Wand2,
   RefreshCw,
@@ -35,7 +32,7 @@ interface GeneratedContent {
 export function DualWorkflowGenerator() {
   const [workflowMode, setWorkflowMode] = useState<'text-first' | 'image-first'>('text-first');
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [_imageFile, setImageFile] = useState<File | null>(null);
   const [platform, setPlatform] = useState("reddit");
   const [style, setStyle] = useState("playful");
   const [theme, setTheme] = useState("teasing");
