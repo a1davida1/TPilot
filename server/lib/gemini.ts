@@ -1,24 +1,31 @@
 import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
 
-// Check if API key is available (support both environment variable names)
-const apiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY;
+const apiKey =
+  process.env.GOOGLE_GENAI_API_KEY ?? process.env.GEMINI_API_KEY ?? null;
+const textModelName = process.env.GEMINI_TEXT_MODEL ?? "gemini-1.5-flash";
+const visionModelName = process.env.GEMINI_VISION_MODEL ?? textModelName;
 
-// Create placeholder exports that will be initialized if API key exists
 let genAI: GoogleGenerativeAI | null = null;
 let visionModel: GenerativeModel | null = null;
 let textModel: GenerativeModel | null = null;
 
-if (apiKey) {
-  genAI = new GoogleGenerativeAI(apiKey);
-  visionModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-  textModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // keep consistent
-} else {
+if (!apiKey) {
   console.warn(
     "GOOGLE_GENAI_API_KEY or GEMINI_API_KEY environment variable is not set. " +
-    "Gemini AI features will fall back to OpenAI."
+      "Gemini AI features will fall back to OpenAI."
+  );
+} else {
+  genAI = new GoogleGenerativeAI(apiKey);
+  const requestOptions = { apiVersion: "v1" } as const;
+  visionModel = genAI.getGenerativeModel(
+    { model: visionModelName },
+    requestOptions
+  );
+  textModel = genAI.getGenerativeModel(
+    { model: textModelName },
+    requestOptions
   );
 }
 
-// Export helper to check if Gemini is available
-export const isGeminiAvailable = () => !!apiKey;
+export const isGeminiAvailable = () => genAI !== null;
 export { genAI, visionModel, textModel };
