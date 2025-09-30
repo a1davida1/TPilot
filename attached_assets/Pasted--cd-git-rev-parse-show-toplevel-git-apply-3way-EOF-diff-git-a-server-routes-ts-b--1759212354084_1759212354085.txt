@@ -1,0 +1,64 @@
+(cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF'
+diff --git a/server/routes.ts b/server/routes.ts
+--- a/server/routes.ts
++++ b/server/routes.ts
+@@ -14,6 +14,7 @@
+  import Redis from 'ioredis';
+  import Stripe from 'stripe';
+  import passport from 'passport';
++ import process from 'node:process';
+@@ -72,6 +73,9 @@
+   // Apply CSRF protection to sensitive routes
+   // Note: JWT-based routes rely on token authentication instead of CSRF
++
++  const route = (path: string) => prefixApiPath(path, apiPrefix);
++
+   // Apply CSRF protection to sensitive routes
+   const csrfRoutes = buildCsrfProtectedRoutes(apiPrefix);
+ 
+@@ -110,6 +114,60 @@
+     }
+   });
+ 
++  // -------- Liveness and Readiness --------
++  app.get(route('/health'), (_req, res) => {
++    res.json({ status: 'ok' });
++  });
++
++  app.get(route('/ready'), async (_req, res) => {
++    const checks: Record<string, { ok: boolean; skipped?: boolean; error?: string }> = {};
++
++    // DB check
++    try {
++      if (!process.env.DATABASE_URL) {
++        checks.db = { ok: true, skipped: true };
++      } else {
++        const pool = new Pool({ connectionString: process.env.DATABASE_URL });
++        await pool.query('SELECT 1');
++        await pool.end();
++        checks.db = { ok: true };
++      }
++    } catch (e) {
++      checks.db = { ok: false, error: e instanceof Error ? e.message : String(e) };
++    }
++
++    // Redis check
++    try {
++      if (!process.env.REDIS_URL) {
++        checks.redis = { ok: true, skipped: true };
++      } else {
++        const r = new Redis(process.env.REDIS_URL);
++        const pong = await r.ping();
++        await r.quit();
++        checks.redis = { ok: pong === 'PONG' };
++      }
++    } catch (e) {
++      checks.redis = { ok: false, error: e instanceof Error ? e.message : String(e) };
++    }
++
++    const allOk = Object.values(checks).every(c => c.ok);
++    res.status(allOk ? 200 : 503).json({ status: allOk ? 'ready' : 'degraded', checks });
++  });
++
+EOF
+)

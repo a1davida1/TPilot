@@ -38,7 +38,7 @@ const respondWithStatus = <Body extends Record<string, unknown>>(
   return res.status(statusCode).json(body);
 };
 
-const parseBearerToken = (
+const _parseBearerToken = (
   header: string | undefined
 ): { token: string | null; invalid: boolean } => {
   if (!header) {
@@ -58,7 +58,7 @@ const parseBearerToken = (
   return { token, invalid: false };
 };
 
-const normalizeTokenCandidate = (
+const _normalizeTokenCandidate = (
   candidate: unknown
 ): { token: string | null; invalid: boolean } => {
   if (typeof candidate !== 'string') {
@@ -73,7 +73,7 @@ const normalizeTokenCandidate = (
   return { token: trimmed, invalid: false };
 };
 
-const hasJwtStructure = (token: string): boolean => {
+const _hasJwtStructure = (token: string): boolean => {
   const segments = token.split('.');
   return segments.length === 3 && segments.every(segment => segment.length > 0);
 };

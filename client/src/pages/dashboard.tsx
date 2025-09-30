@@ -11,7 +11,7 @@ type DashboardUser = User & {
 };
 
 export default function Dashboard() {
-  const [isGuestMode, setIsGuestMode] = useState(false);
+  const [_isGuestMode, setIsGuestMode] = useState(false);
   const [location] = useLocation();
   const { user, isLoading, isAuthenticated, refetch } = useAuth();
   const { toast } = useToast();

@@ -191,7 +191,7 @@ type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T = unknown>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
+  ({ on401: _unauthorizedBehavior }) =>
   async ({ queryKey: key, signal }) => {
     // Validate that the key is a string or array containing string
     let queryKey: string;

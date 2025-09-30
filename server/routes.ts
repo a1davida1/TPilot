@@ -1,4 +1,4 @@
-import type { Express, Response, NextFunction } from "express";
+import type { Express } from "express";
 import express from "express";
 import type { Session } from "express-session";
 import { createServer, type Server } from "http";
@@ -28,7 +28,6 @@ import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { setupAdminRoutes } from "./admin-routes";
 import { setupSocialAuth } from "./social-auth";
-import { visitorAnalytics } from "./visitor-analytics";
 import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers";
 import { deriveStripeConfig } from "./payments/stripe-config";
 import { buildUploadUrl } from "./lib/uploads";
@@ -469,16 +468,11 @@ declare module 'express-session' {
 
 // Service imports
 import { generateContent } from "./services/content-generator.js";
-import { generateAIContent, analyzeImageForContent } from "./services/ai-generator.js";
-import { generateWithMultiProvider, getProviderStatus } from "./services/multi-ai-provider.js";
-import { generateUnifiedAIContent, analyzeImage } from "./services/unified-ai-service.js";
-import { generateImageCaption, imageToBase64, validateImageFormat } from "./image-caption-generator.js";
-import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage.js";
-import { getRandomTemplates, addWatermark, getTemplateByMood } from "./content-templates.js";
-import { generateAdvancedContent, type ContentParameters } from "./advanced-content-generator.js";
+import { generateUnifiedAIContent } from "./services/unified-ai-service.js";
+import { imageToBase64, validateImageFormat } from "./image-caption-generator.js";
 
 // Reddit communities now handled in reddit-routes.ts
-import { getAvailablePerks, getPerksByCategory, getSignupInstructions } from "./pro-perks.js";
+import { getAvailablePerks, getSignupInstructions } from "./pro-perks.js";
 
 type SentryInstance = typeof import('@sentry/node');
 
@@ -486,7 +480,6 @@ interface RegisterRoutesOptions {
   sentry?: SentryInstance | null;
 }
 import type { ProPerk } from "./pro-perks.js";
-import { ReferralManager } from './lib/referral-system.js';
 
 // API route modules
 import { registerApiRoutes } from "./api-routes.js";
@@ -497,18 +490,12 @@ import { createLead, confirmLead } from "./api/leads.js";
 import { getLeads } from './api/admin-leads.js';
 import { getComplianceStatus } from './api/compliance-status.js';
 import { captionRouter } from "./routes/caption.js";
-import { contentGenerationLimiter } from "./middleware/tiered-rate-limit.js";
 import { registerSocialMediaRoutes } from "./social-media-routes.js";
 
-// Schema imports
-import { insertContentGenerationSchema, insertUserImageSchema } from "@shared/schema";
 
 // Core dependencies
 import multer from 'multer';
 import fs from 'fs/promises';
-import crypto from 'crypto';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
 import csrf from 'csurf';
 
 // Get secure environment variables (no fallbacks)

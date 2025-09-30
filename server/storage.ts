@@ -38,11 +38,10 @@ import {
   platformEngagement,
   postSchedule,
   verificationTokens,
-  invoices,
-  userSessions
+  invoices
 } from "../shared/schema";
 import { db } from "./db";
-import { eq, desc, and, gte, sql, count, isNull } from "drizzle-orm";
+import { eq, desc, and, gte, sql, count } from "drizzle-orm";
 import { safeLog } from './lib/logger-utils';
 
 type ExpenseCategoryWithDefaults = ExpenseCategory & {

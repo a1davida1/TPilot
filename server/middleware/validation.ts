@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { z, ZodSchema, ZodError } from 'zod';
+import { z, ZodSchema } from 'zod';
 import { logger } from '../bootstrap/logger.js';
 
 // Validation sources enum for clear specification

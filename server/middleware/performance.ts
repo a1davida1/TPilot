@@ -25,7 +25,7 @@ class PerformanceMonitor {
   middleware() {
     return (req: Request, res: Response, next: NextFunction) => {
       const start = process.hrtime.bigint();
-      const startMemory = process.memoryUsage();
+      const _startMemory = process.memoryUsage();
 
       // Store original end function without binding
       const originalEnd = res.end;

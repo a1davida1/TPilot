@@ -4,7 +4,7 @@ import cookieParser from 'cookie-parser';
 import csrf from 'csurf';
 import { v4 as uuidv4 } from 'uuid';
 import { registerRoutes } from './routes.js';
-import { authLimiter, generalLimiter, sanitize, notFoundHandler } from './middleware/security.js';
+import { authLimiter, generalLimiter, sanitize } from './middleware/security.js';
 import { mountStripeWebhook } from './routes/webhooks.stripe.js';
 import { logger } from './bootstrap/logger.js';
 import { startQueue } from './bootstrap/queue.js';
@@ -12,7 +12,6 @@ import { prepareResponseLogPayload, truncateLogLine } from './lib/request-logger
 import passport from 'passport'; // Assuming passport is imported elsewhere or needs to be imported here
 import { createSessionMiddleware } from './bootstrap/session.js';
 import { initializeSentry } from './bootstrap/sentry';
-import { registerDefaultRedditClients } from './lib/reddit.js';
 import { API_PREFIX } from './lib/api-prefix.js';
 
 export interface CreateAppOptions {
