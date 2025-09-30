@@ -50,12 +50,15 @@ import {
   Loader2
 } from 'lucide-react';
 import { MediaLibrarySelector } from '@/components/MediaLibrarySelector';
-import type {
-  ShadowbanStatusType,
-  ShadowbanCheckApiResponse,
-  ShadowbanSubmissionSummary
+import {
+  normalizeRulesToStructured,
+  type ShadowbanStatusType,
+  type ShadowbanCheckApiResponse,
+  type ShadowbanSubmissionSummary,
+  type RedditCommunityRuleSet,
+  type LegacyRedditCommunityRuleSet,
+  type RedditCommunitySellingPolicy
 } from '@shared/schema';
-import type { RedditCommunitySellingPolicy } from '@shared/schema';
 import type { SubredditCommunity } from '@/types/reddit';
 
 function isApiError(error: unknown): error is ApiError {
@@ -140,6 +143,14 @@ interface CommunityEligibility {
   };
 }
 
+interface LegacyRuleHints {
+  minKarma?: number | null;
+  minAccountAge?: number | null;
+  minAccountAgeDays?: number | null;
+  sellingAllowed?: RedditCommunitySellingPolicy;
+  watermarksAllowed?: boolean | null;
+}
+
 function checkCommunityEligibility(
   community: SubredditCommunity,
   account: RedditAccount | null
@@ -154,17 +165,87 @@ function checkCommunityEligibility(
     watermarkOk: true,
   };
 
-  const rules = community.rules;
-  const minKarmaRequirement = typeof rules?.eligibility?.minKarma === 'number'
-    ? rules.eligibility.minKarma
-    : null;
-  const minAccountAgeRequirement = typeof rules?.eligibility?.minAccountAgeDays === 'number'
-    ? rules.eligibility.minAccountAgeDays
-    : null;
-  const sellingPolicy: RedditCommunitySellingPolicy = rules?.content?.sellingPolicy ?? 'unknown';
-  const watermarksAllowed = typeof rules?.content?.watermarksAllowed === 'boolean'
-    ? rules.content.watermarksAllowed
-    : null;
+
+  const rawRules = community.rules;
+  const legacyHints: LegacyRuleHints | null = rawRules ? (rawRules as LegacyRuleHints) : null;
+
+  const hasStructuredEligibility = Boolean(
+    rawRules && typeof (rawRules as { eligibility?: unknown }).eligibility === 'object' && rawRules.eligibility !== null
+  );
+  const hasStructuredContent = Boolean(
+    rawRules && typeof (rawRules as { content?: unknown }).content === 'object' && rawRules.content !== null
+  );
+
+  const normalizedRules: RedditCommunityRuleSet | null = (() => {
+    if (!rawRules) {
+      return null;
+    }
+
+    if (hasStructuredEligibility && hasStructuredContent) {
+      return rawRules as RedditCommunityRuleSet;
+    }
+
+    const normalized = typeof normalizeRulesToStructured === 'function'
+      ? normalizeRulesToStructured(rawRules as LegacyRedditCommunityRuleSet)
+      : null;
+    if (normalized) {
+      return normalized;
+    }
+
+    return {
+      eligibility: {
+        minKarma: typeof legacyHints?.minKarma === 'number' ? legacyHints.minKarma : null,
+        minAccountAgeDays: typeof legacyHints?.minAccountAgeDays === 'number'
+          ? legacyHints.minAccountAgeDays
+          : typeof legacyHints?.minAccountAge === 'number'
+            ? legacyHints.minAccountAge
+            : null,
+        verificationRequired: false,
+        requiresApproval: false,
+      },
+      content: {
+        sellingPolicy: legacyHints?.sellingAllowed,
+        watermarksAllowed: typeof legacyHints?.watermarksAllowed === 'boolean' ? legacyHints.watermarksAllowed : null,
+        promotionalLinks: null,
+        requiresOriginalContent: false,
+        nsfwRequired: false,
+        titleGuidelines: [],
+        contentGuidelines: [],
+        linkRestrictions: [],
+        bannedContent: [],
+        formattingRequirements: [],
+      },
+      posting: {
+        maxPostsPerDay: null,
+        cooldownHours: null,
+      },
+      notes: null,
+    } satisfies RedditCommunityRuleSet;
+  })();
+
+  const minKarmaRequirement = typeof normalizedRules?.eligibility?.minKarma === 'number'
+    ? normalizedRules.eligibility.minKarma
+    : typeof legacyHints?.minKarma === 'number'
+      ? legacyHints.minKarma
+      : null;
+
+  const minAccountAgeRequirement = typeof normalizedRules?.eligibility?.minAccountAgeDays === 'number'
+    ? normalizedRules.eligibility.minAccountAgeDays
+    : typeof legacyHints?.minAccountAgeDays === 'number'
+      ? legacyHints.minAccountAgeDays
+      : typeof legacyHints?.minAccountAge === 'number'
+        ? legacyHints.minAccountAge
+        : null;
+
+  const sellingPolicy: RedditCommunitySellingPolicy = normalizedRules?.content?.sellingPolicy
+    ?? legacyHints?.sellingAllowed
+    ?? 'unknown';
+
+  const watermarksAllowed = typeof normalizedRules?.content?.watermarksAllowed === 'boolean'
+    ? normalizedRules.content.watermarksAllowed
+    : typeof legacyHints?.watermarksAllowed === 'boolean'
+      ? legacyHints.watermarksAllowed
+      : null;
 
   if (!account) {
     reasons.push('Account not connected');
