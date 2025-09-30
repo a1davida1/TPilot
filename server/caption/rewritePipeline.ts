@@ -142,7 +142,7 @@ export async function extractFacts(imageUrl:string){
   try {
     const res=await visionModel.generateContent([{text:sys+"\n"+guard+"\n"+prompt}, img]);
     return stripToJSON(res.response.text());
-  } catch (_error) {
+  } catch (error) {
     console.error('Gemini visionModel.generateContent failed:', error);
     throw error;
   }
@@ -237,7 +237,7 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
     let response;
     try {
       response = await textModel.generateContent([{ text: promptSections.join("\n") }]);
-    } catch (_error) {
+    } catch (error) {
       console.error('Gemini textModel.generateContent failed:', error);
       throw error;
     }
@@ -373,7 +373,7 @@ async function requestRewriteRanking(
   let res;
   try {
     res = await textModel.generateContent([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
-  } catch (_error) {
+  } catch (error) {
     console.error('Rewrite textModel.generateContent failed:', error);
     throw error;
   }
@@ -569,7 +569,7 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", style,
     }
 
     return { provider: 'gemini', facts, variants, ranked, final: out, titles: out.titles };
-  } catch (_error) {
+  } catch (error) {
     const { openAICaptionFallback } = await import('./openaiFallback');
     const final = await openAICaptionFallback({ platform, voice, existingCaption, imageUrl });
     const ranked = RankResult.parse({

@@ -8,7 +8,7 @@ export async function trackEvent(userId: number | null, type: string, meta: Reco
       type,
       meta
     });
-  } catch (_e) {
+  } catch (e) {
     // swallow analytics errors
     console.error("trackEvent failed", e);
   }

@@ -27,7 +27,7 @@ export async function enforcePreviewGate(userId: number): Promise<PostGateResult
     
     return { canPost: true };
     
-  } catch (_error) {
+  } catch (error) {
     console.error("Post gate enforcement error:", error);
     
     // Fail safe: if gate check fails, block posting to prevent policy violations
@@ -68,7 +68,7 @@ export function requirePreviewGate() {
       // Gate passed, continue to next middleware/route handler
       next();
       
-    } catch (_error) {
+    } catch (error) {
       console.error("Preview gate middleware error:", error);
       res.status(500).json({ message: "Policy check failed" });
     }

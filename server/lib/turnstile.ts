@@ -43,7 +43,7 @@ export async function verifyTurnstileToken(token: string, userIP?: string): Prom
     }
 
     return true;
-  } catch (_error) {
+  } catch (error) {
     console.error('Turnstile verification error:', error);
     return false;
   }

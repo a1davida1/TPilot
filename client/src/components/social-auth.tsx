@@ -74,7 +74,7 @@ export function SocialAuth({ onSuccess, isLoading = false }: SocialAuthProps) {
           if (data.authUrl) {
             window.location.href = data.authUrl;
           }
-        } catch (_error) {
+        } catch (error) {
           console.error('Failed to connect Reddit:', error);
         }
       },
@@ -102,7 +102,7 @@ export function SocialAuth({ onSuccess, isLoading = false }: SocialAuthProps) {
         window.location.href = provider.url;
       }
       onSuccess?.(provider.id);
-    } catch (_error) {
+    } catch (error) {
       console.error(`${provider.name} auth failed:`, error);
       setLoadingProvider(null);
     }

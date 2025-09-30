@@ -61,7 +61,7 @@ export class TwitterAPI {
         tweetId: data.data.id,
         platform: 'twitter' as const,
       };
-    } catch (_error) {
+    } catch (error) {
       console.error('Twitter API Error:', error);
       return {
         success: false,
@@ -103,7 +103,7 @@ export class TwitterAPI {
         mediaId: data.media_id_string,
         platform: 'twitter' as const,
       };
-    } catch (_error) {
+    } catch (error) {
       console.error('Twitter Media Upload Error:', error);
       return {
         success: false,
@@ -135,7 +135,7 @@ export class TwitterAPI {
         metrics: data.data.public_metrics,
         platform: 'twitter' as const,
       };
-    } catch (_error) {
+    } catch (error) {
       console.error('Twitter Metrics Error:', error);
       return {
         success: false,
@@ -167,7 +167,7 @@ export class TwitterAPI {
         metrics: data.data.public_metrics,
         platform: 'twitter' as const,
       };
-    } catch (_error) {
+    } catch (error) {
       console.error('Twitter User Metrics Error:', error);
       return {
         success: false,

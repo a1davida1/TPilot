@@ -92,7 +92,7 @@ export async function getComplianceStatus(req: Request, res: Response) {
         totalSubreddits: mockData.length
       }
     });
-  } catch (_error) {
+  } catch (error) {
     console.error('Compliance status error:', error);
     res.status(500).json({ 
       error: 'Failed to fetch compliance status',

@@ -194,7 +194,7 @@ export function UnifiedContentCreator({
 
       // Reset copied state after 2 seconds
       setTimeout(() => setCopiedItem(null), 2000);
-    } catch (_err) {
+    } catch (err) {
       toast({
         title: "Copy Failed",
         description: "Unable to copy to clipboard",
@@ -342,7 +342,7 @@ export function UnifiedContentCreator({
         title: "Image Protected!",
         description: `${protectionLevel} protection applied${shouldAddWatermark ? ' with watermark' : ''}`,
       });
-    } catch (_error) {
+    } catch (error) {
       toast({
         title: "Protection Failed",
         description: "Failed to protect the image. Please try again.",

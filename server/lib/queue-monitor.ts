@@ -52,7 +52,7 @@ export class QueueMonitor {
     this.intervalId = setInterval(async () => {
       try {
         await this.collectMetrics();
-      } catch (_error) {
+      } catch (error) {
         console.error('Queue monitoring error:', error);
       }
     }, intervalMs);
@@ -109,7 +109,7 @@ export class QueueMonitor {
 
         this.metrics.set(queueName, metrics);
 
-      } catch (_error) {
+      } catch (error) {
         console.error(`Failed to collect metrics for queue ${queueName}:`, error);
         
         // Set error state
@@ -159,7 +159,7 @@ export class QueueMonitor {
 
         this.workerMetrics.set(worker.name, workerMetrics);
 
-      } catch (_error) {
+      } catch (error) {
         console.error(`Failed to collect worker metrics for ${worker.name}:`, error);
       }
     }
@@ -203,7 +203,7 @@ export class QueueMonitor {
         avgProcessingTime: Math.floor(avgProcessingTime),
         lastProcessed,
       };
-    } catch (_error) {
+    } catch (error) {
       console.error('Error getting processing stats:', error);
       // Return basic stats if queue backend doesn't support detailed metrics
       return {
@@ -284,7 +284,7 @@ export class QueueMonitor {
       await pauseQueue(queueName);
       console.error(`⏸️ Queue ${queueName} paused`);
       return true;
-    } catch (_error) {
+    } catch (error) {
       console.error(`Failed to pause queue ${queueName}:`, error);
       return false;
     }
@@ -296,7 +296,7 @@ export class QueueMonitor {
       await resumeQueue(queueName);
       console.error(`▶️ Queue ${queueName} resumed`);
       return true;
-    } catch (_error) {
+    } catch (error) {
       console.error(`Failed to resume queue ${queueName}:`, error);
       return false;
     }
@@ -311,7 +311,7 @@ export class QueueMonitor {
         return retried;
       }
       return 0;
-    } catch (_error) {
+    } catch (error) {
       console.error(`Failed to retry jobs in queue ${queueName}:`, error);
       return 0;
     }
@@ -326,7 +326,7 @@ export class QueueMonitor {
         return true;
       }
       return false;
-    } catch (_error) {
+    } catch (error) {
       console.error(`Failed to clear queue ${queueName}:`, error);
       return false;
     }

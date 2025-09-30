@@ -49,7 +49,7 @@ export async function getPreviewStats(userId: number): Promise<PreviewStats> {
       required
     };
 
-  } catch (_error) {
+  } catch (error) {
     console.error("Preview stats error:", error);
     // Fail safe - if stats fail, don't block user
     return {

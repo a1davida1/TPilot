@@ -232,7 +232,7 @@ export class PostWorker {
           });
         }
       }
-    } catch (_error) {
+    } catch (error) {
       logger.error(`Social media job ${jobId} failed:`, { error });
       throw error;
     }
@@ -248,7 +248,7 @@ export class PostWorker {
           updatedAt: new Date(),
         })
         .where(eq(postJobs.id, postJobId));
-    } catch (_error) {
+    } catch (error) {
       logger.error('Failed to update job status:', { error });
     }
   }
@@ -257,7 +257,7 @@ export class PostWorker {
     try {
       // This would typically query the media_assets table by key
       return await MediaManager.getAsset(parseInt(key), userId);
-    } catch (_error) {
+    } catch (error) {
       logger.error('Failed to get media asset:', { error });
       return null;
     }
@@ -270,7 +270,7 @@ export class PostWorker {
         type,
         meta,
       });
-    } catch (_error) {
+    } catch (error) {
       logger.error('Failed to log event:', { error });
     }
   }

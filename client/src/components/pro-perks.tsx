@@ -153,7 +153,7 @@ export function ProPerks({ userTier = "pro" }: ProPerksProps) {
 
         const payload = await response.json() as { perks: ProPerk[] };
         return { perks: payload.perks, accessGranted: true } satisfies ProResourcesResult;
-      } catch (_error) {
+      } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to fetch pro resources";
         throw new Error(message);
       }
@@ -252,7 +252,7 @@ export function ProPerks({ userTier = "pro" }: ProPerksProps) {
         ...previous,
         [perk.id]: payload.instructions
       }));
-    } catch (_error) {
+    } catch (error) {
       toast({
         title: "Unable to load instructions",
         description: error instanceof Error ? error.message : "Unexpected error loading perk guidance.",
@@ -310,7 +310,7 @@ export function ProPerks({ userTier = "pro" }: ProPerksProps) {
           description: `Your code: ${payload.referralCode}`,
         });
       }
-    } catch (_error) {
+    } catch (error) {
       toast({
         title: "Unable to generate referral",
         description: error instanceof Error ? error.message : "Unexpected error generating referral code.",

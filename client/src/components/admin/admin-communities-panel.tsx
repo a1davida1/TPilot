@@ -373,7 +373,7 @@ export function AdminCommunitiesPanel({ canManage }: AdminCommunitiesPanelProps)
       setIsCreateOpen(false);
       setEditingCommunity(null);
       setFormState(defaultFormState);
-    } catch (_error) {
+    } catch (error) {
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to save community',
@@ -386,7 +386,7 @@ export function AdminCommunitiesPanel({ canManage }: AdminCommunitiesPanelProps)
     try {
       await deleteMutation.mutateAsync(id);
       toast({ title: 'Community deleted successfully' });
-    } catch (_error) {
+    } catch (error) {
       console.error('Delete error:', _error);
       toast({
         title: 'Error',

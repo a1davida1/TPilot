@@ -259,7 +259,7 @@ Return ONLY the JSON object above with actual content. No other text.`;
         confidence: 0.6,
       }));
       
-    } catch (_error) {
+    } catch (error) {
       console.error('Failed to parse Gemini response:', error);
       console.error('Raw response text:', text.slice(0, 200) + '...');
       return this.createFallbackContent(platforms);
@@ -270,7 +270,7 @@ Return ONLY the JSON object above with actual content. No other text.`;
     try {
       const parsed = JSON.parse(text);
       return parsed.content || [];
-    } catch (_error) {
+    } catch (error) {
       console.error('Failed to parse OpenAI response:', error);
       return this.createFallbackContent(platforms);
     }
@@ -304,7 +304,7 @@ Return ONLY the JSON object above with actual content. No other text.`;
       
       return cached.outputJson as Omit<AiResponse, 'cached'>;
       
-    } catch (_error) {
+    } catch (error) {
       console.error('Cache lookup failed:', error);
       return null;
     }
@@ -395,7 +395,7 @@ Return ONLY the JSON object above with actual content. No other text.`;
         suggestions: ["Share your authentic self", "Connect with your audience", "Show your personality"]
       };
       
-    } catch (_error) {
+    } catch (error) {
       console.error('Image analysis failed:', error);
       return {
         description: "Image analysis unavailable",
@@ -419,7 +419,7 @@ Return ONLY the JSON object above with actual content. No other text.`;
         .where(eq(aiGenerations.userId, userId))
         .orderBy(aiGenerations.createdAt)
         .limit(limit);
-    } catch (_error) {
+    } catch (error) {
       console.error('Failed to get user history:', error);
       return [];
     }
@@ -435,7 +435,7 @@ Return ONLY the JSON object above with actual content. No other text.`;
         .where(eq(aiGenerations.createdAt, cutoff));
         
       console.error(`Cleaned ${result} old AI cache entries`);
-    } catch (_error) {
+    } catch (error) {
       console.error('Cache cleanup failed:', error);
     }
   }

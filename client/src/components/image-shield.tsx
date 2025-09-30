@@ -136,7 +136,7 @@ export function ImageShield({ isGuestMode = false, userTier = "free" }: ImageShi
       };
 
       img.src = originalImage;
-    } catch (_error) {
+    } catch (error) {
       toast({
         title: "Protection Failed",
         description: "Unable to process image",

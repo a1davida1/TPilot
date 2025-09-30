@@ -50,7 +50,7 @@ if (!rootElement) {
 
 try {
   createRoot(rootElement).render(<App />);
-} catch (_error) {
+} catch (error) {
   console.error('Failed to render app:', _error);
   rootElement.innerHTML = `
     <div style="padding: 20px; text-align: center;">

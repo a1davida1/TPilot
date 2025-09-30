@@ -125,7 +125,7 @@ export async function getQueueHealth(): Promise<Record<string, QueueHealthInfo>>
         totalJobs: failureStats.totalJobs,
         failedJobs: failureStats.failedJobs,
       };
-    } catch (_error) {
+    } catch (error) {
       health[queueName] = {
         pending: 0,
         failureRate: 0,

@@ -51,7 +51,7 @@ async function fetchAboutRules(subreddit: string): Promise<RedditRule[]> {
 
     const data: RedditAboutRulesResponse = await response.json();
     return data.rules || [];
-  } catch (_error) {
+  } catch (error) {
     console.error(`Error fetching rules for r/${subreddit}:`, error);
     return [];
   }
@@ -77,7 +77,7 @@ async function fetchWikiRules(subreddit: string): Promise<string> {
 
     const data: RedditWikiResponse = await response.json();
     return data.data?.content_md || '';
-  } catch (_error) {
+  } catch (error) {
     console.error(`Error fetching wiki rules for r/${subreddit}:`, error);
     return '';
   }
@@ -243,7 +243,7 @@ async function applyExistingOverrides(subreddit: string, newSpec: RuleSpecBase):
         automatedBase: newSpec,
       },
     };
-  } catch (_error) {
+  } catch (error) {
     console.error(`Error applying overrides for r/${subreddit}:`, error);
     return {
       ...newSpec,
@@ -343,7 +343,7 @@ export async function syncSubredditRules(subreddit: string): Promise<RuleSpec> {
     logger.info(`✅ Successfully synced rules for r/${subreddit}`);
 
     return finalSpec;
-  } catch (_error) {
+  } catch (error) {
     console.error(`❌ Failed to sync rules for r/${subreddit}:`, error);
     throw error;
   }
@@ -371,7 +371,7 @@ async function syncAllCommunityRules(): Promise<void> {
         batch.map(async community => {
           try {
             await syncSubredditRules(community.name);
-          } catch (_error) {
+          } catch (error) {
             console.error(`❌ Failed to sync rules for r/${community.name} in batch:`, error);
           }
         })
@@ -385,7 +385,7 @@ async function syncAllCommunityRules(): Promise<void> {
     }
 
     console.error('✅ Community rules sync completed');
-  } catch (_error) {
+  } catch (error) {
     console.error('❌ Community rules sync failed:', error);
     process.exit(1);
   }

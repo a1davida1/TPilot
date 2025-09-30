@@ -35,7 +35,7 @@ export function AudienceInsights() {
           throw new Error('Failed to fetch insights');
         }
         return response.json();
-      } catch (_error) {
+      } catch (error) {
         // Return empty data instead of mock data
         return { audienceData: [], topSubreddits: [] };
       }

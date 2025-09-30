@@ -49,7 +49,7 @@ export class LinkedInAPI {
         followers: data.followersCount ?? 0,
         engagementRate: data.engagementRate ?? 0,
       };
-    } catch (_error) {
+    } catch (error) {
       console.error('LinkedIn metrics error:', error);
       return { followers: 0, engagementRate: 0 };
     }

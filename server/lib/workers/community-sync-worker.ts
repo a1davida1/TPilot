@@ -61,7 +61,7 @@ export class CommunitySyncWorker {
         QUEUE_NAMES.COMMUNITY_SYNC,
         { triggeredBy: 'startup' },
       );
-    } catch (_error) {
+    } catch (error) {
       logger.warn('Community sync worker could not enqueue initial job', {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
@@ -79,7 +79,7 @@ export class CommunitySyncWorker {
         { triggeredBy: 'schedule' },
         { delay: DAY_IN_MS }
       );
-    } catch (_error) {
+    } catch (error) {
       logger.warn('Community sync worker could not schedule next run', {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
@@ -101,7 +101,7 @@ export class CommunitySyncWorker {
         succeeded: result.succeeded,
         failed: result.failed,
       });
-    } catch (_error) {
+    } catch (error) {
       logger.error('Community sync job failed', {
         jobId,
         error: error instanceof Error ? error.message : 'Unknown error',

@@ -139,7 +139,7 @@ export class PgQueue implements IQueue {
         
         await this.processQueueJobs(queueName, processor);
       }
-    } catch (_error) {
+    } catch (error) {
       console.error('Error in queue polling:', error);
     }
 
@@ -206,7 +206,7 @@ export class PgQueue implements IQueue {
         })
         .where(eq(queueJobs.id, job.id));
 
-    } catch (_error) {
+    } catch (error) {
       console.error(`Job ${job.id} failed:`, error);
       
       const attempts = job.attempts + 1;

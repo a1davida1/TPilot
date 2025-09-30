@@ -234,7 +234,7 @@ const createAuthenticateTokenMiddleware = (required: boolean): AuthMiddleware =>
 
         req.user = user;
         return next();
-      } catch (_error) {
+      } catch (error) {
         logger.error('Auth error:', error);
         res.clearCookie('authToken', cookieOpts);
         if (required) {

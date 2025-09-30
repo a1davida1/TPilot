@@ -64,7 +64,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
 
       onSuccess(data.user);
       onClose();
-    } catch (_error) {
+    } catch (error) {
       toast({
         title: "Login failed",
         description: error instanceof Error ? error.message : "Invalid credentials",
@@ -113,7 +113,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
 
       onSuccess(data.user);
       onClose();
-    } catch (_error) {
+    } catch (error) {
       toast({
         title: "Signup failed",
         description: error instanceof Error ? error.message : "Could not create account",

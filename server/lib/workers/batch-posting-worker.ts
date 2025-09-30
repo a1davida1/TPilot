@@ -300,7 +300,7 @@ export class BatchPostingWorker {
       // This would query the media_assets table by key
       const { MediaManager } = await import("../media.js");
       return await MediaManager.getAsset(parseInt(key), userId);
-    } catch (_error) {
+    } catch (error) {
       logger.error('Failed to get media asset:', { error });
       return null;
     }
@@ -319,7 +319,7 @@ export class BatchPostingWorker {
         delay: 60 * 60 * 1000, // 1 hour delay
       });
 
-    } catch (_error) {
+    } catch (error) {
       logger.error('Failed to schedule metrics collection:', { error });
     }
   }
@@ -335,7 +335,7 @@ export class BatchPostingWorker {
         type,
         meta,
       });
-    } catch (_error) {
+    } catch (error) {
       logger.error('Failed to log batch posting event:', { error });
     }
   }

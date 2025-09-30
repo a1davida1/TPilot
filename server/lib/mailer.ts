@@ -39,7 +39,7 @@ class ResendService implements EmailService {
       }
 
       return true;
-    } catch (_error) {
+    } catch (error) {
       console.error('Resend service error:', error);
       return false;
     }
@@ -80,7 +80,7 @@ class SendGridService implements EmailService {
       }
 
       return true;
-    } catch (_error) {
+    } catch (error) {
       console.error('SendGrid service error:', error);
       return false;
     }

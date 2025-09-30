@@ -76,7 +76,7 @@ export class YouTubeAPI {
         videoId: uploadData.id,
         platform: 'youtube' as const,
       };
-    } catch (_error) {
+    } catch (error) {
       console.error('YouTube API Error:', error);
       return {
         success: false,
@@ -107,7 +107,7 @@ export class YouTubeAPI {
       );
 
       return response.ok;
-    } catch (_error) {
+    } catch (error) {
       console.error('YouTube Thumbnail Error:', error);
       return false;
     }
@@ -144,7 +144,7 @@ export class YouTubeAPI {
         },
         platform: 'youtube' as const,
       };
-    } catch (_error) {
+    } catch (error) {
       console.error('YouTube Metrics Error:', error);
       return {
         success: false,
@@ -188,7 +188,7 @@ export class YouTubeAPI {
         },
         platform: 'youtube' as const,
       };
-    } catch (_error) {
+    } catch (error) {
       console.error('YouTube Channel Metrics Error:', error);
       return {
         success: false,
@@ -220,7 +220,7 @@ export class YouTubeAPI {
         videos: data.items,
         platform: 'youtube' as const,
       };
-    } catch (_error) {
+    } catch (error) {
       console.error('YouTube Search Error:', error);
       return {
         success: false,

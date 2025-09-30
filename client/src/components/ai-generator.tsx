@@ -100,7 +100,7 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
       
       // Reset copied state after 2 seconds
       setTimeout(() => setCopiedItem(null), 2000);
-    } catch (_err) {
+    } catch (err) {
       console.error('Copy error:', _err);
       toast({
         title: "Copy Failed",
@@ -137,7 +137,7 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
         }
         
         return await res.json();
-      } catch (_error) {
+      } catch (error) {
         console.error('Generation error:', error);
         throw error;
       }

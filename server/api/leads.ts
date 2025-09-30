@@ -46,7 +46,7 @@ export async function createLead(req: Request, res: Response) {
       if (req.cookies && req.cookies.utm_params) {
         cookieUTM = JSON.parse(decodeURIComponent(req.cookies.utm_params));
       }
-    } catch (_error) {
+    } catch (error) {
       console.error('Failed to parse UTM cookie:', error);
       cookieUTM = {};
     }
@@ -127,7 +127,7 @@ export async function createLead(req: Request, res: Response) {
       message: 'Thank you for joining our waitlist! Please check your email to confirm your signup.',
     });
 
-  } catch (_error) {
+  } catch (error) {
     console.error('Create lead error:', error);
     res.status(500).json({ error: 'Failed to process waitlist signup' });
   }
@@ -237,7 +237,7 @@ export async function confirmLead(req: Request, res: Response) {
       </html>
     `);
 
-  } catch (_error) {
+  } catch (error) {
     console.error('Confirm lead error:', error);
     res.status(500).send(`
       <html>

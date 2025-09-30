@@ -324,7 +324,7 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
 
       const json = stripToJSON(rawText);
       return Array.isArray(json) ? json : [];
-    } catch (_error) {
+    } catch (error) {
       console.error("Gemini textModel.generateContent failed:", error);
       throw error;
     }
@@ -491,7 +491,7 @@ async function requestTextOnlyRanking(
   let res;
   try {
     res = await textModel.generateContent([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
-  } catch (_error) {
+  } catch (error) {
     console.error('Text-only textModel.generateContent failed:', error);
     throw error;
   }

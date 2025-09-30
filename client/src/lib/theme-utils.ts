@@ -152,7 +152,7 @@ export function validateThemeColors(): Record<string, boolean> {
       } else {
         results[test.name] = false;
       }
-    } catch (_error) {
+    } catch (error) {
       results[test.name] = false;
     }
   });

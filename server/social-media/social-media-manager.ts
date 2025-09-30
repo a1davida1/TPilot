@@ -169,7 +169,7 @@ export class SocialMediaManager {
             error: `Posting not implemented for ${platform}`,
           };
       }
-    } catch (_error) {
+    } catch (error) {
       return {
         success: false,
         platform,
@@ -277,7 +277,7 @@ export class SocialMediaManager {
         default:
           return null;
       }
-    } catch (_error) {
+    } catch (error) {
       console.error(`Error fetching metrics for ${platform}:`, error);
       return null;
     }

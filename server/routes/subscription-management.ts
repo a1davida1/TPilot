@@ -115,7 +115,7 @@ export function createCancelSubscriptionHandler({
       let subscription: StripeSubscriptionLike;
       try {
         subscription = await stripe.subscriptions.retrieve(subscriptionId);
-      } catch (_error) {
+      } catch (error) {
         if (isStripeErrorWithStatus(error, 404)) {
           return res.status(404).json({ message: "Subscription not found" });
         }
@@ -163,7 +163,7 @@ export function createCancelSubscriptionHandler({
           message: "Subscription will be cancelled at the end of the billing period",
           cancelAt: cancelledSubscription.cancel_at ?? null,
         });
-      } catch (_error) {
+      } catch (error) {
         logger.error("Subscription cancellation error", {
           userId,
           subscriptionId,

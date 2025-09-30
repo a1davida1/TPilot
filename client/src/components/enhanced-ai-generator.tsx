@@ -335,7 +335,7 @@ export function EnhancedAIGenerator({
         description: "Content copied to clipboard",
       });
       setTimeout(() => setCopiedItem(null), 2000);
-    } catch (_error) {
+    } catch (error) {
       toast({
         title: "Copy failed",
         description: "Unable to copy to clipboard",

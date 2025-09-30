@@ -21,7 +21,7 @@ import { uploadRoutes, applyImageShieldProtection, protectionPresets } from "./r
 import { mediaRoutes } from "./routes/media";
 import { analyticsRouter } from "./routes/analytics";
 import { referralRouter } from "./routes/referrals";
-import { getOpenApiRouter } from "./routes/openapi.js";
+// import { getOpenApiRouter } from "./routes/openapi.js"; // Commented out - file missing
 import { registerExpenseRoutes } from "./expense-routes";
 import { adminCommunitiesRouter } from "./routes/admin-communities";
 import { createCancelSubscriptionHandler } from "./routes/subscription-management";

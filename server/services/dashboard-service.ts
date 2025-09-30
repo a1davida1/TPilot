@@ -86,7 +86,7 @@ export class DashboardService {
         );
       
       return Number(result[0]?.count ?? 0);
-    } catch (_error) {
+    } catch (error) {
       console.error('Error getting posts today:', error);
       return 0;
     }
@@ -157,7 +157,7 @@ export class DashboardService {
       }
 
       return 0;
-    } catch (_error) {
+    } catch (error) {
       console.error('Error getting engagement rate:', error);
       return 0;
     }
@@ -171,7 +171,7 @@ export class DashboardService {
         .where(eq(contentFlags.reportedById, userId));
       
       return Number(result[0]?.count ?? 0);
-    } catch (_error) {
+    } catch (error) {
       console.error('Error getting takedowns found:', error);
       return 0;
     }
@@ -198,7 +198,7 @@ export class DashboardService {
       // Estimate tax savings at 25% effective rate (conservative estimate)
       // Convert from cents to dollars
       return Math.round((totalDeductions / 100) * 0.25 * 100) / 100;
-    } catch (_error) {
+    } catch (error) {
       console.error('Error getting estimated tax savings:', error);
       return 0;
     }
@@ -250,7 +250,7 @@ export class DashboardService {
         pageViewsToday: Number(pageViewMetrics[0]?.count ?? 0),
         interactionsToday: Number(interactionMetrics[0]?.count ?? 0),
       };
-    } catch (_error) {
+    } catch (error) {
       console.error('Error getting analytics metrics:', error);
       return {
         sessionCount: 0,
@@ -276,7 +276,7 @@ export class DashboardService {
         .limit(4);
 
       return this.buildActivityMediaItems(result, userId);
-    } catch (_error) {
+    } catch (error) {
       console.error('Error getting recent media:', error);
       return [];
     }
@@ -321,7 +321,7 @@ export class DashboardService {
             alt: detailedAsset.filename || asset.filename || 'Media asset',
             createdAt: createdAtIso,
           } satisfies DashboardMediaItem;
-        } catch (_error) {
+        } catch (error) {
           console.error('Error building media preview item:', error);
           return null;
         }
@@ -384,7 +384,7 @@ export class DashboardService {
         takedownsFound,
         estimatedTaxSavings,
       };
-    } catch (_error) {
+    } catch (error) {
       console.error('Error getting admin dashboard stats:', error);
       return {
         postsToday: 0,
@@ -414,7 +414,7 @@ export class DashboardService {
       return {
         recentMedia: await this.buildActivityMediaItems(result),
       };
-    } catch (_error) {
+    } catch (error) {
       console.error('Error getting admin dashboard activity:', error);
       return { recentMedia: [] };
     }

@@ -120,7 +120,7 @@ export function RedditQuickPost() {
           description: "Complete the authorization in the popup window, then refresh this page"
         });
       }
-    } catch (_error) {
+    } catch (error) {
       toast({
         title: "❌ Connection Failed",
         description: (error as Error).message,

@@ -76,7 +76,7 @@ export function useAuth() {
       if (!response.ok) {
         console.error('Session logout failed:', response.status);
       }
-    } catch (_error) {
+    } catch (error) {
       console.error('Session logout error:', error);
     }
     
@@ -149,7 +149,7 @@ export function useAuth() {
         const data = await response.json();
         login();
       }
-    } catch (_error) {
+    } catch (error) {
       // Silent fail in production
     }
   };

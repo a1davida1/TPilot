@@ -206,7 +206,7 @@ export async function lintCaption(input: {
               state = "block";
               break;
             }
-          } catch (_e) {
+          } catch (e) {
             // Invalid regex, skip
           }
         }
@@ -231,7 +231,7 @@ export async function lintCaption(input: {
               state = "block";
               break;
             }
-          } catch (_e) {
+          } catch (e) {
             // Invalid regex, skip
           }
         }
@@ -362,7 +362,7 @@ export async function lintCaption(input: {
 
     return { state, warnings };
 
-  } catch (_error) {
+  } catch (error) {
     console.error("Policy linter error:", error);
     // Fail safe - if linter crashes, allow with warning
     return {

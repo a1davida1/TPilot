@@ -50,7 +50,7 @@ referralRouter.get('/code', authenticateToken, async (req: AuthRequest, res) => 
       referralUrl: `${req.protocol}://${req.get('host')}/signup?ref=${referralCode}`
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('Failed to get referral code', { 
       error: error instanceof Error ? error.message : String(error),
       userId: req.user?.id 
@@ -82,7 +82,7 @@ referralRouter.get('/summary', authenticateToken, async (req: AuthRequest, res) 
     
     res.json(referralInfo);
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('Failed to get referral summary', { 
       error: error instanceof Error ? error.message : String(error),
       userId: req.user?.id 
@@ -153,7 +153,7 @@ referralRouter.post('/apply', async (req, res) => {
       error: result.error || 'Failed to apply referral code',
     });
 
-  } catch (_error) {
+  } catch (error) {
     logger.error('Error applying referral code', {
       error: error instanceof Error ? error.message : String(error),
       referralCode: req.body?.referralCode

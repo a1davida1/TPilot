@@ -184,7 +184,7 @@ export default function SmartAnalytics() {
             }
           }
         };
-      } catch (_error) {
+      } catch (error) {
         console.error('Analytics data processing error:', error);
         throw new Error('Failed to process analytics data: ' + (error instanceof Error ? error.message : 'Unknown error'));
       }

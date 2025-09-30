@@ -93,7 +93,7 @@ export class TikTokAPI {
         postId: publishData.data.publish_id,
         platform: 'tiktok' as const,
       };
-    } catch (_error) {
+    } catch (error) {
       console.error('TikTok API Error:', error);
       return {
         success: false,
@@ -143,7 +143,7 @@ export class TikTokAPI {
         metrics: data.data.videos[0],
         platform: 'tiktok' as const,
       };
-    } catch (_error) {
+    } catch (error) {
       console.error('TikTok Metrics Error:', error);
       return {
         success: false,
@@ -175,7 +175,7 @@ export class TikTokAPI {
         userInfo: data.data.user,
         platform: 'tiktok' as const,
       };
-    } catch (_error) {
+    } catch (error) {
       console.error('TikTok User Info Error:', error);
       return {
         success: false,

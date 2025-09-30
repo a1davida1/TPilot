@@ -80,7 +80,7 @@ class SchedulingOptimizer {
       
       // Fall back to platform defaults
       return this.getDefaultBestTime(platform);
-    } catch (_error) {
+    } catch (error) {
       console.error('Error calculating best post time:', error);
       return this.getDefaultBestTime(platform);
     }
@@ -118,7 +118,7 @@ class SchedulingOptimizer {
         postedAt: p.postedAt ?? null,
         platform: p.platform
       }));
-    } catch (_error) {
+    } catch (error) {
       console.error('Error fetching post history:', error);
       return [];
     }
@@ -222,7 +222,7 @@ class SchedulingOptimizer {
           suggestedStyle: this.getSuggestedStyle(trend),
           bestPostTime: this.getDefaultBestTime(trend.platform)
         }));
-    } catch (_error) {
+    } catch (error) {
       console.error('Error suggesting content:', error);
       return [];
     }

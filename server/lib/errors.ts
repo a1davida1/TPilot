@@ -34,7 +34,7 @@ export class CircuitBreaker<TArgs extends unknown[], TResult> {
       const result = await this.fn(...args);
       this.failures = 0;
       return result;
-    } catch (_error) {
+    } catch (error) {
       this.failures++;
       if (this.failures >= this.threshold) {
         this.nextAttempt = Date.now() + this.timeout;

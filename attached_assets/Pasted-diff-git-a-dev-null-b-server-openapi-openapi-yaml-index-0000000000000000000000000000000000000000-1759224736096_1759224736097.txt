@@ -1,0 +1,254 @@
+diff --git a//dev/null b/server/openapi/openapi.yaml
+index 0000000000000000000000000000000000000000..1d7337ea19b4b58231ed212680e0942c70d13f6d 100644
+--- a//dev/null
++++ b/server/openapi/openapi.yaml
+@@ -0,0 +1,249 @@
++openapi: 3.0.3
++info:
++  title: ThottoPilot API
++  version: "2024-08-01"
++  description: >-
++    API surface for ThottoPilot including authentication, health monitoring,
++    and content operations. The specification focuses on documented, stable
++    endpoints that are safe for third-party integrations.
++servers:
++  - url: https://api.thottopilot.com
++    description: Production
++  - url: http://localhost:5000
++    description: Local development
++  - url: http://localhost:5000/api
++    description: Local development with prefixed base path
++tags:
++  - name: Health
++    description: Service readiness and monitoring endpoints.
++  - name: Security
++    description: Authentication and CSRF coordination routes.
++  - name: Content
++    description: Media upload and protection features.
++paths:
++  /api/health:
++    get:
++      tags:
++        - Health
++      summary: Retrieve the current liveness state.
++      operationId: getHealthStatus
++      responses:
++        '200':
++          description: The API is reachable and responding normally.
++          content:
++            application/json:
++              schema:
++                $ref: '#/components/schemas/HealthResponse'
++  /api/ready:
++    get:
++      tags:
++        - Health
++      summary: Evaluate downstream dependencies for readiness.
++      operationId: getReadinessStatus
++      responses:
++        '200':
++          description: All dependencies responded successfully.
++          content:
++            application/json:
++              schema:
++                $ref: '#/components/schemas/ReadinessResponse'
++        '503':
++          description: One or more dependencies reported degraded status.
++          content:
++            application/json:
++              schema:
++                $ref: '#/components/schemas/ReadinessResponse'
++  /api/csrf-token:
++    get:
++      tags:
++        - Security
++      summary: Issue a CSRF token for session-authenticated requests.
++      operationId: getCsrfToken
++      security: []
++      responses:
++        '200':
++          description: Returns a CSRF token bound to the active session.
++          content:
++            application/json:
++              schema:
++                $ref: '#/components/schemas/CsrfTokenResponse'
++  /api/auth/login:
++    post:
++      tags:
++        - Security
++      summary: Authenticate with email and password credentials.
++      operationId: loginWithCredentials
++      requestBody:
++        required: true
++        content:
++          application/json:
++            schema:
++              $ref: '#/components/schemas/LoginRequest'
++      responses:
++        '200':
++          description: Login succeeded and a session cookie was issued.
++          content:
++            application/json:
++              schema:
++                $ref: '#/components/schemas/LoginResponse'
++        '401':
++          description: Invalid credentials were supplied.
++          content:
++            application/json:
++              schema:
++                $ref: '#/components/schemas/ErrorResponse'
++        '429':
++          description: Too many failed login attempts were detected.
++          content:
++            application/json:
++              schema:
++                $ref: '#/components/schemas/RateLimitError'
++  /api/upload/image:
++    post:
++      tags:
++        - Content
++      summary: Upload a protected image asset.
++      operationId: uploadImage
++      security:
++        - bearerAuth: []
++      requestBody:
++        required: true
++        content:
++          multipart/form-data:
++            schema:
++              $ref: '#/components/schemas/ImageUploadRequest'
++      responses:
++        '201':
++          description: The image was accepted and protected.
++          content:
++            application/json:
++              schema:
++                $ref: '#/components/schemas/ImageUploadResponse'
++        '401':
++          description: Authentication is required to upload assets.
++          content:
++            application/json:
++              schema:
++                $ref: '#/components/schemas/ErrorResponse'
++        '422':
++          description: Validation failed for the uploaded media.
++          content:
++            application/json:
++              schema:
++                $ref: '#/components/schemas/ValidationError'
++components:
++  securitySchemes:
++    bearerAuth:
++      type: http
++      scheme: bearer
++      bearerFormat: JWT
++  schemas:
++    HealthResponse:
++      type: object
++      properties:
++        status:
++          type: string
++          example: ok
++    ReadinessCheck:
++      type: object
++      properties:
++        ok:
++          type: boolean
++        skipped:
++          type: boolean
++        error:
++          type: string
++      additionalProperties: false
++    ReadinessResponse:
++      type: object
++      properties:
++        status:
++          type: string
++          enum:
++            - ready
++            - degraded
++        checks:
++          type: object
++          additionalProperties:
++            $ref: '#/components/schemas/ReadinessCheck'
++      required:
++        - status
++        - checks
++    CsrfTokenResponse:
++      type: object
++      properties:
++        csrfToken:
++          type: string
++      required:
++        - csrfToken
++    LoginRequest:
++      type: object
++      properties:
++        email:
++          type: string
++          format: email
++        password:
++          type: string
++          format: password
++      required:
++        - email
++        - password
++    LoginResponse:
++      type: object
++      properties:
++        message:
++          type: string
++        requiresTwoFactor:
++          type: boolean
++      additionalProperties: true
++    ImageUploadRequest:
++      type: object
++      properties:
++        file:
++          type: string
++          format: binary
++        preset:
++          type: string
++          description: Watermarking preset to apply.
++      required:
++        - file
++    ImageUploadResponse:
++      type: object
++      properties:
++        success:
++          type: boolean
++        uploadUrl:
++          type: string
++          format: uri
++        checksum:
++          type: string
++      required:
++        - success
++    ErrorResponse:
++      type: object
++      properties:
++        message:
++          type: string
++      required:
++        - message
++    ValidationError:
++      allOf:
++        - $ref: '#/components/schemas/ErrorResponse'
++        - type: object
++          properties:
++            fieldErrors:
++              type: object
++              additionalProperties:
++                type: string
++    RateLimitError:
++      type: object
++      properties:
++        error:
++          type: string
++          example: TOO_MANY_REQUESTS
++        retryAfter:
++          type: integer
++          format: int32
++          description: Number of seconds clients should wait before retrying.
++      required:
++        - error

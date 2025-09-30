@@ -73,7 +73,7 @@ class AnalyticsService {
       await db.update(users)
         .set({ lastLogin: new Date() })
         .where(eq(users.id, parseInt(userId)));
-    } catch (_error) {
+    } catch (error) {
       console.error('Error updating last login:', error);
     }
   }
@@ -144,7 +144,7 @@ class AnalyticsService {
         );
       
       return result[0]?.count || 0;
-    } catch (_error) {
+    } catch (error) {
       console.error('Error getting DAU:', error);
       return 0;
     }
@@ -165,7 +165,7 @@ class AnalyticsService {
         );
       
       return result[0]?.count || 0;
-    } catch (_error) {
+    } catch (error) {
       console.error('Error getting MAU:', error);
       return 0;
     }

@@ -27,7 +27,7 @@ const secureStorage = multer.diskStorage({
     try {
       await fs.mkdir(uploadDir, { recursive: true });
       cb(null, uploadDir);
-    } catch (_error) {
+    } catch (error) {
       cb(error as Error, uploadDir);
     }
   },
@@ -186,7 +186,7 @@ async function validateImageFile(filePath: string, originalMimeType: string): Pr
     
     return { isValid: true, detectedType: detectedFileType.mime };
     
-  } catch (_error) {
+  } catch (error) {
     logger.error('File validation error', { error: (error as Error).message, filePath });
     return { isValid: false, error: 'File validation failed' };
   }
@@ -267,7 +267,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
     let validatedRequest: UploadRequestBody;
     try {
       validatedRequest = uploadRequestSchema.parse(authReq.body);
-    } catch (_error) {
+    } catch (error) {
       await fs.unlink(tempFilePath);
       if (error instanceof ZodError) {
         logger.warn('Streaming upload validation failed', {
@@ -320,7 +320,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
           )
         ]);
         break;
-      } catch (_err) {
+      } catch (err) {
         _lastError = err;
         if (attempt === 2) throw err;
         await new Promise(res => setTimeout(res, 1_000 * Math.pow(2, attempt)));
@@ -348,7 +348,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
       uploadProgress: authReq.uploadProgress
     });
     
-  } catch (_error) {
+  } catch (error) {
     logger.error('Streaming upload processing error', {
       userId: authReq.user?.id,
       error: error instanceof Error ? (error as Error).message : String(error),
@@ -428,7 +428,7 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
     let validatedRequest: UploadRequestBody;
     try {
       validatedRequest = uploadRequestSchema.parse(authReq.body);
-    } catch (_error) {
+    } catch (error) {
       if (error instanceof ZodError) {
         logger.warn('Upload request validation failed', { 
           userId: authReq.user?.id, 
@@ -497,15 +497,15 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
       signature,
       settings: validatedRequest.useCustom ? validatedRequest.customSettings : undefined
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error('Upload error:', { error: error instanceof Error ? (error as Error).message : String(error) });
     
     // Clean up any temp files
     if (tempFilePath) {
-      try { await fs.unlink(tempFilePath); } catch (_e) { /* ignore cleanup errors */ }
+      try { await fs.unlink(tempFilePath); } catch (e) { /* ignore cleanup errors */ }
     }
     if (protectedFilePath) {
-      try { await fs.unlink(protectedFilePath); } catch (_e) { /* ignore cleanup errors */ }
+      try { await fs.unlink(protectedFilePath); } catch (e) { /* ignore cleanup errors */ }
     }
     
     res.status(500).json({ message: 'Error processing file upload' });

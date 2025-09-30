@@ -131,7 +131,7 @@ export default function ReferralPage() {
         description: 'Referral code copied to clipboard',
       });
       setTimeout(() => setCopied(false), 2000);
-    } catch (_err) {
+    } catch (err) {
       toast({
         title: 'Failed to copy',
         description: 'Please try selecting and copying manually',
@@ -156,7 +156,7 @@ export default function ReferralPage() {
         title: 'Copied!',
         description: 'Referral link copied to clipboard',
       });
-    } catch (_err) {
+    } catch (err) {
       toast({
         title: 'Failed to copy',
         description: 'Please try selecting and copying manually',
@@ -182,7 +182,7 @@ export default function ReferralPage() {
           text: 'Get exclusive content creation tools and earn rewards with my referral code.',
           url: referralUrl,
         });
-      } catch (_err) {
+      } catch (err) {
         handleCopyReferralUrl();
       }
     } else {

@@ -61,7 +61,7 @@ export const PerformanceOptimization = memo(() => {
         await fetch('/api/auth/user', {
           credentials: 'include'
         });
-      } catch (_error) {
+      } catch (error) {
         console.error('API call failed during performance measurement:', error);
         // API call failed, don't update response time
       }
@@ -123,7 +123,7 @@ export const PerformanceOptimization = memo(() => {
       if ('serviceWorker' in navigator) {
         try {
           await navigator.serviceWorker.register('/sw.js');
-        } catch (_error) {
+        } catch (error) {
           console.error('Service worker registration failed:', error);
         }
       }
@@ -153,7 +153,7 @@ export const PerformanceOptimization = memo(() => {
         }));
       }, 2000);
       
-    } catch (_error) {
+    } catch (error) {
       console.error('Optimization failed:', error);
       setIsOptimizing(false);
     }

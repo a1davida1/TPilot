@@ -74,7 +74,7 @@ describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMoc
       const serialized = promptText.slice(promptText.lastIndexOf('\n') + 1);
       try {
         return JSON.parse(serialized);
-      } catch (_error) {
+      } catch (error) {
         return [];
       }
     };
@@ -303,7 +303,7 @@ describe.each(scenarios)('Ranking Integration Tests Part 2 ($label)', ({ applyGe
       const serialized = promptText.slice(promptText.lastIndexOf('\n') + 1);
       try {
         return JSON.parse(serialized);
-      } catch (_error) {
+      } catch (error) {
         return [];
       }
     };

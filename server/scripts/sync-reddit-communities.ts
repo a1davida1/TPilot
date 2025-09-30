@@ -140,7 +140,7 @@ async function calculateEngagementMetrics(reddit: Snoowrap, subredditName: strin
       avgComments: Math.round(totalComments / hotPosts.length),
       postFrequency: hotPosts.length, // Simplified metric
     };
-  } catch (_error) {
+  } catch (error) {
     logger.warn(`Failed to calculate engagement metrics for r/${subredditName}:`, error);
     return {
       avgUpvotes: 0,
@@ -206,7 +206,7 @@ async function syncSubreddit(reddit: Snoowrap, subredditName: string, retryCount
       // Give Reddit a brief breather before fetching rule metadata.
       await new Promise(resolve => setTimeout(resolve, 500));
       await syncSubredditRules(subredditName);
-    } catch (_error) {
+    } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error(`⚠️ Failed to sync rules for r/${subredditName}:`, error);
       ruleSyncError = `r/${subredditName} rules: ${errorMessage}`;
@@ -275,7 +275,7 @@ export async function syncRedditCommunities(config?: { subreddits?: string[]; ru
       if (outcome.ruleSyncError) {
         result.errors.push(outcome.ruleSyncError);
       }
-    } catch (_error) {
+    } catch (error) {
       result.failed++;
       const errorMessage = error instanceof Error ? error.message : String(error);
       result.errors.push(`r/${subredditName}: ${errorMessage}`);

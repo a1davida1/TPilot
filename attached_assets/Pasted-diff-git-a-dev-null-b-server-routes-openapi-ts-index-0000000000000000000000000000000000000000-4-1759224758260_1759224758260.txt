@@ -1,0 +1,69 @@
+diff --git a//dev/null b/server/routes/openapi.ts
+index 0000000000000000000000000000000000000000..41b9bfa60f8417cde2e084f9cb099357ae8ec280 100644
+--- a//dev/null
++++ b/server/routes/openapi.ts
+@@ -0,0 +1,64 @@
++import express from 'express';
++import { createHash } from 'node:crypto';
++import { readFile } from 'node:fs/promises';
++import { API_PREFIX, prefixApiPath } from '../lib/api-prefix.js';
++import { logger } from '../bootstrap/logger.js';
++
++interface CachedSpec {
++  content: string;
++  etag: string;
++}
++
++let cachedSpec: CachedSpec | undefined;
++let loadPromise: Promise<CachedSpec> | undefined;
++
++async function loadOpenApiSpec(): Promise<CachedSpec> {
++  if (cachedSpec) {
++    return cachedSpec;
++  }
++
++  if (!loadPromise) {
++    const specUrl = new URL('../openapi/openapi.yaml', import.meta.url);
++    loadPromise = readFile(specUrl, 'utf8')
++      .then((content) => {
++        const etag = `"${createHash('sha256').update(content).digest('hex')}"`;
++        cachedSpec = { content, etag };
++        return cachedSpec;
++      })
++      .catch((error: unknown) => {
++        loadPromise = undefined;
++        throw error;
++      });
++  }
++
++  return loadPromise;
++}
++
++export function getOpenApiRouter(apiPrefix: string = API_PREFIX): express.Router {
++  const router = express.Router();
++  const routePath = prefixApiPath('/openapi.yaml', apiPrefix);
++
++  router.get(routePath, async (req, res) => {
++    try {
++      const { content, etag } = await loadOpenApiSpec();
++
++      if (etag && req.headers['if-none-match'] === etag) {
++        res.status(304).end();
++        return;
++      }
++
++      res.setHeader('Content-Type', 'text/yaml; charset=utf-8');
++      res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
++      res.setHeader('Content-Disposition', 'inline; filename="openapi.yaml"');
++      res.setHeader('ETag', etag);
++
++      res.status(200).send(content);
++    } catch (error: unknown) {
++      const message = error instanceof Error ? error.message : String(error);
++      logger.error('Failed to serve OpenAPI specification', { error: message });
++      res.status(500).json({ error: 'OPENAPI_SPEC_UNAVAILABLE' });
++    }
++  });
++
++  return router;
++}

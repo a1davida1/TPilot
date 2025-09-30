@@ -126,7 +126,7 @@ export class PostScheduler {
         lastAnalyzed: new Date(),
       };
       
-    } catch (_error) {
+    } catch (error) {
       console.error(`Failed to analyze timing for r/${subreddit}:`, error);
       return this.getDefaultTiming(subreddit);
     }
@@ -224,7 +224,7 @@ export class PostScheduler {
           analyzedAt: new Date().toISOString(),
         },
       });
-    } catch (_error) {
+    } catch (error) {
       console.error('Failed to record engagement:', error);
     }
   }

@@ -130,7 +130,7 @@ export async function protectImage(
           'image/jpeg',
           (settings.quality || 85) / 100
         );
-      } catch (_error) {
+      } catch (error) {
         reject(error);
       }
     };

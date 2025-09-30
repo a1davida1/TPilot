@@ -104,7 +104,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
         description: errorMessage,
         variant: 'destructive'
       });
-    } catch (_error) {
+    } catch (error) {
       console.warn('Failed to apply referral code before login', error);
       toast({
         title: 'Referral not recorded',
@@ -327,7 +327,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
         variant: "default",
       });
       setShowResendVerification(false);
-    } catch (_error) {
+    } catch (error) {
       toast({
         title: "Error",
         description: "Failed to resend verification email",
@@ -395,7 +395,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
           if (data.authUrl) {
             window.location.href = data.authUrl;
           }
-        } catch (_error) {
+        } catch (error) {
           console.error('Failed to connect Reddit:', error);
         }
       }

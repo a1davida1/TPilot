@@ -34,7 +34,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
     
     logger.info(`Retrieved ${assets.length} media assets for user ${req.user.id}`);
     res.json(assets);
-  } catch (_error) {
+  } catch (error) {
     logger.error('Failed to get user media assets:', error);
     res.status(500).json({ message: 'Failed to retrieve media assets' });
   }
@@ -75,7 +75,7 @@ router.post('/upload', uploadLimiter, authenticateToken, upload.single('file'), 
       message: 'File uploaded successfully',
       asset
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error('Media upload failed:', error);
     
     // Clean up temp file on error
@@ -110,7 +110,7 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res) => {
     }
 
     res.json(asset);
-  } catch (_error) {
+  } catch (error) {
     logger.error('Failed to get media asset:', error);
     res.status(500).json({ message: 'Failed to retrieve asset' });
   }
@@ -135,7 +135,7 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res) => {
 
     logger.info(`Media asset ${assetId} deleted by user ${req.user.id}`);
     res.json({ message: 'Asset deleted successfully' });
-  } catch (_error) {
+  } catch (error) {
     logger.error('Failed to delete media asset:', error);
     res.status(500).json({ message: 'Failed to delete asset' });
   }
@@ -162,7 +162,7 @@ router.get('/:id/download', authenticateToken, async (req: AuthRequest, res) => 
       downloadUrl: asset.downloadUrl || asset.signedUrl,
       filename: asset.filename 
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error('Failed to get download URL:', error);
     res.status(500).json({ message: 'Failed to get download URL' });
   }

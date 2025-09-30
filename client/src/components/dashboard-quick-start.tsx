@@ -307,7 +307,7 @@ export function QuickStartModal({
       } else {
         throw new Error(data.message || "Failed to get authorization URL");
       }
-    } catch (_error) {
+    } catch (error) {
       clearConnectionMonitors();
       setIsConnecting(false);
       setConnectionInitiated(false);
@@ -383,7 +383,7 @@ export function QuickStartModal({
       } else {
         throw new Error(data.error || "Failed to submit post");
       }
-    } catch (_error) {
+    } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Failed to submit post";
       setSubmitError(errorMessage);
       toast({
