@@ -193,7 +193,6 @@ export class ReferralManager {
           .update(users)
           .set({
             referredBy: referrer.id,
-            createdAt: new Date(),
           })
           .where(eq(users.id, userId));
 
