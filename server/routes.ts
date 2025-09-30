@@ -936,7 +936,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   app.use('/uploads', createLocalDownloadRouter());
 
   // OpenAPI specification endpoint
-  app.use(getOpenApiRouter(apiPrefix));
+  // app.use(getOpenApiRouter(apiPrefix)); // Commented out - file missing
 
   // ==========================================
   // STRIPE PAYMENT ENDPOINTS

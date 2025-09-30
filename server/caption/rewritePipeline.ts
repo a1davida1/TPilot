@@ -1,7 +1,8 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { z } from "zod";
-import { visionModel, textModel } from "../lib/gemini";
+import * as gemini from "../lib/gemini";
+import type { GenerativeModel } from "@google/generative-ai";
 import { rankAndSelect, enrichWithTitleCandidates } from "./geminiPipeline";
 import { CaptionArray, RankResult, platformChecks, CaptionItem } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
@@ -12,6 +13,45 @@ import { formatVoiceContext } from "./voiceTraits";
 import { ensureFactCoverage } from "./ensureFactCoverage";
 import { inferFallbackFromFacts, ensureFallbackCompliance } from "./inferFallbackFromFacts";
 import { detectRankingViolations, formatViolations } from "./rankingGuards";
+
+type GeminiGenerateContent = GenerativeModel["generateContent"];
+
+const isGenerateContentFunction = (
+  candidate: unknown
+): candidate is GeminiGenerateContent => typeof candidate === "function";
+
+const isGenerativeModelInstance = (candidate: unknown): candidate is GenerativeModel => {
+  if (!candidate || typeof candidate !== "object") {
+    return false;
+  }
+  const record = candidate as Record<string, unknown>;
+  return isGenerateContentFunction(record.generateContent);
+};
+
+const resolveGenerativeModel = (candidate: unknown, label: "text" | "vision"): GenerativeModel => {
+  if (candidate == null) {
+    throw new Error(`Gemini ${label} model is not configured.`);
+  }
+  if (isGenerativeModelInstance(candidate)) {
+    return candidate;
+  }
+  if (isGenerateContentFunction(candidate)) {
+    return { generateContent: candidate } as unknown as GenerativeModel;
+  }
+  throw new Error(`Gemini ${label} model is invalid.`);
+};
+
+const getActiveTextModel = (): GenerativeModel => {
+  // const getter = gemini.getTextModel;
+  const candidate = gemini.textModel;
+  return resolveGenerativeModel(candidate, "text");
+};
+
+const getActiveVisionModel = (): GenerativeModel => {
+  // const getter = gemini.getVisionModel;
+  const candidate = gemini.visionModel;
+  return resolveGenerativeModel(candidate, "vision");
+};
 
 // CaptionResult interface for type safety
 interface CaptionResult {
@@ -139,8 +179,9 @@ export function extractKeyEntities(existingCaption: string): string[] {
 export async function extractFacts(imageUrl:string){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("extract.txt");
   const img={ inlineData:{ data: await b64(imageUrl), mimeType:"image/jpeg" } };
+  const vision = getActiveVisionModel();
   try {
-    const res=await visionModel.generateContent([{text:sys+"\n"+guard+"\n"+prompt}, img]);
+    const res=await vision.generateContent([{text:sys+"\n"+guard+"\n"+prompt}, img]);
     return stripToJSON(res.response.text());
   } catch (error) {
     console.error('Gemini visionModel.generateContent failed:', error);
@@ -187,6 +228,7 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
     load("guard.txt"),
     load("rewrite.txt")
   ]);
+  const textModel = getActiveTextModel();
 
   let attempts = 0;
   const baseHint = sanitizeHintForRetry(params.hint);
@@ -363,6 +405,7 @@ type _RewriteToneArgs = {
 };
 
 async function requestRewriteRanking(
+  model: GenerativeModel,
   variantsInput: unknown[],
   serializedVariants: string,
   promptBlock: string,
@@ -372,7 +415,7 @@ async function requestRewriteRanking(
   const hintBlock = extraHint && extraHint.trim().length > 0 ? `\nREMINDER: ${extraHint.trim()}` : "";
   let res;
   try {
-    res = await textModel.generateContent([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
+    res = await model.generateContent([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
   } catch (error) {
     console.error('Rewrite textModel.generateContent failed:', error);
     throw error;
@@ -399,8 +442,9 @@ async function _rerankVariants(
   const sys = await load("system.txt"), guard = await load("guard.txt"), prompt = await load("rank.txt");
   const promptBlock = `${sys}\n${guard}\n${prompt}`;
   const serializedVariants = JSON.stringify(variants);
+  const textModel = getActiveTextModel();
 
-  const first = await requestRewriteRanking(variants, serializedVariants, promptBlock, params?.platform);
+  const first = await requestRewriteRanking(textModel, variants, serializedVariants, promptBlock, params?.platform);
   let parsed = RankResult.parse(first);
   const violations = detectRankingViolations(parsed.final);
 
@@ -409,6 +453,7 @@ async function _rerankVariants(
   }
 
   const rerank = await requestRewriteRanking(
+    textModel,
     variants,
     serializedVariants,
     promptBlock,

@@ -244,15 +244,22 @@ describe("ModernDashboard quick start", () => {
     });
 
     const onOpenChange = vi.fn();
-    render(
-      <QuickStartModal
-        open
-        onOpenChange={onOpenChange}
-        initialStep="connect"
-        isRedditConnected={false}
-        onNavigate={setLocationMock}
-      />,
-    );
+
+    function Wrapper() {
+      const [isConnected, setIsConnected] = React.useState(false);
+      return (
+        <QuickStartModal
+          open
+          onOpenChange={onOpenChange}
+          initialStep="connect"
+          isRedditConnected={isConnected}
+          onConnected={() => setIsConnected(true)}
+          onNavigate={setLocationMock}
+        />
+      );
+    }
+
+    render(<Wrapper />);
 
     const continueButton = getButtonByText(/^Continue$/i);
     expect(continueButton.disabled).toBe(true);
@@ -280,7 +287,7 @@ describe("ModernDashboard quick start", () => {
     click(getButtonByText(/^Continue$/i));
     expect(await findByText(/Generate your copy/i)).toBeTruthy();
 
-    click(getButtonByText(/Review post/i));
+    click(getButtonByText(/^Continue$/i));
     expect(await findByText(/Confirm your Reddit post/i)).toBeTruthy();
 
     click(getButtonByText(/Confirm & post/i));

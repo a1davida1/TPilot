@@ -1,12 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { GeminiModel } from '../lib/gemini';
 
 const mockVisionModel = vi.hoisted(() => ({
-  generateContent: vi.fn()
-}));
+  generateContent: vi.fn<
+    Parameters<GeminiModel['generateContent']>,
+    ReturnType<GeminiModel['generateContent']>
+  >()
+} satisfies GeminiModel));
 
 vi.mock('../lib/gemini', () => ({
   visionModel: mockVisionModel,
-  textModel: {},
+  textModel: null,
+  getVisionModel: () => mockVisionModel,
+  getTextModel: () => null,
   isGeminiAvailable: vi.fn(() => true)
 }));
 

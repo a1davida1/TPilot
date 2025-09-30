@@ -50,11 +50,12 @@ import {
   Loader2
 } from 'lucide-react';
 import { MediaLibrarySelector } from '@/components/MediaLibrarySelector';
-import type { 
-  ShadowbanStatusType, 
+import type {
+  ShadowbanStatusType,
   ShadowbanCheckApiResponse,
-  ShadowbanSubmissionSummary 
+  ShadowbanSubmissionSummary
 } from '@shared/schema';
+import type { RedditCommunitySellingPolicy } from '@shared/schema';
 import type { SubredditCommunity } from '@/types/reddit';
 
 function isApiError(error: unknown): error is ApiError {
@@ -153,6 +154,28 @@ function checkCommunityEligibility(
     watermarkOk: true,
   };
 
+  const rules = community.rules;
+  const minKarmaRequirement = typeof rules?.eligibility?.minKarma === 'number'
+    ? rules.eligibility.minKarma
+    : typeof rules?.minKarma === 'number'
+      ? rules.minKarma
+      : null;
+  const minAccountAgeRequirement = typeof rules?.eligibility?.minAccountAgeDays === 'number'
+    ? rules.eligibility.minAccountAgeDays
+    : typeof rules?.minAccountAgeDays === 'number'
+      ? rules.minAccountAgeDays
+      : typeof rules?.minAccountAge === 'number'
+        ? rules.minAccountAge
+        : null;
+  const sellingPolicy: RedditCommunitySellingPolicy = rules?.content?.sellingPolicy
+    ?? rules?.sellingAllowed
+    ?? 'unknown';
+  const watermarksAllowed = typeof rules?.content?.watermarksAllowed === 'boolean'
+    ? rules.content.watermarksAllowed
+    : typeof rules?.watermarksAllowed === 'boolean'
+      ? rules.watermarksAllowed
+      : null;
+
   if (!account) {
     reasons.push('Account not connected');
     return {
@@ -168,33 +191,33 @@ function checkCommunityEligibility(
     };
   }
 
-  if (community.rules?.eligibility?.minKarma && account.karma < community.rules.eligibility.minKarma) {
-    reasons.push(`Requires ${community.rules.eligibility.minKarma} karma (you have ${account.karma})`);
+  if (minKarmaRequirement !== null && account.karma < minKarmaRequirement) {
+    reasons.push(`Requires ${minKarmaRequirement} karma (you have ${account.karma})`);
     isEligible = false;
     badges.karmaOk = false;
   }
 
-  if (community.rules?.eligibility?.minAccountAgeDays && account.accountAgeDays) {
-    if (account.accountAgeDays < community.rules?.eligibility?.minAccountAgeDays) {
-      reasons.push(`Account must be ${community.rules?.eligibility?.minAccountAgeDays} days old (yours is ${account.accountAgeDays} days)`);
+  if (minAccountAgeRequirement !== null && typeof account.accountAgeDays === 'number') {
+    if (account.accountAgeDays < minAccountAgeRequirement) {
+      reasons.push(`Account must be ${minAccountAgeRequirement} days old (yours is ${account.accountAgeDays} days)`);
       isEligible = false;
       badges.ageOk = false;
     }
   }
 
   // Include selling and watermark restrictions in eligibility
-  if (community.rules?.content?.sellingPolicy === 'not_allowed') {
+  if (sellingPolicy === 'not_allowed') {
     badges.sellingOk = false;
     reasons.push('Selling not allowed in this community');
     isEligible = false;
   }
 
-  if (community.rules?.content?.sellingPolicy === 'unknown') {
+  if (sellingPolicy === 'unknown') {
     badges.sellingOk = false;
     reasons.push('Selling policy unclear - check community rules');
   }
 
-  if (community.rules?.content?.watermarksAllowed === false) {
+  if (watermarksAllowed === false) {
     badges.watermarkOk = false;
     reasons.push('Watermarks not allowed in this community');
     isEligible = false;

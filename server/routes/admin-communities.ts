@@ -45,9 +45,10 @@ router.get('/', async (req: AdminRequest, res: express.Response) => {
 // POST /api/admin/communities - Create new community
 router.post('/', async (req: AdminRequest, res: express.Response) => {
   try {
-    // Validate request body with Zod schema
-    const validatedData = insertRedditCommunitySchema.parse(req.body);
-    const community = await createCommunity(validatedData);
+    // Validate request body with Zod schema without altering the payload
+    insertRedditCommunitySchema.parse(req.body);
+    const requestPayload: unknown = req.body;
+    const community = await createCommunity(requestPayload);
     
     const adminCommunity = {
       id: community.id,
@@ -84,9 +85,10 @@ router.post('/', async (req: AdminRequest, res: express.Response) => {
 router.put('/:id', async (req: AdminRequest, res: express.Response) => {
   try {
     const { id } = req.params;
-    // Validate request body with partial Zod schema
-    const validatedData = insertRedditCommunitySchema.partial().parse(req.body);
-    const community = await updateCommunity(id, validatedData);
+    // Validate request body with partial Zod schema without altering the payload
+    insertRedditCommunitySchema.partial().parse(req.body);
+    const requestPayload: unknown = req.body;
+    const community = await updateCommunity(id, requestPayload);
     
     if (!community) {
       return res.status(404).json({ success: false, error: 'Community not found' });

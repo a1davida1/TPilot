@@ -41,6 +41,11 @@ const mockDeleteCommunity = vi.mocked(deleteCommunity);
 const mockAuthenticateToken = vi.mocked(authenticateToken);
 const mockRequireAdmin = vi.mocked(requireAdmin);
 const mockSchema = vi.mocked(insertRedditCommunitySchema);
+let mockPartialParse: ReturnType<typeof vi.fn>;
+
+interface ParseOnlySchema {
+  parse: (input: unknown) => unknown;
+}
 
 describe('Admin Communities Routes', () => {
   let app: express.Application;
@@ -51,9 +56,11 @@ describe('Admin Communities Routes', () => {
     app.use(express.json());
     app.use('/api/admin/communities', adminCommunitiesRouter);
     request = supertest(app);
-    
+
     // Reset mocks and setup default successful auth
     vi.clearAllMocks();
+    mockPartialParse = vi.fn();
+    mockSchema.partial.mockReturnValue({ parse: mockPartialParse } as ParseOnlySchema);
     mockAuthenticateToken.mockImplementation((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
       req.user = {
         id: 1,
@@ -193,6 +200,7 @@ describe('Admin Communities Routes', () => {
         displayName: 'New Test Community'
       });
 
+      expect(mockSchema.parse).toHaveBeenCalledWith(newCommunityData);
       expect(mockCreateCommunity).toHaveBeenCalledWith(newCommunityData);
     });
   });
@@ -247,6 +255,8 @@ describe('Admin Communities Routes', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.displayName).toBe('Updated Test Community');
 
+      expect(mockSchema.partial).toHaveBeenCalled();
+      expect(mockPartialParse).toHaveBeenCalledWith(updateData);
       expect(mockUpdateCommunity).toHaveBeenCalledWith('test1', updateData);
     });
 

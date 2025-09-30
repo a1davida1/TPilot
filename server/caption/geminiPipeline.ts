@@ -1,7 +1,8 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { z } from "zod";
-import { visionModel, textModel, isGeminiAvailable } from "../lib/gemini";
+import * as gemini from "../lib/gemini";
+import type { GenerativeModel } from "@google/generative-ai";
 import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { BANNED_WORDS_HINT, variantContainsBannedWord } from "./bannedWords";
@@ -22,6 +23,45 @@ import {
   sanitizeFinalVariant
 } from "./rankGuards";
 
+const { isGeminiAvailable } = gemini;
+
+type GeminiGenerateContent = GenerativeModel["generateContent"];
+
+const isGenerateContentFunction = (
+  candidate: unknown
+): candidate is GeminiGenerateContent => typeof candidate === "function";
+
+const isGenerativeModelInstance = (candidate: unknown): candidate is GenerativeModel => {
+  if (!candidate || typeof candidate !== "object") {
+    return false;
+  }
+  const modelRecord = candidate as Record<string, unknown>;
+  return isGenerateContentFunction(modelRecord.generateContent);
+};
+
+const resolveGenerativeModel = (candidate: unknown, label: "text" | "vision"): GenerativeModel => {
+  if (candidate == null) {
+    throw new Error(`Gemini ${label} model is not configured.`);
+  }
+  if (isGenerativeModelInstance(candidate)) {
+    return candidate;
+  }
+  if (isGenerateContentFunction(candidate)) {
+    return { generateContent: candidate } as unknown as GenerativeModel;
+  }
+  throw new Error(`Gemini ${label} model is invalid.`);
+};
+
+const getActiveTextModel = (): GenerativeModel => {
+  const candidate = gemini.textModel;
+  return resolveGenerativeModel(candidate, "text");
+};
+
+const getActiveVisionModel = (): GenerativeModel => {
+  const candidate = gemini.visionModel;
+  return resolveGenerativeModel(candidate, "vision");
+};
+
 // Custom error class for image validation failures
 export class InvalidImageError extends Error {
   constructor(message: string) {
@@ -38,15 +78,6 @@ interface CaptionResult {
   variants?: z.infer<typeof CaptionArray>;
   ranked?: z.infer<typeof RankResult>;
   titles?: string[];
-}
-
-// Text model interfaces for type safety
-interface TextModelFunction {
-  (prompt: Array<{ text: string }>): Promise<unknown>;
-}
-
-interface TextModelObject {
-  generateContent(prompt: Array<{ text: string }>): Promise<unknown>;
 }
 
 interface GeminiResponse {
@@ -366,6 +397,7 @@ export async function variantsRewrite(
     load("rewrite.txt")
   ]);
 
+  const textModel = getActiveTextModel();
   const voiceGuide = buildVoiceGuideBlock(params.voice);
   const sanitizedBaseHint = sanitizeHintForRetry(params.hint);
   const mandatoryTokensLine = params.doNotDrop && params.doNotDrop.length > 0
@@ -582,6 +614,7 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
   try {
     console.error('Starting fact extraction for image:', imageUrl.substring(0, 100) + '...');
     const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("extract.txt");
+    const vision = getActiveVisionModel();
 
     // Handle data URLs differently from regular URLs
     let imageData: string;
@@ -695,7 +728,7 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
     }
 
     try {
-      const res = await visionModel.generateContent([{text: sys + "\n" + guard + "\n" + prompt}, img]);
+      const res = await vision.generateContent([{text: sys + "\n" + guard + "\n" + prompt}, img]);
       const rawText = await resolveResponseText(res);
       if (!rawText || rawText.trim().length === 0) {
         console.error('Gemini: empty response received during fact extraction');
@@ -747,6 +780,7 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
     load("guard.txt"),
     load("variants.txt")
   ]);
+  const textModel = getActiveTextModel();
 
   const sanitizeVariant = (item: Record<string, unknown>): Record<string, unknown> => {
     const variant = { ...item } as Record<string, unknown>;
@@ -977,24 +1011,12 @@ function normalizeGeminiFinal(
   final.caption = trimmedCaption.length > 0 ? trimmedCaption : "Sharing something I'm genuinely proud of.";
 }
 
-// Helper function to invoke text model regardless of its type (function vs object)
-async function invokeTextModel(prompt: Array<{ text: string }>): Promise<unknown> {
-  if (typeof textModel === 'function') {
-    // Function-based textModel
-    return await (textModel as TextModelFunction)(prompt);
-  } else if (textModel && typeof (textModel as TextModelObject).generateContent === 'function') {
-    // Object-based textModel with generateContent method
-    return await (textModel as TextModelObject).generateContent(prompt);
-  } else {
-    throw new Error('textModel is neither a function nor has a generateContent method');
-  }
-}
-
 function truncateReason(reason: string, maxLength = 100): string {
   return reason.length > maxLength ? `${reason.slice(0, maxLength - 3)}...` : reason;
 }
 
 async function requestGeminiRanking(
+  model: GenerativeModel,
   variantsInput: z.infer<typeof CaptionArray>,
   serializedVariants: string,
   promptBlock: string,
@@ -1005,7 +1027,7 @@ async function requestGeminiRanking(
   const hintBlock = extraHint && extraHint.trim().length > 0 ? `\nREMINDER: ${extraHint.trim()}` : "";
   let res;
   try {
-    res = await invokeTextModel([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
+    res = await model.generateContent([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
   } catch (error) {
     console.error('Gemini textModel invocation failed:', error);
     throw error;
@@ -1098,8 +1120,9 @@ export async function rankAndSelect(
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
   const promptBlock = `${sys}\n${guard}\n${prompt}`;
   const serializedVariants = JSON.stringify(variants);
+  const textModel = getActiveTextModel();
 
-  const first = await requestGeminiRanking(variants, serializedVariants, promptBlock, params?.platform, undefined, params?.facts);
+  const first = await requestGeminiRanking(textModel, variants, serializedVariants, promptBlock, params?.platform, undefined, params?.facts);
   let parsed = RankResult.parse(first);
   const violations = detectVariantViolations(parsed.final);
 
@@ -1108,6 +1131,7 @@ export async function rankAndSelect(
   }
 
   const rerank = await requestGeminiRanking(
+    textModel,
     variants,
     serializedVariants,
     promptBlock,

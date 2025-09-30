@@ -1,7 +1,8 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { z } from "zod";
-import { textModel } from "../lib/gemini";
+import * as gemini from "../lib/gemini";
+import type { GenerativeModel } from "@google/generative-ai";
 import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
 import { enrichWithTitleCandidates } from "./geminiPipeline";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
@@ -19,6 +20,35 @@ import {
   formatViolationSummary,
   sanitizeFinalVariant
 } from "./rankGuards";
+
+type GeminiGenerateContent = GenerativeModel["generateContent"];
+
+const isGenerateContentFunction = (
+  candidate: unknown
+): candidate is GeminiGenerateContent => typeof candidate === "function";
+
+const isGenerativeModelInstance = (candidate: unknown): candidate is GenerativeModel => {
+  if (!candidate || typeof candidate !== "object") {
+    return false;
+  }
+  const record = candidate as Record<string, unknown>;
+  return isGenerateContentFunction(record.generateContent);
+};
+
+const resolveTextModel = (): GenerativeModel => {
+  // const getter = gemini.getTextModel;
+  const candidate = gemini.textModel;
+  if (candidate == null) {
+    throw new Error("Gemini text model is not configured.");
+  }
+  if (isGenerativeModelInstance(candidate)) {
+    return candidate;
+  }
+  if (isGenerateContentFunction(candidate)) {
+    return { generateContent: candidate } as unknown as GenerativeModel;
+  }
+  throw new Error("Gemini text model is invalid.");
+};
 
 const _MAX_VARIANT_ATTEMPTS = 4;
 const VARIANT_TARGET = 5;
@@ -219,6 +249,7 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
     load("guard.txt"),
     load("variants_textonly.txt")
   ]);
+  const textModel = resolveTextModel();
 
   const _voiceGuide = buildVoiceGuideBlock(params.voice);
   const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -481,6 +512,7 @@ function _prepareVariantsForRanking(
 }
 
 async function requestTextOnlyRanking(
+  model: GenerativeModel,
   variantsInput: unknown[],
   serializedVariants: string,
   promptBlock: string,
@@ -490,7 +522,7 @@ async function requestTextOnlyRanking(
   const hintBlock = extraHint && extraHint.trim().length > 0 ? `\nREMINDER: ${extraHint.trim()}` : "";
   let res;
   try {
-    res = await textModel.generateContent([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
+    res = await model.generateContent([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
   } catch (error) {
     console.error('Text-only textModel.generateContent failed:', error);
     throw error;
@@ -522,8 +554,9 @@ export async function rankAndSelect(
   const sys = await load("system.txt"), guard = await load("guard.txt"), prompt = await load("rank.txt");
   const promptBlock = `${sys}\n${guard}\n${prompt}`;
   const serializedVariants = JSON.stringify(variants);
+  const textModel = resolveTextModel();
 
-  const first = await requestTextOnlyRanking(variants, serializedVariants, promptBlock, params?.platform);
+  const first = await requestTextOnlyRanking(textModel, variants, serializedVariants, promptBlock, params?.platform);
   let parsed = RankResult.parse(first);
   const violations = detectVariantViolations(parsed.final);
   
@@ -537,6 +570,7 @@ export async function rankAndSelect(
   }
 
   const rerank = await requestTextOnlyRanking(
+    textModel,
     variants,
     serializedVariants,
     promptBlock,
