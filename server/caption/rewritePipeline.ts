@@ -1,7 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { z } from "zod";
-import * as gemini from "../lib/gemini";
+import { getVisionModel, getTextModel } from "../lib/gemini-client";
 import type { GenerativeModel } from "@google/generative-ai";
 import { rankAndSelect, enrichWithTitleCandidates } from "./geminiPipeline";
 import { CaptionArray, RankResult, platformChecks, CaptionItem } from "./schema";
@@ -13,45 +13,6 @@ import { formatVoiceContext } from "./voiceTraits";
 import { ensureFactCoverage } from "./ensureFactCoverage";
 import { inferFallbackFromFacts, ensureFallbackCompliance } from "./inferFallbackFromFacts";
 import { detectRankingViolations, formatViolations } from "./rankingGuards";
-
-type GeminiGenerateContent = GenerativeModel["generateContent"];
-
-const isGenerateContentFunction = (
-  candidate: unknown
-): candidate is GeminiGenerateContent => typeof candidate === "function";
-
-const isGenerativeModelInstance = (candidate: unknown): candidate is GenerativeModel => {
-  if (!candidate || typeof candidate !== "object") {
-    return false;
-  }
-  const record = candidate as Record<string, unknown>;
-  return isGenerateContentFunction(record.generateContent);
-};
-
-const resolveGenerativeModel = (candidate: unknown, label: "text" | "vision"): GenerativeModel => {
-  if (candidate == null) {
-    throw new Error(`Gemini ${label} model is not configured.`);
-  }
-  if (isGenerativeModelInstance(candidate)) {
-    return candidate;
-  }
-  if (isGenerateContentFunction(candidate)) {
-    return { generateContent: candidate } as unknown as GenerativeModel;
-  }
-  throw new Error(`Gemini ${label} model is invalid.`);
-};
-
-const getActiveTextModel = (): GenerativeModel => {
-  // const getter = gemini.getTextModel;
-  const candidate = gemini.textModel;
-  return resolveGenerativeModel(candidate, "text");
-};
-
-const getActiveVisionModel = (): GenerativeModel => {
-  // const getter = gemini.getVisionModel;
-  const candidate = gemini.visionModel;
-  return resolveGenerativeModel(candidate, "vision");
-};
 
 // CaptionResult interface for type safety
 interface CaptionResult {
@@ -179,12 +140,12 @@ export function extractKeyEntities(existingCaption: string): string[] {
 export async function extractFacts(imageUrl:string){
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("extract.txt");
   const img={ inlineData:{ data: await b64(imageUrl), mimeType:"image/jpeg" } };
-  const vision = getActiveVisionModel();
   try {
-    const res=await vision.generateContent([{text:sys+"\n"+guard+"\n"+prompt}, img]);
+    const model = getVisionModel();
+    const res=await model.generateContent([{text:sys+"\n"+guard+"\n"+prompt}, img]);
     return stripToJSON(res.response.text());
   } catch (error) {
-    console.error('Gemini visionModel.generateContent failed:', error);
+    console.error('Gemini vision model generateContent failed:', error);
     throw error;
   }
 }
@@ -228,7 +189,7 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
     load("guard.txt"),
     load("rewrite.txt")
   ]);
-  const textModel = getActiveTextModel();
+  const textModel = getTextModel();
 
   let attempts = 0;
   const baseHint = sanitizeHintForRetry(params.hint);
@@ -276,7 +237,7 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
       promptSections.push(voiceGuide);
     }
 
-    let response;
+    let response: unknown;
     try {
       response = await textModel.generateContent([{ text: promptSections.join("\n") }]);
     } catch (error) {
@@ -284,7 +245,15 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
       throw error;
     }
 
-    const parsed = stripToJSON(response.response.text());
+    const envelope = response as { response?: { text?: () => unknown } };
+    if (!envelope.response || typeof envelope.response.text !== "function") {
+      throw new Error('Gemini text model returned an invalid response while generating rewrite variants');
+    }
+    const raw = envelope.response.text();
+    if (typeof raw !== "string") {
+      throw new Error('Gemini text model returned a non-string payload while generating rewrite variants');
+    }
+    const parsed = stripToJSON(raw);
     let hasBannedWords = false;
 
     if (Array.isArray(parsed)) {
@@ -413,14 +382,25 @@ async function requestRewriteRanking(
   extraHint?: string
 ): Promise<unknown> {
   const hintBlock = extraHint && extraHint.trim().length > 0 ? `\nREMINDER: ${extraHint.trim()}` : "";
-  let res;
+  let res: unknown;
   try {
     res = await model.generateContent([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
   } catch (error) {
     console.error('Rewrite textModel.generateContent failed:', error);
     throw error;
   }
-  let json = stripToJSON(res.response.text()) as unknown;
+  if (!res) {
+    throw new Error('Gemini text model returned no response during rewrite ranking');
+  }
+  const envelope = res as { response?: { text?: () => unknown } };
+  if (!envelope.response || typeof envelope.response.text !== "function") {
+    throw new Error('Gemini text model returned an invalid response during rewrite ranking');
+  }
+  const raw = envelope.response.text();
+  if (typeof raw !== "string") {
+    throw new Error('Gemini text model returned a non-string payload during rewrite ranking');
+  }
+  let json = stripToJSON(raw) as unknown;
 
   if(Array.isArray(json)) {
     const winner = json[0] as Record<string, unknown> | undefined;
@@ -442,7 +422,7 @@ async function _rerankVariants(
   const sys = await load("system.txt"), guard = await load("guard.txt"), prompt = await load("rank.txt");
   const promptBlock = `${sys}\n${guard}\n${prompt}`;
   const serializedVariants = JSON.stringify(variants);
-  const textModel = getActiveTextModel();
+  const textModel = getTextModel();
 
   const first = await requestRewriteRanking(textModel, variants, serializedVariants, promptBlock, params?.platform);
   let parsed = RankResult.parse(first);

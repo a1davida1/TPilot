@@ -50,14 +50,14 @@ import {
   Loader2
 } from 'lucide-react';
 import { MediaLibrarySelector } from '@/components/MediaLibrarySelector';
-import {
-  normalizeRulesToStructured,
-  type ShadowbanStatusType,
-  type ShadowbanCheckApiResponse,
-  type ShadowbanSubmissionSummary,
-  type RedditCommunityRuleSet,
-  type LegacyRedditCommunityRuleSet,
-  type RedditCommunitySellingPolicy
+import { normalizeRulesToStructured } from '@shared/reddit-utils';
+import type {
+  ShadowbanStatusType,
+  ShadowbanCheckApiResponse,
+  ShadowbanSubmissionSummary,
+  RedditCommunityRuleSet,
+  LegacyRedditCommunityRuleSet,
+  RedditCommunitySellingPolicy
 } from '@shared/schema';
 import type { SubredditCommunity } from '@/types/reddit';
 

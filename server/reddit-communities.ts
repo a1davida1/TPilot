@@ -11,10 +11,10 @@ import {
   type RedditCommunitySellingPolicy,
   redditCommunityRuleSetSchema,
   createDefaultRules,
-  normalizeRulesToStructured,
   canonicalizeCompetitionLevel,
   canonicalizeModActivity
 } from '@shared/schema';
+import { normalizeRulesToStructured } from '@shared/reddit-utils.js';
 import { getGrowthTrendLabel } from '@shared/growth-trends';
 import { eq, ilike, desc, or } from 'drizzle-orm';
 import { lintCaption } from './lib/policy-linter.js';

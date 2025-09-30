@@ -1,7 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { z } from "zod";
-import * as gemini from "../lib/gemini";
+import { getVisionModel, getTextModel, isGeminiAvailable } from "../lib/gemini-client";
 import type { GenerativeModel } from "@google/generative-ai";
 import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
@@ -22,45 +22,6 @@ import {
   formatViolationSummary,
   sanitizeFinalVariant
 } from "./rankGuards";
-
-const { isGeminiAvailable } = gemini;
-
-type GeminiGenerateContent = GenerativeModel["generateContent"];
-
-const isGenerateContentFunction = (
-  candidate: unknown
-): candidate is GeminiGenerateContent => typeof candidate === "function";
-
-const isGenerativeModelInstance = (candidate: unknown): candidate is GenerativeModel => {
-  if (!candidate || typeof candidate !== "object") {
-    return false;
-  }
-  const modelRecord = candidate as Record<string, unknown>;
-  return isGenerateContentFunction(modelRecord.generateContent);
-};
-
-const resolveGenerativeModel = (candidate: unknown, label: "text" | "vision"): GenerativeModel => {
-  if (candidate == null) {
-    throw new Error(`Gemini ${label} model is not configured.`);
-  }
-  if (isGenerativeModelInstance(candidate)) {
-    return candidate;
-  }
-  if (isGenerateContentFunction(candidate)) {
-    return { generateContent: candidate } as unknown as GenerativeModel;
-  }
-  throw new Error(`Gemini ${label} model is invalid.`);
-};
-
-const getActiveTextModel = (): GenerativeModel => {
-  const candidate = gemini.textModel;
-  return resolveGenerativeModel(candidate, "text");
-};
-
-const getActiveVisionModel = (): GenerativeModel => {
-  const candidate = gemini.visionModel;
-  return resolveGenerativeModel(candidate, "vision");
-};
 
 // Custom error class for image validation failures
 export class InvalidImageError extends Error {
@@ -414,7 +375,7 @@ export async function variantsRewrite(
     load("rewrite.txt")
   ]);
 
-  const textModel = getActiveTextModel();
+  const textModel = getTextModel();
   const voiceGuide = buildVoiceGuideBlock(params.voice);
   const sanitizedBaseHint = sanitizeHintForRetry(params.hint);
   const mandatoryTokensLine = params.doNotDrop && params.doNotDrop.length > 0
@@ -481,7 +442,7 @@ export async function variantsRewrite(
         { text: promptSections.join("\n") }
       ]);
     } catch (error) {
-      console.error("Gemini textModel.generateContent failed:", error);
+      console.error("Gemini text model invocation failed:", error);
       throw error;
     }
 
@@ -669,7 +630,7 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
   try {
     console.error('Starting fact extraction for image:', imageUrl.substring(0, 100) + '...');
     const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("extract.txt");
-    const vision = getActiveVisionModel();
+    const vision = getVisionModel();
 
     // Handle data URLs differently from regular URLs
     let imageData: string;
@@ -783,7 +744,8 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
     }
 
     try {
-      const res = await vision.generateContent([{text: sys + "\n" + guard + "\n" + prompt}, img]);
+      const model = getVisionModel();
+      const res = await model.generateContent([{text: sys + "\n" + guard + "\n" + prompt}, img]);
       const rawText = await resolveResponseText(res);
       if (!rawText || rawText.trim().length === 0) {
         console.error('Gemini: empty response received during fact extraction');
@@ -793,7 +755,7 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
       console.error('Fact extraction completed successfully');
       return result;
     } catch (error) {
-      console.error('Gemini visionModel.generateContent failed:', error);
+      console.error('Gemini vision model generateContent failed:', error);
 
       // For GIFs that fail Gemini processing, provide better fallback facts
       if (mimeType === 'image/gif') {
@@ -835,7 +797,7 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
     load("guard.txt"),
     load("variants.txt")
   ]);
-  const textModel = getActiveTextModel();
+  const textModel = getTextModel();
 
   const sanitizeVariant = (item: Record<string, unknown>): Record<string, unknown> => {
     const variant = { ...item } as Record<string, unknown>;
@@ -1243,7 +1205,7 @@ export async function rankAndSelect(
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
   const promptBlock = `${sys}\n${guard}\n${prompt}`;
   const serializedVariants = JSON.stringify(variants);
-  const textModel = getActiveTextModel();
+  const textModel = getTextModel();
 
   const first = await requestGeminiRanking(textModel, variants, serializedVariants, promptBlock, params?.platform, undefined, params?.facts);
   let parsed = RankResult.parse(first);

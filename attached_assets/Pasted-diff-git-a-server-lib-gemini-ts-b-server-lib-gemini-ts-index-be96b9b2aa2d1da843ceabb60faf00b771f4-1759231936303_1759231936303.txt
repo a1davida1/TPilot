@@ -1,0 +1,82 @@
+diff --git a/server/lib/gemini.ts b/server/lib/gemini.ts
+index be96b9b2aa2d1da843ceabb60faf00b771f43302..5eeef0f546325e75f9eac1fccc6cb0eb5ed67868 100644
+--- a/server/lib/gemini.ts
++++ b/server/lib/gemini.ts
+@@ -1,24 +1,57 @@
+-import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
++import type { GenerativeModel, GoogleGenerativeAI } from "@google/generative-ai";
++import {
++  getGoogleGenerativeAI,
++  getTextModel as loadTextModel,
++  getVisionModel as loadVisionModel,
++  isGeminiAvailable
++} from "./gemini-client";
+ 
+-// Check if API key is available (support both environment variable names)
+-const apiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY;
++const createLazyProxy = <T extends object>(factory: () => T): T =>
++  new Proxy({} as T, {
++    get(_target, property, receiver) {
++      const instance = factory();
++      const value = Reflect.get(instance as object, property, receiver);
++      if (typeof value === "function") {
++        return (value as (...args: unknown[]) => unknown).bind(instance);
++      }
++      return value;
++    },
++    has(_target, property) {
++      const instance = factory();
++      return Reflect.has(instance as object, property);
++    },
++    ownKeys() {
++      const instance = factory();
++      return Reflect.ownKeys(instance as object);
++    },
++    getOwnPropertyDescriptor(_target, property) {
++      const instance = factory();
++      const descriptor = Object.getOwnPropertyDescriptor(instance as object, property);
++      if (descriptor) {
++        descriptor.configurable = true;
++      }
++      return descriptor;
++    }
++  });
+ 
+-// Create placeholder exports that will be initialized if API key exists
+-let genAI: GoogleGenerativeAI | null = null;
+-let visionModel: GenerativeModel | null = null;
+-let textModel: GenerativeModel | null = null;
++const genAI: GoogleGenerativeAI | null = isGeminiAvailable()
++  ? createLazyProxy<GoogleGenerativeAI>(getGoogleGenerativeAI)
++  : null;
+ 
+-if (apiKey) {
+-  genAI = new GoogleGenerativeAI(apiKey);
+-  visionModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+-  textModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // keep consistent
+-} else {
+-  console.warn(
+-    "GOOGLE_GENAI_API_KEY or GEMINI_API_KEY environment variable is not set. " +
+-    "Gemini AI features will fall back to OpenAI."
+-  );
+-}
++const visionModel: GenerativeModel | null = isGeminiAvailable()
++  ? createLazyProxy<GenerativeModel>(loadVisionModel)
++  : null;
+ 
+-// Export helper to check if Gemini is available
+-export const isGeminiAvailable = () => !!apiKey;
+-export { genAI, visionModel, textModel };
++const textModel: GenerativeModel | null = isGeminiAvailable()
++  ? createLazyProxy<GenerativeModel>(loadTextModel)
++  : null;
++
++export {
++  genAI,
++  visionModel,
++  textModel,
++  isGeminiAvailable,
++  getGoogleGenerativeAI,
++  loadVisionModel as getVisionModel,
++  loadTextModel as getTextModel
++};

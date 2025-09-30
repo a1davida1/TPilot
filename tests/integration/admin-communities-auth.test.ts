@@ -5,6 +5,7 @@ import session, { type Session, type SessionData } from 'express-session';
 import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { adminCommunitiesRouter } from '../../server/routes/admin-communities.ts';
+import { authenticateToken, type AuthRequest } from '../../server/middleware/auth.ts';
 
 // Mock the reddit-communities module
 vi.mock('../../server/reddit-communities.ts', () => ({
@@ -78,11 +79,17 @@ type AdminSessionUser = {
   isAdmin: boolean;
   role: string;
   tier: string;
+  emailVerified: boolean;
+  isDeleted: boolean;
+  bannedAt: Date | null;
+  suspendedUntil: Date | null;
+  subscriptionStatus: string;
+  password: string;
+  mustChangePassword: boolean;
 };
 
-type RequestWithSession = express.Request & {
-  session?: Session & Partial<SessionData> & { user?: AdminSessionUser };
-  user?: AdminSessionUser;
+type RequestWithSession = AuthRequest & {
+  session?: Session & Partial<SessionData> & { user?: AuthRequest['user'] };
   isAuthenticated?: () => boolean;
 };
 
@@ -90,13 +97,24 @@ describe('Admin Communities Authentication Integration', () => {
   let app: express.Application;
   let agent: request.SuperAgentTest | undefined;
 
+  const baseUserState = {
+    emailVerified: true,
+    isDeleted: false,
+    bannedAt: null,
+    suspendedUntil: null,
+    subscriptionStatus: 'active',
+    password: 'hashedpassword',
+    mustChangePassword: false,
+  } as const;
+
   const adminUser: AdminSessionUser = {
     id: 1,
     username: 'admin',
     email: 'admin@test.com',
     isAdmin: true,
     role: 'admin',
-    tier: 'pro'
+    tier: 'pro',
+    ...baseUserState,
   };
 
   const nonAdminUser: AdminSessionUser = {
@@ -105,7 +123,8 @@ describe('Admin Communities Authentication Integration', () => {
     email: 'member@test.com',
     isAdmin: false,
     role: 'member',
-    tier: 'starter'
+    tier: 'starter',
+    ...baseUserState,
   };
 
   const loginAs = async (user: AdminSessionUser) => {
@@ -144,7 +163,7 @@ describe('Admin Communities Authentication Integration', () => {
 
     app.use((req, _res, next) => {
       const requestWithSession = req as RequestWithSession;
-      const sessionUser = requestWithSession.session?.user;
+      const sessionUser = requestWithSession.session?.user as AuthRequest['user'] | undefined;
       requestWithSession.isAuthenticated = () => Boolean(sessionUser);
       if (sessionUser) {
         requestWithSession.user = sessionUser;
@@ -153,7 +172,7 @@ describe('Admin Communities Authentication Integration', () => {
     });
 
     // Mount admin communities router
-    app.get('/api/reddit/communities', async (_req, res) => {
+    app.get('/api/reddit/communities', authenticateToken(true), async (_req: AuthRequest, res) => {
       const communities = await redditCommunities.listCommunities();
       res.json(communities);
     });
@@ -168,7 +187,7 @@ describe('Admin Communities Authentication Integration', () => {
       }
 
       const sessionUser = req.body as AdminSessionUser;
-      sessionInstance.user = sessionUser;
+      sessionInstance.user = sessionUser as unknown as AuthRequest['user'];
       res.status(204).send();
     });
 
@@ -208,14 +227,24 @@ describe('Admin Communities Authentication Integration', () => {
     vi.restoreAllMocks();
   });
 
-  test('allows anonymous access to reddit communities listing', async () => {
-    const response = await request(app)
+  test('requires authentication for reddit communities listing', async () => {
+    await request(app)
+      .get('/api/reddit/communities')
+      .expect(401);
+  });
+
+  test('allows session-authenticated users to access reddit communities listing', async () => {
+    await loginAs(nonAdminUser);
+
+    if (!agent) {
+      throw new Error('Agent not initialized');
+    }
+
+    const response = await agent
       .get('/api/reddit/communities')
       .expect(200);
 
-    expect(response.body).toBeDefined();
     expect(Array.isArray(response.body)).toBe(true);
-    expect(response.body.length).toBe(1);
     expect(response.body[0]).toMatchObject({
       id: '1',
       name: 'test_community',

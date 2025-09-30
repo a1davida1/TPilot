@@ -126,6 +126,17 @@ export async function apiRequest(
   const headers: Record<string, string> = {};
   let body: BodyInit | undefined;
 
+  if (typeof window !== "undefined") {
+    try {
+      const storedToken = window.localStorage?.getItem("authToken");
+      if (storedToken && !headers["Authorization"]) {
+        headers["Authorization"] = `Bearer ${storedToken}`;
+      }
+    } catch (error) {
+      console.warn("Unable to access auth token from localStorage", error);
+    }
+  }
+
   // Get CSRF token for state-changing requests
   if (method !== 'GET' && method !== 'HEAD') {
     try {

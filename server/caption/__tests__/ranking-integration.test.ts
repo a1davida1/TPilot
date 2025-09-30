@@ -14,7 +14,7 @@ const createMockResponse = (payload: unknown) => ({
 
 type ScenarioConfig = {
   label: string;
-  applyGeminiMock: () => { textModelMock: TextModelMock };
+  applyGeminiMock: () => { textModelMock: TextModelMock; getTextModelMock: ReturnType<typeof vi.fn> };
 };
 
 const scenarios: ScenarioConfig[] = [
@@ -23,15 +23,17 @@ const scenarios: ScenarioConfig[] = [
     applyGeminiMock: () => {
       const textModelMock = vi.fn();
 
-      vi.doMock('../../lib/gemini', () => ({
-        textModel: null,
-        getTextModel: () => textModelMock,
-        visionModel: null,
-        getVisionModel: () => null,
-        isGeminiAvailable: () => true,
+
+      const getTextModelMock = vi.fn(() => textModelMock);
+
+      vi.doMock('../lib/gemini-client', () => ({
+        getTextModel: getTextModelMock,
+        getVisionModel: vi.fn(),
+        isGeminiAvailable: () => true
+
       }));
 
-      return { textModelMock };
+      return { textModelMock, getTextModelMock };
     }
   },
   {
@@ -39,17 +41,17 @@ const scenarios: ScenarioConfig[] = [
     applyGeminiMock: () => {
       const generateContent = vi.fn();
 
-      const model = { generateContent } as unknown as GenerativeModel;
 
-      vi.doMock('../../lib/gemini', () => ({
-        textModel: model,
-        getTextModel: () => model,
-        visionModel: null,
-        getVisionModel: () => null,
-        isGeminiAvailable: () => true,
+
+      const getTextModelMock = vi.fn(() => ({ generateContent }));
+
+      vi.doMock('../lib/gemini-client', () => ({
+        getTextModel: getTextModelMock,
+        getVisionModel: vi.fn(),
+        isGeminiAvailable: () => true
       }));
 
-      return { textModelMock: generateContent };
+      return { textModelMock: generateContent, getTextModelMock };
     }
   }
 ];
@@ -57,6 +59,8 @@ const scenarios: ScenarioConfig[] = [
 describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMock }) => {
   let rankAndSelect: (typeof import('../geminiPipeline'))['rankAndSelect'];
   let textModelMock: TextModelMock;
+  let getTextModelMock: ReturnType<typeof vi.fn>;
+  let fetchSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(async () => {
     vi.resetModules();
@@ -70,10 +74,22 @@ describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMoc
       })
     }));
 
-    const { textModelMock: appliedMock } = applyGeminiMock();
-    textModelMock = appliedMock;
+    const appliedMock = applyGeminiMock();
+    textModelMock = appliedMock.textModelMock;
+    getTextModelMock = appliedMock.getTextModelMock;
+
+    fetchSpy = vi.spyOn(globalThis, 'fetch');
 
     ({ rankAndSelect } = await import('../geminiPipeline'));
+  });
+
+  afterEach(() => {
+    try {
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      fetchSpy.mockRestore();
+    }
+    expect(getTextModelMock).toHaveBeenCalled();
   });
 
   describe('rankAndSelect', () => {

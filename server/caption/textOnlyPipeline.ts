@@ -1,7 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { z } from "zod";
-import * as gemini from "../lib/gemini";
+import { getTextModel } from "../lib/gemini-client";
 import type { GenerativeModel } from "@google/generative-ai";
 import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
 import { enrichWithTitleCandidates } from "./geminiPipeline";
@@ -25,35 +25,6 @@ type GeminiResponse = {
   response?: {
     text(): string;
   };
-};
-
-type GeminiGenerateContent = GenerativeModel["generateContent"];
-
-const isGenerateContentFunction = (
-  candidate: unknown
-): candidate is GeminiGenerateContent => typeof candidate === "function";
-
-const isGenerativeModelInstance = (candidate: unknown): candidate is GenerativeModel => {
-  if (!candidate || typeof candidate !== "object") {
-    return false;
-  }
-  const record = candidate as Record<string, unknown>;
-  return isGenerateContentFunction(record.generateContent);
-};
-
-const resolveTextModel = (): GenerativeModel => {
-  // const getter = gemini.getTextModel;
-  const candidate = gemini.textModel;
-  if (candidate == null) {
-    throw new Error("Gemini text model is not configured.");
-  }
-  if (isGenerativeModelInstance(candidate)) {
-    return candidate;
-  }
-  if (isGenerateContentFunction(candidate)) {
-    return { generateContent: candidate } as unknown as GenerativeModel;
-  }
-  throw new Error("Gemini text model is invalid.");
 };
 
 const _MAX_VARIANT_ATTEMPTS = 4;
@@ -157,6 +128,23 @@ interface GeminiTextEnvelope {
   };
 }
 
+type TextModelFunction = (prompt: Array<{ text: string }>) => Promise<unknown>;
+
+interface TextModelObject {
+  generateContent(prompt: Array<{ text: string }>): Promise<unknown>;
+}
+
+async function invokeTextModel(prompt: Array<{ text: string }>): Promise<unknown> {
+  const model = getTextModel() as unknown;
+  if (typeof model === "function") {
+    return await (model as TextModelFunction)(prompt);
+  }
+  if (model && typeof (model as TextModelObject).generateContent === "function") {
+    return await (model as TextModelObject).generateContent(prompt);
+  }
+  throw new Error("Gemini text model is neither callable nor exposes generateContent");
+}
+
 async function resolveResponseText(payload: unknown): Promise<string | undefined> {
   if (!payload || typeof payload !== "object") {
     return undefined;
@@ -255,7 +243,7 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
     load("guard.txt"),
     load("variants_textonly.txt")
   ]);
-  const textModel = resolveTextModel();
+  const textModel = getTextModel();
 
   const _voiceGuide = buildVoiceGuideBlock(params.voice);
   const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -369,11 +357,12 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
     let candidates: unknown[] = fallbackBatch;
 
     try {
-      const res = await textModel.generateContent([
+      const textModel = getTextModel();
+      const response = await textModel.generateContent([
         { text: `${sysWithTone}\n${guard}\n${prompt}\n${user}` }
       ]);
 
-      const rawText = await resolveResponseText(res);
+      const rawText = await resolveResponseText(response);
       if (typeof rawText === "string" && rawText.trim().length > 0) {
         try {
           const json = stripToJSON(rawText);
@@ -579,16 +568,15 @@ async function requestTextOnlyRanking(
   const resolved = await resolveResponseText(res);
   if (typeof resolved === "string") {
     textOutput = resolved;
-  } else if (
-    res &&
-    (res as GeminiResponse)?.response &&
-    typeof (res as GeminiResponse).response.text === "function"
-  ) {
-    try {
-      const raw = (res as GeminiResponse).response.text();
-      textOutput = typeof raw === "string" ? raw : null;
-    } catch (invokeError) {
-      console.error("Gemini: failed to read text-only ranking response:", invokeError);
+  } else if (res && typeof res === "object") {
+    const geminiRes = res as GeminiResponse;
+    if (geminiRes.response && typeof geminiRes.response.text === "function") {
+      try {
+        const raw = geminiRes.response.text();
+        textOutput = typeof raw === "string" ? raw : null;
+      } catch (invokeError) {
+        console.error("Gemini: failed to read text-only ranking response:", invokeError);
+      }
     }
   } else if (typeof res === "string") {
     textOutput = res;
@@ -631,7 +619,7 @@ export async function rankAndSelect(
   const sys = await load("system.txt"), guard = await load("guard.txt"), prompt = await load("rank.txt");
   const promptBlock = `${sys}\n${guard}\n${prompt}`;
   const serializedVariants = JSON.stringify(variants);
-  const textModel = resolveTextModel();
+  const textModel = getTextModel();
 
   const first = await requestTextOnlyRanking(textModel, variants, serializedVariants, promptBlock, params?.platform);
   let parsed = RankResult.parse(first);

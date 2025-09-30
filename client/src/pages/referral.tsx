@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type HTMLAttributes, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Copy, Check, Share2, Users, DollarSign, Gift, Sparkles } from 'lucide-react';
 import { useLocation } from 'wouter';
@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import type { ApiError } from '@/lib/queryClient';
+import { cn } from '@/lib/utils';
 
 interface ReferralCodeResponse {
   referralCode: string;
@@ -23,6 +24,35 @@ interface ReferralSummaryResponse {
   activeReferrals: number;
   totalCommission: number;
   conversionRate: number;
+}
+
+interface ReferralPageShellProps extends HTMLAttributes<HTMLDivElement> {
+  children: ReactNode;
+  containerClassName?: string;
+}
+
+function ReferralPageShell({
+  children,
+  className,
+  containerClassName,
+  ...props
+}: ReferralPageShellProps) {
+  return (
+    <div
+      className={cn(
+        'min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-100 dark:from-gray-900 dark:via-purple-950/20 dark:to-pink-950/20',
+        className,
+      )}
+      {...props}
+    >
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-yellow-400/5 opacity-60"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,192,203,0.1),transparent_50%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(255,235,59,0.05),transparent_50%)]"></div>
+      </div>
+      <div className={cn('relative container mx-auto px-4 py-8 z-10 max-w-6xl', containerClassName)}>{children}</div>
+    </div>
+  );
 }
 
 export default function ReferralPage() {
@@ -202,41 +232,27 @@ export default function ReferralPage() {
 
   if (isAuthLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-100 dark:from-gray-900 dark:via-purple-950/20 dark:to-pink-950/20">
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-yellow-400/5 opacity-60"></div>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,192,203,0.1),transparent_50%)]"></div>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(255,235,59,0.05),transparent_50%)]"></div>
-        </div>
-        <div className="relative container mx-auto px-4 py-8 z-10 max-w-6xl">
-          <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-pink-200/50 dark:border-pink-800/30">
-            <CardHeader>
-              <CardTitle>Loading referral dashboard…</CardTitle>
-              <CardDescription>We&apos;re preparing your referral rewards data.</CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-      </div>
+      <ReferralPageShell>
+        <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-pink-200/50 dark:border-pink-800/30">
+          <CardHeader>
+            <CardTitle>Loading referral dashboard…</CardTitle>
+            <CardDescription>We&apos;re preparing your referral rewards data.</CardDescription>
+          </CardHeader>
+        </Card>
+      </ReferralPageShell>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-100 dark:from-gray-900 dark:via-purple-950/20 dark:to-pink-950/20">
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-yellow-400/5 opacity-60"></div>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,192,203,0.1),transparent_50%)]"></div>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(255,235,59,0.05),transparent_50%)]"></div>
-        </div>
-        <div className="relative container mx-auto px-4 py-8 z-10 max-w-6xl">
-          <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-pink-200/50 dark:border-pink-800/30">
-            <CardHeader>
-              <CardTitle>Redirecting to login…</CardTitle>
-              <CardDescription>Sign in to access your referral dashboard and track rewards.</CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-      </div>
+      <ReferralPageShell>
+        <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-pink-200/50 dark:border-pink-800/30">
+          <CardHeader>
+            <CardTitle>Redirecting to login…</CardTitle>
+            <CardDescription>Sign in to access your referral dashboard and track rewards.</CardDescription>
+          </CardHeader>
+        </Card>
+      </ReferralPageShell>
     );
   }
 
@@ -319,31 +335,23 @@ export default function ReferralPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-100 dark:from-gray-900 dark:via-purple-950/20 dark:to-pink-950/20">
-      {/* Animated Background */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-yellow-400/5 opacity-60"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,192,203,0.1),transparent_50%)]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(255,235,59,0.05),transparent_50%)]"></div>
+    <ReferralPageShell>
+      {/* Page Header */}
+      <div className="mb-8 text-center">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 via-rose-500 to-purple-600 dark:from-pink-400 dark:via-rose-400 dark:to-purple-400 bg-clip-text text-transparent drop-shadow-sm mb-4">
+          <Gift className="inline-block h-10 w-10 mr-3 text-pink-500" />
+          Referral Program
+        </h1>
+        <p className="text-lg text-gray-700 dark:text-gray-300 max-w-2xl mx-auto">
+          Share ThottoPilot with friends and earn rewards for every successful referral. The more you share, the more you earn!
+        </p>
+        <Badge className="mt-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2">
+          <Sparkles className="h-4 w-4 mr-2" />
+          Pro Member Exclusive
+        </Badge>
       </div>
 
-      <div className="relative container mx-auto px-4 py-8 z-10 max-w-6xl">
-        {/* Page Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 via-rose-500 to-purple-600 dark:from-pink-400 dark:via-rose-400 dark:to-purple-400 bg-clip-text text-transparent drop-shadow-sm mb-4">
-            <Gift className="inline-block h-10 w-10 mr-3 text-pink-500" />
-            Referral Program
-          </h1>
-          <p className="text-lg text-gray-700 dark:text-gray-300 max-w-2xl mx-auto">
-            Share ThottoPilot with friends and earn rewards for every successful referral. The more you share, the more you earn!
-          </p>
-          <Badge className="mt-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2">
-            <Sparkles className="h-4 w-4 mr-2" />
-            Pro Member Exclusive
-          </Badge>
-        </div>
-
-        {/* Stats Overview */}
+      {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-pink-200/50 dark:border-pink-800/30">
             <CardHeader className="pb-2">
@@ -559,7 +567,6 @@ export default function ReferralPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
-    </div>
+      </ReferralPageShell>
   );
 }

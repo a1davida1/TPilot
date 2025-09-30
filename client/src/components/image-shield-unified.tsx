@@ -21,7 +21,6 @@ import {
   Sparkles,
   Lock,
   Trash2,
-  Tag,
   Crown,
   Image as ImageIcon,
   Zap

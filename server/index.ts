@@ -23,34 +23,53 @@ export async function createExpressApp(options: CreateAppOptions = {}): Promise<
 }
 
 async function bootstrap(): Promise<void> {
+  const startTime = Date.now();
   logger.info('[HEALTH] Starting application bootstrap...');
   logger.info(`[HEALTH] Environment: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`[HEALTH] Platform: ${process.platform}`);
   logger.info(`[HEALTH] Architecture: ${process.arch}`);
   
-  const { server } = await createApp();
-  logger.info('[HEALTH] Express app created successfully');
-
-  const port = Number.parseInt(process.env.PORT ?? '5000', 10);
-  logger.info(`[HEALTH] Target port from environment: ${port}`);
-
-  // Simplified server startup for autoscale deployment
-  logger.info(`[HEALTH] Starting server on port ${port}`);
-  
-  server.listen(port, '0.0.0.0', () => {
-    logger.info(`[HEALTH] ✅ Server started successfully on port ${port}`);
-    logger.info(`serving on port ${port}`);
-  });
-
-  server.on('error', (err: unknown) => {
-    const error = err as NodeJS.ErrnoException;
-    logger.error(`[HEALTH] ❌ Server startup failed:`, {
-      code: error.code,
-      message: error.message,
-      port: port
-    });
+  // Set startup timeout for deployment
+  const STARTUP_TIMEOUT = 30000; // 30 seconds
+  const timeoutId = setTimeout(() => {
+    logger.error('[HEALTH] ❌ Server startup timeout exceeded');
     process.exit(1);
-  });
+  }, STARTUP_TIMEOUT);
+
+  try {
+    const { server } = await createApp();
+    const createAppTime = Date.now() - startTime;
+    logger.info(`[HEALTH] Express app created successfully in ${createAppTime}ms`);
+
+    const port = Number.parseInt(process.env.PORT ?? '5000', 10);
+    logger.info(`[HEALTH] Target port from environment: ${port}`);
+    logger.info(`[HEALTH] Starting server on 0.0.0.0:${port}`);
+
+    // Promisify server.listen for better error handling
+    await new Promise<void>((resolve, reject) => {
+      server.listen(port, '0.0.0.0', () => {
+        const totalTime = Date.now() - startTime;
+        logger.info(`[HEALTH] ✅ Server started successfully on port ${port} in ${totalTime}ms`);
+        logger.info(`serving on port ${port}`);
+        clearTimeout(timeoutId);
+        resolve();
+      });
+
+      server.on('error', (err: unknown) => {
+        const error = err as NodeJS.ErrnoException;
+        logger.error(`[HEALTH] ❌ Server startup failed:`, {
+          code: error.code,
+          message: error.message,
+          port: port
+        });
+        clearTimeout(timeoutId);
+        reject(error);
+      });
+    });
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
 }
 
 const isExecutedDirectly =

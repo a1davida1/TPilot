@@ -12,12 +12,9 @@ import {
   Check,
   ChevronRight,
   FileText,
-  Image,
   Save,
   Sparkles,
   Type,
-  Upload,
-  X
 } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";

@@ -320,7 +320,7 @@ export function registerRedditRoutes(app: Express) {
   });
 
   // Reddit communities listing
-  app.get('/api/reddit/communities', async (req, res) => {
+  app.get('/api/reddit/communities', authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       const { category, search } = req.query;
       let communities = search
@@ -343,7 +343,7 @@ export function registerRedditRoutes(app: Express) {
   });
 
   // Detailed community insights
-  app.get('/api/reddit/community-insights/:communityId', async (req, res) => {
+  app.get('/api/reddit/community-insights/:communityId', authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       const { communityId } = req.params;
       const insights = await getCommunityInsights(communityId);
