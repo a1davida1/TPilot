@@ -235,4 +235,137 @@ describe('RedditPosting community picker', () => {
     });
     container.remove();
   });
+
+  it('disables legacy-shaped communities when selling or watermarks are restricted', async () => {
+    const accounts = [
+      {
+        id: 1,
+        username: 'veteran',
+        isActive: true,
+        connectedAt: '2023-01-01T00:00:00.000Z',
+        karma: 12000,
+        verified: true,
+        accountAgeDays: 900,
+      },
+    ];
+
+    const communities = [
+      {
+        id: 'structuredsafe',
+        name: 'r/StructuredSafe',
+        displayName: 'Structured Safe',
+        members: 82000,
+        engagementRate: 9,
+        category: 'general',
+        promotionAllowed: 'yes',
+        bestPostingTimes: ['morning'],
+        averageUpvotes: 140,
+        successProbability: 64,
+        description: 'Structured data sample.',
+        rules: {
+          eligibility: {
+            minKarma: 100,
+            minAccountAgeDays: 7,
+            verificationRequired: false,
+            requiresApproval: false,
+          },
+          content: {
+            sellingPolicy: 'allowed',
+            watermarksAllowed: true,
+            promotionalLinks: null,
+            requiresOriginalContent: false,
+            nsfwRequired: false,
+            titleGuidelines: [],
+            contentGuidelines: [],
+            linkRestrictions: [],
+            bannedContent: [],
+            formattingRequirements: [],
+          },
+          posting: {
+            maxPostsPerDay: null,
+            cooldownHours: null,
+          },
+          notes: null,
+        },
+      },
+      {
+        id: 'legacylock',
+        name: 'r/LegacyLock',
+        displayName: 'Legacy Lock',
+        members: 210000,
+        engagementRate: 11,
+        category: 'premium',
+        promotionAllowed: 'limited',
+        bestPostingTimes: ['evening'],
+        averageUpvotes: 320,
+        successProbability: 75,
+        description: 'Legacy restrictions enforced.',
+        rules: {
+          minKarma: 300,
+          minAccountAge: 30,
+          sellingAllowed: 'not_allowed',
+          watermarksAllowed: false,
+        },
+      },
+    ];
+
+    mockUseQuery.mockImplementation(({ queryKey }: { queryKey: unknown[] }) => {
+      const key = Array.isArray(queryKey) ? queryKey[0] : queryKey;
+      switch (key) {
+        case '/api/reddit/accounts':
+          return { data: accounts, isLoading: false, error: null };
+        case '/api/reddit/communities':
+          return { data: communities, isLoading: false, error: null };
+        case '/api/media':
+          return { data: [], isLoading: false, error: null };
+        default:
+          return { data: undefined, isLoading: false, error: null };
+      }
+    });
+
+    mockUseMutation.mockImplementation(() => ({
+      mutate: () => undefined,
+      mutateAsync: async () => undefined,
+      isPending: false,
+      reset: () => undefined,
+    }));
+
+    const { default: RedditPostingPage } = await import('../reddit-posting');
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<RedditPostingPage />);
+    });
+
+    await act(async () => {
+      await flushPromises();
+    });
+
+    const trigger = container.querySelector<HTMLButtonElement>('[data-testid="community-picker-trigger"]');
+    expect(trigger).not.toBeNull();
+
+    await act(async () => {
+      trigger?.click();
+      await flushPromises();
+    });
+
+    const gatedOption = document.querySelector('[data-testid="community-option-legacylock"]');
+    expect(gatedOption).not.toBeNull();
+    const gatedDisabled =
+      gatedOption?.getAttribute('aria-disabled') === 'true' ||
+      gatedOption?.getAttribute('data-disabled') === 'true';
+    expect(gatedDisabled).toBe(true);
+
+    const gatedReason = document.querySelector('[data-testid="community-option-legacylock-reasons"]');
+    expect(gatedReason?.textContent ?? '').toContain('Selling not allowed');
+    expect(gatedReason?.textContent ?? '').toContain('Watermarks not allowed');
+
+    await act(async () => {
+      root.unmount();
+    });
+    container.remove();
+  });
 });

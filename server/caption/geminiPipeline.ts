@@ -934,7 +934,6 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
       .join("\n");
   };
 
-<<<<<<< ours
   const fetchVariants = async (
     varietyHint: string | undefined,
     existingCaptions: string[],
@@ -953,27 +952,6 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
       nsfw: params.nsfw,
     });
 
-=======
-  const buildFallbackBatch = () =>
-    Array.from({ length: VARIANT_TARGET }, (_, index) => ({
-      caption: `${safeFallbackCaption} (fallback ${index + 1})`,
-      alt: `${safeFallbackAlt} (fallback ${index + 1})`,
-      hashtags: [...safeFallbackHashtags],
-      cta: safeFallbackCta,
-      mood: params.mood ?? "engaging",
-      style: params.style ?? "authentic",
-      safety_level: "normal" as const,
-      nsfw: params.nsfw ?? false,
-    }));
-
-  const fetchVariants = async (varietyHint: string | undefined, existingCaptions: string[], duplicateCaption?: string) => {
-    const user = buildUserPrompt(varietyHint, existingCaptions, duplicateCaption);
-
-    // Apply tone to system prompt
-    const sysWithTone = buildSystemPrompt(sys, { style: params.style, mood: params.mood });
-
-    const fallbackBatch = buildFallbackBatch();
->>>>>>> theirs
     let candidates: unknown[] = fallbackBatch;
 
     try {
@@ -982,7 +960,6 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
       ]);
 
       const rawText = await resolveResponseText(res);
-<<<<<<< ours
       if (!rawText || rawText.trim().length === 0) {
         console.error("Gemini: empty response received");
       } else {
@@ -990,21 +967,6 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
         if (Array.isArray(parsed)) {
           candidates = parsed;
         }
-=======
-      if (typeof rawText === "string" && rawText.trim().length > 0) {
-        try {
-          const json = stripToJSON(rawText) as unknown;
-          if (Array.isArray(json)) {
-            candidates = json;
-          } else {
-            console.error("Gemini: variant payload was not an array");
-          }
-        } catch (parseError) {
-          console.error("Gemini variant parsing failed:", parseError);
-        }
-      } else {
-        console.error('Gemini: empty response received');
->>>>>>> theirs
       }
     } catch (error) {
       console.error("Gemini textModel.generateContent failed:", error);
@@ -1054,7 +1016,11 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
 
   // Pad variants if we don't have enough, instead of throwing in tests
   if (uniqueVariants.length < VARIANT_TARGET) {
-    const fallbackBatch = buildFallbackBatch();
+    const fallbackBatch = buildVariantFallbackBatch({
+      style: params.style,
+      mood: params.mood,
+      nsfw: params.nsfw,
+    });
     const fallbackBase = CaptionItem.parse({ ...fallbackBatch[0] });
 
     while (uniqueVariants.length < VARIANT_TARGET) {
