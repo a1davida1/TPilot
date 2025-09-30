@@ -1,0 +1,100 @@
+diff --git a/client/src/components/__tests__/modern-dashboard.test.tsx b/client/src/components/__tests__/modern-dashboard.test.tsx
+index 89c8e6b4ab67cf882239edeed82436098480d243..92f877a60ecf4d4c06631bccb8a66e25948578c5 100644
+--- a/client/src/components/__tests__/modern-dashboard.test.tsx
++++ b/client/src/components/__tests__/modern-dashboard.test.tsx
+@@ -222,78 +222,85 @@ describe("ModernDashboard quick start", () => {
+         } as Response);
+       }
+       if (method === "GET" && url === "/api/reddit/accounts") {
+         return Promise.resolve({
+           json: async () => [
+             {
+               id: 21,
+               username: "creator",
+               isActive: true,
+               connectedAt: new Date().toISOString(),
+               karma: 0,
+               verified: false,
+             },
+           ],
+         } as Response);
+       }
+       if (method === "POST" && url === "/api/reddit/submit") {
+         return Promise.resolve({
+           json: async () => ({ success: true }),
+         } as Response);
+       }
+       throw new Error(`Unexpected apiRequest call: ${method} ${url}`);
+     });
+ 
+     const onOpenChange = vi.fn();
+-    render(
+-      <QuickStartModal
+-        open
+-        onOpenChange={onOpenChange}
+-        initialStep="connect"
+-        isRedditConnected={false}
+-        onNavigate={setLocationMock}
+-      />,
+-    );
++
++    function Wrapper() {
++      const [isConnected, setIsConnected] = React.useState(false);
++      return (
++        <QuickStartModal
++          open
++          onOpenChange={onOpenChange}
++          initialStep="connect"
++          isRedditConnected={isConnected}
++          onConnected={() => setIsConnected(true)}
++          onNavigate={setLocationMock}
++        />
++      );
++    }
++
++    render(<Wrapper />);
+ 
+     const continueButton = getButtonByText(/^Continue$/i);
+     expect(continueButton.disabled).toBe(true);
+ 
+     click(getButtonByText(/Connect Reddit/i));
+ 
+     // Wait for both API calls and connection to complete
+     await waitFor(() => {
+       expect(apiRequestMock).toHaveBeenCalledWith("GET", "/api/reddit/connect?intent=posting&queue=quick-start");
+       expect(apiRequestMock).toHaveBeenCalledWith("GET", "/api/reddit/accounts");
+       const nextButton = getButtonByText(/^Continue$/i);
+       if (nextButton.disabled) {
+         throw new Error("Continue button is still disabled");
+       }
+       return true;
+     }, { timeout: 10000 });
+ 
+     apiRequestMock.mockResolvedValueOnce({
+       json: async () => ({ success: true }),
+     } as Response);
+ 
+     click(getButtonByText(/^Continue$/i));
+     expect(await findByText(/Choose a subreddit/i)).toBeTruthy();
+ 
+     click(getButtonByText(/^Continue$/i));
+     expect(await findByText(/Generate your copy/i)).toBeTruthy();
+ 
+-    click(getButtonByText(/Review post/i));
++    click(getButtonByText(/^Continue$/i));
+     expect(await findByText(/Confirm your Reddit post/i)).toBeTruthy();
+ 
+     click(getButtonByText(/Confirm & post/i));
+ 
+     await waitFor(() => {
+       expect(apiRequestMock).toHaveBeenLastCalledWith(
+         "POST",
+         "/api/reddit/submit",
+         expect.objectContaining({ subreddit: "gonewild" }),
+       );
+       return true;
+     });
+ 
+     expect(onOpenChange).toHaveBeenCalledWith(false);
+   });
+ });

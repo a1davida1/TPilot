@@ -1,0 +1,101 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/client/src/components/compliance/ComplianceStatusDashboard.tsx b/client/src/components/compliance/ComplianceStatusDashboard.tsx
+index 68df1c57da70ac77985c1975c782882c62dbec11..626f5c7e97d4216dd6fb17c19ce2819da7579b91 100644
+--- a/client/src/components/compliance/ComplianceStatusDashboard.tsx
++++ b/client/src/components/compliance/ComplianceStatusDashboard.tsx
+@@ -3,56 +3,57 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
+ import { Badge } from '@/components/ui/badge';
+ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+ import { ShieldAlert, ShieldCheck, CheckCircle2, Clock3, AlertCircle, RotateCw, CalendarClock } from 'lucide-react';
+ 
+ type Removal = { id: string; removedAt: string; reason: string; actionTaken?: string };
+ type SubredditComplianceStatus = {
+   name: string;
+   shadowbanned: boolean;
+   verificationStatus: 'pending' | 'review' | 'verified';
+   nextPostTime: string;
+   recentRemovals: Removal[];
+ };
+ type ComplianceDashboardResponse = {
+   generatedAt: string;
+   subreddits: SubredditComplianceStatus[];
+ };
+ 
+ const formatDateTime = (iso: string) =>
+   new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
+ 
+ export default function ComplianceStatusDashboard() {
+   const { data, isLoading, isError, error, refetch, isFetching } =
+     useQuery<ComplianceDashboardResponse>({
+       queryKey: ['/api/admin/compliance/dashboard'],
+       queryFn: async ({ signal }) => {
+-        const res = await fetch('/api/admin/compliance/dashboard', {
++        const response = await fetch('/api/admin/compliance/dashboard', {
++          method: 'GET',
+           credentials: 'include',
+           signal,
+         });
+-        if (!res.ok) throw new Error('Failed to load compliance insights');
+-        return res.json();
++        if (!response.ok) throw new Error('Failed to load compliance insights');
++        return (await response.json()) as ComplianceDashboardResponse;
+       },
+       staleTime: 60_000,
+       refetchInterval: 120_000,
+     });
+ 
+   if (isLoading) {
+     return <div className="text-sm text-gray-500">Loading compliance insights…</div>;
+   }
+   if (isError) {
+     return (
+       <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-700">
+         <div className="flex items-start gap-3">
+           <AlertCircle className="mt-1 h-5 w-5" />
+           <div className="space-y-2">
+             <div>
+               <p className="text-sm font-semibold">Unable to load compliance insights</p>
+               <p className="text-sm text-red-600">{(error as Error).message || 'The service did not return a response.'}</p>
+             </div>
+             <button className="inline-flex items-center gap-2 text-sm" onClick={() => refetch()} disabled={isFetching}>
+               <RotateCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+               Retry
+             </button>
+           </div>
+         </div>
+       </div>
+diff --git a/client/src/components/compliance/ComplianceStatusDashboard.tsx b/client/src/components/compliance/ComplianceStatusDashboard.tsx
+index 68df1c57da70ac77985c1975c782882c62dbec11..626f5c7e97d4216dd6fb17c19ce2819da7579b91 100644
+--- a/client/src/components/compliance/ComplianceStatusDashboard.tsx
++++ b/client/src/components/compliance/ComplianceStatusDashboard.tsx
+@@ -134,26 +135,26 @@ export default function ComplianceStatusDashboard() {
+                     <TableHeader>
+                       <TableRow>
+                         <TableHead>When</TableHead>
+                         <TableHead>Reason</TableHead>
+                         <TableHead>Action</TableHead>
+                       </TableRow>
+                     </TableHeader>
+                     <TableBody>
+                       {s.recentRemovals.map((r) => (
+                         <TableRow key={r.id}>
+                           <TableCell className="text-sm text-gray-700">{formatDateTime(r.removedAt)}</TableCell>
+                           <TableCell className="text-sm text-gray-700">{r.reason}</TableCell>
+                           <TableCell className="text-sm text-gray-500">{r.actionTaken || '—'}</TableCell>
+                         </TableRow>
+                       ))}
+                     </TableBody>
+                   </Table>
+                 </div>
+               </div>
+             </CardContent>
+           </Card>
+         );
+       })}
+     </div>
+   );
+-}
++}
+ 
+EOF
+)

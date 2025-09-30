@@ -55,10 +55,10 @@ vi.mock("@/lib/queryClient", async () => {
   const actual = await vi.importActual<typeof import("@/lib/queryClient")>("@/lib/queryClient");
   return {
     ...actual,
-    apiRequest: apiRequestMock(),
+    apiRequest: apiRequestMock,
     queryClient: {
       ...actual.queryClient,
-      invalidateQueries: invalidateQueriesMock(),
+      invalidateQueries: invalidateQueriesMock,
     },
   };
 });
