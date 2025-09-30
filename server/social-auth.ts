@@ -34,25 +34,44 @@ export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
       callbackURL: prefixApiPath('/auth/google/callback', apiPrefix)
     }, async (accessToken, refreshToken, profile, done) => {
       try {
-        // Check if user exists by email OR username
         const email = profile.emails?.[0]?.value || '';
         const username = profile.displayName || email || '';
+        const avatar = profile.photos?.[0]?.value;
         
-        let user = await storage.getUserByEmail(email);
-        if (!user) {
-          user = await storage.getUserByUsername(username);
-        }
+        // First, check by provider ID (most reliable for OAuth)
+        let user = await storage.getUserByProviderId('google', profile.id);
         
-        if (!user) {
-          // Create new user only if not found by email OR username
-          user = await storage.createUser({
-            email,
-            username,
-            password: '', // No password for social auth
-            provider: 'google',
-            providerId: profile.id,
-            avatar: profile.photos?.[0]?.value
-          });
+        if (user) {
+          // Update avatar and username if changed
+          if (avatar && user.avatar !== avatar || user.username !== username) {
+            await storage.updateUser(user.id, { avatar, username });
+            user = await storage.getUserById(user.id);
+          }
+        } else {
+          // Check by email as fallback
+          user = await storage.getUserByEmail(email);
+          
+          if (user) {
+            // Link existing user with Google provider
+            await storage.updateUser(user.id, { 
+              provider: 'google', 
+              providerId: profile.id,
+              avatar,
+              username
+            });
+            user = await storage.getUserById(user.id);
+          } else {
+            // Create new user
+            user = await storage.createUser({
+              email,
+              username,
+              password: '',
+              provider: 'google',
+              providerId: profile.id,
+              avatar,
+              tier: 'free'
+            });
+          }
         }
         
         return done(null, user);
@@ -71,25 +90,44 @@ export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
       profileFields: ['id', 'emails', 'name', 'picture']
     }, async (accessToken, refreshToken, profile, done) => {
       try {
-        // Check if user exists by email OR username  
         const email = profile.emails?.[0]?.value || '';
         const username = `${profile.name?.givenName || ''} ${profile.name?.familyName || ''}`.trim() || email || '';
+        const avatar = profile.photos?.[0]?.value;
         
-        let user = await storage.getUserByEmail(email);
-        if (!user) {
-          user = await storage.getUserByUsername(username);
-        }
+        // First, check by provider ID (most reliable for OAuth)
+        let user = await storage.getUserByProviderId('facebook', profile.id);
         
-        if (!user) {
-          // Create new user only if not found by email OR username
-          user = await storage.createUser({
-            email,
-            username,
-            password: '',
-            provider: 'facebook',
-            providerId: profile.id,
-            avatar: profile.photos?.[0]?.value
-          });
+        if (user) {
+          // Update avatar and username if changed
+          if (avatar && user.avatar !== avatar || user.username !== username) {
+            await storage.updateUser(user.id, { avatar, username });
+            user = await storage.getUserById(user.id);
+          }
+        } else {
+          // Check by email as fallback
+          user = await storage.getUserByEmail(email);
+          
+          if (user) {
+            // Link existing user with Facebook provider
+            await storage.updateUser(user.id, { 
+              provider: 'facebook', 
+              providerId: profile.id,
+              avatar,
+              username
+            });
+            user = await storage.getUserById(user.id);
+          } else {
+            // Create new user
+            user = await storage.createUser({
+              email,
+              username,
+              password: '',
+              provider: 'facebook',
+              providerId: profile.id,
+              avatar,
+              tier: 'free'
+            });
+          }
         }
         
         return done(null, user);
@@ -118,18 +156,43 @@ export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
       done: (error: Error | null, user?: User | false) => void
     ) => {
       try {
-        // Reddit doesn't provide email, use username
-        let user = await storage.getUserByUsername(profile.name ?? profile.id);
+        const username = profile.name || `reddit_${profile.id}`;
+        const avatar = profile.icon_img ?? '';
         
-        if (!user) {
-          user = await storage.createUser({
-            email: '', // Reddit doesn't provide email
-            username: profile.name || `reddit_${profile.id}`,
-            password: '',
-            provider: 'reddit',
-            providerId: profile.id,
-            avatar: profile.icon_img ?? ''
-          });
+        // First, check by provider ID (most reliable for OAuth)
+        let user = await storage.getUserByProviderId('reddit', profile.id);
+        
+        if (user) {
+          // Update avatar and username if changed
+          if (avatar && user.avatar !== avatar || user.username !== username) {
+            await storage.updateUser(user.id, { avatar, username });
+            user = await storage.getUserById(user.id);
+          }
+        } else {
+          // Check by username as fallback (Reddit doesn't provide email)
+          user = await storage.getUserByUsername(username);
+          
+          if (user) {
+            // Link existing user with Reddit provider
+            await storage.updateUser(user.id, { 
+              provider: 'reddit', 
+              providerId: profile.id,
+              avatar,
+              username
+            });
+            user = await storage.getUserById(user.id);
+          } else {
+            // Create new user
+            user = await storage.createUser({
+              email: '', // Reddit doesn't provide email
+              username,
+              password: '',
+              provider: 'reddit',
+              providerId: profile.id,
+              avatar,
+              tier: 'free'
+            });
+          }
         }
         
         return done(null, user);
