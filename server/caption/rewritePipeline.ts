@@ -6,7 +6,6 @@ import { rankAndSelect, enrichWithTitleCandidates } from "./geminiPipeline";
 import { CaptionArray, RankResult, platformChecks, CaptionItem } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { BANNED_WORDS_HINT, variantContainsBannedWord } from "./bannedWords";
-import { extractToneOptions as _extractToneOptions, ToneOptions as _ToneOptions } from "./toneOptions";
 import { buildVoiceGuideBlock } from "./stylePack";
 import { serializePromptField } from "./promptUtils";
 import { formatVoiceContext } from "./voiceTraits";
@@ -143,7 +142,7 @@ export async function extractFacts(imageUrl:string){
   try {
     const res=await visionModel.generateContent([{text:sys+"\n"+guard+"\n"+prompt}, img]);
     return stripToJSON(res.response.text());
-  } catch (error) {
+  } catch (_error) {
     console.error('Gemini visionModel.generateContent failed:', error);
     throw error;
   }
@@ -238,7 +237,7 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
     let response;
     try {
       response = await textModel.generateContent([{ text: promptSections.join("\n") }]);
-    } catch (error) {
+    } catch (_error) {
       console.error('Gemini textModel.generateContent failed:', error);
       throw error;
     }
@@ -374,7 +373,7 @@ async function requestRewriteRanking(
   let res;
   try {
     res = await textModel.generateContent([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
-  } catch (error) {
+  } catch (_error) {
     console.error('Rewrite textModel.generateContent failed:', error);
     throw error;
   }

@@ -2,11 +2,11 @@ import snoowrap from 'snoowrap';
 import { z } from 'zod';
 import { db } from '../db.js';
 import { creatorAccounts, subredditRules, postRateLimits, redditCommunities, users } from '@shared/schema';
-import { eq, and, gt, or as _or } from 'drizzle-orm';
+import { eq, and, gt } from 'drizzle-orm';
 import { decrypt } from '../services/state-store.js';
 import { SafetyManager } from './safety-systems.js';
-import { getEligibleCommunitiesForUser, type CommunityEligibilityCriteria as _CommunityEligibilityCriteria } from '../reddit-communities.js';
-import type { RedditCommunity, ShadowbanStatusType as _ShadowbanStatusType, ShadowbanSubmissionSummary, ShadowbanEvidenceResponse as _ShadowbanEvidenceResponse, ShadowbanCheckApiResponse as _ShadowbanCheckApiResponse } from '@shared/schema';
+import { getEligibleCommunitiesForUser } from '../reddit-communities.js';
+import type { RedditCommunity, ShadowbanSubmissionSummary } from '@shared/schema';
 import { lookup } from 'dns/promises';
 import { logger } from './logger.js';
 
@@ -714,7 +714,7 @@ export class RedditManager {
       }
 
       return new RedditManager(accessToken, refreshToken, userId);
-    } catch (error) {
+    } catch (_error) {
       console.error('Failed to create Reddit manager for user:', error);
       return null;
     }
@@ -1093,7 +1093,7 @@ export class RedditManager {
         allowsVideos: subreddit.allow_videos !== false,
         isNsfw: subreddit.over18 ?? false
       };
-    } catch (error) {
+    } catch (_error) {
       console.error('Failed to check subreddit capabilities:', error);
       return {
         allowsImages: true,
@@ -1196,7 +1196,7 @@ export class RedditManager {
               redditVerified = profile.verified;
             }
           }
-        } catch (error) {
+        } catch (_error) {
           console.warn('Failed to get Reddit profile for rule evaluation:', error);
         }
 
@@ -1390,7 +1390,7 @@ export class RedditManager {
           dailyLimit: deriveDailyLimit(rules) ?? undefined,
         } : undefined,
       };
-    } catch (error) {
+    } catch (_error) {
       console.error('Error checking posting permission:', error);
       return {
         canPost: false,
@@ -1459,7 +1459,7 @@ export class RedditManager {
         reason: 'Subreddit requirements not met for current Reddit account'
       };
 
-    } catch (error) {
+    } catch (_error) {
       console.error('Error checking subreddit eligibility:', error);
       return {
         canPost: false,
@@ -1487,7 +1487,7 @@ export class RedditManager {
       );
 
       console.error(`Recorded safety signals for user ${this.userId} in r/${subreddit}`);
-    } catch (error) {
+    } catch (_error) {
       console.error('Failed to record safety signals:', error);
     }
   }
@@ -1519,7 +1519,7 @@ export class RedditManager {
         goldStatus: user.is_gold ?? false,
         hasMail: user.has_mail ?? false,
       };
-    } catch (error) {
+    } catch (_error) {
       console.error('Failed to get Reddit profile:', error);
       return null;
     }
@@ -1534,7 +1534,7 @@ export class RedditManager {
         getMe(): Promise<unknown>;
       }).getMe();
       return true;
-    } catch (error) {
+    } catch (_error) {
       console.error('Reddit connection test failed:', error);
       return false;
     }
@@ -1549,7 +1549,7 @@ export class RedditManager {
       await (this.reddit as unknown as {
         getMe(): Promise<unknown>;
       }).getMe();
-    } catch (error) {
+    } catch (_error) {
       console.error('Token refresh failed:', error);
       throw error;
     }
@@ -1582,7 +1582,7 @@ export class RedditManager {
         subreddit: submission.subreddit.display_name
       }));
 
-    } catch (error) {
+    } catch (_error) {
       console.error('Failed to fetch private submissions:', error);
       return [];
     }
@@ -1633,7 +1633,7 @@ export class RedditManager {
 
       return { submissions };
 
-    } catch (error) {
+    } catch (_error) {
       console.error('Failed to fetch public submissions:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error fetching public submissions';
       return {
@@ -1749,7 +1749,7 @@ export class RedditManager {
         error: undefined
       };
 
-    } catch (error) {
+    } catch (_error) {
       console.error('Shadowban check failed:', error);
       return {
         isShadowbanned: false,
@@ -1906,7 +1906,7 @@ export async function exchangeRedditCode(code: string): Promise<{
       refreshToken: data.refresh_token,
       expiresIn: data.expires_in,
     };
-  } catch (error) {
+  } catch (_error) {
     console.error('Reddit code exchange error:', error);
     throw error;
   }

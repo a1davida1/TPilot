@@ -1,10 +1,9 @@
-import { Router, type Request, type Response } from 'express';
+import { Router, type Response } from 'express';
 import { pipeline, InvalidImageError } from '../caption/geminiPipeline';
 import { pipelineTextOnly } from '../caption/textOnlyPipeline';
 import { pipelineRewrite } from '../caption/rewritePipeline';
 import { storage } from '../storage';
 import { authenticateToken, type AuthRequest } from '../middleware/auth';
-import { insertContentGenerationSchema } from '@shared/schema';
 import { type CaptionObject } from '@shared/types/caption';
 import { z } from 'zod';
 import { logger } from '../bootstrap/logger';

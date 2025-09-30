@@ -2,7 +2,6 @@ import { registerProcessor } from "../queue-factory.js";
 import { QUEUE_NAMES, type PostJobData } from "../queue/index.js";
 import { db } from "../../db.js";
 import { postJobs, eventLogs } from "@shared/schema";
-import type { SocialMediaAccount } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { RedditManager } from "../reddit.js";
 import { MediaManager } from "../media.js";
@@ -233,7 +232,7 @@ export class PostWorker {
           });
         }
       }
-    } catch (error) {
+    } catch (_error) {
       logger.error(`Social media job ${jobId} failed:`, { error });
       throw error;
     }
@@ -249,7 +248,7 @@ export class PostWorker {
           updatedAt: new Date(),
         })
         .where(eq(postJobs.id, postJobId));
-    } catch (error) {
+    } catch (_error) {
       logger.error('Failed to update job status:', { error });
     }
   }
@@ -258,7 +257,7 @@ export class PostWorker {
     try {
       // This would typically query the media_assets table by key
       return await MediaManager.getAsset(parseInt(key), userId);
-    } catch (error) {
+    } catch (_error) {
       logger.error('Failed to get media asset:', { error });
       return null;
     }
@@ -271,7 +270,7 @@ export class PostWorker {
         type,
         meta,
       });
-    } catch (error) {
+    } catch (_error) {
       logger.error('Failed to log event:', { error });
     }
   }

@@ -56,7 +56,7 @@ export function decrypt(text: string): string {
       iv
     );
     return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString();
-  } catch (error) {
+  } catch (_error) {
     console.error('Decryption failed:', error);
     return '';
   }

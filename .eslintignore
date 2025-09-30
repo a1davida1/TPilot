@@ -33,3 +33,15 @@ Thumbs.db
 
 # Browser extension files (often have different lint rules)
 browser-extension/
+
+# Duplicate/snapshot directories
+assistant-last40-unified/
+unified-tasks-snapshot/
+vendor/
+
+# Temporary/generated directories
+uploads/
+migrations/meta/
+
+# Tests (temporarily excluded to focus on production code)
+tests/

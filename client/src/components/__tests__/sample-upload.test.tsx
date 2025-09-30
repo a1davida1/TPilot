@@ -147,7 +147,7 @@ async function waitFor<T>(callback: () => T, options: { timeout?: number; interv
   while (Date.now() - start < timeout) {
     try {
       return await callback();
-    } catch (error) {
+    } catch (_error) {
       lastError = error;
       await new Promise((resolve) => setTimeout(resolve, interval));
     }

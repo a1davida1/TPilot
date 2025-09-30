@@ -1,7 +1,5 @@
 
 import { Request, Response } from 'express';
-import { db } from '../db';
-import { desc } from 'drizzle-orm';
 
 /**
  * Compliance telemetry endpoint for the admin dashboard.
@@ -94,7 +92,7 @@ export async function getComplianceStatus(req: Request, res: Response) {
         totalSubreddits: mockData.length
       }
     });
-  } catch (error) {
+  } catch (_error) {
     console.error('Compliance status error:', error);
     res.status(500).json({ 
       error: 'Failed to fetch compliance status',

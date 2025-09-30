@@ -109,7 +109,7 @@ export const envSchema = z
 export function getEnvConfig() {
   try {
     return envSchema.parse(process.env);
-  } catch (error) {
+  } catch (_error) {
     console.error('Environment validation failed:', error);
     // Return a safe default configuration for development
     return {
@@ -128,7 +128,7 @@ let env: Environment;
 
 try {
   env = envSchema.parse(process.env);
-} catch (error) {
+} catch (_error) {
   if (process.env.NODE_ENV === 'development') {
     console.warn("⚠️ Development mode: Some enterprise features may be disabled");
     console.warn("  To enable all features, configure these environment variables:");

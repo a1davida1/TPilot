@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { db } from '../db.js';
-import { leads, insertLeadSchema } from '@shared/schema';
+import { leads } from '@shared/schema';
 import { verifyTurnstileToken } from '../lib/turnstile.js';
-import { parseUTMFromCookie, parseUTMFromURL, mergeUTMParams, UTMParams } from '../lib/utm.js';
+import { parseUTMFromURL, mergeUTMParams, UTMParams } from '../lib/utm.js';
 import { sendDoubleOptInEmail } from '../lib/mailer.js';
 import { emailService } from '../services/email-service.js';
 import { createConfirmToken, verifyConfirmToken } from '../lib/tokens.js';
@@ -46,7 +46,7 @@ export async function createLead(req: Request, res: Response) {
       if (req.cookies && req.cookies.utm_params) {
         cookieUTM = JSON.parse(decodeURIComponent(req.cookies.utm_params));
       }
-    } catch (error) {
+    } catch (_error) {
       console.error('Failed to parse UTM cookie:', error);
       cookieUTM = {};
     }
@@ -127,7 +127,7 @@ export async function createLead(req: Request, res: Response) {
       message: 'Thank you for joining our waitlist! Please check your email to confirm your signup.',
     });
 
-  } catch (error) {
+  } catch (_error) {
     console.error('Create lead error:', error);
     res.status(500).json({ error: 'Failed to process waitlist signup' });
   }
@@ -237,7 +237,7 @@ export async function confirmLead(req: Request, res: Response) {
       </html>
     `);
 
-  } catch (error) {
+  } catch (_error) {
     console.error('Confirm lead error:', error);
     res.status(500).send(`
       <html>

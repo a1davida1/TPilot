@@ -1,8 +1,6 @@
 import request from 'supertest';
 import { describe, test, beforeAll, beforeEach, expect, vi } from 'vitest';
 import express, { type Request, type Response, type NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { eq } from 'drizzle-orm';
 
 process.env.NODE_ENV = process.env.NODE_ENV ?? 'test';
 process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'integration-test-secret';

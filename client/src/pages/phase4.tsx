@@ -13,7 +13,6 @@ import {
   TrendingUp, 
   Users, 
   Target, 
-  BarChart3, 
   Clock, 
   MessageCircle,
   Brain,

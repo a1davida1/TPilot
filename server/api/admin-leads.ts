@@ -14,7 +14,7 @@ export async function getLeads(req: Request, res: Response) {
       .orderBy(desc(leads.createdAt));
 
     res.json(allLeads);
-  } catch (error) {
+  } catch (_error) {
     console.error('Get leads error:', error);
     res.status(500).json({ error: 'Failed to fetch leads' });
   }

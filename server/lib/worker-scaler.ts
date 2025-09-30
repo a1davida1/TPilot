@@ -86,7 +86,7 @@ export class WorkerScaler {
     this.intervalId = setInterval(async () => {
       try {
         await this.performScalingCheck();
-      } catch (error) {
+      } catch (_error) {
         logger.error('Worker scaling error', { error });
       }
     }, intervalMs);
@@ -207,7 +207,7 @@ export class WorkerScaler {
       // 2. Spawn/terminate worker processes
       // 3. Adjust resource allocation
       
-    } catch (error) {
+    } catch (_error) {
       logger.error(`Failed to update worker concurrency for ${queueName}`, { error });
     }
   }

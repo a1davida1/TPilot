@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { detectRankingViolations, formatViolations, sanitizeVariantForRanking, normalizeVariantForRanking } from '../../server/caption/rankingGuards';
 import type { CaptionVariant } from '../../server/caption/rankingGuards';
 

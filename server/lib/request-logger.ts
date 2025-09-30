@@ -137,7 +137,7 @@ export function truncateLogLine(logLine: string): string {
 function safeSerialize(value: unknown): string | undefined {
   try {
     return JSON.stringify(value);
-  } catch (error) {
+  } catch (_error) {
     logger.debug('Failed to serialize response payload for logging', { error });
     return undefined;
   }

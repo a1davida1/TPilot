@@ -1,3 +1,4 @@
+import React from "react";
 import { useState, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,40 +6,24 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
 import { 
   Gift,
   Search,
   Sparkles,
   CheckCircle,
   Users,
-  TrendingUp,
   ExternalLink,
   Shield,
   Copy,
-  Filter,
-  Award,
   Clock,
-  Bookmark,
   Eye,
-  PlayCircle,
-  ChevronRight,
   Info,
-  Calendar,
-  Zap,
   Loader2,
-  Coins,
   Globe,
-  FileText,
   BookOpen,
-  Tag,
   Percent,
-  Download,
   Star,
-  DollarSign,
-  Lock,
-  Calculator,
-  Heart
+  DollarSign
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { LucideIcon } from "lucide-react";
@@ -168,7 +153,7 @@ export function ProPerks({ userTier = "pro" }: ProPerksProps) {
 
         const payload = await response.json() as { perks: ProPerk[] };
         return { perks: payload.perks, accessGranted: true } satisfies ProResourcesResult;
-      } catch (error) {
+      } catch (_error) {
         const message = error instanceof Error ? error.message : "Failed to fetch pro resources";
         throw new Error(message);
       }
@@ -267,7 +252,7 @@ export function ProPerks({ userTier = "pro" }: ProPerksProps) {
         ...previous,
         [perk.id]: payload.instructions
       }));
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Unable to load instructions",
         description: error instanceof Error ? error.message : "Unexpected error loading perk guidance.",
@@ -325,7 +310,7 @@ export function ProPerks({ userTier = "pro" }: ProPerksProps) {
           description: `Your code: ${payload.referralCode}`,
         });
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Unable to generate referral",
         description: error instanceof Error ? error.message : "Unexpected error generating referral code.",

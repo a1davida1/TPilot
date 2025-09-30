@@ -373,7 +373,7 @@ export function AdminCommunitiesPanel({ canManage }: AdminCommunitiesPanelProps)
       setIsCreateOpen(false);
       setEditingCommunity(null);
       setFormState(defaultFormState);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to save community',

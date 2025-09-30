@@ -37,7 +37,7 @@ export function initializeSentry(): typeof Sentry | null {
 
     logger.info('Sentry initialized successfully');
     return Sentry;
-  } catch (error) {
+  } catch (_error) {
     logger.error('Failed to initialize Sentry', error);
     return null;
   }

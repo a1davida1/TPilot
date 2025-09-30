@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { FaGoogle, FaFacebook, FaRedditAlien } from "react-icons/fa";
 import { Link } from "wouter";

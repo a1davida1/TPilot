@@ -14,10 +14,8 @@ import {
   ArrowRight,
   Zap,
   Target,
-  Heart,
   Eye,
-  DollarSign,
-  Clock
+  DollarSign
 } from "lucide-react";
 import { useMetrics } from "@/hooks/use-metrics";
 
@@ -25,7 +23,7 @@ export function PremiumLanding() {
   const [isVisible, setIsVisible] = useState(false);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   // TODO: Display loading state for metrics
-  const { data: metrics, isLoading: _metricsLoading } = useMetrics();
+  const { data: metrics, isLoading: metricsLoading } = useMetrics();
 
   useEffect(() => {
     setIsVisible(true);

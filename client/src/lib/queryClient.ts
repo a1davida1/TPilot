@@ -133,7 +133,7 @@ export async function apiRequest(
       if (token) {
         headers['X-CSRF-Token'] = token;
       }
-    } catch (error) {
+    } catch (_error) {
       console.warn('Failed to get CSRF token:', error);
       // Continue without CSRF token - the server will reject if needed
     }
@@ -253,7 +253,7 @@ export const getQueryFn: <T = unknown>(options: {
       }
 
       return response.text();
-    } catch (error) {
+    } catch (_error) {
       if (error instanceof Error && error.name === 'AbortError') {
         throw error;
       }

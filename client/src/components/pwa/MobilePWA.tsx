@@ -6,7 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import {
   Smartphone, Download, Wifi, WifiOff, Battery, Signal, Share2, 
-  Home, Settings, Bell, Moon, Sun, Zap, Shield, Target
+  Home, Settings, Bell, Zap, Shield, Target
 } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -58,7 +58,7 @@ export default function MobilePWA() {
         try {
           const battery = await (navigator as typeof navigator & { getBattery: () => Promise<{ level: number }> }).getBattery();
           setBatteryLevel(Math.round(battery.level * 100));
-        } catch (error) {
+        } catch (_error) {
           // Battery API not available - silently ignore
         }
       }
@@ -168,7 +168,7 @@ export default function MobilePWA() {
           text: 'Check out this amazing AI-powered content creation platform!',
           url: window.location.href
         });
-      } catch (error) {
+      } catch (_error) {
         // Fallback to clipboard
         (navigator as Navigator & { clipboard: { writeText: (text: string) => void } }).clipboard.writeText(window.location.href);
         toast({

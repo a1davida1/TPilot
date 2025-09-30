@@ -8,7 +8,7 @@ import { fileTypeFromBuffer } from 'file-type';
 import { authenticateToken, type AuthRequest } from '../middleware/auth.js';
 import { uploadLimiter, logger } from '../middleware/security.js';
 import { imageProtectionLimiter as tierProtectionLimiter } from '../middleware/tiered-rate-limit.js';
-import { uploadRequestSchema, type ProtectionLevel as _ProtectionLevel, type UploadRequest as UploadRequestBody } from '@shared/schema';
+import { uploadRequestSchema, type UploadRequest as UploadRequestBody } from '@shared/schema';
 import { ZodError } from 'zod';
 import { imageStreamingUpload, cleanupUploadedFiles } from '../middleware/streaming-upload.js';
 import { embedSignature } from '../lib/steganography.js';
@@ -27,7 +27,7 @@ const secureStorage = multer.diskStorage({
     try {
       await fs.mkdir(uploadDir, { recursive: true });
       cb(null, uploadDir);
-    } catch (error) {
+    } catch (_error) {
       cb(error as Error, uploadDir);
     }
   },
@@ -186,7 +186,7 @@ async function validateImageFile(filePath: string, originalMimeType: string): Pr
     
     return { isValid: true, detectedType: detectedFileType.mime };
     
-  } catch (error) {
+  } catch (_error) {
     logger.error('File validation error', { error: (error as Error).message, filePath });
     return { isValid: false, error: 'File validation failed' };
   }
@@ -267,7 +267,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
     let validatedRequest: UploadRequestBody;
     try {
       validatedRequest = uploadRequestSchema.parse(authReq.body);
-    } catch (error) {
+    } catch (_error) {
       await fs.unlink(tempFilePath);
       if (error instanceof ZodError) {
         logger.warn('Streaming upload validation failed', {
@@ -320,7 +320,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
           )
         ]);
         break;
-      } catch (err) {
+      } catch (_err) {
         _lastError = err;
         if (attempt === 2) throw err;
         await new Promise(res => setTimeout(res, 1_000 * Math.pow(2, attempt)));
@@ -348,7 +348,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
       uploadProgress: authReq.uploadProgress
     });
     
-  } catch (error) {
+  } catch (_error) {
     logger.error('Streaming upload processing error', {
       userId: authReq.user?.id,
       error: error instanceof Error ? (error as Error).message : String(error),
@@ -428,7 +428,7 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
     let validatedRequest: UploadRequestBody;
     try {
       validatedRequest = uploadRequestSchema.parse(authReq.body);
-    } catch (error) {
+    } catch (_error) {
       if (error instanceof ZodError) {
         logger.warn('Upload request validation failed', { 
           userId: authReq.user?.id, 
@@ -497,7 +497,7 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
       signature,
       settings: validatedRequest.useCustom ? validatedRequest.customSettings : undefined
     });
-  } catch (error) {
+  } catch (_error) {
     logger.error('Upload error:', { error: error instanceof Error ? (error as Error).message : String(error) });
     
     // Clean up any temp files

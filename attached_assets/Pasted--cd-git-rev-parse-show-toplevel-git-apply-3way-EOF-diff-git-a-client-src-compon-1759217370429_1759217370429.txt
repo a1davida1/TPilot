@@ -1,0 +1,60 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/client/src/components/image-shield-unified.tsx b/client/src/components/image-shield-unified.tsx
+index ed5ea412143f7ecb995594a3c9e184122bd5a69f..e9653f1b96a62c9583761a9edcf5ef150aaa2349 100644
+--- a/client/src/components/image-shield-unified.tsx
++++ b/client/src/components/image-shield-unified.tsx
+@@ -2,50 +2,51 @@ import { useState, useRef } from 'react';
+ import { Button } from '@/components/ui/button';
+ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+ import { Label } from '@/components/ui/label';
+ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+ import { Slider } from '@/components/ui/slider';
+ import { Switch } from '@/components/ui/switch';
+ import { Badge } from '@/components/ui/badge';
+ import { Alert, AlertDescription } from '@/components/ui/alert';
+ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+ import { Input } from '@/components/ui/input';
+ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+ import { 
+   Upload, 
+   Download, 
+   Shield, 
+   AlertCircle,
+   CheckCircle,
+   X,
+   Eye,
+   RefreshCw,
+   Sparkles,
+   Lock,
+   Trash2,
+   Tag,
+   Crown,
++  Image as ImageIcon,
+   Zap
+ } from 'lucide-react';
+ import { useToast } from '@/hooks/use-toast';
+ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+ import { protectImage, downloadProtectedImage, protectionPresets, type ImageProcessingOptions } from '@/lib/image-protection';
+ import { getErrorMessage } from '@/utils/errorHelpers';
+ 
+ interface ImageShieldUnifiedProps {
+   userTier?: 'guest' | 'free' | 'pro' | 'premium';
+ }
+ 
+ interface MediaAsset {
+   id: number;
+   userId: number;
+   key: string;
+   filename: string;
+   bytes: number;
+   mime: string;
+   visibility: string;
+   signedUrl: string;
+   createdAt: string;
+ }
+ 
+ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedProps) {
+   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+ 
+EOF
+)

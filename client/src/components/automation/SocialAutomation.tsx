@@ -205,7 +205,7 @@ export function SocialAutomation() {
           }
         }
       }
-    } catch (err) {
+    } catch (_err) {
       console.error('Quick post failed:', err);
       const message = err instanceof Error ? err.message : 'Quick post failed. Please try again.';
       setQuickPostError(message);
@@ -258,7 +258,7 @@ export function SocialAutomation() {
           .filter((post): post is { id: string; content: string; platform: string; status: string; timestamp: string } => post !== null);
 
         setPosts(parsedPosts);
-      } catch (err) {
+      } catch (_err) {
         console.error('Failed to fetch posts:', err);
       }
     }, 5000);

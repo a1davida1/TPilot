@@ -122,7 +122,7 @@ export function ImageProtector({ userTier = 'guest' }: ImageProtectorProps) {
           </Button>
         )
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Processing failed",
         description: "Failed to process the image. Please try again.",

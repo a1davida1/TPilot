@@ -1,4 +1,4 @@
-import { useState, useEffect as _useEffect } from 'react';
+import { useState } from 'react';
 import { getErrorMessage } from '@/utils/typeHelpers';
 import type { UserData } from '@/types/user';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,26 +11,22 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient, apiRequest as _apiRequest } from '@/lib/queryClient';
+import { queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import {
   Users,
   Gift,
   TrendingUp,
   Settings,
-  Mail as _Mail,
   Shield,
   Activity,
   DollarSign,
-  UserPlus as _UserPlus,
   Clock,
   CheckCircle,
-  AlertCircle as _AlertCircle,
   Star,
   Zap,
   Crown,
   Sparkles,
-  ChevronRight as _ChevronRight,
   RefreshCw,
   Target,
   Rocket,

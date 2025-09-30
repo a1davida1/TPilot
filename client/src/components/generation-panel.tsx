@@ -16,8 +16,10 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
   const [platform, setPlatform] = useState("reddit");
   const [style, setStyle] = useState("playful");
   const [theme, setTheme] = useState("tease");
+  // TODO: Implement timing-based content optimization
   const [timing, setTiming] = useState("evening");
   const [allowsPromotion, setAllowsPromotion] = useState(false);
+  // TODO: Implement copy feedback
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
   const [generatedContent, setGeneratedContent] = useState<ContentGeneration | null>(null);
 

@@ -21,7 +21,7 @@ async function sendMail(msg: sgMail.MailDataRequired) {
   }
   try {
     return await sgMail.send(msg);
-  } catch (error) {
+  } catch (_error) {
     const message = error instanceof Error ? error.message : String(error);
     safeLog('error', 'SendGrid send failed', { error: message });
     throw error;
@@ -40,7 +40,7 @@ async function sendVerificationEmail(to: string, username: string, token: string
   };
   try {
     await sendMail(msg);
-  } catch (error) {
+  } catch (_error) {
     const message = error instanceof Error ? error.message : String(error);
     safeLog('error', 'Verification email send failed', { error: message });
     throw error;
@@ -61,7 +61,7 @@ async function sendPasswordResetEmail(to: string, username: string, token: strin
   };
   try {
     await sendMail(msg);
-  } catch (error) {
+  } catch (_error) {
     const message = error instanceof Error ? error.message : String(error);
     safeLog('error', 'Password reset email send failed', { error: message });
     throw error;
@@ -79,7 +79,7 @@ async function sendWelcomeEmail(to: string, username: string) {
   };
   try {
     await sendMail(msg);
-  } catch (error) {
+  } catch (_error) {
     const message = error instanceof Error ? error.message : String(error);
     safeLog('error', 'Welcome email send failed', { error: message });
   }

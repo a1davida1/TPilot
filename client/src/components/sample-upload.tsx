@@ -210,7 +210,7 @@ export default function SampleUpload() {
         title: "Copied!",
         description: "Content copied to clipboard.",
       });
-    } catch (error) {
+    } catch (_error) {
       const message = error instanceof Error ? error.message : "Unable to copy content.";
       toast({
         title: "Copy failed",

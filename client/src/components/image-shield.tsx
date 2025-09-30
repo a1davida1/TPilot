@@ -3,18 +3,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { 
-  Shield, 
-  Upload, 
-  Download, 
-  RefreshCw, 
-  Eye, 
+import {
+  Shield,
+  Upload,
+  Download,
+  RefreshCw,
+  Eye,
+  EyeOff,
   Zap,
   Lock,
-  CheckCircle,
-  AlertTriangle
+  CheckCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -28,7 +28,7 @@ export function ImageShield({ isGuestMode = false, userTier = "free" }: ImageShi
   const [protectedImage, setProtectedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   // TODO: Implement before/after comparison slider
-  const [_showComparison, setShowComparison] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
   
   // Protection settings
   const [protectionLevel, setProtectionLevel] = useState<"light" | "standard" | "heavy">("standard");
@@ -136,7 +136,7 @@ export function ImageShield({ isGuestMode = false, userTier = "free" }: ImageShi
       };
 
       img.src = originalImage;
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Protection Failed",
         description: "Unable to process image",

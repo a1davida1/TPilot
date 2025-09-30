@@ -8,13 +8,10 @@ import {
   Heart, 
   Eye, 
   TrendingUp, 
-  Zap, 
   Crown, 
   CheckCircle,
   ArrowRight,
-  Gift,
-  Rocket,
-  Target
+  Gift
 } from "lucide-react";
 
 // Polished Loading Component

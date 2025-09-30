@@ -1,6 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { rankAndSelect } from '../geminiPipeline';
-import { RankResult } from '../schema';
 import { CaptionItem } from '../schema';
 import { z } from 'zod';
 type CaptionItemType = z.infer<typeof CaptionItem>;
@@ -76,7 +74,7 @@ describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMoc
       const serialized = promptText.slice(promptText.lastIndexOf('\n') + 1);
       try {
         return JSON.parse(serialized);
-      } catch (error) {
+      } catch (_error) {
         return [];
       }
     };
@@ -305,7 +303,7 @@ describe.each(scenarios)('Ranking Integration Tests Part 2 ($label)', ({ applyGe
       const serialized = promptText.slice(promptText.lastIndexOf('\n') + 1);
       try {
         return JSON.parse(serialized);
-      } catch (error) {
+      } catch (_error) {
         return [];
       }
     };

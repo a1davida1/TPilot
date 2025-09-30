@@ -3,7 +3,7 @@
  * Uses abstracted queue interface with Redis/PostgreSQL fallback
  */
 
-import { getQueueBackend, enqueue, registerProcessor } from "../queue-factory.js";
+import { getQueueBackend, enqueue } from "../queue-factory.js";
 import type { Platform, PostContent } from "../../social-media/social-media-manager.js";
 
 // Queue names for type safety
@@ -125,7 +125,7 @@ export async function getQueueHealth(): Promise<Record<string, QueueHealthInfo>>
         totalJobs: failureStats.totalJobs,
         failedJobs: failureStats.failedJobs,
       };
-    } catch (error) {
+    } catch (_error) {
       health[queueName] = {
         pending: 0,
         failureRate: 0,

@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Crown, Sparkles, Calendar, Image, CreditCard, BarChart3 } from 'lucide-react';
+import { Crown, Sparkles, Calendar, Image, CreditCard } from 'lucide-react';
 import MediaLibrary from '@/components/enterprise/MediaLibrary';
 import PostScheduler from '@/components/enterprise/PostScheduler';
 import BillingDashboard from '@/components/enterprise/BillingDashboard';

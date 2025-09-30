@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
 import { AuthModal } from "@/components/auth-modal";
 import { 
-  Sparkles, 
   Shield, 
   Brain, 
   Zap, 
@@ -15,8 +13,6 @@ import {
   CheckCircle,
   ArrowRight,
   Star,
-  Calendar,
-  Image as ImageIcon,
   Target,
   Clock,
   Globe,
@@ -37,7 +33,7 @@ export function LandingPage({ showLoginModal = false, loginModalMode = 'login' }
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>(loginModalMode);
   const [, setLocation] = useLocation();
   // TODO: Display live metrics on landing page
-  const { data: _metrics, isLoading: _isLoading, isError: _isError } = useMetrics();
+  const { data: metrics, isLoading, isError } = useMetrics();
   
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);

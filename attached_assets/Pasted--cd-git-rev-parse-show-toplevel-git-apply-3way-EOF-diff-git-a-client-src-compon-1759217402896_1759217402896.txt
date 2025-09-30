@@ -1,0 +1,59 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/client/src/components/generation-panel.tsx b/client/src/components/generation-panel.tsx
+index 719a721f535a401b9fedcf905b911df52837ac09..9199baa6913404f4c268af685ddf3468439de9cb 100644
+--- a/client/src/components/generation-panel.tsx
++++ b/client/src/components/generation-panel.tsx
+@@ -1,48 +1,48 @@
+ import { useState } from "react";
+ import { useMutation, useQueryClient } from "@tanstack/react-query";
+ import { Button } from "@/components/ui/button";
+ import { Card, CardContent } from "@/components/ui/card";
+ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+ import { useToast } from "@/hooks/use-toast";
+ import { apiRequest } from "@/lib/queryClient";
+ import type { ContentGeneration } from "@shared/schema.js";
+ import { Sparkles, Copy, Check, Loader2 } from "lucide-react";
+ 
+ interface GenerationPanelProps {
+   onContentGenerated: (generation: ContentGeneration) => void;
+ }
+ 
+ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
+   const [platform, setPlatform] = useState("reddit");
+   const [style, setStyle] = useState("playful");
+   const [theme, setTheme] = useState("tease");
+   // TODO: Implement timing-based content optimization
+-  const [_timing, setTiming] = useState("evening");
++  const [timing, setTiming] = useState("evening");
+   const [allowsPromotion, setAllowsPromotion] = useState(false);
+   // TODO: Implement copy feedback
+-  const [_copiedItem, setCopiedItem] = useState<string | null>(null);
++  const [copiedItem, setCopiedItem] = useState<string | null>(null);
+   const [generatedContent, setGeneratedContent] = useState<ContentGeneration | null>(null);
+ 
+   const { toast } = useToast();
+   const queryClient = useQueryClient();
+ 
+   const generateMutation = useMutation({
+     mutationFn: async (data: { platform: string; style: string; theme: string }) => {
+       const response = await apiRequest("POST", "/api/ai/generate", {
+         platforms: [data.platform],
+         prompt: `Generate ${data.style} ${data.theme} content for ${data.platform}`,
+         styleHints: [data.style, data.theme],
+         variants: 1
+       });
+       return response.json();
+     },
+     onSuccess: (data: unknown) => {
+       // Transform AI service response to ContentGeneration format
+       const apiData = data as { content?: Array<{ titles?: string[]; body?: string; photoInstructions?: string }> };
+       const transformedData = {
+         id: Date.now(),
+         platform: platform,
+         style: style,
+         theme: theme,
+         titles: apiData.content?.[0]?.titles || ["Generated content ready!"],
+         content: apiData.content?.[0]?.body || "Content generated successfully. Try the generation again for full content.",
+ 
+EOF
+)

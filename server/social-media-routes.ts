@@ -9,7 +9,7 @@ import {
 } from "./social-media/account-metadata.js";
 import { storage } from "./storage.js";
 import { authenticateToken } from "./middleware/auth.js";
-import type { SocialMediaAccount, User } from "@shared/schema";
+import type { User } from "@shared/schema";
 
 interface AuthRequest<
   B = Record<string, unknown>,

@@ -2,11 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { normalizeRules, inferSellingPolicy, getCommunityInsights } from '../../../server/reddit-communities.ts';
-import { db } from '../../../server/db.ts';
-import { redditCommunities, subredditRules } from '../../../shared/schema.ts';
+import { normalizeRules, inferSellingPolicy } from '../../../server/reddit-communities.ts';
 import type { RedditCommunityRuleSet } from '../../../shared/schema.ts';
-import { syncSubredditRules } from '../../../server/scripts/sync-subreddit-rules.ts';
 
 // Test interfaces
 interface TestCommunity {

@@ -75,7 +75,7 @@ export class InstagramAPI {
         postId: publishData.id,
         platform: 'instagram' as const,
       };
-    } catch (error) {
+    } catch (_error) {
       console.error('Instagram API Error:', error);
       return {
         success: false,
@@ -102,7 +102,7 @@ export class InstagramAPI {
         metrics: data.data,
         platform: 'instagram' as const,
       };
-    } catch (error) {
+    } catch (_error) {
       console.error('Instagram Metrics Error:', error);
       return {
         success: false,
@@ -129,7 +129,7 @@ export class InstagramAPI {
         insights: data.data,
         platform: 'instagram' as const,
       };
-    } catch (error) {
+    } catch (_error) {
       console.error('Instagram Insights Error:', error);
       return {
         success: false,

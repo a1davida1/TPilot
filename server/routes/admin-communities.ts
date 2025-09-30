@@ -36,7 +36,7 @@ router.get('/', async (req: AdminRequest, res: express.Response) => {
     }));
 
     res.json({ success: true, data: adminCommunities });
-  } catch (error) {
+  } catch (_error) {
     console.error('Failed to list communities:', error);
     res.status(500).json({ success: false, error: 'Failed to load communities' });
   }
@@ -71,7 +71,7 @@ router.post('/', async (req: AdminRequest, res: express.Response) => {
     };
 
     res.status(201).json({ success: true, data: adminCommunity });
-  } catch (error) {
+  } catch (_error) {
     console.error('Failed to create community:', error);
     res.status(400).json({
       success: false,
@@ -114,7 +114,7 @@ router.put('/:id', async (req: AdminRequest, res: express.Response) => {
     };
 
     res.json({ success: true, data: adminCommunity });
-  } catch (error) {
+  } catch (_error) {
     console.error('Failed to update community:', error);
     res.status(400).json({
       success: false,
@@ -139,7 +139,7 @@ router.delete('/:id', async (req: AdminRequest, res: express.Response) => {
     await deleteCommunity(id);
     
     res.json({ success: true, message: 'Community deleted successfully' });
-  } catch (error) {
+  } catch (_error) {
     console.error('Failed to delete community:', error);
     res.status(500).json({ success: false, error: 'Failed to delete community' });
   }

@@ -21,12 +21,10 @@ import {
   RefreshCw,
   Copy,
   Check,
-  Wand2,
   UserCheck,
   LogIn
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import type { ContentGeneration } from "@shared/schema.js";

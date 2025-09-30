@@ -4,7 +4,7 @@
  */
 
 import { db } from '../db';
-import { queueJobs, type InsertQueueJob } from '@shared/schema';
+import { queueJobs } from '@shared/schema';
 import { eq, and, gte, sql } from 'drizzle-orm';
 import type { IQueue, QueueJobHandler, QueueJobOptions, QueueFailureStats } from './queue-interface';
 
@@ -139,7 +139,7 @@ export class PgQueue implements IQueue {
         
         await this.processQueueJobs(queueName, processor);
       }
-    } catch (error) {
+    } catch (_error) {
       console.error('Error in queue polling:', error);
     }
 
@@ -206,7 +206,7 @@ export class PgQueue implements IQueue {
         })
         .where(eq(queueJobs.id, job.id));
 
-    } catch (error) {
+    } catch (_error) {
       console.error(`Job ${job.id} failed:`, error);
       
       const attempts = job.attempts + 1;

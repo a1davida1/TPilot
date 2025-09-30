@@ -10,7 +10,7 @@ import { buildVoiceGuideBlock } from "./stylePack";
 import { serializePromptField } from "./promptUtils";
 import { formatVoiceContext } from "./voiceTraits";
 import { ensureFactCoverage } from "./ensureFactCoverage";
-import { inferFallbackFromFacts, ensureFallbackCompliance } from "./inferFallbackFromFacts";
+import { ensureFallbackCompliance } from "./inferFallbackFromFacts";
 import { dedupeVariantsForRanking } from "./dedupeVariants";
 import { dedupeCaptionVariants } from "./dedupeCaptionVariants";
 import {
@@ -343,7 +343,7 @@ async function b64(url: string): Promise<{ base64: string; mimeType: string }> {
     const base64 = b.toString("base64");
 
     return { base64, mimeType: ct.split(";")[0] };
-  } catch (err) {
+  } catch (_err) {
     console.error("Error fetching image:", err);
     if (err instanceof InvalidImageError) throw err;
     throw new InvalidImageError(
@@ -431,7 +431,7 @@ export async function variantsRewrite(
       res = await textModel.generateContent([
         { text: promptSections.join("\n") }
       ]);
-    } catch (error) {
+    } catch (_error) {
       console.error("Gemini textModel.generateContent failed:", error);
       throw error;
     }
@@ -704,7 +704,7 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
       const result = stripToJSON(rawText) as Record<string, unknown>;
       console.error('Fact extraction completed successfully');
       return result;
-    } catch (error) {
+    } catch (_error) {
       console.error('Gemini visionModel.generateContent failed:', error);
 
       // For GIFs that fail Gemini processing, provide better fallback facts
@@ -724,7 +724,7 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
 
       throw error;
     }
-  } catch (error) {
+  } catch (_error) {
     console.error('Error in extractFacts:', error);
     if (error instanceof InvalidImageError) throw error;
     throw new Error(`Failed to extract facts: ${error instanceof Error ? error.message : String(error)}`);
@@ -843,7 +843,7 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
 
       const json = stripToJSON(rawText) as unknown;
       return Array.isArray(json) ? json : [];
-    } catch (error) {
+    } catch (_error) {
       console.error("Gemini textModel.generateContent failed:", error);
       throw error;
     }
@@ -1006,7 +1006,7 @@ async function requestGeminiRanking(
   let res;
   try {
     res = await invokeTextModel([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
-  } catch (error) {
+  } catch (_error) {
     console.error('Gemini textModel invocation failed:', error);
     throw error;
   }
@@ -1233,7 +1233,7 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
     }
 
     return { provider: 'gemini', facts, variants, ranked, final: out, titles: out.titles };
-  } catch (error) {
+  } catch (_error) {
     console.error('Gemini pipeline failed, using OpenAI fallback:', error);
     return resolveWithOpenAIFallback('OpenAI fallback selected after Gemini pipeline error');
   }

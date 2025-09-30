@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { ApiError } from '@/lib/queryClient';
 
 interface ReferralCodeResponse {
@@ -132,7 +131,7 @@ export default function ReferralPage() {
         description: 'Referral code copied to clipboard',
       });
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
+    } catch (_err) {
       toast({
         title: 'Failed to copy',
         description: 'Please try selecting and copying manually',
@@ -157,7 +156,7 @@ export default function ReferralPage() {
         title: 'Copied!',
         description: 'Referral link copied to clipboard',
       });
-    } catch (err) {
+    } catch (_err) {
       toast({
         title: 'Failed to copy',
         description: 'Please try selecting and copying manually',
@@ -183,7 +182,7 @@ export default function ReferralPage() {
           text: 'Get exclusive content creation tools and earn rewards with my referral code.',
           url: referralUrl,
         });
-      } catch (err) {
+      } catch (_err) {
         handleCopyReferralUrl();
       }
     } else {

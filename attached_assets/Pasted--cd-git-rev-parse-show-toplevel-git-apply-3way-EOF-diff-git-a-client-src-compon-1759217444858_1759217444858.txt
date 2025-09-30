@@ -1,0 +1,61 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/client/src/components/image-shield-unified.tsx b/client/src/components/image-shield-unified.tsx
+index ed5ea412143f7ecb995594a3c9e184122bd5a69f..de6929b71cf6b5d6051175e1d072d6f8383d8355 100644
+--- a/client/src/components/image-shield-unified.tsx
++++ b/client/src/components/image-shield-unified.tsx
+@@ -46,51 +46,51 @@ interface MediaAsset {
+   signedUrl: string;
+   createdAt: string;
+ }
+ 
+ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedProps) {
+   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+   const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
+   const [isProcessing, setIsProcessing] = useState(false);
+   const [protectedImageUrl, setProtectedImageUrl] = useState<string | null>(null);
+   const [preset, setPreset] = useState<'light' | 'standard' | 'heavy'>('standard');
+   const [customSettings, setCustomSettings] = useState<ImageProcessingOptions>(protectionPresets.standard);
+   const [useCustom, setUseCustom] = useState(false);
+   // TODO: Implement before/after comparison UI
+   const [_showComparison, setShowComparison] = useState(false);
+   const [dragActive, setDragActive] = useState(false);
+   const [selectedTags, setSelectedTags] = useState<string>('');
+   // TODO: Implement image detail modal for gallery
+   const [_selectedImage, setSelectedImage] = useState<MediaAsset | null>(null);
+   const fileInputRef = useRef<HTMLInputElement>(null);
+   const galleryInputRef = useRef<HTMLInputElement>(null);
+   const { toast } = useToast();
+   const queryClient = useQueryClient();
+ 
+   const isProUser = userTier === 'pro';
+   // TODO: Implement gallery view for pro users
+-  const _showGallery = isProUser;
++  const showGallery = isProUser;
+ 
+   // Authenticated API request helper
+   const authenticatedRequest = async (url: string, method: string = 'GET', data?: unknown) => {
+     let body: FormData | string | undefined;
+     const headers: Record<string, string> = {};
+ 
+     if (data instanceof FormData) {
+       body = data;
+     } else if (data) {
+       headers['Content-Type'] = 'application/json';
+       body = JSON.stringify(data);
+     }
+ 
+     const response = await fetch(url, {
+       method,
+       headers,
+       body,
+       credentials: 'include'
+     });
+ 
+     if (!response.ok) {
+       const errorText = await response.text();
+       let errorMessage;
+       try {
+         const errorJson = JSON.parse(errorText);
+ 
+EOF
+)

@@ -108,7 +108,7 @@ export async function generateAIContent(
       provider: 'openai'
     };
 
-  } catch (error) {
+  } catch (_error) {
     console.error('AI generation error:', error);
     
     if (error instanceof Error) {
@@ -148,7 +148,7 @@ export async function analyzeImageForContent(imageBase64: string): Promise<strin
     });
 
     return completion.choices[0]?.message?.content || 'Image analysis unavailable';
-  } catch (error) {
+  } catch (_error) {
     console.error('Image analysis error:', error);
     throw new Error('Image analysis temporarily unavailable');
   }
@@ -172,7 +172,7 @@ export async function generateSimpleContent(prompt: string, platform: string = '
     });
 
     return completion.choices[0]?.message?.content || 'Content generation unavailable';
-  } catch (error) {
+  } catch (_error) {
     console.error('Simple content generation error:', error);
     throw new Error('Content generation temporarily unavailable');
   }

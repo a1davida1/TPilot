@@ -5,15 +5,14 @@ import { textModel } from "../lib/gemini";
 import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
 import { enrichWithTitleCandidates } from "./geminiPipeline";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
-import { extractToneOptions, ToneOptions as _ToneOptions } from "./toneOptions";
-import { BANNED_WORDS_HINT as _BANNED_WORDS_HINT, variantContainsBannedWord } from "./bannedWords";
+import { extractToneOptions } from "./toneOptions";
+import { variantContainsBannedWord } from "./bannedWords";
 import { buildVoiceGuideBlock } from "./stylePack";
 import { serializePromptField } from "./promptUtils";
-import { inferFallbackFromFacts as _inferFallbackFromFacts, ensureFallbackCompliance } from "./inferFallbackFromFacts";
+import { ensureFallbackCompliance } from "./inferFallbackFromFacts";
 import { dedupeVariantsForRanking } from "./dedupeVariants";
 import { dedupeCaptionVariants } from "./dedupeCaptionVariants";
 import {
-  HUMAN_CTA as _HUMAN_CTA,
   buildRerankHint,
   detectVariantViolations,
   fallbackHashtags,
@@ -325,7 +324,7 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
 
       const json = stripToJSON(rawText);
       return Array.isArray(json) ? json : [];
-    } catch (error) {
+    } catch (_error) {
       console.error("Gemini textModel.generateContent failed:", error);
       throw error;
     }
@@ -492,7 +491,7 @@ async function requestTextOnlyRanking(
   let res;
   try {
     res = await textModel.generateContent([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
-  } catch (error) {
+  } catch (_error) {
     console.error('Text-only textModel.generateContent failed:', error);
     throw error;
   }

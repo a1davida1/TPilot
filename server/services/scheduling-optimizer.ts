@@ -1,6 +1,6 @@
 import { db } from '../db';
-import { socialMediaPosts, platformEngagement as _platformEngagement } from '@shared/schema';
-import { and, eq, gte as _gte, lte as _lte, sql as _sql, desc } from 'drizzle-orm';
+import { socialMediaPosts } from '@shared/schema';
+import { and, eq, desc } from 'drizzle-orm';
 
 interface ContentSuggestion {
   topic: string;
@@ -80,7 +80,7 @@ class SchedulingOptimizer {
       
       // Fall back to platform defaults
       return this.getDefaultBestTime(platform);
-    } catch (error) {
+    } catch (_error) {
       console.error('Error calculating best post time:', error);
       return this.getDefaultBestTime(platform);
     }
@@ -118,7 +118,7 @@ class SchedulingOptimizer {
         postedAt: p.postedAt ?? null,
         platform: p.platform
       }));
-    } catch (error) {
+    } catch (_error) {
       console.error('Error fetching post history:', error);
       return [];
     }
@@ -222,7 +222,7 @@ class SchedulingOptimizer {
           suggestedStyle: this.getSuggestedStyle(trend),
           bestPostTime: this.getDefaultBestTime(trend.platform)
         }));
-    } catch (error) {
+    } catch (_error) {
       console.error('Error suggesting content:', error);
       return [];
     }

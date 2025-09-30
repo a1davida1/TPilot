@@ -3,7 +3,6 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
 import sharp from 'sharp';
-import crypto from 'crypto';
 import { authenticateToken } from './middleware/auth.js';
 import { storage } from './storage.js';
 import { MediaManager } from './lib/media.js';

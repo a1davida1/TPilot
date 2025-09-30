@@ -245,7 +245,7 @@ export class ReferralManager {
         pending: true,
       };
 
-    } catch (error) {
+    } catch (_error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to apply referral code',

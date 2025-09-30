@@ -11,7 +11,6 @@ import {
   Eye, 
   MessageCircle, 
   Heart, 
-  Share2, 
   Clock, 
   Users, 
   Zap,

@@ -97,7 +97,7 @@ export async function generateWithMultiProvider(request: MultiAIRequest): Promis
       } else {
         safeLog('warn', 'AI provider returned empty result', { provider: provider.name });
       }
-    } catch (error) {
+    } catch (_error) {
       safeLog('warn', 'AI provider failed, trying next', { provider: provider.name, error: error instanceof Error ? error.message : String(error) });
       continue; // Try next provider
     }
@@ -207,7 +207,7 @@ async function generateWithGemini(prompt: string) {
 
     safeLog('info', 'Gemini generation completed successfully', {});
     return validateAndFormatResponse(result);
-  } catch (error) {
+  } catch (_error) {
     safeLog('warn', 'Gemini generation failed', { error: error instanceof Error ? error.message : String(error) });
     return null; // Don't throw, just return null to try next provider
   }

@@ -137,7 +137,7 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
         }
         
         return await res.json();
-      } catch (error) {
+      } catch (_error) {
         console.error('Generation error:', error);
         throw error;
       }

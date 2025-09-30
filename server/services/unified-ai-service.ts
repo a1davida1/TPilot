@@ -137,7 +137,7 @@ Create content that's perfect for ${platform}.`;
       hashtags: ['#contentcreator', '#dailypost', '#photooftheday', '#instagood', '#vibes'],
       caption: result.content.split('\n')[0] || 'Check out my new content!'
     };
-  } catch (error) {
+  } catch (_error) {
     console.error('Unified AI generation error:', error);
     
     // Check if it's a quota/billing issue
@@ -167,7 +167,7 @@ export async function analyzeImage(imageBase64: string): Promise<string> {
     });
 
     return result.content || 'Image analysis unavailable';
-  } catch (error) {
+  } catch (_error) {
     console.error('Image analysis error:', error);
     return 'Unable to analyze image at this time';
   }

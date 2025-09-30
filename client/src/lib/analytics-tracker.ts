@@ -257,7 +257,7 @@ class AnalyticsTracker {
         credentials: 'include', // Include session cookies
         keepalive: true // Important for events sent during page unload
       });
-    } catch (error) {
+    } catch (_error) {
       console.warn('Failed to send analytics events:', error);
       // Re-queue events on failure
       this.eventQueue.unshift(...events);

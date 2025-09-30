@@ -8,12 +8,11 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { 
-  Upload, 
-  Download, 
-  Shield, 
+import {
+  Upload,
+  Download,
+  Shield,
   AlertCircle,
   CheckCircle,
   X,
@@ -24,6 +23,7 @@ import {
   Trash2,
   Tag,
   Crown,
+  Image as ImageIcon,
   Zap
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -58,9 +58,9 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
   // TODO: Implement before/after comparison UI
   const [_showComparison, setShowComparison] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const [selectedTags, setSelectedTags] = useState<string>('');
+  const [_selectedTags, _setSelectedTags] = useState<string>('');
   // TODO: Implement image detail modal for gallery
-  const [_selectedImage, setSelectedImage] = useState<MediaAsset | null>(null);
+  const [_selectedImage, _setSelectedImage] = useState<MediaAsset | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -68,7 +68,7 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
 
   const isProUser = userTier === 'pro';
   // TODO: Implement gallery view for pro users
-  const _showGallery = isProUser;
+  const showGallery = isProUser;
 
   // Authenticated API request helper
   const authenticatedRequest = async (url: string, method: string = 'GET', data?: unknown) => {
@@ -252,7 +252,7 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
           </Button>
         )
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Processing failed",
         description: "Failed to process the image. Please try again.",
@@ -278,7 +278,7 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
         title: "Download started",
         description: "Your protected image is downloading..."
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Download failed",
         description: "Failed to download the image. Please try again.",

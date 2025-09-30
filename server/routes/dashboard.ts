@@ -34,7 +34,7 @@ router.get('/stats', authenticateToken, async (req: AuthRequest, res: Response) 
     });
 
     res.json(stats);
-  } catch (error) {
+  } catch (_error) {
     logger.error('Error retrieving dashboard stats', {
       error: error instanceof Error ? error.message : String(error),
       userId: req.user?.id,
@@ -71,7 +71,7 @@ router.get('/activity', authenticateToken, async (req: AuthRequest, res: Respons
     });
 
     res.json(activity);
-  } catch (error) {
+  } catch (_error) {
     logger.error('Error retrieving dashboard activity', {
       error: error instanceof Error ? error.message : String(error),
       userId: req.user?.id,

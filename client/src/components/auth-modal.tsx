@@ -104,7 +104,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
         description: errorMessage,
         variant: 'destructive'
       });
-    } catch (error) {
+    } catch (_error) {
       console.warn('Failed to apply referral code before login', error);
       toast({
         title: 'Referral not recorded',
@@ -395,7 +395,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
           if (data.authUrl) {
             window.location.href = data.authUrl;
           }
-        } catch (error) {
+        } catch (_error) {
           console.error('Failed to connect Reddit:', error);
         }
       }

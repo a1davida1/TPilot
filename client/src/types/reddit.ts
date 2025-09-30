@@ -22,7 +22,7 @@ export interface RedditAccount {
   accountAgeDays?: number;
 }
 
-import type { RedditCommunitySellingPolicy, RedditCommunityRuleSet } from '@shared/schema';
+import type { RedditCommunityRuleSet } from '@shared/schema';
 
 export interface SubredditCommunity {
   id: string;

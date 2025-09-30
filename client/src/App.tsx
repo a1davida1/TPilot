@@ -23,7 +23,6 @@ import History from "@/pages/history";
 import Settings from "@/pages/settings";
 import Checkout from "@/pages/checkout";
 import Enterprise from "@/pages/enterprise";
-import _Phase4Dashboard from "@/pages/phase4";
 const AdminDashboard = React.lazy(() => import("@/pages/admin").then(module => ({ default: module.AdminDashboard })));
 const AdminLeadsPage = React.lazy(() => import("@/pages/admin-leads").then(module => ({ default: module.AdminLeadsPage })));
 const CaptionGeneratorPage = React.lazy(() => import("@/pages/caption-generator"));

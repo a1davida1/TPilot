@@ -112,7 +112,7 @@ export class AiPromoWorker {
         imageKey,
         description: 'User uploaded image for promotional content',
       };
-    } catch (error) {
+    } catch (_error) {
       logger.error('Failed to get image context:', { error });
       return null;
     }
@@ -161,7 +161,7 @@ export class AiPromoWorker {
         }
       }
 
-    } catch (error) {
+    } catch (_error) {
       logger.error('Failed to update generation results:', { error });
     }
   }
@@ -175,7 +175,7 @@ export class AiPromoWorker {
         })
         .where(eq(contentGenerations.id, generationId));
 
-    } catch (error) {
+    } catch (_error) {
       logger.error('Failed to update generation status:', { error });
     }
   }
@@ -187,7 +187,7 @@ export class AiPromoWorker {
         type,
         meta,
       });
-    } catch (error) {
+    } catch (_error) {
       logger.error('Failed to log AI promo event:', { error });
     }
   }

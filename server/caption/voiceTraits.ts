@@ -31,7 +31,7 @@ function loadVoiceMap(): z.infer<typeof VoiceMapSchema> | null {
     );
     cache = VoiceMapSchema.parse(JSON.parse(raw));
     return cache;
-  } catch (error) {
+  } catch (_error) {
     console.error("Failed to load voice traits:", error);
     cache = null;
     return null;

@@ -77,7 +77,7 @@ export async function retryWithBackoff<T>(
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       return await fn();
-    } catch (error) {
+    } catch (_error) {
       lastError = error;
       
       // Check if we should retry this error

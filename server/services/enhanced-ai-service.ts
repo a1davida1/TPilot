@@ -197,7 +197,7 @@ class EnhancedAIContentGenerator {
       // Fallback to template-based generation with enhancements
       return this.generateFromTemplates(request);
       
-    } catch (error) {
+    } catch (_error) {
       safeLog('error', 'Enhanced AI generation failed', { error: (error as Error).message });
       return this.generateSafetyFallback(request);
     }
@@ -318,7 +318,7 @@ Create content that feels authentic, drives engagement, and perfectly matches th
       }
       
       return null;
-    } catch (error) {
+    } catch (_error) {
       safeLog('error', 'AI generation fallback failed', { error: (error as Error).message });
       return null;
     }

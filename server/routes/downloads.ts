@@ -36,7 +36,7 @@ export const createLocalDownloadRouter = (): Router => {
           sendNotFound(res);
           return;
         }
-      } catch (error) {
+      } catch (_error) {
         const code = (error as NodeJS.ErrnoException).code;
         if (code === 'ENOENT') {
           sendNotFound(res);
@@ -62,7 +62,7 @@ export const createLocalDownloadRouter = (): Router => {
       });
 
       stream.pipe(res);
-    } catch (error) {
+    } catch (_error) {
       next(error);
     }
   });

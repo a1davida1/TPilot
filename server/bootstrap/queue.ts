@@ -28,7 +28,7 @@ export async function startQueue() {
     logger.info('✅ Worker auto-scaling started (interval: 60000ms)');
 
 
-  } catch (error) {
+  } catch (_error) {
     if (isConfigurationError(error)) {
       logger.warn(
         'Skipping queue startup due to missing configuration. Provide DATABASE_URL or REDIS_URL to enable background workers.',
@@ -78,7 +78,7 @@ export async function stopQueue() {
     await workerScaler.stopScaling();
 
     logger.info('✅ Queue system shutdown complete');
-  } catch (error) {
+  } catch (_error) {
     logger.error('❌ Error during queue shutdown', { error });
   }
 }
@@ -94,7 +94,7 @@ export async function checkQueueHealth() {
       workers: 'active',
       queue: 'connected'
     };
-  } catch (error) {
+  } catch (_error) {
     logger.error('❌ Queue health check failed', { error });
     return {
       status: 'unhealthy',

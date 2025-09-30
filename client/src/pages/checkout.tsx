@@ -188,7 +188,7 @@ export default function Checkout() {
         } else {
           throw new Error('Failed to setup payment');
         }
-      } catch (error) {
+      } catch (_error) {
         console.error('Payment setup error:', error);
         // Payment setup error - handled via toast UI
         toast({

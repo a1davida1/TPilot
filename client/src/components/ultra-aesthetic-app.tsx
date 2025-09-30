@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Sparkles, 
   Brain, 
@@ -10,19 +9,13 @@ import {
   ImageIcon,
   TrendingUp,
   Zap,
-  Star,
   ArrowRight,
   Check,
-  Globe,
-  Lock,
-  Palette,
   Users,
   Heart,
   Eye,
   MessageCircle,
   DollarSign,
-  Target,
-  Rocket,
   Crown,
   BarChart3,
   History,
@@ -30,15 +23,12 @@ import {
   Menu,
   X,
   LogOut,
-  PlusCircle,
   FileText,
   Camera,
   Hash,
   Gift
 } from "lucide-react";
 import { SimpleContentGenerator } from "@/components/simple-content-generator";
-import { SocialAuth } from "@/components/social-auth";
-import { ProviderStatus } from "@/components/provider-status";
 import { IntegratedFineTuning } from "@/components/integrated-fine-tuning";
 import { AuthModal } from "@/components/auth-modal";
 import { TrendingTagsExpanded } from "@/components/trending-tags-expanded";

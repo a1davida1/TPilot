@@ -93,7 +93,7 @@ async function getUserTier(userId: string | number): Promise<string> {
     });
     
     return tier;
-  } catch (error) {
+  } catch (_error) {
     console.error('Error fetching user tier:', error);
     return 'free';
   }

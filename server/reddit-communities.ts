@@ -12,11 +12,10 @@ import {
   redditCommunityRuleSetSchema,
   createDefaultRules,
   normalizeRulesToStructured,
-  inferSellingPolicyFromRules,
   canonicalizeCompetitionLevel,
   canonicalizeModActivity
 } from '@shared/schema';
-import { type GrowthTrend, isValidGrowthTrend, getGrowthTrendLabel } from '@shared/growth-trends';
+import { getGrowthTrendLabel } from '@shared/growth-trends';
 import { eq, ilike, desc, or } from 'drizzle-orm';
 import { lintCaption } from './lib/policy-linter.js';
 

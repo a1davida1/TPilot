@@ -6,7 +6,7 @@ import { safeFallbackCaption, safeFallbackCta, safeFallbackHashtags } from './ra
 import { CaptionItem } from './schema';
 import { serializePromptField } from './promptUtils';
 import { formatVoiceContext } from './voiceTraits';
-import { toOpenAIImageUrl, validateImageUrl, logImageInfo } from './lib/images';
+import { validateImageUrl, logImageInfo } from './lib/images';
 import { normalizeImageForOpenAI } from './util/normalizeImage';
 
 function isImageDiagnosticsEnabled(): boolean {
@@ -165,7 +165,7 @@ Return ONLY a JSON object with this structure:
           ]
         }
       ];
-    } catch (error) {
+    } catch (_error) {
       console.warn('Image analysis failed, using text-only fallback:', error);
       messages = [
         {
@@ -206,7 +206,7 @@ Return ONLY a JSON object with this structure:
     let json: unknown;
     try {
       json = JSON.parse(response.choices[0].message.content || '{}');
-    } catch (e) {
+    } catch (_e) {
       console.error("Error parsing JSON response from OpenAI:", e);
       console.error("OpenAI response content:", response.choices[0].message.content);
       // Fallback to a simpler structure if JSON parsing fails
@@ -250,7 +250,7 @@ Return ONLY a JSON object with this structure:
       alt: compliance.alt,
       nsfw: typeof jsonData.nsfw === 'boolean' ? jsonData.nsfw : false,
     });
-  } catch (error) {
+  } catch (_error) {
     console.error("Error calling OpenAI API:", error);
     return buildSafeFallbackResponse(fallbackParamsForCompliance, voice);
   }

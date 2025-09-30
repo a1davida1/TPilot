@@ -59,7 +59,7 @@ export function mountBillingRoutes(app: Express, apiPrefix: string = API_PREFIX)
 
       await trackEvent(user.id, "checkout_started", { priceId, bucket });
       res.json({ url: session.url });
-    } catch (error) {
+    } catch (_error) {
       logger.error('Stripe checkout error:', error);
       res.status(502).json({ message: "Checkout unavailable" });
     }

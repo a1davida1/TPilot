@@ -7,8 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import {
-  Zap, TrendingUp, Target, Clock, Star, Brain, Sparkles, CheckCircle,
-  AlertTriangle, Info, Settings, Play, Pause, RotateCcw, ArrowRight
+  Zap, TrendingUp, Star, Sparkles, CheckCircle, Play, ArrowRight
 } from 'lucide-react';
 
 interface OptimizationRecommendation {

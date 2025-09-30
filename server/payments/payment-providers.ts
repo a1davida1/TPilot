@@ -52,7 +52,7 @@ export function makePaxum(): PaymentProvider {
         });
 
         return { url: `${paxumEndpoint}?${params.toString()}` };
-      } catch (error) {
+      } catch (_error) {
         console.error('Paxum checkout creation failed:', error);
         throw new Error('Failed to create Paxum checkout session');
       }
@@ -116,7 +116,7 @@ export function makeCoinbase(): PaymentProvider {
         }
         
         return { url: data.data.hosted_url };
-      } catch (error) {
+      } catch (_error) {
         console.error('Coinbase Commerce checkout creation failed:', error);
         const message =
           error instanceof Error
@@ -159,7 +159,7 @@ export function makeStripe(): PaymentProvider {
         });
         
         return { url: `${checkoutUrl}?${params.toString()}` };
-      } catch (error) {
+      } catch (_error) {
         console.error('Stripe checkout creation failed:', error);
         throw new Error('Failed to create Stripe checkout session');
       }

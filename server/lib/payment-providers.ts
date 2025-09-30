@@ -86,7 +86,7 @@ export class SegPayProvider extends BasePaymentProvider {
         transactionId: `segpay_${Date.now()}_${options.userId}`,
         provider: this.name,
       };
-    } catch (error) {
+    } catch (_error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'SegPay payment failed',
@@ -142,7 +142,7 @@ export class EpochProvider extends BasePaymentProvider {
         transactionId: `epoch_${Date.now()}_${options.userId}`,
         provider: this.name,
       };
-    } catch (error) {
+    } catch (_error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Epoch payment failed',
@@ -211,7 +211,7 @@ export class PaxumProvider extends BasePaymentProvider {
         transactionId: data.transactionId,
         provider: this.name,
       };
-    } catch (error) {
+    } catch (_error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Paxum payment failed',
@@ -284,7 +284,7 @@ export class CoinbaseProvider extends BasePaymentProvider {
         transactionId: data.data.id,
         provider: this.name,
       };
-    } catch (error) {
+    } catch (_error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Coinbase payment failed',
@@ -364,7 +364,7 @@ export class PaymentProviderManager {
         if (result.success) {
           return result;
         }
-      } catch (error) {
+      } catch (_error) {
         console.error(`Payment provider ${provider.name} failed:`, error);
         continue;
       }

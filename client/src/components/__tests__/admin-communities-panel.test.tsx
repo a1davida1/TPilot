@@ -3,7 +3,7 @@ import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { AdminCommunitiesPanel } from '../admin/admin-communities-panel';
-import type { AdminCommunity, PromotionPolicy, GrowthTrend, ActivityLevel as _ActivityLevel, CompetitionLevel as _CompetitionLevel } from '@/hooks/use-admin-communities';
+import type { AdminCommunity, PromotionPolicy, GrowthTrend } from '@/hooks/use-admin-communities';
 import type { RedditCommunitySellingPolicy } from '@shared/schema';
 
 // Mock dependencies

@@ -240,7 +240,7 @@ export class DunningWorker {
 
       logger.info(`Scheduled dunning attempt ${nextAttempt} for subscription ${subscriptionId} in ${delayDays} days`);
 
-    } catch (error) {
+    } catch (_error) {
       logger.error('Failed to schedule next dunning attempt:', { error });
     }
   }
@@ -276,7 +276,7 @@ export class DunningWorker {
         type,
         meta,
       });
-    } catch (error) {
+    } catch (_error) {
       logger.error('Failed to log dunning event:', { error });
     }
   }

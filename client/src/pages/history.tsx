@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { History, Search, Filter, Calendar, Download, Share2, Trash2, Star, Copy, ArrowLeft } from 'lucide-react';
+import { History, Search, Calendar, Trash2, Copy, ArrowLeft } from 'lucide-react';
 import { Link } from 'wouter';
 import type { ContentGeneration } from '@shared/schema';
 import { ThottoPilotLogo } from '@/components/thottopilot-logo';

@@ -7,12 +7,16 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Upload, 
-  Image, 
-  Save, 
-  Sparkles, 
+import {
+  Camera,
   Check,
+  ChevronRight,
+  FileText,
+  Image,
+  Save,
+  Sparkles,
+  Type,
+  Upload,
   X
 } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";

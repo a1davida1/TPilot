@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -15,7 +15,6 @@ import {
   Link as LinkIcon,
   Zap,
   CheckCircle,
-  AlertCircle,
   Sparkles
 } from 'lucide-react';
 import { MediaLibrarySelector } from './MediaLibrarySelector';
@@ -121,7 +120,7 @@ export function RedditQuickPost() {
           description: "Complete the authorization in the popup window, then refresh this page"
         });
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "❌ Connection Failed",
         description: (error as Error).message,

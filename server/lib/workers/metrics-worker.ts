@@ -126,7 +126,7 @@ export class MetricsWorker {
         views: post.view_count ?? 0,
         collectedAt: new Date(),
       };
-    } catch (error) {
+    } catch (_error) {
       logger.error('Failed to fetch Reddit post metrics:', { error });
       return null;
     }
@@ -151,7 +151,7 @@ export class MetricsWorker {
         })
         .where(eq(postJobs.id, postJobId));
 
-    } catch (error) {
+    } catch (_error) {
       logger.error('Failed to update post metrics:', { error });
     }
   }
@@ -185,7 +185,7 @@ export class MetricsWorker {
 
       logger.info(`Scheduled next metrics check for post ${redditPostId} in ${delayMinutes} minutes`);
 
-    } catch (error) {
+    } catch (_error) {
       logger.error('Failed to schedule next metrics check:', { error });
     }
   }
@@ -197,7 +197,7 @@ export class MetricsWorker {
         type,
         meta,
       });
-    } catch (error) {
+    } catch (_error) {
       logger.error('Failed to log metrics event:', { error });
     }
   }

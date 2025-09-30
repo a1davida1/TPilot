@@ -7,8 +7,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -35,7 +33,6 @@ import {
   XCircle,
   Link as LinkIcon,
   Globe,
-  Settings,
   Clock,
   BarChart3,
   Users,
@@ -44,7 +41,6 @@ import {
   Shield,
   FileText,
   TestTube,
-  ExternalLink,
   ImageIcon,
   Images,
   LogIn,
@@ -57,8 +53,7 @@ import { MediaLibrarySelector } from '@/components/MediaLibrarySelector';
 import type { 
   ShadowbanStatusType, 
   ShadowbanCheckApiResponse,
-  ShadowbanSubmissionSummary,
-  RedditCommunitySellingPolicy 
+  ShadowbanSubmissionSummary 
 } from '@shared/schema';
 import type { SubredditCommunity } from '@/types/reddit';
 

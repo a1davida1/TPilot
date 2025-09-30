@@ -3,10 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Chrome, 
-  Facebook, 
-  Github,
+import {
   Mail,
   ArrowRight,
   Shield,
@@ -77,7 +74,7 @@ export function SocialAuth({ onSuccess, isLoading = false }: SocialAuthProps) {
           if (data.authUrl) {
             window.location.href = data.authUrl;
           }
-        } catch (error) {
+        } catch (_error) {
           console.error('Failed to connect Reddit:', error);
         }
       },
@@ -105,7 +102,7 @@ export function SocialAuth({ onSuccess, isLoading = false }: SocialAuthProps) {
         window.location.href = provider.url;
       }
       onSuccess?.(provider.id);
-    } catch (error) {
+    } catch (_error) {
       console.error(`${provider.name} auth failed:`, error);
       setLoadingProvider(null);
     }

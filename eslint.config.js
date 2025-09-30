@@ -4,6 +4,7 @@ import tseslintParser from '@typescript-eslint/parser';
 import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import reactRefreshPlugin from 'eslint-plugin-react-refresh';
+import unusedImportsPlugin from 'eslint-plugin-unused-imports';
 
 const browserGlobals = {
   window: 'readonly',
@@ -88,13 +89,14 @@ export default [
       'production-server.js',
       'production-start.js',
       'scripts/**',
-      'assistant-last40-unified/**',
-      'unified-tasks-snapshot/**',
       'logs/**',
       '*.log',
       '*.md',
       '*.txt',
       'bundle-report.html',
+      'tests/**',
+      'uploads/**',
+      'migrations/meta/**',
     ],
   },
   {
@@ -118,13 +120,20 @@ export default [
       react: reactPlugin,
       'react-hooks': reactHooksPlugin,
       'react-refresh': reactRefreshPlugin,
+      'unused-imports': unusedImportsPlugin,
     },
     rules: {
       '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': ['warn', {
-        argsIgnorePattern: '^_',
+      'unused-imports/no-unused-imports': 'error',
+      '@typescript-eslint/no-unused-vars': 'off',
+      'unused-imports/no-unused-vars': ['warn', {
+        vars: 'all',
         varsIgnorePattern: '^_',
+        args: 'after-used',
+        argsIgnorePattern: '^_',
+        caughtErrors: 'all',
         caughtErrorsIgnorePattern: '^_',
+        ignoreRestSiblings: true,
       }],
       '@typescript-eslint/no-non-null-assertion': 'warn',
       '@typescript-eslint/no-unsafe-function-type': 'warn',

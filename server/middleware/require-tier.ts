@@ -34,7 +34,7 @@ export function requireTier(minTier: Tier): RequestHandler {
         return res.status(403).json({ error: "Insufficient tier" });
       }
       next();
-    } catch (e) {
+    } catch (_e) {
       next(e);
     }
   };

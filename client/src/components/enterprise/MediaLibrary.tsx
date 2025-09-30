@@ -65,7 +65,7 @@ export default function MediaLibrary() {
         setUploadProgress(100);
         setTimeout(() => setUploadProgress(0), 1000);
         return result;
-      } catch (error) {
+      } catch (_error) {
         clearInterval(progressInterval);
         setUploadProgress(0);
         throw error;

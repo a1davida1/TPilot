@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
 
 interface User {
   id: number;
@@ -77,7 +76,7 @@ export function useAuth() {
       if (!response.ok) {
         console.error('Session logout failed:', response.status);
       }
-    } catch (error) {
+    } catch (_error) {
       console.error('Session logout error:', error);
     }
     
@@ -150,7 +149,7 @@ export function useAuth() {
         const data = await response.json();
         login();
       }
-    } catch (error) {
+    } catch (_error) {
       // Silent fail in production
     }
   };

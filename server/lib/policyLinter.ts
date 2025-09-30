@@ -63,7 +63,7 @@ export class PolicyLinter {
         : undefined;
 
       return new PolicyLinter(subreddit, customRules);
-    } catch (error) {
+    } catch (_error) {
       console.error(`Failed to load rules for r/${subreddit}:`, error);
       return new PolicyLinter(subreddit);
     }

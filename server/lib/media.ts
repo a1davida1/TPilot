@@ -102,7 +102,7 @@ export class MediaManager {
         if (raw) {
           return JSON.parse(raw) as DownloadTokenPayload;
         }
-      } catch (error) {
+      } catch (_error) {
         console.error('Failed to read download token from Redis:', error);
       }
     }
@@ -131,7 +131,7 @@ export class MediaManager {
       try {
         await downloadRedisClient.setex(this.getDownloadTokenKey(token), ttlSeconds, JSON.stringify(payload));
         return;
-      } catch (error) {
+      } catch (_error) {
         console.error('Failed to store download token in Redis:', error);
       }
     }
@@ -299,7 +299,7 @@ export class MediaManager {
       await db.delete(mediaAssets).where(eq(mediaAssets.id, id));
       
       return true;
-    } catch (error) {
+    } catch (_error) {
       console.error('Failed to delete asset:', error);
       return false;
     }
@@ -439,7 +439,7 @@ export class MediaManager {
         usedInType,
         usedInId,
       });
-    } catch (error) {
+    } catch (_error) {
       console.error('Failed to record media usage:', error);
     }
   }

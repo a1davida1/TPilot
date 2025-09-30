@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { users } from '@shared/schema';
-import { and, eq, gte, lte, sql, desc } from 'drizzle-orm';
+import { and, eq, gte, lte, sql } from 'drizzle-orm';
 
 export interface AnalyticsEvent<T extends Record<string, unknown> = Record<string, unknown>> {
   userId: string;
@@ -73,7 +73,7 @@ class AnalyticsService {
       await db.update(users)
         .set({ lastLogin: new Date() })
         .where(eq(users.id, parseInt(userId)));
-    } catch (error) {
+    } catch (_error) {
       console.error('Error updating last login:', error);
     }
   }
@@ -144,7 +144,7 @@ class AnalyticsService {
         );
       
       return result[0]?.count || 0;
-    } catch (error) {
+    } catch (_error) {
       console.error('Error getting DAU:', error);
       return 0;
     }
@@ -165,7 +165,7 @@ class AnalyticsService {
         );
       
       return result[0]?.count || 0;
-    } catch (error) {
+    } catch (_error) {
       console.error('Error getting MAU:', error);
       return 0;
     }
