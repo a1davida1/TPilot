@@ -10,6 +10,7 @@ import jwt from 'jsonwebtoken';
 import { blacklistToken } from './lib/tokenBlacklist';
 import { logger } from './bootstrap/logger';
 import { API_PREFIX, prefixApiPath } from './lib/api-prefix.js';
+import { createToken } from './middleware/auth.js';
 
 type RedditAuthenticateOptions = AuthenticateOptions & {
   state?: string;
@@ -17,8 +18,8 @@ type RedditAuthenticateOptions = AuthenticateOptions & {
 };
 
 const redditCallbackOptions: RedditAuthenticateOptions = {
-  failureRedirect: '/login?error=reddit_failed',
-  successRedirect: '/dashboard?connected=reddit'
+  failureRedirect: '/login?error=reddit_failed'
+  // Note: No successRedirect - we handle cookie + redirect in the callback handler
 };
 
 export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
@@ -48,8 +49,10 @@ export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
             user = await storage.getUserById(user.id);
           }
         } else {
-          // Check by email as fallback
-          user = await storage.getUserByEmail(email);
+          // Check by email as fallback (only if email is non-empty)
+          if (email && email.trim().length > 0) {
+            user = await storage.getUserByEmail(email);
+          }
           
           if (user) {
             // Link existing user with Google provider
@@ -57,7 +60,8 @@ export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
               provider: 'google', 
               providerId: profile.id,
               avatar,
-              username
+              username,
+              emailVerified: true // Google verifies emails
             });
             user = await storage.getUserById(user.id);
           } else {
@@ -69,7 +73,8 @@ export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
               provider: 'google',
               providerId: profile.id,
               avatar,
-              tier: 'free'
+              tier: 'free',
+              emailVerified: true // Google provides verified emails
             });
           }
         }
@@ -104,8 +109,10 @@ export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
             user = await storage.getUserById(user.id);
           }
         } else {
-          // Check by email as fallback
-          user = await storage.getUserByEmail(email);
+          // Check by email as fallback (only if email is non-empty)
+          if (email && email.trim().length > 0) {
+            user = await storage.getUserByEmail(email);
+          }
           
           if (user) {
             // Link existing user with Facebook provider
@@ -113,7 +120,8 @@ export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
               provider: 'facebook', 
               providerId: profile.id,
               avatar,
-              username
+              username,
+              emailVerified: true // Facebook provides verified emails
             });
             user = await storage.getUserById(user.id);
           } else {
@@ -125,7 +133,8 @@ export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
               provider: 'facebook',
               providerId: profile.id,
               avatar,
-              tier: 'free'
+              tier: 'free',
+              emailVerified: true // Facebook provides verified emails
             });
           }
         }
@@ -169,30 +178,19 @@ export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
             user = await storage.getUserById(user.id);
           }
         } else {
-          // Check by username as fallback (Reddit doesn't provide email)
-          user = await storage.getUserByUsername(username);
-          
-          if (user) {
-            // Link existing user with Reddit provider
-            await storage.updateUser(user.id, { 
-              provider: 'reddit', 
-              providerId: profile.id,
-              avatar,
-              username
-            });
-            user = await storage.getUserById(user.id);
-          } else {
-            // Create new user
-            user = await storage.createUser({
-              email: '', // Reddit doesn't provide email
-              username,
-              password: '',
-              provider: 'reddit',
-              providerId: profile.id,
-              avatar,
-              tier: 'free'
-            });
-          }
+          // SECURITY: Never auto-link by username - this allows account takeover
+          // Reddit provides no email, so we can only match by provider ID
+          // If no match, create new user
+          user = await storage.createUser({
+            email: '', // Reddit doesn't provide email
+            username,
+            password: '',
+            provider: 'reddit',
+            providerId: profile.id,
+            avatar,
+            tier: 'free',
+            emailVerified: true // Reddit has no email, mark verified to allow login
+          });
         }
         
         return done(null, user);
@@ -218,11 +216,7 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
     (req, res) => {
       // Set auth token cookie with SameSite=None for third-party OAuth redirect
       if (req.user) {
-        const token = jwt.sign(
-          { userId: (req.user as User).id, email: (req.user as User).email },
-          JWT_SECRET_VALIDATED,
-          { expiresIn: '24h' }
-        );
+        const token = createToken(req.user as User);
         res.cookie('authToken', token, {
           httpOnly: true,
           secure: true,
@@ -245,11 +239,7 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
     (req, res) => {
       // Set auth token cookie with SameSite=None for third-party OAuth redirect
       if (req.user) {
-        const token = jwt.sign(
-          { userId: (req.user as User).id, email: (req.user as User).email },
-          JWT_SECRET_VALIDATED,
-          { expiresIn: '24h' }
-        );
+        const token = createToken(req.user as User);
         res.cookie('authToken', token, {
           httpOnly: true,
           secure: true,
@@ -275,11 +265,7 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
     (req, res) => {
       // Set auth token cookie with SameSite=None for third-party OAuth redirect
       if (req.user) {
-        const token = jwt.sign(
-          { userId: (req.user as User).id, email: (req.user as User).email },
-          JWT_SECRET_VALIDATED,
-          { expiresIn: '24h' }
-        );
+        const token = createToken(req.user as User);
         res.cookie('authToken', token, {
           httpOnly: true,
           secure: true, // Must be true for SameSite=None
