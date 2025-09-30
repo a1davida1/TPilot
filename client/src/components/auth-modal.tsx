@@ -383,8 +383,9 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
       url: '', // Handled in handleSocialAuth
       handler: async () => {
         try {
-          const { apiRequest } = await import('@/lib/queryClient');
-          const response = await apiRequest('GET', '/api/reddit/connect?intent=account-link', undefined);
+          const response = await fetch('/api/reddit/connect?intent=account-link', {
+            credentials: 'include'
+          });
 
           const data = await response.json();
           if (data.authUrl) {
