@@ -4,6 +4,8 @@ import express from 'express';
 import type { Express } from 'express';
 import { storage } from '../../server/storage.ts';
 
+type AuthRequest = import('../../server/middleware/auth.ts').AuthRequest;
+
 interface Perk {
   id: string;
   name: string;
@@ -29,13 +31,52 @@ interface MockUser {
 
 const mockUsers = new Map<number, MockUser>();
 let currentMockUser: MockUser | null = null;
+let useRealAuthMiddleware = false;
+
+const dbWhereMock = vi.hoisted(() => vi.fn().mockResolvedValue([] as Array<AuthRequest['user']>));
+const dbMock = vi.hoisted(() => {
+  const chain = {
+    select: vi.fn(() => chain),
+    from: vi.fn(() => chain),
+    where: dbWhereMock
+  };
+
+  return chain;
+});
+
+vi.mock('../../server/db.ts', () => ({
+  db: dbMock
+}));
+
+const { getActualAuthModule } = vi.hoisted(() => {
+  let cachedModule: typeof import('../../server/middleware/auth.ts') | null = null;
+
+  return {
+    getActualAuthModule: async () => {
+      if (!cachedModule) {
+        cachedModule = await vi.importActual<typeof import('../../server/middleware/auth.ts')>(
+          '../../server/middleware/auth.ts'
+        );
+      }
+
+      return cachedModule;
+    }
+  };
+});
 
 // Mock the auth middleware to simulate real behavior
-const mockAuthMiddleware = vi.fn((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
+const mockAuthMiddleware = vi.fn(async (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
   if (currentMockUser) {
-    req.user = currentMockUser;
+    (req as AuthRequest).user = currentMockUser as AuthRequest['user'];
+    return next();
   }
-  next();
+
+  if (!useRealAuthMiddleware) {
+    return next();
+  }
+
+  const actual = await getActualAuthModule();
+  return actual.authenticateToken(req as AuthRequest, res, next);
 });
 
 // Mock the pro-perks module
@@ -184,7 +225,9 @@ describe('Pro Resources Integration', () => {
     vi.clearAllMocks();
     mockUsers.clear();
     currentMockUser = null;
-    
+    useRealAuthMiddleware = false;
+    dbWhereMock.mockResolvedValue([]);
+
     // Create Express app with real pro-resources routes
     app = express();
     app.use(express.json());
@@ -198,6 +241,8 @@ describe('Pro Resources Integration', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+    currentMockUser = null;
+    useRealAuthMiddleware = false;
   });
 
   describe('GET /api/pro-resources', () => {
@@ -234,6 +279,28 @@ describe('Pro Resources Integration', () => {
         accessGranted: false,
         message: expect.stringContaining('Pro subscription required')
       });
+    });
+
+    it('should return 401 and log a warning for malformed bearer tokens', async () => {
+      useRealAuthMiddleware = true;
+      const { logger } = await import('../../server/middleware/security.ts');
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => logger);
+      const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => logger);
+
+      try {
+        const response = await request(app)
+          .get('/api/pro-resources')
+          .set('Authorization', 'Bearer mock-free-token')
+          .expect(401);
+
+        expect(response.body).toMatchObject({ error: 'Invalid token' });
+        expect(errorSpy).not.toHaveBeenCalled();
+        expect(warnSpy).toHaveBeenCalled();
+      } finally {
+        warnSpy.mockRestore();
+        errorSpy.mockRestore();
+        useRealAuthMiddleware = false;
+      }
     });
 
     it('should return pro resources for authenticated pro users', async () => {

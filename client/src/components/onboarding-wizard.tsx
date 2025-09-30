@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 // import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronRight, 
@@ -16,10 +16,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 
 interface OnboardingStep {
@@ -58,7 +56,8 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
     aiTone: 'friendly',
     protectionLevel: 'standard'
   });
-  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  // TODO: Implement step completion tracking
+  const [_completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const { toast } = useToast();
 
   const steps: OnboardingStep[] = [

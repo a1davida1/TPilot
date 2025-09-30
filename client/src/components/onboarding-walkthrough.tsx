@@ -15,7 +15,6 @@ import {
   Shield, 
   TrendingUp,
   Target,
-  Lightbulb,
   Gift
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -107,7 +106,8 @@ export function OnboardingWalkthrough({ isOpen, onClose, onComplete }: Onboardin
   const [currentStep, setCurrentStep] = useState(0);
   const [highlightedElement, setHighlightedElement] = useState<HTMLElement | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-  const { user } = useAuth();
+  // TODO: Implement user-specific tutorial state
+  const { user: _user } = useAuth();
 
   const step = tutorialSteps[currentStep];
   const progress = ((currentStep + 1) / tutorialSteps.length) * 100;

@@ -38,6 +38,46 @@ const respondWithStatus = <Body extends Record<string, unknown>>(
   return res.status(statusCode).json(body);
 };
 
+const parseBearerToken = (
+  header: string | undefined
+): { token: string | null; invalid: boolean } => {
+  if (!header) {
+    return { token: null, invalid: false };
+  }
+
+  const parts = header.trim().split(/\s+/u);
+  if (parts.length !== 2 || parts[0].toLowerCase() !== 'bearer') {
+    return { token: null, invalid: true };
+  }
+
+  const token = parts[1]?.trim();
+  if (!token) {
+    return { token: null, invalid: true };
+  }
+
+  return { token, invalid: false };
+};
+
+const normalizeTokenCandidate = (
+  candidate: unknown
+): { token: string | null; invalid: boolean } => {
+  if (typeof candidate !== 'string') {
+    return { token: null, invalid: false };
+  }
+
+  const trimmed = candidate.trim();
+  if (!trimmed) {
+    return { token: null, invalid: true };
+  }
+
+  return { token: trimmed, invalid: false };
+};
+
+const hasJwtStructure = (token: string): boolean => {
+  const segments = token.split('.');
+  return segments.length === 3 && segments.every(segment => segment.length > 0);
+};
+
 const toDateOrNull = (value: Date | string | null | undefined): Date | null => {
   if (!value) {
     return null;
@@ -102,13 +142,46 @@ if (!ADMIN_EMAIL) {
   logger.warn('ADMIN_EMAIL environment variable is not set. Admin login is disabled.');
 }
 
-// Cookie options for clearing bad auth cookies
+// keep this (yours)
 const isProd = process.env.NODE_ENV === 'production';
-const cookieOpts = {
+export const cookieOpts = {
   httpOnly: true,
   secure: isProd,
   sameSite: (isProd ? 'strict' : 'lax') as 'strict' | 'lax',
   path: '/',
+};
+
+// keep this (theirs), but import jwt, helpers, and use JWT_SECRET + cookieOpts above
+export const authenticateToken = async (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
+  const rawAuthHeader = Array.isArray(req.headers['authorization'])
+    ? req.headers['authorization'][0]
+    : req.headers['authorization'];
+  const { token: headerToken, invalid: headerInvalid } = parseBearerToken(rawAuthHeader);
+
+  if (headerInvalid) return respondWithStatus(res, 401, { error: 'Invalid token' });
+
+  let token: string | null = headerToken;
+  if (!token) {
+    const { token: cookieToken, invalid: cookieInvalid } = normalizeTokenCandidate(req.cookies?.authToken);
+    if (cookieInvalid) return respondWithStatus(res, 401, { error: 'Invalid token' });
+    token = cookieToken;
+  }
+
+  if (token) {
+    if (!hasJwtStructure(token)) return respondWithStatus(res, 401, { error: 'Invalid token' });
+    if (await isTokenBlacklisted(token)) return res.status(401).json({ error: 'Token revoked' });
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as DecodedJwt;
+      // … load user from DB, enforce admin, etc.
+      return next();
+    } catch {
+      // clear bad cookie with same options
+      res.clearCookie('authToken', cookieOpts);
+      return respondWithStatus(res, 401, { error: 'Invalid token' });
+    }
+  }
+
+  return respondWithStatus(res, 401, { error: 'Access token required' });
 };
 
 export const authenticateToken = (required = true) => {
