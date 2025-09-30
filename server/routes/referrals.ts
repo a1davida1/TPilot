@@ -1,10 +1,36 @@
 import type { Express, Router } from 'express';
 import { Router as createRouter } from 'express';
+import { z } from 'zod';
 import { ReferralManager } from '../lib/referral-system.js';
 import { authenticateToken, type AuthRequest } from '../middleware/auth.js';
 import { logger } from '../bootstrap/logger.js';
 
 export const referralRouter = createRouter();
+
+const applyReferralSchema = z.object({
+  referralCode: z
+    .string({
+      required_error: 'Referral code is required',
+      invalid_type_error: 'Referral code must be a string',
+    })
+    .trim()
+    .min(1, 'Referral code is required'),
+  applicant: z
+    .object({
+      email: z
+        .string({ required_error: 'Applicant email is required' })
+        .trim()
+        .min(1, 'Applicant email is required')
+        .email('Applicant email is invalid')
+        .transform((value) => value.toLowerCase()),
+      temporaryUserId: z
+        .string()
+        .trim()
+        .min(1, 'Temporary user ID cannot be empty')
+        .optional(),
+    }, { required_error: 'Applicant information is required' })
+    .strict({ message: 'Applicant information is invalid' }),
+});
 
 // GET /api/referral/code - Get user's referral code
 referralRouter.get('/code', authenticateToken, async (req: AuthRequest, res) => {
@@ -70,56 +96,71 @@ referralRouter.get('/summary', authenticateToken, async (req: AuthRequest, res) 
 });
 
 // POST /api/referral/apply - Apply a referral code (for new user signups)
-referralRouter.post('/apply', authenticateToken, async (req: AuthRequest, res) => {
+referralRouter.post('/apply', async (req, res) => {
   try {
-    const userId = req.user?.id;
-    const { referralCode } = req.body;
-    
-    if (!userId) {
-      return res.status(401).json({ error: 'Authentication required' });
+    const parseResult = applyReferralSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      const [firstIssue] = parseResult.error.issues;
+      const errorMessage = firstIssue?.message ?? 'Invalid referral request';
+      logger.warn('Invalid referral apply payload', {
+        error: errorMessage,
+        issues: parseResult.error.issues,
+      });
+      return res.status(400).json({
+        success: false,
+        error: errorMessage,
+      });
     }
 
-    if (!referralCode || typeof referralCode !== 'string') {
-      return res.status(400).json({ error: 'Referral code is required' });
-    }
+    const { referralCode, applicant } = parseResult.data;
+    const normalizedCode = referralCode.toUpperCase();
+    const sanitizedApplicant = {
+      email: applicant.email,
+      ...(applicant.temporaryUserId ? { temporaryUserId: applicant.temporaryUserId } : {}),
+    };
 
-    logger.info('Applying referral code', { userId, referralCode });
-    
-    const result = await ReferralManager.applyReferralCode(userId, referralCode);
-    
+    logger.info('Applying referral code', {
+      referralCode: normalizedCode,
+      applicant: {
+        email: sanitizedApplicant.email,
+        hasTemporaryId: Boolean(sanitizedApplicant.temporaryUserId),
+      },
+    });
+
+    const result = await ReferralManager.applyReferralCode(sanitizedApplicant, normalizedCode);
+
     if (result.success) {
-      logger.info('Referral code applied successfully', { 
-        userId, 
-        referralCode, 
-        referrerId: result.referrerId 
+      const status = result.pending ? 'recorded' : 'linked';
+      logger.info('Referral code processed', {
+        referralCode: normalizedCode,
+        referrerId: result.referrerId,
+        status,
       });
-      
-      res.json({ 
-        success: true, 
-        message: 'Referral code applied successfully',
-        referrerId: result.referrerId 
-      });
-    } else {
-      logger.warn('Failed to apply referral code', { 
-        userId, 
-        referralCode, 
-        error: result.error 
-      });
-      
-      res.status(400).json({ 
-        success: false, 
-        error: result.error || 'Failed to apply referral code' 
+
+      return res.json({
+        success: true,
+        status,
+        referrerId: result.referrerId,
       });
     }
+
+    logger.warn('Failed to apply referral code', {
+      referralCode: normalizedCode,
+      error: result.error,
+    });
+
+    return res.status(400).json({
+      success: false,
+      error: result.error || 'Failed to apply referral code',
+    });
 
   } catch (error) {
-    logger.error('Error applying referral code', { 
+    logger.error('Error applying referral code', {
       error: error instanceof Error ? error.message : String(error),
-      userId: req.user?.id,
-      referralCode: req.body?.referralCode 
+      referralCode: req.body?.referralCode
     });
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       success: false,
       error: 'Internal server error while applying referral code' 
     });
