@@ -29,7 +29,7 @@ import { createLocalDownloadRouter } from "./routes/downloads";
 
 // Core imports
 import { storage } from "./storage";
-import { setupAdminRoutes } from "./admin-routes";
+import { setupAdminRoutes, requireAdmin } from "./admin-routes";
 import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers";
 import { deriveStripeConfig } from "./payments/stripe-config";
 import { buildUploadUrl } from "./lib/uploads";
@@ -112,6 +112,17 @@ interface SaveContentHandlerDependencies {
 interface SessionWithReddit extends Session {
   redditOAuthState?: string;
 }
+
+const SENSITIVE_SESSION_KEYS: ReadonlySet<string> = new Set([
+  'cookie',
+  'passport',
+  'user',
+  'csrfSecret',
+  'authToken',
+  'token',
+  'accessToken',
+  'refreshToken'
+]);
 
 // ==========================================
 // PRO RESOURCES ROUTES
@@ -1440,16 +1451,31 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // Reddit Communities Admin Routes (temporarily disabled for compilation)
   // TODO: Implement storage methods and re-enable routes
 
-  // Debug endpoint for Reddit OAuth session
-  app.get('/api/debug/reddit-session', (req, res) => {
-    res.json({
-      sessionID: req.sessionID,
-      redditState: (req.session as SessionWithReddit).redditOAuthState,
-      hasSession: !!req.session,
-      cookies: req.headers.cookie,
-      sessionData: req.session
-    });
-  });
+  // Debug endpoint for Reddit OAuth session (non-production diagnostics only)
+  if (!IS_PRODUCTION) {
+    app.get(
+      '/api/debug/reddit-session',
+      authenticateToken(true),
+      requireAdmin as express.RequestHandler,
+      (req, res) => {
+        const session = req.session as SessionWithReddit | undefined;
+        const sessionRecord = session as Record<string, unknown> | undefined;
+        const sessionKeys = sessionRecord
+          ? Object.keys(sessionRecord).filter(key => !SENSITIVE_SESSION_KEYS.has(key))
+          : [];
+        const hasUserKey = sessionRecord !== undefined
+          && Object.prototype.hasOwnProperty.call(sessionRecord, 'user');
+
+        res.json({
+          sessionID: typeof req.sessionID === 'string' ? req.sessionID : null,
+          hasSession: Boolean(session),
+          redditOAuthState: session?.redditOAuthState ?? null,
+          sessionIncludesUser: hasUserKey,
+          sessionKeys
+        });
+      }
+    );
+  }
 
   // ==========================================
   // PRODUCTION API ENDPOINTS - REAL IMPLEMENTATIONS

@@ -1,0 +1,630 @@
+diff --git a/server/caption/geminiPipeline.ts b/server/caption/geminiPipeline.ts
+index 17b8e9e1fac894374f5e17f5557b3eb34364f709..4f69c39ea38bd720428caaaef249960945a77094 100644
+--- a/server/caption/geminiPipeline.ts
++++ b/server/caption/geminiPipeline.ts
+@@ -111,50 +111,67 @@ const VARIANT_RETRY_LIMIT = 4;
+ const CAPTION_KEY_LENGTH = 80;
+ const TITLE_MAX_LENGTH = 64;
+ const TITLE_MAX_WORDS = 9;
+ const TITLE_MIN_LENGTH = 4;
+ const LOWERCASE_WORDS = new Set([
+   "and",
+   "or",
+   "the",
+   "with",
+   "a",
+   "an",
+   "of",
+   "to",
+   "for",
+   "in",
+   "on",
+   "at",
+   "by"
+ ]);
+ 
+ const safeFallbackCaption = "Check out this amazing content!";
+ const safeFallbackAlt = "Detailed alt text describing the scene.";
+ const safeFallbackHashtags = ["#content", "#creative", "#amazing"];
+ const safeFallbackCta = "Check it out";
+ 
++function buildVariantFallbackBatch(params: {
++  style?: string;
++  mood?: string;
++  nsfw?: boolean;
++}): Record<string, unknown>[] {
++  return Array.from({ length: VARIANT_TARGET }, (_, index) => ({
++    caption: `${safeFallbackCaption} (fallback ${index + 1})`,
++    alt: `${safeFallbackAlt} (fallback ${index + 1})`,
++    hashtags: [...safeFallbackHashtags],
++    cta: safeFallbackCta,
++    mood: params.mood ?? "engaging",
++    style: params.style ?? "authentic",
++    safety_level: "normal",
++    nsfw: params.nsfw ?? false,
++  }));
++}
++
+ const MIN_IMAGE_BYTES = 32;
+ 
+ function captionKey(caption: string): string {
+   return caption.trim().slice(0, 80).toLowerCase();
+ }
+ 
+ function hintSnippet(caption: string): string {
+   const normalized = caption.trim().replace(/\s+/g, " ");
+   return normalized.length > 60 ? `${normalized.slice(0, 57)}…` : normalized;
+ }
+ 
+ function uniqueCaptionKey(caption: string): string {
+   return caption.trim().slice(0, CAPTION_KEY_LENGTH).toLowerCase();
+ }
+ 
+ function truncateForHint(caption: string): string {
+   const trimmed = caption.trim();
+   if (trimmed.length <= 60) {
+     return trimmed;
+   }
+   return `${trimmed.slice(0, 57)}...`;
+ }
+ 
+ function toTitleCase(input: string): string {
+   return input
+diff --git a/server/caption/geminiPipeline.ts b/server/caption/geminiPipeline.ts
+index 17b8e9e1fac894374f5e17f5557b3eb34364f709..4f69c39ea38bd720428caaaef249960945a77094 100644
+--- a/server/caption/geminiPipeline.ts
++++ b/server/caption/geminiPipeline.ts
+@@ -588,50 +605,88 @@ function levenshtein(a: string, b: string): number {
+ 
+ function captionsAreSimilar(a: string, b: string): boolean {
+   const normalizedA = normalizeCaptionText(a);
+   const normalizedB = normalizeCaptionText(b);
+ 
+   if (!normalizedA && !normalizedB) return true;
+   if (!normalizedA || !normalizedB) return normalizedA === normalizedB;
+   if (normalizedA === normalizedB) return true;
+ 
+   const distance = levenshtein(normalizedA, normalizedB);
+   const maxLen = Math.max(normalizedA.length, normalizedB.length);
+   if (maxLen === 0) return true;
+ 
+   const similarityScore = 1 - distance / maxLen;
+   if (similarityScore > 0.9) return true;
+ 
+   const tokensA = new Set(normalizedA.split(" ").filter(Boolean));
+   const tokensB = new Set(normalizedB.split(" ").filter(Boolean));
+   const intersectionSize = [...tokensA].filter(token => tokensB.has(token)).length;
+   const unionSize = new Set([...tokensA, ...tokensB]).size || 1;
+   const jaccard = intersectionSize / unionSize;
+ 
+   return jaccard > 0.82;
+ }
+ 
++function collectDuplicateCaptions(
++  variants: z.infer<typeof CaptionArray>
++): string[] {
++  const seen = new Map<string, string>();
++  const duplicates = new Set<string>();
++
++  for (const variant of variants) {
++    const normalized = normalizeCaptionText(variant.caption);
++    if (!normalized) {
++      continue;
++    }
++
++    if (seen.has(normalized)) {
++      duplicates.add(variant.caption);
++      const original = seen.get(normalized);
++      if (original) {
++        duplicates.add(original);
++      }
++    } else {
++      seen.set(normalized, variant.caption);
++    }
++  }
++
++  return [...duplicates];
++}
++
++function buildDuplicateRetryHintMessage(duplicates: string[]): string {
++  if (duplicates.length === 0) {
++    return "Need more variety across tone, structure, concrete imagery, and CTA.";
++  }
++
++  const primary = truncateForHint(
++    duplicates[duplicates.length - 1] ?? duplicates[0]
++  );
++
++  return `You already wrote "${primary}". Deliver five completely different captions with fresh imagery, CTAs, and tone.`;
++}
++
+ export async function extractFacts(imageUrl: string): Promise<Record<string, unknown>> {
+   try {
+     console.error('Starting fact extraction for image:', imageUrl.substring(0, 100) + '...');
+     const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("extract.txt");
+     const vision = getActiveVisionModel();
+ 
+     // Handle data URLs differently from regular URLs
+     let imageData: string;
+     let mimeType = "image/jpeg";
+ 
+     if (imageUrl.startsWith('data:')) {
+       // Extract base64 data from data URL - use indexOf to find first comma only
+       const commaIndex = imageUrl.indexOf(',');
+       if (commaIndex === -1) {
+         throw new Error('Invalid data URL format - missing comma separator');
+       }
+ 
+       const header = imageUrl.substring(0, commaIndex);
+       imageData = imageUrl.substring(commaIndex + 1);
+ 
+       // Extract mime type from header
+       const mimeMatch = header.match(/data:([^;]+)/);
+       if (mimeMatch) {
+         mimeType = mimeMatch[1];
+       }
+diff --git a/server/caption/geminiPipeline.ts b/server/caption/geminiPipeline.ts
+index 17b8e9e1fac894374f5e17f5557b3eb34364f709..4f69c39ea38bd720428caaaef249960945a77094 100644
+--- a/server/caption/geminiPipeline.ts
++++ b/server/caption/geminiPipeline.ts
+@@ -799,110 +854,147 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
+       : "engaging";
+     variant.style = typeof variant.style === "string" && variant.style.trim().length >= 2
+       ? variant.style
+       : "authentic";
+     variant.cta = typeof variant.cta === "string" && variant.cta.trim().length >= 2
+       ? variant.cta
+       : "Check it out";
+ 
+     const alt = typeof variant.alt === "string" && variant.alt.trim().length >= 20
+       ? variant.alt
+       : "Engaging social media content that highlights the visual story.";
+     variant.alt = alt;
+ 
+     const hashtags = Array.isArray(variant.hashtags)
+       ? variant.hashtags
+           .map(tag => (typeof tag === "string" ? tag.trim() : ""))
+           .filter(tag => tag.length > 0)
+       : [];
+     variant.hashtags = hashtags.length > 0 ? hashtags.slice(0, 10) : ["#content", "#creative", "#amazing"];
+ 
+     variant.nsfw = typeof variant.nsfw === "boolean" ? variant.nsfw : false;
+ 
+     return variant;
+   };
+ 
+-  const buildUserPrompt = (varietyHint: string | undefined, existingCaptions: string[], duplicateCaption?: string): string => {
+-    const lines = [
+-      `PLATFORM: ${params.platform}`,
+-      `VOICE: ${params.voice}`
+-    ];
+-
+-    if (params.style) lines.push(`STYLE: ${params.style}`);
+-    if (params.mood) lines.push(`MOOD: ${params.mood}`);
++  const buildUserPrompt = (
++    varietyHint: string | undefined,
++    existingCaptions: string[],
++    duplicateCaption?: string
++  ): string => {
++    const styleValue = params.style?.trim() && params.style.trim().length > 0
++      ? params.style.trim()
++      : "authentic";
++    const moodValue = params.mood?.trim() && params.mood.trim().length > 0
++      ? params.mood.trim()
++      : "engaging";
+ 
+-    lines.push(`IMAGE_FACTS: ${JSON.stringify(params.facts)}`);
+-    lines.push(`NSFW: ${params.nsfw ?? false}`);
++    const hintSegments: string[] = [];
+ 
+-    const hintParts: string[] = [];
+-    
+-    // If we have a duplicate, add it as primary hint
+     if (duplicateCaption) {
+-      hintParts.push(`You already wrote "${truncateForHint(duplicateCaption)}". Create something completely different.`);
++      hintSegments.push(
++        `You already wrote "${truncateForHint(
++          duplicateCaption
++        )}". Create something completely different.`
++      );
+     }
+-    
+-    if (varietyHint) {
+-      hintParts.push(varietyHint.trim());
++
++    if (varietyHint && varietyHint.trim().length > 0) {
++      hintSegments.push(varietyHint.trim());
+     }
+-    
++
+     if (existingCaptions.length > 0 && !duplicateCaption) {
+-      hintParts.push(
+-        `Avoid repeating or lightly editing these captions: ${existingCaptions.join(" | ")}.`
++      hintSegments.push(
++        `Avoid repeating or lightly editing these captions: ${existingCaptions.join(
++          " | "
++        )}.`
+       );
+     }
+-    hintParts.push("Provide five options that vary tone, structure, and specific imagery.");
+ 
+-    const combinedHint = hintParts.filter(Boolean).join(" ");
+-    const serializedHint = serializePromptField(combinedHint, { block: true });
+-    lines.push(`HINT:${serializedHint}`);
++    hintSegments.push(
++      "Provide five options that vary tone, structure, and specific imagery."
++    );
+ 
+-    return lines.join("\n");
++    const serializedHint = `HINT:${serializePromptField(
++      hintSegments.join(" "),
++      { block: true }
++    )}`;
++
++    const lines = [
++      `PLATFORM: ${params.platform}`,
++      `VOICE: ${params.voice}`,
++      `STYLE: ${styleValue}`,
++      `MOOD: ${moodValue}`,
++      `IMAGE_FACTS: ${JSON.stringify(params.facts)}`,
++      `NSFW: ${params.nsfw ?? false}`,
++      serializedHint,
++    ];
++
++    return lines
++      .filter((line): line is string => Boolean(line && line.trim().length > 0))
++      .join("\n");
+   };
+ 
+-  const fetchVariants = async (varietyHint: string | undefined, existingCaptions: string[], duplicateCaption?: string) => {
++  const fetchVariants = async (
++    varietyHint: string | undefined,
++    existingCaptions: string[],
++    duplicateCaption?: string
++  ) => {
+     const user = buildUserPrompt(varietyHint, existingCaptions, duplicateCaption);
+-    
+-    // Apply tone to system prompt
+-    const sysWithTone = buildSystemPrompt(sys, { style: params.style, mood: params.mood });
+-    
++
++    const sysWithTone = buildSystemPrompt(sys, {
++      style: params.style,
++      mood: params.mood,
++    });
++
++    const fallbackBatch = buildVariantFallbackBatch({
++      style: params.style,
++      mood: params.mood,
++      nsfw: params.nsfw,
++    });
++
++    let candidates: unknown[] = fallbackBatch;
++
+     try {
+       const res = await textModel.generateContent([
+-        { text: `${sysWithTone}\n${guard}\n${prompt}\n${user}` }
++        { text: `${sysWithTone}\n${guard}\n${prompt}\n${user}` },
+       ]);
+-      
++
+       const rawText = await resolveResponseText(res);
+       if (!rawText || rawText.trim().length === 0) {
+-        console.error('Gemini: empty response received');
+-        throw new Error('Gemini: empty response');
++        console.error("Gemini: empty response received");
++      } else {
++        const parsed = stripToJSON(rawText) as unknown;
++        if (Array.isArray(parsed)) {
++          candidates = parsed;
++        }
+       }
+-
+-      const json = stripToJSON(rawText) as unknown;
+-      return Array.isArray(json) ? json : [];
+     } catch (error) {
+       console.error("Gemini textModel.generateContent failed:", error);
+-      throw error;
+     }
++
++    return candidates;
+   };
+ 
+   const uniqueVariants: z.infer<typeof CaptionItem>[] = [];
+   const existingCaptions: string[] = [];
+   const duplicatesThisAttempt: string[] = [];
+   const isTest = process.env.NODE_ENV === 'test';
+   const maxAttempts = isTest ? 2 : 5; // Allow 2 attempts in test for retry logic testing
+ 
+   for (let attempt = 0; attempt < maxAttempts && uniqueVariants.length < 5; attempt += 1) {
+     const needed = 5 - uniqueVariants.length;
+     const varietyHint = attempt === 0
+       ? params.hint
+       : (() => {
+           // Build complete base hint with variety clause first, then pass to buildRetryHint
+           const baseHintWithVariety = `${params.hint ? `${params.hint} ` : ""}Need much more variety across tone, structure, and imagery.`;
+           return buildRetryHint(baseHintWithVariety, duplicatesThisAttempt, needed);
+         })();
+ 
+     // Pass last duplicate if we have one from previous attempt
+     const lastDuplicate = duplicatesThisAttempt.length > 0 ? duplicatesThisAttempt[duplicatesThisAttempt.length - 1] : undefined;
+     const rawVariants = await fetchVariants(varietyHint, existingCaptions, lastDuplicate);
+     duplicatesThisAttempt.length = 0; // Reset for this attempt
+ 
+     for (const raw of rawVariants) {
+       if (uniqueVariants.length >= 5) break;
+diff --git a/server/caption/geminiPipeline.ts b/server/caption/geminiPipeline.ts
+index 17b8e9e1fac894374f5e17f5557b3eb34364f709..4f69c39ea38bd720428caaaef249960945a77094 100644
+--- a/server/caption/geminiPipeline.ts
++++ b/server/caption/geminiPipeline.ts
+@@ -1003,135 +1095,147 @@ function normalizeGeminiFinal(
+     }
+     if (hashtags.length < fallback.length) {
+       hashtags = [...fallback];
+     }
+     final.hashtags = hashtags;
+   }
+ 
+   const trimmedCaption = typeof final.caption === "string" ? final.caption.trim() : "";
+   final.caption = trimmedCaption.length > 0 ? trimmedCaption : "Sharing something I'm genuinely proud of.";
+ }
+ 
+ function truncateReason(reason: string, maxLength = 100): string {
+   return reason.length > maxLength ? `${reason.slice(0, maxLength - 3)}...` : reason;
+ }
+ 
+ async function requestGeminiRanking(
+   model: GenerativeModel,
+   variantsInput: z.infer<typeof CaptionArray>,
+   serializedVariants: string,
+   promptBlock: string,
+   platform?: string,
+   extraHint?: string,
+   facts?: Record<string, unknown>
+ ): Promise<unknown> {
+   const hintBlock = extraHint && extraHint.trim().length > 0 ? `\nREMINDER: ${extraHint.trim()}` : "";
+-  let res;
+-  try {
+-    res = await model.generateContent([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
+-  } catch (error) {
+-    console.error('Gemini textModel invocation failed:', error);
+-    throw error;
+-  }
+-  const rawText = await resolveResponseText(res);
+-  const serialized = typeof rawText === 'string'
+-    ? rawText
+-    : typeof res === 'string'
+-      ? res
+-      : JSON.stringify(res);
+-
+-  if (typeof serialized === 'string' && serialized.trim().length === 0) {
+-    console.error('Gemini: empty response received during ranking');
+-    throw new Error('Gemini: empty response');
+-  }
+-
+-  let json = stripToJSON(serialized) as unknown;
+-
+-
+-  const defaultVariant = variantsInput[0] ??
++  const defaultVariant =
++    variantsInput[0] ??
+     CaptionItem.parse({
+       caption: safeFallbackCaption,
+       alt: safeFallbackAlt,
+       hashtags: [...safeFallbackHashtags],
+       cta: safeFallbackCta,
+       mood: "engaging",
+       style: "authentic",
+       safety_level: "normal",
+       nsfw: false,
+     });
+   const defaultScores = [5, 4, 3, 2, 1];
++  const fallbackResult = {
++    winner_index: 0,
++    scores: [...defaultScores],
++    reason: "Gemini unavailable - using fallback ranking",
++    final: { ...defaultVariant },
++  };
++
++  let res: unknown;
++  try {
++    res = await model.generateContent([
++      { text: `${promptBlock}${hintBlock}\n${serializedVariants}` },
++    ]);
++  } catch (error) {
++    console.error("Gemini textModel invocation failed:", error);
++    return fallbackResult;
++  }
++
++  const resolved = await resolveResponseText(res);
++  let textOutput: string | null = null;
++  if (typeof resolved === "string" && resolved.trim().length > 0) {
++    textOutput = resolved;
++  } else if (typeof res === "string" && res.trim().length > 0) {
++    textOutput = res;
++  } else {
++    console.error("Gemini: empty ranking response");
++  }
++
++  let json: unknown =
++    typeof textOutput === "string" ? stripToJSON(textOutput) : null;
++
++  if (!json) {
++    json = { ...fallbackResult };
++  }
+ 
+-  if(Array.isArray(json)) {
++  if (Array.isArray(json)) {
+     const winner = json[0] as Record<string, unknown> | undefined;
+     json = {
+       winner_index: 0,
+       scores: [...defaultScores],
+       reason: "Selected based on engagement potential",
+-      final: winner ?? { ...defaultVariant }
++      final: winner ?? { ...defaultVariant },
+     };
+   }
+ 
+-
+   if (json && typeof json === "object" && !Array.isArray(json)) {
+     const container = json as Record<string, unknown>;
+ 
+     const rawWinner = container.winner_index;
+     const normalizedWinner =
+       typeof rawWinner === "number" && Number.isFinite(rawWinner)
+         ? Math.min(Math.max(Math.trunc(rawWinner), 0), defaultScores.length - 1)
+         : 0;
+     container.winner_index = normalizedWinner;
+ 
+     const rawScores = container.scores;
+     const normalizedScores =
+       Array.isArray(rawScores) &&
+       rawScores.length === defaultScores.length &&
+       rawScores.every(score => typeof score === "number" && Number.isFinite(score))
+         ? rawScores.map(score => Number(score))
+         : [...defaultScores];
+     container.scores = normalizedScores;
+ 
+     const rawReason = typeof container.reason === "string" ? container.reason.trim() : "";
+-    const reasonText = rawReason.length > 0 ? rawReason : "Selected for authenticity and compliance";
++    const reasonText = rawReason.length > 0 ? rawReason : fallbackResult.reason;
+     container.reason = truncateReason(reasonText);
+ 
+     const fallbackIndex = container.winner_index as number;
+     const winnerVariant =
+       variantsInput[fallbackIndex] ?? variantsInput[0] ?? defaultVariant;
+ 
+     const providedFinal = container.final;
+     const normalizedFinal =
+       providedFinal && typeof providedFinal === "object"
+         ? { ...(providedFinal as Record<string, unknown>) }
+         : { ...winnerVariant };
+     container.final = normalizedFinal;
+   }
+ 
+-  if((json as Record<string, unknown>).final){
++  if ((json as Record<string, unknown>).final) {
+     const final = (json as { final: Record<string, unknown> }).final;
+     normalizeGeminiFinal(final, platform, facts);
+   }
++
+   return json;
+ }
+ 
+ export async function rankAndSelect(
+   variants: z.infer<typeof CaptionArray>,
+   params?: { platform?: string; facts?: Record<string, unknown> }
+ ): Promise<z.infer<typeof RankResult>> {
+   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
+   const promptBlock = `${sys}\n${guard}\n${prompt}`;
+   const serializedVariants = JSON.stringify(variants);
+   const textModel = getActiveTextModel();
+ 
+   const first = await requestGeminiRanking(textModel, variants, serializedVariants, promptBlock, params?.platform, undefined, params?.facts);
+   let parsed = RankResult.parse(first);
+   const violations = detectVariantViolations(parsed.final);
+ 
+   if (violations.length === 0) {
+     return parsed;
+   }
+ 
+   const rerank = await requestGeminiRanking(
+     textModel,
+     variants,
+     serializedVariants,
+     promptBlock,
+diff --git a/server/caption/geminiPipeline.ts b/server/caption/geminiPipeline.ts
+index 17b8e9e1fac894374f5e17f5557b3eb34364f709..4f69c39ea38bd720428caaaef249960945a77094 100644
+--- a/server/caption/geminiPipeline.ts
++++ b/server/caption/geminiPipeline.ts
+@@ -1202,63 +1306,90 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
+ 
+     if (!geminiEnabled) {
+       console.warn("Gemini API not available, falling back to OpenAI");
+       return resolveWithOpenAIFallback('OpenAI fallback selected because Gemini API is not configured');
+     }
+ 
+     const tone = extractToneOptions(toneRest);
+     const personaTone: ToneOptions = {
+       ...tone,
+       ...(typeof style === "string" ? { style } : {}),
+       ...(typeof mood === "string" ? { mood } : {}),
+     };
+     const facts = await extractFacts(imageUrl);
+     const baseVariantParams = {
+       platform,
+       voice,
+       facts,
+       nsfw,
+       ...personaTone,
+     } satisfies GeminiVariantParams;
+     let variants = await generateVariants({ ...baseVariantParams });
+     variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
+     let ranked = await rankAndSelect(variants, { platform, facts });
+     let out = ranked.final;
+ 
++    let duplicateRetryUsed = false;
++    const retryForDuplicates = async () => {
++      if (duplicateRetryUsed) {
++        return;
++      }
++
++      const duplicates = collectDuplicateCaptions(variants);
++      if (duplicates.length === 0) {
++        return;
++      }
++
++      duplicateRetryUsed = true;
++      const duplicateHint = buildDuplicateRetryHintMessage(duplicates);
++
++      variants = await generateVariants({
++        ...baseVariantParams,
++        hint: duplicateHint,
++      });
++      variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
++      ranked = await rankAndSelect(variants, { platform, facts });
++      out = ranked.final;
++    };
++
++    await retryForDuplicates();
++
+     const enforceCoverage = async () => {
+       let attempts = 0;
+       let coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
+       while (!coverage.ok && coverage.hint && attempts < 2) {
+         attempts += 1;
+         variants = await generateVariants({ ...baseVariantParams, hint: coverage.hint });
+         variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
+         ranked = await rankAndSelect(variants, { platform, facts });
+         out = ranked.final;
+         coverage = ensureFactCoverage({ facts, caption: out.caption, alt: out.alt });
++        await retryForDuplicates();
+       }
+     };
+ 
+     await enforceCoverage();
+ 
+     const err = platformChecks(platform, out);
+     if (err) {
+       variants = await generateVariants({
+         ...baseVariantParams,
+         hint: `Fix: ${err}. Use IMAGE_FACTS nouns/colors/setting explicitly.`,
+       });
+       variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
+       ranked = await rankAndSelect(variants, { platform, facts });
+       out = ranked.final;
++      await retryForDuplicates();
+     }
+ 
+     const enriched = enrichWithTitleCandidates(out, { variants, ranked });
+     out = enriched.final;
+     if (enriched.ranked) {
+       ranked = enriched.ranked;
+     }
+ 
+     return { provider: 'gemini', facts, variants, ranked, final: out, titles: out.titles };
+   } catch (error) {
+     console.error('Gemini pipeline failed, using OpenAI fallback:', error);
+     return resolveWithOpenAIFallback('OpenAI fallback selected after Gemini pipeline error');
+   }
+ }

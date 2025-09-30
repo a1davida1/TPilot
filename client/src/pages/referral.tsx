@@ -4,8 +4,10 @@ import { Copy, Check, Share2, Users, DollarSign, Gift, Sparkles } from 'lucide-r
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import type { ApiError } from '@/lib/queryClient';
@@ -131,7 +133,7 @@ export default function ReferralPage() {
         description: 'Referral code copied to clipboard',
       });
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
+    } catch (_error) {
       toast({
         title: 'Failed to copy',
         description: 'Please try selecting and copying manually',
@@ -156,7 +158,7 @@ export default function ReferralPage() {
         title: 'Copied!',
         description: 'Referral link copied to clipboard',
       });
-    } catch (err) {
+    } catch (_error) {
       toast({
         title: 'Failed to copy',
         description: 'Please try selecting and copying manually',
@@ -182,7 +184,7 @@ export default function ReferralPage() {
           text: 'Get exclusive content creation tools and earn rewards with my referral code.',
           url: referralUrl,
         });
-      } catch (err) {
+      } catch (_error) {
         handleCopyReferralUrl();
       }
     } else {
@@ -232,6 +234,84 @@ export default function ReferralPage() {
               <CardTitle>Redirecting to login…</CardTitle>
               <CardDescription>Sign in to access your referral dashboard and track rewards.</CardDescription>
             </CardHeader>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoadingData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-100 dark:from-gray-900 dark:via-purple-950/20 dark:to-pink-950/20">
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-yellow-400/5 opacity-60"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,192,203,0.1),transparent_50%)]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(255,235,59,0.05),transparent_50%)]"></div>
+        </div>
+        <div className="relative container mx-auto px-4 py-8 z-10 max-w-6xl">
+          <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-pink-200/50 dark:border-pink-800/30">
+            <CardHeader>
+              <CardTitle>Loading referral insights…</CardTitle>
+              <CardDescription>We&apos;re syncing your latest rewards and performance metrics.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="rounded-lg border border-pink-200/50 dark:border-pink-800/40 bg-pink-50/60 dark:bg-pink-950/20 p-4"
+                  >
+                    <Skeleton className="h-4 w-24 mb-4" />
+                    <Skeleton className="h-8 w-20" />
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="rounded-lg border border-pink-200/50 dark:border-pink-800/40 bg-pink-50/60 dark:bg-pink-950/20 p-6 space-y-4">
+                  <Skeleton className="h-6 w-32" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-48" />
+                </div>
+                <div className="rounded-lg border border-pink-200/50 dark:border-pink-800/40 bg-pink-50/60 dark:bg-pink-950/20 p-6 space-y-3">
+                  <Skeleton className="h-6 w-36" />
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-purple-100 dark:from-gray-900 dark:via-purple-950/20 dark:to-pink-950/20">
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-yellow-400/5 opacity-60"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,192,203,0.1),transparent_50%)]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(255,235,59,0.05),transparent_50%)]"></div>
+        </div>
+        <div className="relative container mx-auto px-4 py-8 z-10 max-w-6xl">
+          <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-destructive/30">
+            <CardHeader>
+              <CardTitle>We couldn&apos;t load your referral data</CardTitle>
+              <CardDescription>Please try again or contact support if the issue persists.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
+                <AlertTitle>Something went wrong</AlertTitle>
+                <AlertDescription>
+                  {aggregatedError?.message ?? 'Unable to load referral stats'}
+                </AlertDescription>
+              </Alert>
+              <div className="flex justify-end">
+                <Button onClick={handleRetry} variant="outline" data-testid="retry-referral-stats">
+                  Try again
+                </Button>
+              </div>
+            </CardContent>
           </Card>
         </div>
       </div>
