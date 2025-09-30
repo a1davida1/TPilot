@@ -24,7 +24,8 @@ import { useMetrics } from "@/hooks/use-metrics";
 export function PremiumLanding() {
   const [isVisible, setIsVisible] = useState(false);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
-  const { data: metrics, isLoading: metricsLoading } = useMetrics();
+  // TODO: Display loading state for metrics
+  const { data: metrics, isLoading: _metricsLoading } = useMetrics();
 
   useEffect(() => {
     setIsVisible(true);

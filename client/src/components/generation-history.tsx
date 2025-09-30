@@ -3,9 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Clock, Copy, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 
 interface ContentGeneration {
   id: number;

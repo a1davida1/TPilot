@@ -28,9 +28,10 @@ interface GettingStartedProps {
   onSetupLater?: () => void;
 }
 
-export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom = false, onSetupLater }: GettingStartedProps) {
+export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom: _isAtBottom = false, onSetupLater }: GettingStartedProps) {
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
-  const [activeStep, setActiveStep] = useState<string | null>(null);
+  // TODO: Implement step expansion/details view
+  const [_activeStep, setActiveStep] = useState<string | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
 
   const steps = [

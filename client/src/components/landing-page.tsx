@@ -31,11 +31,13 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ showLoginModal = false, loginModalMode = 'login' }: LandingPageProps) {
-  const [scrollY, setScrollY] = useState(0);
+  // TODO: Implement parallax scroll effects
+  const [_scrollY, setScrollY] = useState(0);
   const [showAuthModal, setShowAuthModal] = useState(showLoginModal);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>(loginModalMode);
   const [, setLocation] = useLocation();
-  const { data: metrics, isLoading, isError } = useMetrics();
+  // TODO: Display live metrics on landing page
+  const { data: _metrics, isLoading: _isLoading, isError: _isError } = useMetrics();
   
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);

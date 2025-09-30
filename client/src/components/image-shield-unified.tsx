@@ -14,20 +14,17 @@ import {
   Upload, 
   Download, 
   Shield, 
-  Image as ImageIcon, 
   AlertCircle,
   CheckCircle,
   X,
   Eye,
-  EyeOff,
   RefreshCw,
   Sparkles,
   Lock,
   Trash2,
   Tag,
   Crown,
-  Zap,
-  Plus
+  Zap
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -58,17 +55,20 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
   const [preset, setPreset] = useState<'light' | 'standard' | 'heavy'>('standard');
   const [customSettings, setCustomSettings] = useState<ImageProcessingOptions>(protectionPresets.standard);
   const [useCustom, setUseCustom] = useState(false);
-  const [showComparison, setShowComparison] = useState(false);
+  // TODO: Implement before/after comparison UI
+  const [_showComparison, setShowComparison] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string>('');
-  const [selectedImage, setSelectedImage] = useState<MediaAsset | null>(null);
+  // TODO: Implement image detail modal for gallery
+  const [_selectedImage, setSelectedImage] = useState<MediaAsset | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const isProUser = userTier === 'pro';
-  const showGallery = isProUser; // Only Pro users see gallery
+  // TODO: Implement gallery view for pro users
+  const _showGallery = isProUser;
 
   // Authenticated API request helper
   const authenticatedRequest = async (url: string, method: string = 'GET', data?: unknown) => {

@@ -1,0 +1,63 @@
+2) Reddit OAuth not completing (auth/middleware/DB)
+
+What your logs imply:
+
+misconfigured csrf on /api/csrf-token: csurf is mounted before cookie-parser/session or without a cookie option.
+
+Fix order and config:
+
+// server/app.ts
+app.set('trust proxy', 1);
+app.use(cookieParser(process.env.COOKIE_SECRET));
+app.use(session({ secret: process.env.SESSION_SECRET!, resave:false, saveUninitialized:false,
+  cookie: { secure: true, sameSite: 'lax' } }));
+app.use(csrf({ cookie: { key: 'csrf', httpOnly: true, secure: true, sameSite: 'lax' } }));
+app.get('/api/csrf-token', (req,res)=> res.json({ csrfToken: req.csrfToken() }));
+
+
+jwt malformed: you’re attempting to verify an absent or garbage token.
+
+Harden the guard and error:
+
+// server/middleware/auth.ts
+const raw = req.cookies.authToken ?? req.get('authorization')?.split(' ')[1];
+if (!raw) return res.status(401).json({ error: 'Access token required' });
+try { req.user = jwt.verify(raw, process.env.JWT_SECRET!); }
+catch { return res.status(401).json({ error: 'Invalid token' }); }
+next();
+
+
+OAuth cookie not returning after Reddit redirect.
+
+Cross-site redirects require SameSite=None; Secure. Set this only on the OAuth callback.
+
+// server/auth.ts (reddit callback handler)
+res.cookie('authToken', token, {
+  httpOnly: true,
+  secure: true,
+  sameSite: 'none',   // important for third-party redirect
+  maxAge: 86400_000,
+  path: '/',
+});
+
+
+DB ops failing:
+
+update "users" set where "users"."id" = $1 → your “delete user” or account-update builds an empty patch.
+
+// server/storage.ts (or users repo)
+const patch = pick(updates, ['email','username','subscription_status','provider','provider_id','avatar','deleted_at']);
+if (!Object.keys(patch).length) throw new Error('No fields to update');
+await db.update(users).set(patch).where(eq(users.id, id));
+
+
+Inserts failing on signup/OAuth: include provider fields and handle uniques with upsert.
+
+// create or connect reddit user
+await db.insert(users).values({
+  username, email, provider: 'reddit', provider_id: redditId, avatar,
+  tier: 'free', subscription_status: 'active'
+}).onConflictDoUpdate({
+  target: users.provider_id, // or unique(email)
+  set: { avatar, username }
+});

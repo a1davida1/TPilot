@@ -12,12 +12,10 @@ import {
   Upload, 
   Download, 
   Shield, 
-  Image as ImageIcon, 
   AlertCircle,
   CheckCircle,
   X,
   Eye,
-  EyeOff,
   RefreshCw,
   Sparkles,
   Lock
@@ -37,7 +35,8 @@ export function ImageProtector({ userTier = 'guest' }: ImageProtectorProps) {
   const [preset, setPreset] = useState<'light' | 'standard' | 'heavy'>('standard');
   const [customSettings, setCustomSettings] = useState<ImageProcessingOptions>(protectionPresets.standard);
   const [useCustom, setUseCustom] = useState(false);
-  const [showComparison, setShowComparison] = useState(false);
+  // TODO: Implement before/after comparison view
+  const [_showComparison, setShowComparison] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();

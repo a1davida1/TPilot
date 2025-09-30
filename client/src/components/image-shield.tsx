@@ -11,7 +11,6 @@ import {
   Download, 
   RefreshCw, 
   Eye, 
-  EyeOff,
   Zap,
   Lock,
   CheckCircle,
@@ -28,7 +27,8 @@ export function ImageShield({ isGuestMode = false, userTier = "free" }: ImageShi
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [protectedImage, setProtectedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showComparison, setShowComparison] = useState(false);
+  // TODO: Implement before/after comparison slider
+  const [_showComparison, setShowComparison] = useState(false);
   
   // Protection settings
   const [protectionLevel, setProtectionLevel] = useState<"light" | "standard" | "heavy">("standard");

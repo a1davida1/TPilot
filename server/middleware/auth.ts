@@ -142,48 +142,6 @@ if (!ADMIN_EMAIL) {
   logger.warn('ADMIN_EMAIL environment variable is not set. Admin login is disabled.');
 }
 
-// keep this (yours)
-const isProd = process.env.NODE_ENV === 'production';
-export const cookieOpts = {
-  httpOnly: true,
-  secure: isProd,
-  sameSite: (isProd ? 'strict' : 'lax') as 'strict' | 'lax',
-  path: '/',
-};
-
-// keep this (theirs), but import jwt, helpers, and use JWT_SECRET + cookieOpts above
-export const authenticateToken = async (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
-  const rawAuthHeader = Array.isArray(req.headers['authorization'])
-    ? req.headers['authorization'][0]
-    : req.headers['authorization'];
-  const { token: headerToken, invalid: headerInvalid } = parseBearerToken(rawAuthHeader);
-
-  if (headerInvalid) return respondWithStatus(res, 401, { error: 'Invalid token' });
-
-  let token: string | null = headerToken;
-  if (!token) {
-    const { token: cookieToken, invalid: cookieInvalid } = normalizeTokenCandidate(req.cookies?.authToken);
-    if (cookieInvalid) return respondWithStatus(res, 401, { error: 'Invalid token' });
-    token = cookieToken;
-  }
-
-  if (token) {
-    if (!hasJwtStructure(token)) return respondWithStatus(res, 401, { error: 'Invalid token' });
-    if (await isTokenBlacklisted(token)) return res.status(401).json({ error: 'Token revoked' });
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET) as DecodedJwt;
-      // … load user from DB, enforce admin, etc.
-      return next();
-    } catch {
-      // clear bad cookie with same options
-      res.clearCookie('authToken', cookieOpts);
-      return respondWithStatus(res, 401, { error: 'Invalid token' });
-    }
-  }
-
-  return respondWithStatus(res, 401, { error: 'Access token required' });
-};
-
 export const authenticateToken = (required = true) => {
   return async (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
     // Check for bearer token in Authorization header
@@ -200,7 +158,7 @@ export const authenticateToken = (required = true) => {
     if (token) {
       if (await isTokenBlacklisted(token)) {
         // Clear poisoned cookie
-        res.clearCookie('authToken', cookieOpts);
+        res.clearCookie('authToken');
         if (required) return res.status(401).json({ error: 'Token revoked' });
         return next();
       }
@@ -215,7 +173,7 @@ export const authenticateToken = (required = true) => {
         const userId = decoded.userId || decoded.id;
         if (!userId) {
           // Clear poisoned cookie
-          res.clearCookie('authToken', cookieOpts);
+          res.clearCookie('authToken');
           if (required) return res.status(401).json({ error: 'Invalid token: missing user ID' });
           return next();
         }
@@ -224,7 +182,7 @@ export const authenticateToken = (required = true) => {
 
         if (!user) {
           // Clear poisoned cookie
-          res.clearCookie('authToken', cookieOpts);
+          res.clearCookie('authToken');
           if (required) return res.status(401).json({ error: 'User not found' });
           return next();
         }
@@ -243,7 +201,7 @@ export const authenticateToken = (required = true) => {
       } catch (error) {
         logger.error('Auth error:', error);
         // Clear poisoned cookie so repeated requests don't keep failing
-        res.clearCookie('authToken', cookieOpts);
+        res.clearCookie('authToken');
         if (required) return res.status(401).json({ error: 'Invalid or expired token' });
         return next();
       }

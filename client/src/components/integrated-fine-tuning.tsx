@@ -10,14 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Upload, 
   Image, 
-  Settings, 
   Save, 
   Sparkles, 
-  Camera,
-  Palette,
-  Type,
-  FileText,
-  ChevronRight,
   Check,
   X
 } from "lucide-react";
@@ -57,8 +51,8 @@ export function IntegratedFineTuning() {
     prohibitedWords: [] as string[]
   });
 
-  // Fetch user preferences
-  const { data: userPrefs } = useQuery({
+  // TODO: Implement user preferences hydration
+  const { data: _userPrefs } = useQuery({
     queryKey: ["/api/user-preferences"],
     retry: false,
   });

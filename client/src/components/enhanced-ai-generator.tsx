@@ -105,7 +105,8 @@ export function EnhancedAIGenerator({
 
   const isGuestMode = !isAuthenticated || userTier === "guest";
 
-  const tierConfig = {
+  // TODO: Implement tier-based UI customization and limits
+  const _tierConfig = {
     guest: {
       dailyLimit: 3,
       color: 'bg-gradient-to-br from-orange-50 to-amber-100 hover:from-orange-100 hover:to-amber-200 text-orange-900 border-2 border-orange-200 hover:border-orange-300 shadow-sm hover:shadow-md'
@@ -119,9 +120,6 @@ export function EnhancedAIGenerator({
       color: 'bg-gradient-to-br from-orange-50 to-amber-100 hover:from-orange-100 hover:to-amber-200 text-orange-900 border-2 border-orange-200 hover:border-orange-300 shadow-sm hover:shadow-md'
     }
   };
-
-  // TODO: Implement tier-based UI customization
-  // const currentTierConfig = tierConfig[userTier as keyof typeof tierConfig] || tierConfig.guest;
 
   const basePhotoInstructions: ContentGeneration["photoInstructions"] = {
     lighting: "Soft natural lighting",

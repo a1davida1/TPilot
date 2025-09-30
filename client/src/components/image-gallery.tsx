@@ -6,10 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
-import { protectImage, downloadProtectedImage } from '@/lib/image-protection';
-import { Upload, Shield, Download, Trash2, Eye, Tag, Plus } from 'lucide-react';
+import { downloadProtectedImage } from '@/lib/image-protection';
+import { Upload, Shield, Download, Trash2, Tag } from 'lucide-react';
 
 // Import MediaAsset type from schema
 import type { MediaAsset } from '@shared/schema';
@@ -22,7 +21,8 @@ interface UserImage extends MediaAsset {
 
 export function ImageGallery() {
   const [selectedTags, setSelectedTags] = useState<string>('');
-  const [selectedImage, setSelectedImage] = useState<UserImage | null>(null);
+  // TODO: Implement image detail modal/viewer
+  const [_selectedImage, setSelectedImage] = useState<UserImage | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuth();
