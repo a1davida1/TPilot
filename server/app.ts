@@ -4,6 +4,9 @@ import cookieParser from 'cookie-parser';
 import csrf from 'csurf';
 import { v4 as uuidv4 } from 'uuid';
 import { registerRoutes } from './routes.js';
+import { setupAuth } from './auth.js';
+import { setupSocialAuth } from './social-auth.js';
+import { mountBillingRoutes } from './routes/billing.js';
 import { authLimiter, generalLimiter, sanitize } from './middleware/security.js';
 import { permissionsPolicy } from './middleware/permissions-policy.js';
 import { mountStripeWebhook } from './routes/webhooks.stripe.js';
@@ -290,17 +293,35 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
       `${API_PREFIX}/csrf-token`, // Already handled above
       `${API_PREFIX}/health`
     ];
-    
+
     if (exemptPaths.some(path => req.path.startsWith(path))) {
       return next();
     }
-    
+
     return csrfProtection(req as any, res as any, next);
   });
-  
+
+  app.set('csrfProtectionConfigured', true);
+
   // Passport
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // Register authentication, social auth, and billing routes after CSRF middleware
+  if (app.get('authRoutesConfigured') !== true) {
+    setupAuth(app, API_PREFIX);
+    app.set('authRoutesConfigured', true);
+  }
+
+  if (app.get('socialAuthConfigured') !== true) {
+    setupSocialAuth(app, API_PREFIX);
+    app.set('socialAuthConfigured', true);
+  }
+
+  if (app.get('billingRoutesConfigured') !== true) {
+    mountBillingRoutes(app, API_PREFIX);
+    app.set('billingRoutesConfigured', true);
+  }
 
   applyRequestLogging(app);
 

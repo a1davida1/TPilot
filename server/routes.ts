@@ -21,6 +21,7 @@ import { uploadRoutes, applyImageShieldProtection, protectionPresets } from "./r
 import { mediaRoutes } from "./routes/media";
 import { analyticsRouter } from "./routes/analytics";
 import { referralRouter } from "./routes/referrals";
+import { getOpenApiRouter } from "./routes/openapi.js";
 import { registerExpenseRoutes } from "./expense-routes";
 import { adminCommunitiesRouter } from "./routes/admin-communities";
 import { createCancelSubscriptionHandler } from "./routes/subscription-management";
@@ -28,13 +29,13 @@ import { createLocalDownloadRouter } from "./routes/downloads";
 
 // Core imports
 import { storage } from "./storage";
-import { setupAuth } from "./auth";
 import { setupAdminRoutes } from "./admin-routes";
-import { setupSocialAuth } from "./social-auth";
 import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers";
 import { deriveStripeConfig } from "./payments/stripe-config";
 import { buildUploadUrl } from "./lib/uploads";
 import { API_PREFIX, prefixApiPath } from "./lib/api-prefix";
+import { setupAuth } from "./auth";
+import { setupSocialAuth } from "./social-auth";
 import { mountBillingRoutes } from "./routes/billing";
 
 export function buildCsrfProtectedRoutes(apiPrefix: string = API_PREFIX): string[] {
@@ -792,36 +793,36 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   });
 
   // CSRF protection for session-based routes
-  const csrfProtection: express.RequestHandler = csrf({
-    cookie: {
-      httpOnly: true,
-      secure: IS_PRODUCTION,
-      sameSite: 'strict'
-    }
-  }) as unknown as express.RequestHandler;
-
-  // Apply CSRF protection to sensitive routes
-  // Note: JWT-based routes rely on token authentication instead of CSRF
-
-  // Apply CSRF protection to sensitive routes
-  const csrfRoutes = buildCsrfProtectedRoutes(apiPrefix);
   const route = (path: string) => prefixApiPath(path, apiPrefix);
+  const csrfAlreadyConfigured = app.get('csrfProtectionConfigured') === true;
 
-  csrfRoutes.forEach((protectedRoute) => {
-    if (protectedRoute.includes('*')) {
-      // Handle wildcard routes
-      const baseRoute = protectedRoute.replace('/*', '');
-      app.use(baseRoute, csrfProtection);
-      app.use(`${baseRoute}/*`, csrfProtection);
-    } else {
-      app.use(protectedRoute, csrfProtection);
-    }
-  });
+  if (!csrfAlreadyConfigured) {
+    const csrfProtection: express.RequestHandler = csrf({
+      cookie: {
+        httpOnly: true,
+        secure: IS_PRODUCTION,
+        sameSite: 'strict'
+      }
+    }) as unknown as express.RequestHandler;
 
-  // CSRF token endpoint
-  app.get(route('/csrf-token'), csrfProtection, (req, res) => {
-    res.json({ csrfToken: req.csrfToken() });
-  });
+    const csrfRoutes = buildCsrfProtectedRoutes(apiPrefix);
+
+    csrfRoutes.forEach((protectedRoute) => {
+      if (protectedRoute.includes('*')) {
+        const baseRoute = protectedRoute.replace('/*', '');
+        app.use(baseRoute, csrfProtection);
+        app.use(`${baseRoute}/*`, csrfProtection);
+      } else {
+        app.use(protectedRoute, csrfProtection);
+      }
+    });
+
+    app.get(route('/csrf-token'), csrfProtection, (req, res) => {
+      res.json({ csrfToken: req.csrfToken() });
+    });
+
+    app.set('csrfProtectionConfigured', true);
+  }
 
   // -------- Liveness and Readiness --------
   app.get(route('/health'), (_req, res) => {
@@ -892,12 +893,22 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // ==========================================
 
   // Setup authentication
-  setupAuth(app, apiPrefix);
+  if (app.get('authRoutesConfigured') !== true) {
+    setupAuth(app, apiPrefix);
+    app.set('authRoutesConfigured', true);
+  }
   setupAdminRoutes(app);
 
   // Configure social authentication
-  setupSocialAuth(app, apiPrefix);
-  mountBillingRoutes(app, apiPrefix);
+  if (app.get('socialAuthConfigured') !== true) {
+    setupSocialAuth(app, apiPrefix);
+    app.set('socialAuthConfigured', true);
+  }
+
+  if (app.get('billingRoutesConfigured') !== true) {
+    mountBillingRoutes(app, apiPrefix);
+    app.set('billingRoutesConfigured', true);
+  }
 
   // ==========================================
   // ROUTE REGISTRATION
@@ -923,6 +934,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
 
   // Serve uploaded files through token-protected controller
   app.use('/uploads', createLocalDownloadRouter());
+
+  // OpenAPI specification endpoint
+  app.use(getOpenApiRouter(apiPrefix));
 
   // ==========================================
   // STRIPE PAYMENT ENDPOINTS
