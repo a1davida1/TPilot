@@ -153,6 +153,21 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
   app.get(route('/auth/google/callback'),
     passport.authenticate('google', { failureRedirect: '/login?error=google_failed' }),
     (req, res) => {
+      // Set auth token cookie with SameSite=None for third-party OAuth redirect
+      if (req.user) {
+        const token = jwt.sign(
+          { userId: (req.user as User).id, email: (req.user as User).email },
+          JWT_SECRET_VALIDATED,
+          { expiresIn: '24h' }
+        );
+        res.cookie('authToken', token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'none',
+          maxAge: 86400_000,
+          path: '/',
+        });
+      }
       res.redirect('/dashboard');
     }
   );
@@ -165,6 +180,21 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
   app.get(route('/auth/facebook/callback'),
     passport.authenticate('facebook', { failureRedirect: '/login?error=facebook_failed' }),
     (req, res) => {
+      // Set auth token cookie with SameSite=None for third-party OAuth redirect
+      if (req.user) {
+        const token = jwt.sign(
+          { userId: (req.user as User).id, email: (req.user as User).email },
+          JWT_SECRET_VALIDATED,
+          { expiresIn: '24h' }
+        );
+        res.cookie('authToken', token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'none',
+          maxAge: 86400_000,
+          path: '/',
+        });
+      }
       res.redirect('/dashboard');
     }
   );
@@ -180,6 +210,21 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
   app.get(route('/auth/reddit/callback'),
     passport.authenticate('reddit', redditCallbackOptions),
     (req, res) => {
+      // Set auth token cookie with SameSite=None for third-party OAuth redirect
+      if (req.user) {
+        const token = jwt.sign(
+          { userId: (req.user as User).id, email: (req.user as User).email },
+          JWT_SECRET_VALIDATED,
+          { expiresIn: '24h' }
+        );
+        res.cookie('authToken', token, {
+          httpOnly: true,
+          secure: true, // Must be true for SameSite=None
+          sameSite: 'none', // Required for third-party redirect
+          maxAge: 86400_000,
+          path: '/',
+        });
+      }
       res.redirect('/dashboard?connected=reddit');
     }
   );

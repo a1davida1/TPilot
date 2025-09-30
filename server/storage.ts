@@ -86,6 +86,7 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   getUserByUsername(username: string, verified?: boolean): Promise<User | undefined>;
   getUserByEmail(email: string, verified?: boolean): Promise<User | undefined>;
+  getUserByProviderId(provider: string, providerId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserTier(userId: number, tier: string): Promise<void>;
   updateUser(userId: number, updates: Partial<User>): Promise<User>;
@@ -276,6 +277,26 @@ export class DatabaseStorage implements IStorage {
       return result[0];
     } catch (error) {
       safeLog('error', 'Storage operation failed - getting user by email:', { error: (error as Error).message });
+      return undefined;
+    }
+  }
+
+  async getUserByProviderId(provider: string, providerId: string): Promise<User | undefined> {
+    try {
+      const conditions = [
+        eq(users.provider, provider),
+        eq(users.providerId, providerId)
+      ];
+
+      // Guard optional schema fields - filter soft-deleted users
+      if ('isDeleted' in users) {
+        conditions.push(eq((users as any).isDeleted, false));
+      }
+
+      const result = await db.select().from(users).where(and(...conditions)).limit(1).execute();
+      return result[0];
+    } catch (error) {
+      safeLog('error', 'Storage operation failed - getting user by provider ID:', { error: (error as Error).message });
       return undefined;
     }
   }
