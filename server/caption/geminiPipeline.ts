@@ -133,6 +133,23 @@ const safeFallbackAlt = "Detailed alt text describing the scene.";
 const safeFallbackHashtags = ["#content", "#creative", "#amazing"];
 const safeFallbackCta = "Check it out";
 
+function buildVariantFallbackBatch(params: {
+  style?: string;
+  mood?: string;
+  nsfw?: boolean;
+}): Record<string, unknown>[] {
+  return Array.from({ length: VARIANT_TARGET }, (_, index) => ({
+    caption: `${safeFallbackCaption} (fallback ${index + 1})`,
+    alt: `${safeFallbackAlt} (fallback ${index + 1})`,
+    hashtags: [...safeFallbackHashtags],
+    cta: safeFallbackCta,
+    mood: params.mood ?? "engaging",
+    style: params.style ?? "authentic",
+    safety_level: "normal",
+    nsfw: params.nsfw ?? false,
+  }));
+}
+
 const MIN_IMAGE_BYTES = 32;
 
 function captionKey(caption: string): string {
@@ -610,6 +627,44 @@ function captionsAreSimilar(a: string, b: string): boolean {
   return jaccard > 0.82;
 }
 
+function collectDuplicateCaptions(
+  variants: z.infer<typeof CaptionArray>
+): string[] {
+  const seen = new Map<string, string>();
+  const duplicates = new Set<string>();
+
+  for (const variant of variants) {
+    const normalized = normalizeCaptionText(variant.caption);
+    if (!normalized) {
+      continue;
+    }
+
+    if (seen.has(normalized)) {
+      duplicates.add(variant.caption);
+      const original = seen.get(normalized);
+      if (original) {
+        duplicates.add(original);
+      }
+    } else {
+      seen.set(normalized, variant.caption);
+    }
+  }
+
+  return [...duplicates];
+}
+
+function buildDuplicateRetryHintMessage(duplicates: string[]): string {
+  if (duplicates.length === 0) {
+    return "Need more variety across tone, structure, concrete imagery, and CTA.";
+  }
+
+  const primary = truncateForHint(
+    duplicates[duplicates.length - 1] ?? duplicates[0]
+  );
+
+  return `You already wrote "${primary}". Deliver five completely different captions with fresh imagery, CTAs, and tone.`;
+}
+
 export async function extractFacts(imageUrl: string): Promise<Record<string, unknown>> {
   try {
     console.error('Starting fact extraction for image:', imageUrl.substring(0, 100) + '...');
@@ -821,66 +876,103 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
     return variant;
   };
 
-  const buildUserPrompt = (varietyHint: string | undefined, existingCaptions: string[], duplicateCaption?: string): string => {
-    const lines = [
-      `PLATFORM: ${params.platform}`,
-      `VOICE: ${params.voice}`
-    ];
+  const buildUserPrompt = (
+    varietyHint: string | undefined,
+    existingCaptions: string[],
+    duplicateCaption?: string
+  ): string => {
+    const styleValue = params.style?.trim() && params.style.trim().length > 0
+      ? params.style.trim()
+      : "authentic";
+    const moodValue = params.mood?.trim() && params.mood.trim().length > 0
+      ? params.mood.trim()
+      : "engaging";
 
-    if (params.style) lines.push(`STYLE: ${params.style}`);
-    if (params.mood) lines.push(`MOOD: ${params.mood}`);
+    const hintSegments: string[] = [];
 
-    lines.push(`IMAGE_FACTS: ${JSON.stringify(params.facts)}`);
-    lines.push(`NSFW: ${params.nsfw ?? false}`);
-
-    const hintParts: string[] = [];
-    
-    // If we have a duplicate, add it as primary hint
     if (duplicateCaption) {
-      hintParts.push(`You already wrote "${truncateForHint(duplicateCaption)}". Create something completely different.`);
-    }
-    
-    if (varietyHint) {
-      hintParts.push(varietyHint.trim());
-    }
-    
-    if (existingCaptions.length > 0 && !duplicateCaption) {
-      hintParts.push(
-        `Avoid repeating or lightly editing these captions: ${existingCaptions.join(" | ")}.`
+      hintSegments.push(
+        `You already wrote "${truncateForHint(
+          duplicateCaption
+        )}". Create something completely different.`
       );
     }
-    hintParts.push("Provide five options that vary tone, structure, and specific imagery.");
 
-    const combinedHint = hintParts.filter(Boolean).join(" ");
-    const serializedHint = serializePromptField(combinedHint, { block: true });
-    lines.push(`HINT:${serializedHint}`);
+    if (varietyHint && varietyHint.trim().length > 0) {
+      hintSegments.push(varietyHint.trim());
+    }
 
-    return lines.join("\n");
+    if (existingCaptions.length > 0 && !duplicateCaption) {
+      hintSegments.push(
+        `Avoid repeating or lightly editing these captions: ${existingCaptions.join(
+          " | "
+        )}.`
+      );
+    }
+
+    hintSegments.push(
+      "Provide five options that vary tone, structure, and specific imagery."
+    );
+
+    const serializedHint = `HINT:${serializePromptField(
+      hintSegments.join(" "),
+      { block: true }
+    )}`;
+
+    const lines = [
+      `PLATFORM: ${params.platform}`,
+      `VOICE: ${params.voice}`,
+      `STYLE: ${styleValue}`,
+      `MOOD: ${moodValue}`,
+      `IMAGE_FACTS: ${JSON.stringify(params.facts)}`,
+      `NSFW: ${params.nsfw ?? false}`,
+      serializedHint,
+    ];
+
+    return lines
+      .filter((line): line is string => Boolean(line && line.trim().length > 0))
+      .join("\n");
   };
 
-  const fetchVariants = async (varietyHint: string | undefined, existingCaptions: string[], duplicateCaption?: string) => {
+  const fetchVariants = async (
+    varietyHint: string | undefined,
+    existingCaptions: string[],
+    duplicateCaption?: string
+  ) => {
     const user = buildUserPrompt(varietyHint, existingCaptions, duplicateCaption);
-    
-    // Apply tone to system prompt
-    const sysWithTone = buildSystemPrompt(sys, { style: params.style, mood: params.mood });
-    
+
+    const sysWithTone = buildSystemPrompt(sys, {
+      style: params.style,
+      mood: params.mood,
+    });
+
+    const fallbackBatch = buildVariantFallbackBatch({
+      style: params.style,
+      mood: params.mood,
+      nsfw: params.nsfw,
+    });
+
+    let candidates: unknown[] = fallbackBatch;
+
     try {
       const res = await textModel.generateContent([
-        { text: `${sysWithTone}\n${guard}\n${prompt}\n${user}` }
+        { text: `${sysWithTone}\n${guard}\n${prompt}\n${user}` },
       ]);
-      
+
       const rawText = await resolveResponseText(res);
       if (!rawText || rawText.trim().length === 0) {
-        console.error('Gemini: empty response received');
-        throw new Error('Gemini: empty response');
+        console.error("Gemini: empty response received");
+      } else {
+        const parsed = stripToJSON(rawText) as unknown;
+        if (Array.isArray(parsed)) {
+          candidates = parsed;
+        }
       }
-
-      const json = stripToJSON(rawText) as unknown;
-      return Array.isArray(json) ? json : [];
     } catch (error) {
       console.error("Gemini textModel.generateContent failed:", error);
-      throw error;
     }
+
+    return candidates;
   };
 
   const uniqueVariants: z.infer<typeof CaptionItem>[] = [];
