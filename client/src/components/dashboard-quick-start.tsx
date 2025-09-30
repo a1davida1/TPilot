@@ -12,13 +12,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
@@ -151,7 +144,7 @@ export function QuickStartModal({
   onOpenChange,
   initialStep,
   isRedditConnected = false,
-  onNavigate,
+  onNavigate: _onNavigate,
   onConnected,
   onSelectedCommunity,
   onPosted,
