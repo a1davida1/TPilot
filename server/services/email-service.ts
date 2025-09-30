@@ -1,5 +1,4 @@
 import sgMail from '@sendgrid/mail';
-import jwt from 'jsonwebtoken';
 import { safeLog } from '../lib/logger-utils.js';
 import type { UTMParams } from '../lib/utm.js';
 

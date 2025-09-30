@@ -188,7 +188,7 @@ async function generateWithGemini(prompt: string) {
     let result;
     try {
       result = JSON.parse(trimmedText);
-    } catch (parseError) {
+    } catch (_parseError) {
       // If not JSON, create a structured response from the text
       const lines = trimmedText.split('\n').filter(line => line.trim());
       result = {
@@ -288,7 +288,7 @@ function validateAndFormatResponse(result: unknown) {
 }
 
 function buildPrompt(request: MultiAIRequest): string {
-  const { user, platform, imageDescription, customPrompt, subreddit, allowsPromotion } = request;
+  const { user: _user, platform, imageDescription, customPrompt, subreddit, allowsPromotion } = request;
   // Default profile based on user tier
   const profile = {
     toneOfVoice: 'friendly',
