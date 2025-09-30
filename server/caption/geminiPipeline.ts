@@ -934,6 +934,7 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
       .join("\n");
   };
 
+<<<<<<< ours
   const fetchVariants = async (
     varietyHint: string | undefined,
     existingCaptions: string[],
@@ -952,6 +953,27 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
       nsfw: params.nsfw,
     });
 
+=======
+  const buildFallbackBatch = () =>
+    Array.from({ length: VARIANT_TARGET }, (_, index) => ({
+      caption: `${safeFallbackCaption} (fallback ${index + 1})`,
+      alt: `${safeFallbackAlt} (fallback ${index + 1})`,
+      hashtags: [...safeFallbackHashtags],
+      cta: safeFallbackCta,
+      mood: params.mood ?? "engaging",
+      style: params.style ?? "authentic",
+      safety_level: "normal" as const,
+      nsfw: params.nsfw ?? false,
+    }));
+
+  const fetchVariants = async (varietyHint: string | undefined, existingCaptions: string[], duplicateCaption?: string) => {
+    const user = buildUserPrompt(varietyHint, existingCaptions, duplicateCaption);
+
+    // Apply tone to system prompt
+    const sysWithTone = buildSystemPrompt(sys, { style: params.style, mood: params.mood });
+
+    const fallbackBatch = buildFallbackBatch();
+>>>>>>> theirs
     let candidates: unknown[] = fallbackBatch;
 
     try {
@@ -960,6 +982,7 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
       ]);
 
       const rawText = await resolveResponseText(res);
+<<<<<<< ours
       if (!rawText || rawText.trim().length === 0) {
         console.error("Gemini: empty response received");
       } else {
@@ -967,6 +990,21 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
         if (Array.isArray(parsed)) {
           candidates = parsed;
         }
+=======
+      if (typeof rawText === "string" && rawText.trim().length > 0) {
+        try {
+          const json = stripToJSON(rawText) as unknown;
+          if (Array.isArray(json)) {
+            candidates = json;
+          } else {
+            console.error("Gemini: variant payload was not an array");
+          }
+        } catch (parseError) {
+          console.error("Gemini variant parsing failed:", parseError);
+        }
+      } else {
+        console.error('Gemini: empty response received');
+>>>>>>> theirs
       }
     } catch (error) {
       console.error("Gemini textModel.generateContent failed:", error);
@@ -1015,26 +1053,22 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
   }
 
   // Pad variants if we don't have enough, instead of throwing in tests
-  while (uniqueVariants.length < 5) {
-    const baseVariant = uniqueVariants[0] || {
-      caption: "Engaging social media content",
-      alt: "Detailed alt text describing the scene",
-      hashtags: ["#social", "#content"],
-      cta: "Check it out",
-      mood: "engaging",
-      style: "authentic",
-      safety_level: "normal",
-      nsfw: false
-    };
+  if (uniqueVariants.length < VARIANT_TARGET) {
+    const fallbackBatch = buildFallbackBatch();
+    const fallbackBase = CaptionItem.parse({ ...fallbackBatch[0] });
 
-    // Create a slight variation by appending index
-    const paddedVariant = {
-      ...baseVariant,
-      caption: `${baseVariant.caption} v${uniqueVariants.length + 1}`,
-      alt: `${baseVariant.alt} (variation ${uniqueVariants.length + 1})`
-    };
+    while (uniqueVariants.length < VARIANT_TARGET) {
+      const index = uniqueVariants.length + 1;
+      const source = fallbackBatch[(index - 1) % fallbackBatch.length];
+      const paddedVariant = CaptionItem.parse({
+        ...fallbackBase,
+        ...source,
+        caption: `${source.caption} (retry filler ${index})`,
+        alt: `${source.alt} (retry filler ${index})`,
+      });
 
-    uniqueVariants.push(paddedVariant as z.infer<typeof CaptionItem>);
+      uniqueVariants.push(paddedVariant);
+    }
   }
 
   return CaptionArray.parse(uniqueVariants);
@@ -1117,28 +1151,6 @@ async function requestGeminiRanking(
   facts?: Record<string, unknown>
 ): Promise<unknown> {
   const hintBlock = extraHint && extraHint.trim().length > 0 ? `\nREMINDER: ${extraHint.trim()}` : "";
-  let res;
-  try {
-    res = await model.generateContent([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
-  } catch (error) {
-    console.error('Gemini textModel invocation failed:', error);
-    throw error;
-  }
-  const rawText = await resolveResponseText(res);
-  const serialized = typeof rawText === 'string'
-    ? rawText
-    : typeof res === 'string'
-      ? res
-      : JSON.stringify(res);
-
-  if (typeof serialized === 'string' && serialized.trim().length === 0) {
-    console.error('Gemini: empty response received during ranking');
-    throw new Error('Gemini: empty response');
-  }
-
-  let json = stripToJSON(serialized) as unknown;
-
-
   const defaultVariant = variantsInput[0] ??
     CaptionItem.parse({
       caption: safeFallbackCaption,
@@ -1150,18 +1162,72 @@ async function requestGeminiRanking(
       safety_level: "normal",
       nsfw: false,
     });
-  const defaultScores = [5, 4, 3, 2, 1];
+  const defaultScores = [5, 4, 3, 2, 1] as const;
 
-  if(Array.isArray(json)) {
+  const fallbackResult = () => {
+    const finalRecord: Record<string, unknown> = { ...defaultVariant };
+    normalizeGeminiFinal(finalRecord, platform, facts);
+    return {
+      winner_index: 0,
+      scores: [...defaultScores],
+      reason: "Gemini unavailable - using fallback ranking",
+      final: finalRecord,
+    };
+  };
+
+  let res: unknown;
+  try {
+    res = await model.generateContent([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
+  } catch (error) {
+    console.error("Gemini textModel invocation failed:", error);
+    return fallbackResult();
+  }
+
+  let textOutput: string | null = null;
+  const resolved = await resolveResponseText(res);
+  if (typeof resolved === "string") {
+    textOutput = resolved;
+  } else if (
+    res &&
+    (res as GeminiResponse)?.response &&
+    typeof (res as GeminiResponse).response.text === "function"
+  ) {
+    try {
+      const raw = (res as GeminiResponse).response.text();
+      textOutput = typeof raw === "string" ? raw : null;
+    } catch (invokeError) {
+      console.error("Gemini: failed to read ranking response:", invokeError);
+    }
+  } else if (typeof res === "string") {
+    textOutput = res;
+  }
+
+  if (typeof textOutput !== "string" || textOutput.trim().length === 0) {
+    console.error("Gemini: empty response received during ranking");
+    return fallbackResult();
+  }
+
+  let json: unknown;
+  try {
+    json = stripToJSON(textOutput) as unknown;
+  } catch (parseError) {
+    console.error("Gemini ranking parsing failed:", parseError);
+    return fallbackResult();
+  }
+
+  if (Array.isArray(json)) {
     const winner = json[0] as Record<string, unknown> | undefined;
     json = {
       winner_index: 0,
       scores: [...defaultScores],
       reason: "Selected based on engagement potential",
-      final: winner ?? { ...defaultVariant }
+      final: winner ?? { ...defaultVariant },
     };
   }
 
+  if (!json || typeof json !== "object") {
+    return fallbackResult();
+  }
 
   if (json && typeof json === "object" && !Array.isArray(json)) {
     const container = json as Record<string, unknown>;

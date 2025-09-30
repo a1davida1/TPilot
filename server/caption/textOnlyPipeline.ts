@@ -21,6 +21,12 @@ import {
   sanitizeFinalVariant
 } from "./rankGuards";
 
+type GeminiResponse = {
+  response?: {
+    text(): string;
+  };
+};
+
 type GeminiGenerateContent = GenerativeModel["generateContent"];
 
 const isGenerateContentFunction = (
@@ -333,32 +339,60 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
     return lines.join("\n");
   };
 
+  const safeFallbackCaption = "Here's something I'm proud of today.";
+  const safeFallbackAlt = "Engaging description that highlights the visual story.";
+  const safeFallbackHashtags = fallbackHashtags(params.platform);
+  const safeFallbackCta = "Comment your thoughts below! 💭";
+
+  const buildFallbackBatch = () =>
+    Array.from({ length: VARIANT_TARGET }, (_, index) => ({
+      caption: `${safeFallbackCaption} (fallback ${index + 1})`,
+      alt: `${safeFallbackAlt} (fallback ${index + 1})`,
+      hashtags: [...safeFallbackHashtags],
+      cta: safeFallbackCta,
+      mood: params.mood ?? "engaging",
+      style: params.style ?? "authentic",
+      safety_level: "normal" as const,
+      nsfw: params.nsfw ?? false,
+    }));
+
   const fetchVariants = async (varietyHint: string | undefined, existingCaptions: string[]) => {
     const user = buildUserPrompt(varietyHint, existingCaptions);
-    
+
     // Apply tone to system prompt if available
     const toneLines: string[] = [];
     if (params.style) toneLines.push(`STYLE: ${params.style}`);
     if (params.mood) toneLines.push(`MOOD: ${params.mood}`);
     const sysWithTone = toneLines.length > 0 ? `${sys}\n${toneLines.join('\n')}` : sys;
-    
+
+    const fallbackBatch = buildFallbackBatch();
+    let candidates: unknown[] = fallbackBatch;
+
     try {
       const res = await textModel.generateContent([
         { text: `${sysWithTone}\n${guard}\n${prompt}\n${user}` }
       ]);
 
       const rawText = await resolveResponseText(res);
-      if (!rawText || rawText.trim().length === 0) {
-        console.error('Gemini: empty response received in text-only pipeline');
-        throw new Error('Gemini: empty response');
+      if (typeof rawText === "string" && rawText.trim().length > 0) {
+        try {
+          const json = stripToJSON(rawText);
+          if (Array.isArray(json)) {
+            candidates = json;
+          } else {
+            console.error("Gemini: variant payload was not an array in text-only pipeline");
+          }
+        } catch (parseError) {
+          console.error("Gemini text-only variant parsing failed:", parseError);
+        }
+      } else {
+        console.error("Gemini: empty response received in text-only pipeline");
       }
-
-      const json = stripToJSON(rawText);
-      return Array.isArray(json) ? json : [];
     } catch (error) {
       console.error("Gemini textModel.generateContent failed:", error);
-      throw error;
     }
+
+    return candidates;
   };
 
   const uniqueVariants: z.infer<typeof CaptionItem>[] = [];
@@ -372,12 +406,6 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
   const duplicatesForHint: string[] = [];
   let bannedDetected = false;
   let _needsBannedHint = false;
-  
-  // Define safe fallback values
-  const safeFallbackCaption = "Here's something I'm proud of today.";
-  const safeFallbackAlt = "Engaging description that highlights the visual story.";
-  const safeFallbackHashtags = fallbackHashtags(params.platform);
-  const safeFallbackCta = "Comment your thoughts below! 💭";
 
   for (let attempt = 0; attempt < maxAttempts && uniqueVariants.length < 5; attempt += 1) {
     const needed = 5 - uniqueVariants.length;
@@ -447,15 +475,10 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
   }
 
   if (uniqueVariants.length < VARIANT_TARGET) {
+    const fallbackBatch = buildFallbackBatch();
     const baseVariant = uniqueVariants[0] ?? CaptionItem.parse({
-      caption: safeFallbackCaption,
-      alt: safeFallbackAlt,
+      ...fallbackBatch[0],
       hashtags: [...safeFallbackHashtags],
-      cta: safeFallbackCta,
-      mood: "engaging",
-      style: "authentic",
-      safety_level: "normal",
-      nsfw: false,
     });
 
     while (uniqueVariants.length < VARIANT_TARGET) {
@@ -520,30 +543,84 @@ async function requestTextOnlyRanking(
   extraHint?: string
 ): Promise<unknown> {
   const hintBlock = extraHint && extraHint.trim().length > 0 ? `\nREMINDER: ${extraHint.trim()}` : "";
-  let res;
+  const safeFallbackCaption = "Here's something I'm proud of today.";
+  const safeFallbackAlt = "Engaging description that highlights the visual story.";
+  const safeFallbackHashtags = fallbackHashtags(platform || "instagram");
+  const safeFallbackCta = "Comment your thoughts below! 💭";
+  const defaultScores = [5, 4, 3, 2, 1] as const;
+
+  const fallbackFinalVariant = CaptionItem.parse({
+    caption: safeFallbackCaption,
+    alt: safeFallbackAlt,
+    hashtags: [...safeFallbackHashtags],
+    cta: safeFallbackCta,
+    mood: "engaging",
+    style: "authentic",
+    safety_level: "normal",
+    nsfw: false,
+  });
+
+  const fallbackResult = () => ({
+    winner_index: 0,
+    scores: [...defaultScores],
+    reason: "Gemini unavailable - using fallback ranking",
+    final: { ...fallbackFinalVariant },
+  });
+
+  let res: unknown;
   try {
     res = await model.generateContent([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
   } catch (error) {
-    console.error('Text-only textModel.generateContent failed:', error);
-    throw error;
+    console.error("Text-only textModel.generateContent failed:", error);
+    return fallbackResult();
   }
-  const rawText = await resolveResponseText(res);
-  if (!rawText || rawText.trim().length === 0) {
-    console.error('Gemini: empty response received in text-only ranking');
-    throw new Error('Gemini: empty response');
+
+  let textOutput: string | null = null;
+  const resolved = await resolveResponseText(res);
+  if (typeof resolved === "string") {
+    textOutput = resolved;
+  } else if (
+    res &&
+    (res as GeminiResponse)?.response &&
+    typeof (res as GeminiResponse).response.text === "function"
+  ) {
+    try {
+      const raw = (res as GeminiResponse).response.text();
+      textOutput = typeof raw === "string" ? raw : null;
+    } catch (invokeError) {
+      console.error("Gemini: failed to read text-only ranking response:", invokeError);
+    }
+  } else if (typeof res === "string") {
+    textOutput = res;
   }
-  let json = stripToJSON(rawText) as unknown;
-  
-  if(Array.isArray(json)) {
+
+  if (typeof textOutput !== "string" || textOutput.trim().length === 0) {
+    console.error("Gemini: empty text-only ranking response");
+    return fallbackResult();
+  }
+
+  let json: unknown;
+  try {
+    json = stripToJSON(textOutput) as unknown;
+  } catch (parseError) {
+    console.error("Gemini text-only ranking parsing failed:", parseError);
+    return fallbackResult();
+  }
+
+  if (Array.isArray(json)) {
     const winner = json[0] as Record<string, unknown> | undefined;
-    json = {
+    return {
       winner_index: 0,
-      scores: [5, 4, 3, 2, 1],
+      scores: [...defaultScores],
       reason: "Selected based on engagement potential",
-      final: winner ?? variantsInput[0]
+      final: winner ?? { ...fallbackFinalVariant },
     };
   }
-  
+
+  if (!json || typeof json !== "object") {
+    return fallbackResult();
+  }
+
   return json;
 }
 
