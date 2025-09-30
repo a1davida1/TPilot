@@ -9,6 +9,14 @@ import { formatVoiceContext } from './voiceTraits';
 import { toOpenAIImageUrl, validateImageUrl, logImageInfo } from './lib/images';
 import { normalizeImageForOpenAI } from './util/normalizeImage';
 
+function isImageDiagnosticsEnabled(): boolean {
+  if (process.env.NODE_ENV === 'production') {
+    return false;
+  }
+
+  return process.env.CAPTION_DEBUG_IMAGES === 'true';
+}
+
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
 
 const SAFE_FALLBACK_ALT_TEXT = 'Engaging social media content';
@@ -118,9 +126,10 @@ export async function openAICaptionFallback({
         throw new Error('Invalid or too short image data');
       }
       
-      // Log image info for debugging
-      const requestId = `openai-${Date.now()}`;
-      logImageInfo(normalized, requestId);
+      if (process.env.CAPTION_DEBUG_IMAGES === 'true') {
+        const requestId = `openai-${Date.now()}`;
+        logImageInfo(normalized, requestId);
+      }
       
       // Use normalized URL - works for both data URLs and HTTPS URLs
       messages = [

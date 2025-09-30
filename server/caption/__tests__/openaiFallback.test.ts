@@ -15,10 +15,12 @@ vi.mock('openai', () => ({ default: mockOpenAIConstructor }));
 describe('openAICaptionFallback safe responses', () => {
   const originalNodeEnv = process.env.NODE_ENV;
   const originalOpenAiKey = process.env.OPENAI_API_KEY;
+  const originalDebugImages = process.env.CAPTION_DEBUG_IMAGES;
 
   beforeEach(() => {
     mockOpenAIInstance.chat.completions.create.mockReset();
     mockOpenAIConstructor.mockReset();
+    mockOpenAIConstructor.mockImplementation(() => mockOpenAIInstance);
   });
 
   afterEach(() => {
@@ -32,6 +34,12 @@ describe('openAICaptionFallback safe responses', () => {
       delete process.env.OPENAI_API_KEY;
     } else {
       process.env.OPENAI_API_KEY = originalOpenAiKey;
+    }
+
+    if (originalDebugImages === undefined) {
+      delete process.env.CAPTION_DEBUG_IMAGES;
+    } else {
+      process.env.CAPTION_DEBUG_IMAGES = originalDebugImages;
     }
   });
 
@@ -93,5 +101,122 @@ describe('openAICaptionFallback safe responses', () => {
     expect(result.nsfw).toBe(false);
 
     complianceSpy.mockRestore();
+  });
+
+  it('does not emit raw image URLs when diagnostics are disabled in production', async () => {
+    vi.resetModules();
+    process.env.OPENAI_API_KEY = 'test-key';
+    process.env.NODE_ENV = 'production';
+    delete process.env.CAPTION_DEBUG_IMAGES;
+
+    const imageUrl = 'https://sensitive.example.com/private/image.png?token=secret';
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    mockOpenAIInstance.chat.completions.create.mockResolvedValueOnce({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              caption: 'Caption',
+              hashtags: ['#tag'],
+              cta: 'CTA',
+              alt: 'Alt',
+              safety_level: 'normal',
+              mood: 'confident',
+              style: 'authentic',
+              nsfw: false
+            })
+          }
+        }
+      ]
+    });
+
+    const { openAICaptionFallback } = await import('../openaiFallback');
+
+    await openAICaptionFallback({ platform: 'instagram', voice: 'confident', imageUrl });
+
+    const loggedMessages = consoleSpy.mock.calls.flat().filter((value): value is string => typeof value === 'string');
+    expect(loggedMessages.some(message => message.includes(imageUrl))).toBe(false);
+
+    consoleSpy.mockRestore();
+  });
+
+  it('redacts remote image diagnostics when debug logging enabled', async () => {
+    vi.resetModules();
+    process.env.OPENAI_API_KEY = 'test-key';
+    process.env.NODE_ENV = 'development';
+    process.env.CAPTION_DEBUG_IMAGES = 'true';
+
+    const imageUrl = 'https://assets.example.com/photo.jpg';
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    mockOpenAIInstance.chat.completions.create.mockResolvedValueOnce({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              caption: 'Caption',
+              hashtags: ['#tag'],
+              cta: 'CTA',
+              alt: 'Alt',
+              safety_level: 'normal',
+              mood: 'confident',
+              style: 'authentic',
+              nsfw: false
+            })
+          }
+        }
+      ]
+    });
+
+    const { openAICaptionFallback } = await import('../openaiFallback');
+
+    await openAICaptionFallback({ platform: 'instagram', voice: 'confident', imageUrl });
+
+    const loggedMessages = consoleSpy.mock.calls.flat().filter((value): value is string => typeof value === 'string');
+    expect(loggedMessages.some(message => message.includes(imageUrl))).toBe(false);
+    expect(loggedMessages.some(message => /remote image URL/.test(message))).toBe(true);
+
+    consoleSpy.mockRestore();
+  });
+
+  it('redacts data URL diagnostics when debug logging enabled', async () => {
+    vi.resetModules();
+    process.env.OPENAI_API_KEY = 'test-key';
+    process.env.NODE_ENV = 'development';
+    process.env.CAPTION_DEBUG_IMAGES = 'true';
+
+    const base64Payload = 'A'.repeat(200);
+    const imageUrl = `data:image/png;base64,${base64Payload}`;
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    mockOpenAIInstance.chat.completions.create.mockResolvedValueOnce({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              caption: 'Caption',
+              hashtags: ['#tag'],
+              cta: 'CTA',
+              alt: 'Alt',
+              safety_level: 'normal',
+              mood: 'confident',
+              style: 'authentic',
+              nsfw: false
+            })
+          }
+        }
+      ]
+    });
+
+    const { openAICaptionFallback } = await import('../openaiFallback');
+
+    await openAICaptionFallback({ platform: 'instagram', voice: 'confident', imageUrl });
+
+    const loggedMessages = consoleSpy.mock.calls.flat().filter((value): value is string => typeof value === 'string');
+    expect(loggedMessages.some(message => message.includes(base64Payload))).toBe(false);
+    expect(loggedMessages.some(message => /data URL/.test(message))).toBe(true);
+
+    consoleSpy.mockRestore();
   });
 });

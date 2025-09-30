@@ -142,48 +142,84 @@ if (!ADMIN_EMAIL) {
   logger.warn('ADMIN_EMAIL environment variable is not set. Admin login is disabled.');
 }
 
-export const authenticateToken = (required = true) => {
-  return async (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
-    // Check for bearer token in Authorization header
-    const authHeader = req.get('authorization');
-    const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
-    
-    // Check for token in signed or unsigned cookies
-    const cookieToken = req.signedCookies?.authToken || req.cookies?.authToken;
-    
-    // Use bearer token if available, otherwise fall back to cookie
-    const token = bearer || cookieToken;
+// keep this (yours)
+const isProd = process.env.NODE_ENV === 'production';
+export const cookieOpts = {
+  httpOnly: true,
+  secure: isProd,
+  sameSite: (isProd ? 'strict' : 'lax') as 'strict' | 'lax',
+  path: '/',
+};
 
-    // Try JWT token first
+type DecodedJwt = {
+  userId?: number;
+  id?: number;
+  email?: string;
+  isAdmin?: boolean;
+  username?: string;
+  role?: string;
+  tier?: string;
+  iat: number;
+  exp: number;
+};
+
+type AuthMiddleware = (
+  req: AuthRequest,
+  res: express.Response,
+  next: express.NextFunction
+) => Promise<void | express.Response>;
+
+const createAuthenticateTokenMiddleware = (required: boolean): AuthMiddleware => {
+  return async (req, res, next) => {
+    const rawAuthHeader = Array.isArray(req.headers['authorization'])
+      ? req.headers['authorization'][0]
+      : req.headers['authorization'];
+    const { token: headerToken, invalid: headerInvalid } = _parseBearerToken(rawAuthHeader);
+
+    if (headerInvalid) {
+      return respondWithStatus(res, 401, { error: 'Invalid token' });
+    }
+
+    const cookieCandidate = _normalizeTokenCandidate(req.signedCookies?.authToken ?? req.cookies?.authToken);
+
+    if (cookieCandidate.invalid) {
+      return respondWithStatus(res, 401, { error: 'Invalid token' });
+    }
+
+    const token = headerToken ?? cookieCandidate.token;
+
     if (token) {
+      if (!_hasJwtStructure(token)) {
+        return respondWithStatus(res, 401, { error: 'Invalid token' });
+      }
+
       if (await isTokenBlacklisted(token)) {
-        // Clear poisoned cookie
-        res.clearCookie('authToken');
-        if (required) return res.status(401).json({ error: 'Token revoked' });
+        res.clearCookie('authToken', cookieOpts);
+        if (required) {
+          return res.status(401).json({ error: 'Token revoked' });
+        }
         return next();
       }
-      
+
       try {
-        const decoded = jwt.verify(token, JWT_SECRET) as { userId?: number; id?: number; email?: string; isAdmin?: boolean; username?: string; role?: string; tier?: string; iat: number; exp: number };
-
-        // All users must exist in database - no hardcoded admin backdoors
-        // Admin status is verified from database isAdmin/role fields only
-
-        // For regular users, fetch from database
+        const decoded = jwt.verify(token, JWT_SECRET) as DecodedJwt;
         const userId = decoded.userId || decoded.id;
+
         if (!userId) {
-          // Clear poisoned cookie
-          res.clearCookie('authToken');
-          if (required) return res.status(401).json({ error: 'Invalid token: missing user ID' });
+          res.clearCookie('authToken', cookieOpts);
+          if (required) {
+            return res.status(401).json({ error: 'Invalid token: missing user ID' });
+          }
           return next();
         }
 
         const [user] = await db.select().from(users).where(eq(users.id, userId));
 
         if (!user) {
-          // Clear poisoned cookie
-          res.clearCookie('authToken');
-          if (required) return res.status(401).json({ error: 'User not found' });
+          res.clearCookie('authToken', cookieOpts);
+          if (required) {
+            return res.status(401).json({ error: 'User not found' });
+          }
           return next();
         }
 
@@ -200,14 +236,14 @@ export const authenticateToken = (required = true) => {
         return next();
       } catch (error) {
         logger.error('Auth error:', error);
-        // Clear poisoned cookie so repeated requests don't keep failing
-        res.clearCookie('authToken');
-        if (required) return res.status(401).json({ error: 'Invalid or expired token' });
+        res.clearCookie('authToken', cookieOpts);
+        if (required) {
+          return res.status(401).json({ error: 'Invalid or expired token' });
+        }
         return next();
       }
     }
 
-    // Fallback to session-based auth
     if (req.session && (req.session as { user?: UserType }).user) {
       const sessionUser = (req.session as { user?: UserType }).user as UserType;
 
@@ -227,10 +263,28 @@ export const authenticateToken = (required = true) => {
     if (required) {
       return res.status(401).json({ error: 'Access token required' });
     }
-    
+
     return next();
   };
 };
+
+type AuthenticateToken = AuthMiddleware & ((required?: boolean) => AuthMiddleware);
+
+export const authenticateToken: AuthenticateToken = ((
+  reqOrRequired: boolean | AuthRequest,
+  res?: express.Response,
+  next?: express.NextFunction
+) => {
+  if (typeof reqOrRequired === 'boolean') {
+    return createAuthenticateTokenMiddleware(reqOrRequired);
+  }
+
+  if (!res || !next) {
+    throw new Error('authenticateToken middleware requires req, res, and next arguments');
+  }
+
+  return createAuthenticateTokenMiddleware(true)(reqOrRequired, res, next);
+}) as AuthenticateToken;
 
 export const createToken = (user: UserType): string => {
   return jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });

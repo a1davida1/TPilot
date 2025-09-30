@@ -63,28 +63,39 @@ export function validateImageUrl(input: string, minLength = 100): boolean {
  */
 export function logImageInfo(imageUrl: string, requestId?: string): void {
   const prefix = requestId ? `[${requestId}] ` : '';
-  
+
   if (!imageUrl) {
     console.error(`${prefix}Image URL is empty`);
     return;
   }
-  
+
   if (/^https?:\/\//i.test(imageUrl)) {
-    console.error(`${prefix}Using HTTPS image URL: ${imageUrl.substring(0, 100)}...`);
+    const protocol = imageUrl.startsWith('https:') ? 'https' : 'http';
+    console.error(`${prefix}Using remote image URL (protocol: ${protocol}, length: ${imageUrl.length})`);
     return;
   }
-  
+
   if (imageUrl.startsWith('data:')) {
     const commaIndex = imageUrl.indexOf(',');
     if (commaIndex !== -1) {
       const header = imageUrl.substring(0, commaIndex);
-      const base64 = imageUrl.substring(commaIndex + 1).replace(/\s+/g, '');
-      const first16 = base64.substring(0, 16);
-      const last16 = base64.substring(Math.max(0, base64.length - 16));
-      console.error(`${prefix}Using data URL: ${header}, base64[${base64.length}]: ${first16}...${last16}`);
+      const mimeMatch = header.match(/^data:([^;]+)/i);
+      const mimeType = mimeMatch ? mimeMatch[1] : 'unknown';
+      const base64Length = imageUrl.length - (commaIndex + 1);
+      const approxBytes = Math.floor((base64Length * 3) / 4);
+      console.error(
+        `${prefix}Using data URL (mime: ${mimeType}, approxBytes: ${approxBytes})`
+      );
+    } else {
+      console.error(`${prefix}Malformed data URL header`);
     }
     return;
   }
-  
-  console.error(`${prefix}Unknown image format (length: ${imageUrl.length})`);
+
+  if (/^[A-Za-z0-9+/=]+$/.test(imageUrl)) {
+    console.error(`${prefix}Received raw base64 payload (length: ${imageUrl.length})`);
+    return;
+  }
+
+  console.error(`${prefix}Unrecognized image input (length: ${imageUrl.length})`);
 }
