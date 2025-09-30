@@ -278,7 +278,7 @@ export function QuickStartModal({
     };
 
     try {
-      const response = await apiRequest("GET", "/api/reddit/connect");
+      const response = await apiRequest("GET", "/api/reddit/connect?intent=posting&queue=quick-start");
       const data = await response.json() as RedditConnectResponse;
 
 

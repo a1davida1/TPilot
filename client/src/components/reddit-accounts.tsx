@@ -121,7 +121,7 @@ export function RedditAccounts() {
     if (!requireAuth("connect your Reddit account")) return;
     
     try {
-      const response = await apiRequest('GET', '/api/reddit/connect').then(res => res.json());
+      const response = await apiRequest('GET', '/api/reddit/connect?intent=account-link&queue=account-management').then(res => res.json());
       if (response.authUrl) {
         // Open Reddit OAuth in new window
         window.open(response.authUrl, '_blank', 'width=600,height=700');

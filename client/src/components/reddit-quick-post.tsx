@@ -111,7 +111,7 @@ export function RedditQuickPost() {
   const connectReddit = async () => {
     setIsConnecting(true);
     try {
-      const response = await apiRequest('GET', '/api/reddit/connect');
+      const response = await apiRequest('GET', '/api/reddit/connect?intent=posting&queue=reddit-posting');
       const data = await response.json();
       
       if (data.authUrl) {

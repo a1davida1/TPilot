@@ -810,28 +810,6 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
     }
   }) as unknown as express.RequestHandler;
 
-  // CSRF error handling middleware
-  app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    if (err instanceof Error && (err as { code?: string }).code === 'EBADCSRFTOKEN') {
-      logger.warn('CSRF token validation failed', {
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-        path: req.path,
-        method: req.method,
-        hasSession: !!req.session
-      });
-      return res.status(403).json({
-        message: 'Invalid CSRF token',
-        code: 'CSRF_TOKEN_INVALID'
-      });
-    }
-    // If Sentry is configured, capture the error
-    if (options?.sentry) {
-      options.sentry.captureException(err);
-    }
-    next(err);
-  });
-
   // Apply CSRF protection to sensitive routes
   // Note: JWT-based routes rely on token authentication instead of CSRF
 
@@ -853,6 +831,30 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // CSRF token endpoint
   app.get(route('/csrf-token'), csrfProtection, (req, res) => {
     res.json({ csrfToken: req.csrfToken() });
+  });
+
+  // CSRF error handling middleware must be registered after the CSRF-protected
+  // routes and token issuer so Express can route EBADCSRFTOKEN errors here when
+  // csurf calls next(err).
+  app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (err instanceof Error && (err as { code?: string }).code === 'EBADCSRFTOKEN') {
+      logger.warn('CSRF token validation failed', {
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        path: req.path,
+        method: req.method,
+        hasSession: !!req.session
+      });
+      return res.status(403).json({
+        message: 'Invalid CSRF token',
+        code: 'CSRF_TOKEN_INVALID'
+      });
+    }
+    // If Sentry is configured, capture the error
+    if (options?.sentry) {
+      options.sentry.captureException(err);
+    }
+    next(err);
   });
 
   // ==========================================

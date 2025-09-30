@@ -384,7 +384,8 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
       handler: async () => {
         try {
           const { apiRequest } = await import('@/lib/queryClient');
-          const response = await apiRequest('GET', '/api/reddit/connect', undefined);
+          const response = await apiRequest('GET', '/api/reddit/connect?intent=account-link', undefined);
+
           const data = await response.json();
           if (data.authUrl) {
             window.location.href = data.authUrl;

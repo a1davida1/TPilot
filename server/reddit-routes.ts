@@ -29,6 +29,80 @@ type SessionWithUser = {
   user?: AuthRequest['user'];
 };
 
+const REDDIT_OAUTH_INTENTS = ['account-link', 'posting', 'intelligence'] as const;
+
+type RedditOAuthIntent = typeof REDDIT_OAUTH_INTENTS[number];
+
+interface RedditOAuthStateData {
+  userId: number;
+  ip?: string;
+  userAgent?: string;
+  timestamp: number;
+  intent: RedditOAuthIntent;
+  queue?: string;
+}
+
+const isSupportedIntent = (value: string): value is RedditOAuthIntent => (
+  (REDDIT_OAUTH_INTENTS as readonly string[]).includes(value)
+);
+
+const parseQueryValue = (value: unknown): string | undefined => {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    const [first] = value;
+    return typeof first === 'string' ? first : undefined;
+  }
+  return undefined;
+};
+
+const isValidQueueName = (value: string): boolean => /^[a-zA-Z0-9_-]{1,64}$/.test(value);
+
+const buildRedirectLocation = (intent: RedditOAuthIntent, username: string, queue?: string) => {
+  const params = new URLSearchParams();
+  params.set('reddit', 'connected');
+  params.set('username', username);
+  params.set('intent', intent);
+  if (queue) {
+    params.set('queue', queue);
+  }
+
+  switch (intent) {
+    case 'posting':
+      return `/reddit/posting?${params.toString()}`;
+    case 'intelligence':
+      params.set('tab', 'intelligence');
+      return `/phase4?${params.toString()}`;
+    case 'account-link':
+    default:
+      return `/dashboard?${params.toString()}`;
+  }
+};
+
+const isOAuthStateData = (value: unknown): value is RedditOAuthStateData => {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const candidate = value as Partial<RedditOAuthStateData>;
+  if (typeof candidate.userId !== 'number') {
+    return false;
+  }
+  if (typeof candidate.timestamp !== 'number') {
+    return false;
+  }
+  if (typeof candidate.intent !== 'string' || !isSupportedIntent(candidate.intent)) {
+    return false;
+  }
+
+  if (candidate.queue !== undefined && typeof candidate.queue !== 'string') {
+    return false;
+  }
+
+  return true;
+};
+
 export function registerRedditRoutes(app: Express) {
 
   // Start Reddit OAuth flow - SECURE VERSION
@@ -50,8 +124,24 @@ export function registerRedditRoutes(app: Express) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      // Generate cryptographically secure state
-      const state = crypto.randomBytes(32).toString('hex');
+      const intentParam = parseQueryValue(req.query.intent);
+      if (!intentParam) {
+        return res.status(400).json({ error: 'Missing Reddit OAuth intent' });
+      }
+
+      if (!isSupportedIntent(intentParam)) {
+        return res.status(400).json({ error: 'Unsupported Reddit OAuth intent' });
+      }
+
+      const queueParam = parseQueryValue(req.query.queue);
+      if (queueParam && !isValidQueueName(queueParam)) {
+        return res.status(400).json({ error: 'Invalid Reddit OAuth queue identifier' });
+      }
+      const queue = queueParam ?? undefined;
+
+      // Generate cryptographically secure state token with intent prefix
+      const stateSlug = crypto.randomBytes(32).toString('hex');
+      const state = `${intentParam}:${stateSlug}`;
 
       const requestIP = req.userIP ?? req.ip;
 
@@ -60,13 +150,17 @@ export function registerRedditRoutes(app: Express) {
         userId,
         ip: requestIP,
         userAgent: req.get('user-agent'),
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        intent: intentParam,
+        queue
       }, 600); // 10 minute expiry
 
       logger.info('Reddit OAuth initiated', {
         userId,
         statePreview: state.substring(0, 8) + '...',
-        requestIP
+        requestIP,
+        intent: intentParam,
+        queue
       });
 
       const authUrl = getRedditAuthUrl(state);
@@ -89,20 +183,40 @@ export function registerRedditRoutes(app: Express) {
         return res.redirect('/dashboard?error=reddit_access_denied');
       }
 
-      if (!code || !state) {
+      const codeValue = parseQueryValue(code);
+      const stateValue = parseQueryValue(state);
+
+      if (!codeValue || !stateValue) {
         logger.warn('Missing OAuth params', { hasCode: !!code, hasState: !!state });
         return res.redirect('/dashboard?error=reddit_missing_params');
       }
 
+      const [stateIntent, stateSlug] = stateValue.split(':', 2);
+
+      if (!stateIntent || !stateSlug || !isSupportedIntent(stateIntent)) {
+        logger.error('Invalid OAuth state format', { statePreview: stateValue.substring(0, 8) + '...' });
+        return res.redirect('/dashboard?error=invalid_state');
+      }
+
+      const stateKey = `reddit_state:${stateValue}`;
+
       // Validate state from secure store
-      const stateData = await stateStore.get(`reddit_state:${state}`);
+      const stateRaw = await stateStore.get(stateKey);
+      const stateData = isOAuthStateData(stateRaw) ? stateRaw : null;
 
       if (!stateData) {
-        const stateStr = Array.isArray(state) ? state[0] : state;
-        const stateString = String(stateStr);
         logger.error('Invalid or expired state', {
-          statePreview: stateString.substring(0, 8) + '...'
+          statePreview: stateValue.substring(0, 8) + '...'
         });
+        return res.redirect('/dashboard?error=invalid_state');
+      }
+
+      if (stateData.intent !== stateIntent) {
+        logger.error('State intent mismatch detected', {
+          storedIntent: stateData.intent,
+          tokenIntent: stateIntent,
+        });
+        await stateStore.delete(stateKey);
         return res.redirect('/dashboard?error=invalid_state');
       }
 
@@ -118,7 +232,7 @@ export function registerRedditRoutes(app: Express) {
       }
 
       // Clean up state immediately to prevent reuse
-      await stateStore.delete(`reddit_state:${state}`);
+      await stateStore.delete(stateKey);
 
       const userId = stateData.userId;
       logger.info('Processing Reddit OAuth for user', { userId });
@@ -126,8 +240,7 @@ export function registerRedditRoutes(app: Express) {
       // Exchange code for tokens
       let tokenData;
       try {
-        const codeStr = Array.isArray(code) ? code[0] : code;
-        tokenData = await exchangeRedditCode(String(codeStr));
+        tokenData = await exchangeRedditCode(codeValue);
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         logger.error('Reddit token exchange error', { error: (error as Error).message, stack: error.stack });
@@ -196,7 +309,8 @@ export function registerRedditRoutes(app: Express) {
       logger.info('Reddit account connected successfully', { userId });
 
       // Success redirect to dashboard
-      res.redirect('/dashboard?reddit=connected&username=' + encodeURIComponent(profile.username));
+      const redirectLocation = buildRedirectLocation(stateIntent, profile.username, stateData.queue);
+      res.redirect(redirectLocation);
 
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));

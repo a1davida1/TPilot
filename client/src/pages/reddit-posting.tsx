@@ -441,7 +441,7 @@ export default function RedditPostingPage() {
   // Connect Reddit account
   const { mutate: connectReddit, isPending: connectingReddit } = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('GET', '/api/reddit/connect');
+      const response = await apiRequest('GET', '/api/reddit/connect?intent=posting&queue=reddit-posting');
       return response.json();
     },
     onSuccess: (data: ConnectRedditResponse) => {

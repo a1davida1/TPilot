@@ -65,7 +65,7 @@ export function SocialAuth({ onSuccess, isLoading = false }: SocialAuthProps) {
       url: '', // Handled in handleSocialAuth
       handler: async () => {
         try {
-          const response = await fetch('/api/reddit/connect', {
+          const response = await fetch('/api/reddit/connect?intent=account-link', {
             credentials: 'include'
           });
 

@@ -1,0 +1,156 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/tests/routes/reddit-oauth-ip.test.ts b/tests/routes/reddit-oauth-ip.test.ts
+index 679d7bdf766fca750eb7e6ac505f9104ced02e01..fa02ae242802b3849108b0c222640694022fea95 100644
+--- a/tests/routes/reddit-oauth-ip.test.ts
++++ b/tests/routes/reddit-oauth-ip.test.ts
+@@ -94,71 +94,145 @@ describe('Reddit OAuth IP normalization', () => {
+     previousEnv = process.env.REDDIT_CLIENT_ID;
+     process.env.REDDIT_CLIENT_ID = 'test-client-id';
+     vi.clearAllMocks();
+     lastStoredStateKey = undefined;
+   });
+ 
+   afterEach(async () => {
+     if (lastStoredStateKey) {
+       await stateStore.delete(lastStoredStateKey);
+     }
+     if (previousEnv === undefined) {
+       delete process.env.REDDIT_CLIENT_ID;
+     } else {
+       process.env.REDDIT_CLIENT_ID = previousEnv;
+     }
+     vi.restoreAllMocks();
+   });
+ 
+   it('stores and logs the forwarded IP during connect', async () => {
+     const app = createTestApp();
+     const setSpy = vi.spyOn(stateStore, 'set');
+     const infoSpy = vi.spyOn(logger, 'info').mockImplementation(() => logger);
+ 
+     const response = await request(app)
+       .get('/api/reddit/connect')
++      .query({ intent: 'account-link' })
+       .set('x-forwarded-for', FORWARDED_IP);
+ 
+     expect(response.status).toBe(200);
+     expect(typeof response.body.authUrl).toBe('string');
+ 
+     expect(setSpy).toHaveBeenCalledTimes(1);
+     const [stateKey, stateValue] = setSpy.mock.calls[0] ?? [];
+     lastStoredStateKey = stateKey as string | undefined;
+-    const storedPayload = stateValue as { ip?: string } | undefined;
++    const storedPayload = stateValue as { ip?: string; intent?: string } | undefined;
+     expect(storedPayload?.ip).toBe(FORWARDED_IP);
++    expect(storedPayload?.intent).toBe('account-link');
+ 
+     const loggedCall = infoSpy.mock.calls.find(call => call[0] === 'Reddit OAuth initiated');
+-    expect(loggedCall?.[1]).toMatchObject({ requestIP: FORWARDED_IP });
++    expect(loggedCall?.[1]).toMatchObject({ requestIP: FORWARDED_IP, intent: 'account-link' });
+   });
+ 
+   it('does not log an IP mismatch when callback forwarded IP matches stored state', async () => {
+     const app = createTestApp();
+     const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => logger);
+     vi.spyOn(logger, 'info').mockImplementation(() => logger);
+     vi.spyOn(logger, 'error').mockImplementation(() => logger);
+ 
+     const connectResponse = await request(app)
+       .get('/api/reddit/connect')
++      .query({ intent: 'account-link' })
+       .set('x-forwarded-for', FORWARDED_IP);
+ 
+     expect(connectResponse.status).toBe(200);
+     const authUrl = connectResponse.body.authUrl as string;
+     const state = new URL(authUrl).searchParams.get('state');
+     expect(state).toBeTruthy();
+ 
+     if (state) {
+       lastStoredStateKey = `reddit_state:${state}`;
+     }
+ 
+     const callbackResponse = await request(app)
+       .get('/api/reddit/callback')
+       .set('x-forwarded-for', FORWARDED_IP)
+       .query({ state, code: 'dummy-code' });
+ 
+     expect(callbackResponse.status).toBe(302);
+     expect(callbackResponse.headers['location']).toContain('reddit_token_exchange_failed');
+ 
+     const mismatchLog = warnSpy.mock.calls.find(call => call[0] === 'IP mismatch in OAuth callback');
+     expect(mismatchLog).toBeUndefined();
+   });
++
++  it('rejects Reddit connect requests without an intent', async () => {
++    const app = createTestApp();
++
++    const response = await request(app)
++      .get('/api/reddit/connect');
++
++    expect(response.status).toBe(400);
++    expect(response.body).toMatchObject({ error: 'Missing Reddit OAuth intent' });
++  });
++
++  it('routes posting intents to the posting workflow after successful callback', async () => {
++    const app = createTestApp();
++    const connectResponse = await request(app)
++      .get('/api/reddit/connect')
++      .query({ intent: 'posting', queue: 'reddit-posting' });
++
++    expect(connectResponse.status).toBe(200);
++    const authUrl = connectResponse.body.authUrl as string;
++    const state = new URL(authUrl).searchParams.get('state');
++    expect(state).toBeTruthy();
++
++    if (state) {
++      lastStoredStateKey = `reddit_state:${state}`;
++    }
++
++    exchangeRedditCodeMock.mockResolvedValueOnce({
++      accessToken: 'access-token',
++      refreshToken: 'refresh-token',
++    });
++
++    const callbackResponse = await request(app)
++      .get('/api/reddit/callback')
++      .query({ state, code: 'oauth-code' });
++
++    expect(callbackResponse.status).toBe(302);
++    const redirectLocation = callbackResponse.headers['location'];
++    expect(redirectLocation).toContain('/reddit/posting?');
++    expect(redirectLocation).toContain('intent=posting');
++    expect(redirectLocation).toContain('queue=reddit-posting');
++  });
++
++  it('routes account-link intents back to the dashboard when callback succeeds', async () => {
++    const app = createTestApp();
++    const connectResponse = await request(app)
++      .get('/api/reddit/connect')
++      .query({ intent: 'account-link' });
++
++    expect(connectResponse.status).toBe(200);
++    const authUrl = connectResponse.body.authUrl as string;
++    const state = new URL(authUrl).searchParams.get('state');
++    expect(state).toBeTruthy();
++
++    if (state) {
++      lastStoredStateKey = `reddit_state:${state}`;
++    }
++
++    exchangeRedditCodeMock.mockResolvedValueOnce({
++      accessToken: 'access-token',
++      refreshToken: 'refresh-token',
++    });
++
++    const callbackResponse = await request(app)
++      .get('/api/reddit/callback')
++      .query({ state, code: 'oauth-code' });
++
++    expect(callbackResponse.status).toBe(302);
++    const redirectLocation = callbackResponse.headers['location'];
++    expect(redirectLocation).toContain('/dashboard?');
++    expect(redirectLocation).toContain('intent=account-link');
++  });
+ });
+ 
+EOF
+)

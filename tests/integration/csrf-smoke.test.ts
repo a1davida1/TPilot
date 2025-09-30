@@ -145,6 +145,14 @@ describe('Real route CSRF protection', () => {
     }
   });
 
+  it('issues CSRF tokens without requiring an existing CSRF header', async () => {
+    const isolatedAgent = request.agent(app);
+    const response = await isolatedAgent.get('/api/csrf-token').expect(200);
+
+    expect(typeof response.body?.csrfToken).toBe('string');
+    expect((response.body?.csrfToken as string).length).toBeGreaterThan(10);
+  });
+
   it('rejects forged POST /api/reddit/submit requests without a CSRF token', async () => {
     const response = await agent
       .post('/api/reddit/submit')
@@ -156,8 +164,10 @@ describe('Real route CSRF protection', () => {
       });
 
     expect(response.status).toBe(403);
-    expect(response.body).toHaveProperty('error');
-    expect(String(response.body.error)).toContain('invalid csrf token');
+    expect(response.body).toMatchObject({
+      message: 'Invalid CSRF token',
+      code: 'CSRF_TOKEN_INVALID'
+    });
   });
 
   it('rejects forged POST /api/auth/forgot-password requests without a CSRF token', async () => {
@@ -166,8 +176,10 @@ describe('Real route CSRF protection', () => {
       .send({ email: 'test-user@example.com' });
 
     expect(response.status).toBe(403);
-    expect(response.body).toHaveProperty('error');
-    expect(String(response.body.error)).toContain('invalid csrf token');
+    expect(response.body).toMatchObject({
+      message: 'Invalid CSRF token',
+      code: 'CSRF_TOKEN_INVALID'
+    });
   });
 
   it('allows POST /api/auth/login to proceed when a CSRF token is provided', async () => {
@@ -194,8 +206,10 @@ describe('Real route CSRF protection', () => {
       .send({ priceId: 'price_test' });
 
     expect(response.status).toBe(403);
-    expect(response.body).toHaveProperty('error');
-    expect(String(response.body.error)).toContain('invalid csrf token');
+    expect(response.body).toMatchObject({
+      message: 'Invalid CSRF token',
+      code: 'CSRF_TOKEN_INVALID'
+    });
   });
 
   it('allows POST /api/billing/checkout to reach authentication when a CSRF token is provided', async () => {

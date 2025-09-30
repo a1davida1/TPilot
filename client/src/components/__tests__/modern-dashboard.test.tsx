@@ -216,7 +216,7 @@ describe("ModernDashboard quick start", () => {
   it("walks through the quick start flow and submits a Reddit post", async () => {
     mockedAuthUser = null;
     apiRequestMock.mockImplementation((method: string, url: string) => {
-      if (method === "GET" && url === "/api/reddit/connect") {
+      if (method === "GET" && url === "/api/reddit/connect?intent=posting&queue=quick-start") {
         return Promise.resolve({
           json: async () => ({ authUrl: "https://reddit.com/auth" }),
         } as Response);
@@ -261,7 +261,7 @@ describe("ModernDashboard quick start", () => {
 
     // Wait for both API calls and connection to complete
     await waitFor(() => {
-      expect(apiRequestMock).toHaveBeenCalledWith("GET", "/api/reddit/connect");
+      expect(apiRequestMock).toHaveBeenCalledWith("GET", "/api/reddit/connect?intent=posting&queue=quick-start");
       expect(apiRequestMock).toHaveBeenCalledWith("GET", "/api/reddit/accounts");
       const nextButton = getButtonByText(/^Continue$/i);
       if (nextButton.disabled) {
