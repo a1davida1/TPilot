@@ -31,7 +31,7 @@ interface GettingStartedProps {
 export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom: _isAtBottom = false, onSetupLater }: GettingStartedProps) {
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
   // TODO: Implement step expansion/details view
-  const [_activeStep, setActiveStep] = useState<string | null>(null);
+  const [_activeStep, _setActiveStep] = useState<string | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
 
   const steps = [
@@ -288,7 +288,7 @@ export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom:
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {steps.map((step, index) => {
+            {steps.map((step, _index) => {
               const IconComponent = step.icon;
               const isCompleted = completedSteps.has(step.id);
               const isDisabled = step.proOnly && (userTier === 'guest' || userTier === 'free');
@@ -371,7 +371,7 @@ export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom:
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {features.map((feature, index) => {
+              {features.map((feature, _index) => {
                 const IconComponent = feature.icon;
                 return (
                   <div

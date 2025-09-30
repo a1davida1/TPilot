@@ -1,0 +1,162 @@
+Remove the legacy .eslintignore if present. Commit this as the very first change.
+
+Primary rule fixes: @typescript-eslint/no-unused-vars
+Apply these mechanical rules per file. Prefer automated edits; otherwise make surgical manual changes.
+
+A) Unused imports (UI icons, components, types, helpers)
+
+If an import specifier is unused, remove that specifier; if all specifiers are unused, remove the entire import.
+
+Example:
+
+Before: import { AlertTriangle, Info, Pause } from 'lucide-react'
+
+After: // import removed entirely OR import { Info } from 'lucide-react' if Info is used.
+
+B) Unused variables/constants
+
+If it’s clearly a throwaway local (e.g., const now = Date.now() never used), delete it.
+
+If it’s a placeholder/integration or public state you plan to use (see “Whitelist” below), prefix with _ to satisfy the rule and keep the intent:
+
+const settings = … → const _settings = …
+
+Destructuring: const [value, setValue] = useState() → if setValue unused, rename to _setValue; if value unused but intentionally kept, rename to _value.
+
+For array callbacks where index is unused: (item, index) => → (item, _index) =>.
+
+C) Unused function parameters
+
+Prefix with _ (do not remove params in exported functions/handlers):
+(req, res, next) → (req, res, _next) if next isn’t used.
+(recommendationId) => → (_recommendationId) =>.
+
+D) Unused caught errors
+
+Change catch (error) {…} to catch (_err) {…} or catch {…} if nothing inside references it.
+
+Integration Placeholder Whitelist (prefix with _, don’t delete)
+If any of these names (or close variants) are unused, rename with an underscore rather than removing:
+
+Data/API/context: apiRequest, user, settings, userTier, userPrefs, data, request, mode
+
+Auth/session: isGuestMode, selectedAccount, setSelectedAccount, logout
+
+UI/state that’s likely used soon: isLoading, isError, handleRetry, instructionsLoading, lastUpdateTime, selectedImage, setSelectedImage, selectedTags, setSelectedTags, setActiveStep, activeStep
+
+Server/webhooks/jobs: jobId, signature, payload, connectionRole, amount, status, period, duration, reason, userId, usage
+
+Generic placeholders: error, err, e, T
+
+Other common rules to fix opportunistically (safe only)
+
+“assigned a value but only used as a type”
+If a value is only referenced in type positions, convert it to a type and remove the runtime value.
+
+Before: const actionTypes = { … } but only used as typeof actionTypes
+
+After: define an explicit type and remove the const, or keep the const only if used at runtime.
+
+@typescript-eslint/no-non-null-assertion (forbidden !)
+Replace foo!.bar with a guard or optional chaining + fallback:
+
+if (!foo) throw new Error('Expected foo');
+const value = foo.bar;
+// or
+const value = foo?.bar ?? defaultBar;
+
+
+@typescript-eslint/no-explicit-any
+Prefer unknown + narrowing. For simple pass-throughs where true typing is heavy, use unknown and cast at edge boundaries.
+
+Type-only imports
+Change import { X } from '…' to import type { X } from '…' when only used as a type.
+
+Process loop (very important)
+
+Run a baseline report to know current count:
+pnpm -w eslint . -f unix || true
+
+Pick the next file from the warning list below. Fix it using the rules above.
+
+Validate just that file:
+pnpm -w eslint client/src/.../file.tsx (or server/.../file.ts)
+
+Commit:
+git add <file> && git commit -m "chore(lint): no-unused-vars cleanup in <relative path>"
+
+Every 5 files, run tests: pnpm -w test -i
+
+Repeat until there are no more @typescript-eslint/no-unused-vars warnings.
+
+Make one final pass for:
+
+obvious type-only imports
+
+easy non-null assertion removals
+
+trivial any → unknown fixes
+Commit each file individually as above.
+
+Concrete starting queue (from latest lint output)
+Tackle in this order to get fast wins first:
+
+client/src/components/fine-tuning-settings.tsx → remove unused apiRequest import.
+
+client/src/components/generation-panel.tsx → catch (_err) { … }.
+
+client/src/components/getting-started.tsx → rename _setActiveStep, _index in map callbacks.
+
+client/src/components/image-gallery.tsx → _setSelectedImage, catch (_err).
+
+client/src/components/image-shield-unified.tsx → drop unused imports (Input, Tag), _selectedTags, _setSelectedTags, _setSelectedImage, catch (_err).
+
+client/src/components/image-shield.tsx → drop unused icon imports, _isGuestMode, _settings, _canUseAdvanced, catch (_err).
+
+client/src/components/integrated-fine-tuning.tsx → drop unused icon imports, _newData.
+
+client/src/components/landing-page.tsx → remove unused imports (CardDescription, useToast, icons).
+
+client/src/components/optimization/ContentOptimizer.tsx → remove unused icon imports.
+
+client/src/components/optimization/PerformanceOptimizer.tsx → remove unused icon imports; rename _recommendationId.
+
+client/src/components/pro-perks.tsx → remove unused icon imports; _userTier, _instructionsLoading, _isError.
+
+client/src/components/pwa/MobilePWA.tsx → remove unused icons; catch (_err).
+
+client/src/components/reddit-communities.tsx → _isLoading, _formatAllowance, _formatBoolean, _getSellingPolicyBadge.
+
+client/src/components/unified-content-creator.tsx → remove unused Wand2, _apiRequest, _availableHashtags, _setSelectedPhotoType, _setSelectedTextTone, _user, catch (_err), _toggleHashtag.
+
+client/src/pages/admin.tsx → remove unused imports; _setSelectedPeriod, _reason, _duration, _setDuration.
+
+client/src/pages/reddit-posting.tsx → remove unused UI imports; _MS_PER_DAY, _user, _isGalleryFeatureEnabled, _selectedAccount, _setSelectedAccount, _isPreviewMode, _setIsPreviewMode.
+
+client/src/pages/referral.tsx → remove unused Alert components; _isLoadingData, _hasError, _aggregatedError, _handleRetry, catch (_err).
+
+server/caption/geminiPipeline.ts → remove unused constants (MAX_VARIANT_ATTEMPTS if truly unused) and helper imports; keep placeholders prefixed.
+
+server/lib/payment-providers.ts → rename _signature, _payload in callbacks.
+
+server/lib/workers/* → rename _jobId; convert trivial any → unknown if easy.
+
+server/routes.ts, server/api-routes.ts → remove unused imports (manually, not sweeping); rename placeholder params (e.g., _variants, _normalizedPhotoInstructions).
+
+Edits to avoid unless trivial
+
+Do not refactor modules using namespace right now. Skip the “ES2015 module syntax preferred over namespaces” warnings for a later pass.
+
+Do not change API shapes, routing, or business logic.
+
+Acceptance criteria
+
+@typescript-eslint/no-unused-vars warnings reduced to zero.
+
+No test regressions.
+
+Commits are small, per-file, with clear messages.
+
+The code still builds and runs.
+
+Now perform the loop. Start at the top of the queue. After each file, run lint for that file, commit, and move to the next. Every 5 files, run tests. When finished with unused-vars, do the quick “other rules” pass as described, still one file at a time with commits.

@@ -16,11 +16,9 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
   const [platform, setPlatform] = useState("reddit");
   const [style, setStyle] = useState("playful");
   const [theme, setTheme] = useState("tease");
-  // TODO: Implement timing-based content optimization
-  const [_timing, setTiming] = useState("evening");
+  const [timing, setTiming] = useState("evening");
   const [allowsPromotion, setAllowsPromotion] = useState(false);
-  // TODO: Implement copy feedback
-  const [_copiedItem, setCopiedItem] = useState<string | null>(null);
+  const [copiedItem, setCopiedItem] = useState<string | null>(null);
   const [generatedContent, setGeneratedContent] = useState<ContentGeneration | null>(null);
 
   const { toast } = useToast();
@@ -91,7 +89,7 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
         title: "Copied!",
         description: `${type} copied to clipboard`,
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Copy Failed",
         description: "Failed to copy to clipboard",

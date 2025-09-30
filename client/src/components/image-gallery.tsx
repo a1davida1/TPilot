@@ -22,7 +22,7 @@ interface UserImage extends MediaAsset {
 export function ImageGallery() {
   const [selectedTags, setSelectedTags] = useState<string>('');
   // TODO: Implement image detail modal/viewer
-  const [_selectedImage, setSelectedImage] = useState<UserImage | null>(null);
+  const [_selectedImage, _setSelectedImage] = useState<UserImage | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuth();
@@ -164,7 +164,7 @@ export function ImageGallery() {
       const response = await fetch(image.signedUrl || image.downloadUrl || '');
       const blob = await response.blob();
       downloadProtectedImage(blob, image.filename);
-    } catch (error) {
+    } catch {
       toast({
         title: "Download failed",
         description: "Could not download image.",
