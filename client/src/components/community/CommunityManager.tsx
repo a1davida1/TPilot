@@ -14,20 +14,17 @@ import {
   Reply, 
   TrendingUp, 
   Shield, 
-  AlertTriangle, 
   CheckCircle,
-  Settings,
   Search,
   Filter,
   Bell,
-  Star,
-  Calendar,
-  BarChart3
+  Star
 } from 'lucide-react';
 
 export function CommunityManager() {
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
-  const [engagementTracking, setEngagementTracking] = useState(true);
+  // TODO: Implement engagement tracking feature
+  // const [engagementTracking, setEngagementTracking] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState('all');
 
   const communities = [
