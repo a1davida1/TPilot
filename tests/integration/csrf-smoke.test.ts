@@ -61,10 +61,10 @@ describe('CSRF smoke tests for sensitive routes', () => {
       csrfProtectedRoutes.forEach(route => {
         if (route.includes('*')) {
           const baseRoute = route.replace('/*', '');
-          app.use(baseRoute, csrfProtection);
-          app.use(`${baseRoute}/*`, csrfProtection);
+          app.use(baseRoute, csrfProtection as any);
+          app.use(`${baseRoute}/*`, csrfProtection as any);
         } else {
-          app.use(route, csrfProtection);
+          app.use(route, csrfProtection as any);
         }
       });
 
@@ -134,7 +134,7 @@ describe('Real route CSRF protection', () => {
   afterAll(async () => {
     if (httpServer && httpServer.listening) {
       await new Promise<void>((resolve, reject) => {
-        httpServer.close(error => {
+        httpServer!.close(error => {
           if (error) {
             reject(error);
             return;
