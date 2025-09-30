@@ -26,6 +26,7 @@ describe('/api/caption/generate OpenAI fallback', () => {
     }));
 
     vi.doMock('../../server/lib/gemini.ts', () => ({
+      __esModule: true,
       isGeminiAvailable: vi.fn(() => false),
       textModel: { generateContent: vi.fn() },
       visionModel: { generateContent: vi.fn() },

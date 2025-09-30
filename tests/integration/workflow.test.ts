@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Mock all external dependencies for integration testing
-vi.mock('../../server/lib/gemini', () => ({
+vi.mock('../../server/lib/gemini.ts', () => ({
+  __esModule: true,
   textModel: {
     generateContent: vi.fn().mockResolvedValue({
       response: {
@@ -28,7 +29,8 @@ vi.mock('../../server/lib/gemini', () => ({
         })
       }
     })
-  }
+  },
+  isGeminiAvailable: () => true
 }));
 
 vi.mock('../../server/storage', () => ({

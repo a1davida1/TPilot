@@ -4,7 +4,8 @@ import { pipelineRewrite, extractKeyEntities } from '../../server/caption/rewrit
 import { pipelineTextOnly } from '../../server/caption/textOnlyPipeline';
 
 // Mock dependencies
-vi.mock('../../server/lib/gemini', () => ({
+vi.mock('../../server/lib/gemini.ts', () => ({
+  __esModule: true,
   textModel: {
     generateContent: vi.fn(),
   },

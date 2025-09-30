@@ -2,12 +2,14 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { Mock } from 'vitest';
 
 vi.mock('../../../server/lib/gemini.ts', () => ({
+  __esModule: true,
   textModel: {
     generateContent: vi.fn(),
   },
   visionModel: {
     generateContent: vi.fn(),
   },
+  isGeminiAvailable: vi.fn(() => true),
 }));
 
 describe('inferFallbackFromFacts helper', () => {

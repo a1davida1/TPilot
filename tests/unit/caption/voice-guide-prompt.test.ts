@@ -13,9 +13,11 @@ const mockVisionModel = vi.hoisted(() => ({
   generateContent: vi.fn(),
 }));
 
-vi.mock('../../../../server/lib/gemini', () => ({
+vi.mock('../../../../server/lib/gemini.ts', () => ({
+  __esModule: true,
   textModel: mockTextModel,
   visionModel: mockVisionModel,
+  isGeminiAvailable: () => true,
 }));
 
 type CaptionVariant = {

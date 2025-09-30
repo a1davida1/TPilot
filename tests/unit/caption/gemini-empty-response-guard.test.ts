@@ -27,7 +27,11 @@ describe('Gemini empty response guards', () => {
   ])('throws in text-only variant generation when Gemini returns %s', async ({ value }) => {
     const textModel = { generateContent: vi.fn().mockResolvedValue(createMockResponse(value)) };
 
-    vi.doMock('../../../server/lib/gemini.js', () => ({ textModel }));
+    vi.doMock('../../../server/lib/gemini.ts', () => ({
+      __esModule: true,
+      textModel,
+      isGeminiAvailable: () => true,
+    }));
 
     const { generateVariantsTextOnly } = await import('../../../server/caption/textOnlyPipeline.ts');
 
@@ -64,7 +68,8 @@ describe('Gemini empty response guards', () => {
     };
     const openAICaptionFallback = vi.fn().mockResolvedValue(fallbackFinal);
 
-    vi.doMock('../../../server/lib/gemini.js', () => ({
+    vi.doMock('../../../server/lib/gemini.ts', () => ({
+      __esModule: true,
       textModel,
       visionModel,
       isGeminiAvailable: () => true,
