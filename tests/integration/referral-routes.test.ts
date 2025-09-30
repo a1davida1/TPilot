@@ -232,12 +232,11 @@ describe('Referral Routes Integration Tests', () => {
 
       expect(response.body).toEqual({
         success: true,
-        message: 'Referral code applied successfully',
-        referrerId: 42,
-        status: 'linked'
+        status: 'linked',
+        referrerId: 42
       });
 
-      expect(mockReferralManager.applyReferralCode).toHaveBeenCalledWith({ email: 'new-user@example.com' }, referralCode);
+      expect(mockReferralManager.applyReferralCode).toHaveBeenCalledWith({ email: 'new-user@example.com' }, 'THOTTO789012');
     });
 
     it('should return 400 for missing referral code', async () => {
@@ -247,6 +246,7 @@ describe('Referral Routes Integration Tests', () => {
         .expect(400);
 
       expect(response.body).toEqual({
+        success: false,
         error: 'Referral code is required'
       });
     });
@@ -258,7 +258,8 @@ describe('Referral Routes Integration Tests', () => {
         .expect(400);
 
       expect(response.body).toEqual({
-        error: 'Referral code is required'
+        success: false,
+        error: 'Referral code must be a string'
       });
     });
 
@@ -269,7 +270,8 @@ describe('Referral Routes Integration Tests', () => {
         .expect(400);
 
       expect(response.body).toEqual({
-        error: 'Applicant identifier is required'
+        success: false,
+        error: 'Applicant information is required'
       });
     });
 
@@ -290,9 +292,8 @@ describe('Referral Routes Integration Tests', () => {
 
       expect(response.body).toEqual({
         success: true,
-        message: 'Referral recorded for pending signup',
-        referrerId: 52,
-        status: 'recorded'
+        status: 'recorded',
+        referrerId: 52
       });
 
       expect(mockReferralManager.applyReferralCode).toHaveBeenCalledWith({ email: 'case-test@example.com' }, 'THOTTO654321');
@@ -330,6 +331,36 @@ describe('Referral Routes Integration Tests', () => {
         success: false,
         error: 'Internal server error while applying referral code'
       });
+    });
+
+    it('should accept temporary user identifiers when provided', async () => {
+      const referralCode = 'thotto000111';
+      const mockResult = {
+        success: true,
+        referrerId: 101,
+        pending: true
+      };
+
+      mockReferralManager.applyReferralCode = vi.fn().mockResolvedValue(mockResult);
+
+      const response = await request(app)
+        .post('/api/referral/apply')
+        .send({
+          referralCode,
+          applicant: { email: 'temp-user@example.com', temporaryUserId: ' temp-123 ' }
+        })
+        .expect(200);
+
+      expect(response.body).toEqual({
+        success: true,
+        status: 'recorded',
+        referrerId: 101
+      });
+
+      expect(mockReferralManager.applyReferralCode).toHaveBeenCalledWith({
+        email: 'temp-user@example.com',
+        temporaryUserId: 'temp-123'
+      }, 'THOTTO000111');
     });
   });
 

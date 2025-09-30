@@ -73,19 +73,23 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
       });
 
       const payload = await response.json().catch(() => null) as null | {
-        message?: string;
+        success?: boolean;
         error?: string;
-        status?: string;
+        status?: 'linked' | 'recorded';
       };
 
-      if (response.ok) {
+      if (response.ok && payload?.success) {
         window.localStorage.removeItem('pendingReferralCode');
         setReferralCode(null);
         latestSignupEmailRef.current = null;
 
+        const description = payload.status === 'linked'
+          ? 'Your new account is linked to the referral code.'
+          : 'We saved your referral details for review.';
+
         toast({
           title: 'Referral recorded',
-          description: payload?.message ?? 'We saved your referral details for review.',
+          description,
           variant: 'default'
         });
         return;
