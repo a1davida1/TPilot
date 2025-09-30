@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { CaptionItem } from '../schema';
 import { z } from 'zod';
 import type { GenerativeModel } from '@google/generative-ai';
@@ -60,7 +60,7 @@ describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMoc
   let rankAndSelect: (typeof import('../geminiPipeline'))['rankAndSelect'];
   let textModelMock: TextModelMock;
   let getTextModelMock: ReturnType<typeof vi.fn>;
-  let fetchSpy: ReturnType<typeof vi.spyOn>;
+  let fetchSpy: any;
 
   beforeEach(async () => {
     vi.resetModules();
