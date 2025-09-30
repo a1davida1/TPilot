@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useMetrics } from "@/hooks/use-metrics";
@@ -18,7 +18,7 @@ interface DemoFallbackProps {
 }
 
 export function DemoFallback({ error, onRetry, onSignUp }: DemoFallbackProps) {
-  const { data: metrics, isLoading, isError } = useMetrics();
+  const { data: metrics } = useMetrics();
   const creatorText = metrics?.creators
     ? `Trusted by ${metrics.creators.toLocaleString()} content creators`
     : undefined;
