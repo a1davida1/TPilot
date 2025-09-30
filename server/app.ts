@@ -5,6 +5,7 @@ import csrf from 'csurf';
 import { v4 as uuidv4 } from 'uuid';
 import { registerRoutes } from './routes.js';
 import { authLimiter, generalLimiter, sanitize } from './middleware/security.js';
+import { permissionsPolicy } from './middleware/permissions-policy.js';
 import { mountStripeWebhook } from './routes/webhooks.stripe.js';
 import { logger } from './bootstrap/logger.js';
 import { startQueue } from './bootstrap/queue.js';
@@ -235,6 +236,8 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
     res.setHeader('X-Request-ID', req.id);
     next();
   });
+
+  app.use(permissionsPolicy);
 
   app.post(`${API_PREFIX}/webhooks/stripe`, express.raw({ type: 'application/json' }), (_req, _res, next) => next());
   
