@@ -1153,16 +1153,15 @@ async function requestGeminiRanking(
   const resolved = await resolveResponseText(res);
   if (typeof resolved === "string") {
     textOutput = resolved;
-  } else if (
-    res &&
-    (res as GeminiResponse)?.response &&
-    typeof (res as GeminiResponse).response.text === "function"
-  ) {
-    try {
-      const raw = (res as GeminiResponse).response.text();
-      textOutput = typeof raw === "string" ? raw : null;
-    } catch (invokeError) {
-      console.error("Gemini: failed to read ranking response:", invokeError);
+  } else if (res && typeof res === "object") {
+    const geminiRes = res as GeminiResponse;
+    if (geminiRes?.response && typeof geminiRes.response.text === "function") {
+      try {
+        const raw = geminiRes.response.text();
+        textOutput = typeof raw === "string" ? raw : null;
+      } catch (invokeError) {
+        console.error("Gemini: failed to read ranking response:", invokeError);
+      }
     }
   } else if (typeof res === "string") {
     textOutput = res;
