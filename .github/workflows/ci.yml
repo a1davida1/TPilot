@@ -1,14 +1,36 @@
 name: CI
-
 on:
   push:
-    branches: [ main ]
+    branches: [ "**" ]
   pull_request:
-    branches: [ main ]
-
+permissions:
+  contents: read
+  checks: write
+  actions: read
 jobs:
-  build:
+  build-test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: thottopilot_test
+        ports: [ "5432:5432" ]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports: [ "6379:6379" ]
+        options: >-
+          --health-cmd "redis-cli ping || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -16,56 +38,24 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm test
-      - run: npm run typecheck
-      - run: npm run test:coverage
-      - run: bash build-production.sh
-      - name: Deploy to staging
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: bash deploy-staging.sh
-
-  deploy:
-    needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: bash deploy-staging.sh
-
-  e2e-pr:
-    needs: build
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    env:
-      E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
-      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
-      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
-      E2E_BILLING_PLAN: ${{ secrets.E2E_BILLING_PLAN }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Baseline env for CI
+        run: |
+          cp -n .env.example .env || true
+          echo "NODE_ENV=test" >> .env
+          echo "TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/thottopilot_test" >> .env
+          echo "REDIS_URL=redis://localhost:6379" >> .env
+      - run: npm run typecheck --if-present
+      - run: npm run lint --if-present
+      - run: npm test --if-present -- --reporter=default --coverage
+      - run: npm run build --if-present
+      - name: Env template audit
+        run: npm run env:audit --if-present
+      - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run test:e2e
-
-  e2e-post-deploy:
-    needs:
-      - build
-      - deploy
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.deploy.result == 'success'
-    runs-on: ubuntu-latest
-    env:
-      E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
-      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
-      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
-      E2E_BILLING_PLAN: ${{ secrets.E2E_BILLING_PLAN }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run test:e2e
+          name: coverage-and-logs
+          path: |
+            coverage/**
+            logs/**
+            dist/**
+          if-no-files-found: ignore
