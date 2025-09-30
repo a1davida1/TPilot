@@ -7,6 +7,7 @@ import { CaptionItem } from './schema';
 import { serializePromptField } from './promptUtils';
 import { formatVoiceContext } from './voiceTraits';
 import { toOpenAIImageUrl, validateImageUrl, logImageInfo } from './lib/images';
+import { normalizeImageForOpenAI } from './util/normalizeImage';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
 
@@ -112,14 +113,14 @@ export async function openAICaptionFallback({
       console.error('OpenAI fallback: Analyzing image for accurate captions');
       
       // Normalize and validate the image URL
-      const normalizedImageUrl = toOpenAIImageUrl(imageUrl);
-      if (!validateImageUrl(normalizedImageUrl)) {
+      const normalized = normalizeImageForOpenAI(imageUrl);
+      if (!normalized || !validateImageUrl(normalized)) {
         throw new Error('Invalid or too short image data');
       }
       
       // Log image info for debugging
       const requestId = `openai-${Date.now()}`;
-      logImageInfo(normalizedImageUrl, requestId);
+      logImageInfo(normalized, requestId);
       
       // Use normalized URL - works for both data URLs and HTTPS URLs
       messages = [
@@ -150,7 +151,7 @@ Return ONLY a JSON object with this structure:
             },
             {
               type: "image_url",
-              image_url: { url: normalizedImageUrl }
+              image_url: { url: normalized }
             }
           ]
         }
