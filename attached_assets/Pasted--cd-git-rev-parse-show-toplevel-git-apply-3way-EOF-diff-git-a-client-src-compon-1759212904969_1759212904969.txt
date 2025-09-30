@@ -1,0 +1,299 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/client/src/components/modern-dashboard.tsx b/client/src/components/modern-dashboard.tsx
+index 4db4cba5e9d5fc083a712df64a82f7c2e04e9fdb..fabc5c16f9f152a7f27a60256340925aeae37037 100644
+--- a/client/src/components/modern-dashboard.tsx
++++ b/client/src/components/modern-dashboard.tsx
+@@ -1,52 +1,53 @@
+-import React, { useState, useEffect, useRef, useCallback } from "react";
++import React, { useState, useEffect, useRef, useCallback, useTransition } from "react";
+ import { useQuery } from "@tanstack/react-query";
+ import { useLocation } from "wouter";
+ import { useAuth } from "@/hooks/useAuth";
+ import { 
+   Upload,
+   Sparkles,
+   Shield,
+   Target,
+   Scale,
+   BarChart3,
+   Calculator,
+   Gift,
+   X,
+   Clock,
+   Bell,
+   Settings,
+   ChevronRight,
+   Home,
+   Brain,
+   Users,
+   History,
+   ImageIcon,
+   Zap,
+   ListChecks,
+   Command,
+-  CheckCircle2
++  CheckCircle2,
++  Loader2
+ } from "lucide-react";
+ import { FaReddit } from "react-icons/fa";
+ import { cn } from "@/lib/utils";
+ import { Button } from "@/components/ui/button";
+ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+ import { Badge } from "@/components/ui/badge";
+ import { useToast } from "@/hooks/use-toast";
+ import { QuickStartModal } from "@/components/dashboard-quick-start";
+ import { ThemeToggle } from "@/components/theme-toggle";
+ import { apiRequest } from "@/lib/queryClient";
+ import type { ApiError } from "@/lib/queryClient";
+ 
+ interface ModernDashboardProps {
+   isRedditConnected?: boolean;
+   user?: { id: number; username: string; email?: string; tier?: string; isVerified?: boolean };
+   userTier?: 'guest' | 'free' | 'basic' | 'starter' | 'pro' | 'premium' | 'admin';
+   isAdmin?: boolean;
+ }
+ 
+ type UserTier = NonNullable<ModernDashboardProps['userTier']>;
+ 
+ interface OnboardingProgress {
+   connectedReddit: boolean;
+   selectedCommunities: boolean;
+   createdFirstPost: boolean;
+diff --git a/client/src/components/modern-dashboard.tsx b/client/src/components/modern-dashboard.tsx
+index 4db4cba5e9d5fc083a712df64a82f7c2e04e9fdb..fabc5c16f9f152a7f27a60256340925aeae37037 100644
+--- a/client/src/components/modern-dashboard.tsx
++++ b/client/src/components/modern-dashboard.tsx
+@@ -165,50 +166,51 @@ function hasTierAccess(currentTier: UserTier, requiredTier: UserTier | undefined
+   if (!requiredTier) {
+     return true;
+   }
+ 
+   if (isAdminUser) {
+     return true;
+   }
+ 
+   return tierHierarchy[currentTier] >= tierHierarchy[requiredTier];
+ }
+ 
+ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'free', isAdmin = false }: ModernDashboardProps) {
+   const [sidebarOpen, setSidebarOpen] = useState(false);
+   // TODO: Implement mobile-specific layout
+   const [_isMobile, setIsMobile] = useState(false);
+   const [selectedCard, setSelectedCard] = useState<string | null>(null);
+   // TODO: Implement file upload feature
+   const _fileInputRef = useRef<HTMLInputElement>(null);
+   const [showMoreTools, setShowMoreTools] = useState(false);
+   const [onboardingProgress, setOnboardingProgress] = useState<OnboardingProgress>(() => readStoredProgress());
+   const [quickStartOpen, setQuickStartOpen] = useState(false);
+   const [quickStartStep, setQuickStartStep] = useState<'connect' | 'subreddit' | 'copy' | 'confirm'>('connect');
+   const { toast } = useToast();
+   const [, setLocation] = useLocation();
+   const { user: authUser } = useAuth();
++  const [isNavigatingToScheduler, startSchedulerNavigation] = useTransition();
+   
+   const resolvedTier = (authUser?.tier as ModernDashboardProps['userTier'] | undefined) ?? userTier;
+   const resolvedUser = authUser ?? user;
+   const isAdminUser = Boolean(authUser?.isAdmin || authUser?.role === 'admin' || resolvedTier === 'admin' || isAdmin);
+   const isPremium = isAdminUser || resolvedTier === 'premium' || resolvedTier === 'pro';
+   const displayName = resolvedUser?.username ?? resolvedUser?.email ?? 'Creator';
+   const dashboardPrompt = isAdminUser
+     ? 'Review platform performance and respond to creator needs.'
+     : 'What would you like to do today?';
+ 
+   const {
+     data: statsData,
+     isLoading: statsLoading,
+     error: statsError,
+   } = useQuery<DashboardStatsResponse>({
+     queryKey: ['/api/dashboard/stats'],
+     enabled: Boolean(resolvedUser?.id),
+   });
+ 
+   const {
+     data: activityData,
+     isLoading: activityLoading,
+     error: activityError,
+   } = useQuery<DashboardActivityResponse>({
+     queryKey: ['/api/dashboard/activity'],
+diff --git a/client/src/components/modern-dashboard.tsx b/client/src/components/modern-dashboard.tsx
+index 4db4cba5e9d5fc083a712df64a82f7c2e04e9fdb..fabc5c16f9f152a7f27a60256340925aeae37037 100644
+--- a/client/src/components/modern-dashboard.tsx
++++ b/client/src/components/modern-dashboard.tsx
+@@ -543,50 +545,56 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
+     const updatedProgress = {
+       ...onboardingProgress,
+       selectedCommunities: true
+     };
+     setOnboardingProgress(updatedProgress);
+     try {
+       window.localStorage.setItem(MODERN_DASHBOARD_ONBOARDING_STORAGE_KEY, JSON.stringify(updatedProgress));
+     } catch (_error) {
+       // Ignore localStorage errors
+     }
+   };
+ 
+   const handleQuickStartPosted = () => {
+     const updatedProgress = {
+       ...onboardingProgress,
+       createdFirstPost: true
+     };
+     setOnboardingProgress(updatedProgress);
+     try {
+       window.localStorage.setItem(MODERN_DASHBOARD_ONBOARDING_STORAGE_KEY, JSON.stringify(updatedProgress));
+     } catch (_error) {
+       // Ignore localStorage errors
+     }
+   };
+ 
++  const handleManageSchedule = () => {
++    startSchedulerNavigation(() => {
++      setLocation('/enterprise?tab=scheduler');
++    });
++  };
++
+   // Get current onboarding stage for hero card
+   const getCurrentStage = () => {
+     if (!onboardingProgress.connectedReddit) {
+       return 'connect-reddit';
+     }
+     if (!onboardingProgress.selectedCommunities) {
+       return 'find-communities';
+     }
+     if (!onboardingProgress.createdFirstPost) {
+       return 'first-post';
+     }
+     return 'advanced';
+   };
+ 
+   const currentStage = getCurrentStage();
+ 
+   const renderHeroCard = () => {
+     switch (currentStage) {
+       case 'connect-reddit':
+         return (
+           <Card className="bg-gradient-to-r from-orange-500 to-red-500 border-0 mb-6">
+             <CardContent className="p-6">
+               <div className="flex items-center gap-4">
+                 <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                   <FaReddit className="h-7 w-7 text-white" />
+diff --git a/client/src/components/modern-dashboard.tsx b/client/src/components/modern-dashboard.tsx
+index 4db4cba5e9d5fc083a712df64a82f7c2e04e9fdb..fabc5c16f9f152a7f27a60256340925aeae37037 100644
+--- a/client/src/components/modern-dashboard.tsx
++++ b/client/src/components/modern-dashboard.tsx
+@@ -1101,98 +1109,103 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
+                   ))}
+                 </div>
+               ) : showGalleryEmptyState ? (
+                 <div className="text-center py-8 text-gray-400">
+                   <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                   <p>No recent media</p>
+                   <p className="text-sm">Upload some content to see it here</p>
+                 </div>
+               ) : (
+                 <div className="grid grid-cols-4 gap-2">
+                   {galleryItems.map((item) => (
+                     <div
+                       key={item.id}
+                       className="aspect-square bg-gray-700 rounded-lg overflow-hidden"
+                     >
+                       <img
+                         src={item.signedUrl ?? item.url}
+                         alt={item.alt}
+                         className="w-full h-full object-cover"
+                         data-testid={`img-recent-media-${item.id}`}
+                       />
+                     </div>
+                   ))}
+                 </div>
+               )}
+-              <Button 
++              <Button
+                 className="w-full mt-4 bg-purple-600 hover:bg-purple-700"
+                 onClick={() => setLocation('/gallery')}
+               >
+                 View All
+                 <ChevronRight className="h-4 w-4 ml-2" />
+               </Button>
+             </CardContent>
+           </Card>
+ 
+           {/* Scheduled Posts */}
+           <Card className="bg-gray-800 border-gray-700">
+             <CardHeader>
+               <div className="flex items-center justify-between">
+                 <CardTitle className="text-white">Scheduled Posts</CardTitle>
+                 <Badge className="bg-orange-500 text-white">2 PENDING</Badge>
+               </div>
+               <CardDescription className="text-gray-400">
+                 Upcoming content
+               </CardDescription>
+             </CardHeader>
+             <CardContent>
+               <div className="space-y-3">
+                 <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                   <div className="flex items-center gap-3">
+                     <Clock className="h-5 w-5 text-purple-400" />
+                     <div>
+                       <p className="text-white text-sm font-medium">Morning Selfie</p>
+                       <p className="text-gray-400 text-xs">r/SelfieWorld • In 2 hours</p>
+                     </div>
+                   </div>
+                 </div>
+                 <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                   <div className="flex items-center gap-3">
+                     <Clock className="h-5 w-5 text-purple-400" />
+                     <div>
+                       <p className="text-white text-sm font-medium">Sunset Vibes</p>
+                       <p className="text-gray-400 text-xs">r/FreeKarma4U • In 6 hours</p>
+                     </div>
+                   </div>
+                 </div>
+               </div>
+-              <Button 
++              <Button
+                 className="w-full mt-4 bg-purple-600 hover:bg-purple-700"
+-                onClick={() => {
+-                  toast({
+-                    title: "Scheduler",
+-                    description: "Post scheduler coming soon!",
+-                  });
+-                }}
++                onClick={handleManageSchedule}
++                disabled={isNavigatingToScheduler}
+               >
+-                Manage Schedule
+-                <ChevronRight className="h-4 w-4 ml-2" />
++                {isNavigatingToScheduler ? (
++                  <>
++                    Opening Scheduler
++                    <Loader2 className="h-4 w-4 ml-2 animate-spin" />
++                  </>
++                ) : (
++                  <>
++                    Manage Schedule
++                    <ChevronRight className="h-4 w-4 ml-2" />
++                  </>
++                )}
+               </Button>
+             </CardContent>
+           </Card>
+         </div>
+       </div>
+ 
+       {/* Quick Start Modal */}
+       <QuickStartModal
+         open={quickStartOpen}
+         onOpenChange={setQuickStartOpen}
+         initialStep={quickStartStep}
+         isRedditConnected={isRedditConnected}
+         onNavigate={() => setLocation("/reddit")}
+         onConnected={handleQuickStartConnected}
+         onSelectedCommunity={handleQuickStartSelectedCommunity}
+         onPosted={handleQuickStartPosted}
+       />
+     </div>
+   );
+ }
+ 
+EOF
+)

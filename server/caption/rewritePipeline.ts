@@ -6,7 +6,7 @@ import { rankAndSelect, enrichWithTitleCandidates } from "./geminiPipeline";
 import { CaptionArray, RankResult, platformChecks, CaptionItem } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { BANNED_WORDS_HINT, variantContainsBannedWord } from "./bannedWords";
-import { extractToneOptions, ToneOptions } from "./toneOptions";
+import { extractToneOptions as _extractToneOptions, ToneOptions as _ToneOptions } from "./toneOptions";
 import { buildVoiceGuideBlock } from "./stylePack";
 import { serializePromptField } from "./promptUtils";
 import { formatVoiceContext } from "./voiceTraits";
@@ -358,7 +358,7 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
   return CaptionArray.parse(trimmed);
 }
 
-type RewriteToneArgs = {
+type _RewriteToneArgs = {
   style?: string;
   mood?: string
 };
@@ -393,7 +393,7 @@ async function requestRewriteRanking(
   return json;
 }
 
-async function rerankVariants(
+async function _rerankVariants(
   variants: unknown[],
   params?: { platform?: string }
 ): Promise<z.infer<typeof RankResult>> {
@@ -432,7 +432,7 @@ async function rerankVariants(
   });
 }
 
-type RewritePipelineArgs = {
+type _RewritePipelineArgs = {
   platform:"instagram"|"x"|"reddit"|"tiktok";
   voice?:string;
   existingCaption:string;
@@ -570,7 +570,7 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", style,
     }
 
     return { provider: 'gemini', facts, variants, ranked, final: out, titles: out.titles };
-  } catch (error) {
+  } catch (_error) {
     const { openAICaptionFallback } = await import('./openaiFallback');
     const final = await openAICaptionFallback({ platform, voice, existingCaption, imageUrl });
     const ranked = RankResult.parse({

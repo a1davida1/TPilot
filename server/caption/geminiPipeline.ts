@@ -51,8 +51,27 @@ interface TextModelObject {
 
 interface GeminiResponse {
   response?: {
-    text(): string;
+    text?: (() => unknown) | string;
   };
+}
+
+async function resolveResponseText(payload: unknown): Promise<string | undefined> {
+  if (!payload || typeof payload !== "object") {
+    return undefined;
+  }
+  const { response } = payload as GeminiResponse;
+  if (!response) {
+    return undefined;
+  }
+  const { text } = response;
+  if (typeof text === "function") {
+    const value = await Promise.resolve(text());
+    return typeof value === "string" ? value : undefined;
+  }
+  if (typeof text === "string") {
+    return text;
+  }
+  return undefined;
 }
 
 const MAX_VARIANT_ATTEMPTS = 4;
@@ -417,14 +436,13 @@ export async function variantsRewrite(
       throw error;
     }
 
-    // Check for empty response
-    if (!res || !(res as GeminiResponse)?.response?.text) {
+    const rawText = await resolveResponseText(res);
+    if (!rawText || rawText.trim().length === 0) {
       console.error('Gemini: empty response received');
       throw new Error('Gemini: empty response');
     }
 
-    const rawText = (res as GeminiResponse).response.text();
-    const json = stripToJSON(rawText ?? '') as unknown;
+    const json = stripToJSON(rawText) as unknown;
 
     duplicatesThisAttempt.length = 0;
 
@@ -678,7 +696,12 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
 
     try {
       const res = await visionModel.generateContent([{text: sys + "\n" + guard + "\n" + prompt}, img]);
-      const result = stripToJSON(res.response.text()) as Record<string, unknown>;
+      const rawText = await resolveResponseText(res);
+      if (!rawText || rawText.trim().length === 0) {
+        console.error('Gemini: empty response received during fact extraction');
+        throw new Error('Gemini: empty response');
+      }
+      const result = stripToJSON(rawText) as Record<string, unknown>;
       console.error('Fact extraction completed successfully');
       return result;
     } catch (error) {
@@ -812,13 +835,13 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
         { text: `${sysWithTone}\n${guard}\n${prompt}\n${user}` }
       ]);
       
-      // Check for empty response
-      if (!res || !res.response?.text) {
+      const rawText = await resolveResponseText(res);
+      if (!rawText || rawText.trim().length === 0) {
         console.error('Gemini: empty response received');
         throw new Error('Gemini: empty response');
       }
-      
-      const json = stripToJSON(res.response.text()) as unknown;
+
+      const json = stripToJSON(rawText) as unknown;
       return Array.isArray(json) ? json : [];
     } catch (error) {
       console.error("Gemini textModel.generateContent failed:", error);
@@ -987,13 +1010,19 @@ async function requestGeminiRanking(
     console.error('Gemini textModel invocation failed:', error);
     throw error;
   }
-  let json = stripToJSON(
-    (res as GeminiResponse)?.response?.text
-      ? (res as GeminiResponse).response?.text() ?? ''
-      : typeof res === 'string'
-        ? res
-        : JSON.stringify(res)
-  ) as unknown;
+  const rawText = await resolveResponseText(res);
+  const serialized = typeof rawText === 'string'
+    ? rawText
+    : typeof res === 'string'
+      ? res
+      : JSON.stringify(res);
+
+  if (typeof serialized === 'string' && serialized.trim().length === 0) {
+    console.error('Gemini: empty response received during ranking');
+    throw new Error('Gemini: empty response');
+  }
+
+  let json = stripToJSON(serialized) as unknown;
 
 
   const defaultVariant = variantsInput[0] ??

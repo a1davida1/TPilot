@@ -22,6 +22,7 @@ interface PostingJobPayload {
 
 type PostJobInsert = typeof postJobs.$inferInsert;
 type PostJobRecord = typeof postJobs.$inferSelect;
+type QueueName = typeof queueModule.QUEUE_NAMES[keyof typeof queueModule.QUEUE_NAMES];
 
 // Set up test environment variables
 process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'test-session-secret-key-1234567890abcd';
@@ -190,12 +191,12 @@ describe('POST /api/posts/schedule', () => {
 
     expect(addJobSpy).toHaveBeenCalledTimes(1);
     const callArgs = addJobSpy.mock.calls[0] as [
-      queueModule.QueueNames | 'posting',
+      QueueName,
       PostingJobPayload,
       { delay: number }
     ];
 
-    expect(callArgs[0]).toBe('posting');
+    expect(callArgs[0]).toBe(queueModule.QUEUE_NAMES.POST);
     expect(callArgs[1]).toMatchObject({
       userId,
       postJobId: expect.any(Number),
@@ -206,6 +207,7 @@ describe('POST /api/posts/schedule', () => {
     expect(callArgs[2]).toMatchObject({
       delay: expect.any(Number),
     });
+    expect(callArgs[2].delay).toBeGreaterThanOrEqual(0);
   });
 
   it('accepts authenticated cookie sessions and enqueues a posting job', async () => {
@@ -245,12 +247,12 @@ describe('POST /api/posts/schedule', () => {
 
     expect(addJobSpy).toHaveBeenCalledTimes(1);
     const callArgs = addJobSpy.mock.calls[0] as [
-      queueModule.QueueNames | 'posting',
+      QueueName,
       PostingJobPayload,
       { delay: number }
     ];
 
-    expect(callArgs[0]).toBe('posting');
+    expect(callArgs[0]).toBe(queueModule.QUEUE_NAMES.POST);
     expect(callArgs[1]).toMatchObject({
       userId,
       postJobId: expect.any(Number),
@@ -261,6 +263,7 @@ describe('POST /api/posts/schedule', () => {
     expect(callArgs[2]).toMatchObject({
       delay: expect.any(Number),
     });
+    expect(callArgs[2].delay).toBeGreaterThanOrEqual(0);
   });
 
   it('rejects unauthenticated requests with 401', async () => {
@@ -373,14 +376,16 @@ describe('POST /api/posts/schedule', () => {
     });
 
     const callArgs = addJobSpy.mock.calls[0] as [
-      queueModule.QueueNames | 'posting',
+      QueueName,
       PostingJobPayload,
       { delay: number }
     ];
 
+    expect(callArgs[0]).toBe(queueModule.QUEUE_NAMES.POST);
     expect(callArgs[1]).toMatchObject({
       mediaKey: 'test-media-key',
     });
+    expect(callArgs[2].delay).toBeGreaterThanOrEqual(0);
   });
 
   it('returns scheduled posts for authenticated users', async () => {

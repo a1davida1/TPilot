@@ -8,7 +8,7 @@ import { MediaManager } from "./lib/media.js";
 import { CCBillProcessor } from "./lib/billing.js";
 import { PolicyLinter } from "./lib/policyLinter.js";
 import { PostScheduler } from "./lib/scheduling.js";
-import { addJob, QueueNames } from "./lib/queue/index.js";
+import { addJob, QUEUE_NAMES } from "./lib/queue/index.js";
 import { getErrorMessage } from "./utils/error.js";
 import { RedditManager } from "./lib/reddit.js";
 import { postJobs, subscriptions, mediaAssets, creatorAccounts, users, userSamples } from "@shared/schema";
@@ -289,7 +289,9 @@ export function registerApiRoutes(app: Express) {
       }).returning();
 
       // Add to queue
-      await addJob<PostingJobPayload>('posting' as QueueNames, {
+      const delayUntilSend = Math.max(0, scheduledAt.getTime() - Date.now());
+
+      await addJob<PostingJobPayload>(QUEUE_NAMES.POST, {
         userId,
         postJobId: postJob.id,
         subreddit: data.subreddit,
@@ -297,7 +299,7 @@ export function registerApiRoutes(app: Express) {
         bodyFinal: data.body,
         mediaKey: data.mediaKey,
       }, {
-        delay: scheduledAt.getTime() - Date.now(),
+        delay: delayUntilSend,
       });
 
       res.json({ 

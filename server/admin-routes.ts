@@ -112,7 +112,7 @@ export const requireAdmin = (req: AdminRequest & { isAuthenticated?: () => boole
       try {
         const decoded = jwt.verify(token, jwtSecret) as { id: number; username?: string; isAdmin?: boolean; iat: number; exp: number };
         user = decoded;
-      } catch (error) {
+      } catch (_error) {
         // JWT is invalid, user remains null
       }
     } else {
@@ -123,7 +123,7 @@ export const requireAdmin = (req: AdminRequest & { isAuthenticated?: () => boole
         try {
           const decoded = jwt.verify(token, jwtSecret) as { id: number; username?: string; isAdmin?: boolean; iat: number; exp: number };
           user = decoded;
-        } catch (error) {
+        } catch (_error) {
           // JWT is invalid, user remains null - continue to session auth fallback
         }
       }
@@ -408,7 +408,7 @@ export function setupAdminRoutes(app: Express) {
   // Get analytics data (legacy endpoint with query parameter)
   app.get('/api/admin/analytics', requireAdmin, async (req, res) => {
     try {
-      const period = req.query.period || '7d';
+      const _period = req.query.period || '7d';
       
       // Generate realistic analytics based on user count and recent activity
       const users = await storage.getAllUsers();
@@ -698,7 +698,7 @@ export function setupAdminRoutes(app: Express) {
   app.get('/api/admin/system-logs', requireAdmin, async (req, res) => {
     try {
       const _level = req.query.level || 'all';
-      const limit = parseInt(req.query.limit as string) || 50;
+      const _limit = parseInt(req.query.limit as string) || 50;
 
       // Return empty logs array since we don't have system_logs table yet
       const logs: SystemLog[] = [];
@@ -789,7 +789,7 @@ export function setupAdminRoutes(app: Express) {
 
   app.post('/api/admin/force-logout', requireAdmin, async (req, res) => {
     try {
-      const { userId } = req.body;
+      const { userId: _userId } = req.body;
       
       // This would normally invalidate all user sessions
       res.json({ message: 'User sessions terminated' });
@@ -802,7 +802,7 @@ export function setupAdminRoutes(app: Express) {
   // FEATURE 4: Content Moderation Tools
   app.get('/api/admin/flagged-content', requireAdmin, async (req, res) => {
     try {
-      const status = req.query.status || 'pending';
+      const _status = req.query.status || 'pending';
       
       // Return empty flags array since we don't have content_flags table data yet
       const flags: ContentFlag[] = [];
@@ -840,7 +840,7 @@ export function setupAdminRoutes(app: Express) {
       const users = await storage.getAllUsers();
       
       // Content generations will be tracked when implemented
-      const totalGenerations = 0;
+      const _totalGenerations = 0;
       
       const liveMetrics = {
         realTime: {

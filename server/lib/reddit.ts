@@ -2,11 +2,11 @@ import snoowrap from 'snoowrap';
 import { z } from 'zod';
 import { db } from '../db.js';
 import { creatorAccounts, subredditRules, postRateLimits, redditCommunities, users } from '@shared/schema';
-import { eq, and, gt, or } from 'drizzle-orm';
+import { eq, and, gt, or as _or } from 'drizzle-orm';
 import { decrypt } from '../services/state-store.js';
 import { SafetyManager } from './safety-systems.js';
-import { getEligibleCommunitiesForUser, type CommunityEligibilityCriteria } from '../reddit-communities.js';
-import type { RedditCommunity, ShadowbanStatusType, ShadowbanSubmissionSummary, ShadowbanEvidenceResponse, ShadowbanCheckApiResponse } from '@shared/schema';
+import { getEligibleCommunitiesForUser, type CommunityEligibilityCriteria as _CommunityEligibilityCriteria } from '../reddit-communities.js';
+import type { RedditCommunity, ShadowbanStatusType as _ShadowbanStatusType, ShadowbanSubmissionSummary, ShadowbanEvidenceResponse as _ShadowbanEvidenceResponse, ShadowbanCheckApiResponse as _ShadowbanCheckApiResponse } from '@shared/schema';
 import { lookup } from 'dns/promises';
 import { logger } from './logger.js';
 
@@ -1714,7 +1714,7 @@ export class RedditManager {
         created_utc?: number;
       }
       
-      const selfPostIds = new Set(recentSubmissions.map((sub: SubmissionRecord) => sub.id));
+      const _selfPostIds = new Set(recentSubmissions.map((sub: SubmissionRecord) => sub.id));
       const publicPostIds = new Set(publicSubmissions.map(sub => sub.id));
 
       // Find hidden posts (in self view but not in public view)

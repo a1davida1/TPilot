@@ -8,7 +8,7 @@ import { fileTypeFromBuffer } from 'file-type';
 import { authenticateToken, type AuthRequest } from '../middleware/auth.js';
 import { uploadLimiter, logger } from '../middleware/security.js';
 import { imageProtectionLimiter as tierProtectionLimiter } from '../middleware/tiered-rate-limit.js';
-import { uploadRequestSchema, type ProtectionLevel, type UploadRequest as UploadRequestBody } from '@shared/schema';
+import { uploadRequestSchema, type ProtectionLevel as _ProtectionLevel, type UploadRequest as UploadRequestBody } from '@shared/schema';
 import { ZodError } from 'zod';
 import { imageStreamingUpload, cleanupUploadedFiles } from '../middleware/streaming-upload.js';
 import { embedSignature } from '../lib/steganography.js';
@@ -180,7 +180,7 @@ async function validateImageFile(filePath: string, originalMimeType: string): Pr
         return { isValid: false, error: 'Image dimensions too large' };
       }
       
-    } catch (sharpError) {
+    } catch (_sharpError) {
       return { isValid: false, error: 'File is not a valid image format' };
     }
     
@@ -310,7 +310,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
       validatedRequest.addWatermark,
       String(authReq.user?.id)
     );
-    let lastError: unknown;
+    let _lastError: unknown;
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         await Promise.race([
@@ -321,7 +321,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
         ]);
         break;
       } catch (err) {
-        lastError = err;
+        _lastError = err;
         if (attempt === 2) throw err;
         await new Promise(res => setTimeout(res, 1_000 * Math.pow(2, attempt)));
       }
@@ -502,10 +502,10 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
     
     // Clean up any temp files
     if (tempFilePath) {
-      try { await fs.unlink(tempFilePath); } catch (e) { /* ignore cleanup errors */ }
+      try { await fs.unlink(tempFilePath); } catch (_e) { /* ignore cleanup errors */ }
     }
     if (protectedFilePath) {
-      try { await fs.unlink(protectedFilePath); } catch (e) { /* ignore cleanup errors */ }
+      try { await fs.unlink(protectedFilePath); } catch (_e) { /* ignore cleanup errors */ }
     }
     
     res.status(500).json({ message: 'Error processing file upload' });

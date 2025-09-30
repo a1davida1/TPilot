@@ -1,6 +1,6 @@
 import { db } from '../db';
-import { socialMediaPosts, platformEngagement } from '@shared/schema';
-import { and, eq, gte, lte, sql, desc } from 'drizzle-orm';
+import { socialMediaPosts, platformEngagement as _platformEngagement } from '@shared/schema';
+import { and, eq, gte as _gte, lte as _lte, sql as _sql, desc } from 'drizzle-orm';
 
 interface ContentSuggestion {
   topic: string;
@@ -240,7 +240,7 @@ class SchedulingOptimizer {
     ];
   }
 
-  private async getUserNiche(userId: number): Promise<string[]> {
+  private async getUserNiche(_userId: number): Promise<string[]> {
     // Analyze user's past content to determine their niche
     // For now, return common niches
     return ['fitness', 'creative', 'lifestyle', 'exclusive'];

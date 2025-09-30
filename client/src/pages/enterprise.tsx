@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'wouter';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,8 +9,46 @@ import PostScheduler from '@/components/enterprise/PostScheduler';
 import BillingDashboard from '@/components/enterprise/BillingDashboard';
 import AIContentStudio from '@/components/enterprise/AIContentStudio';
 
+const TAB_VALUES = ['ai-studio', 'media', 'scheduler', 'billing'] as const;
+type TabValue = typeof TAB_VALUES[number];
+
 export default function EnterprisePage() {
-  const [activeTab, setActiveTab] = useState('ai-studio');
+  const [location, navigate] = useLocation();
+  const [activeTab, setActiveTab] = useState<TabValue>('ai-studio');
+
+  useEffect(() => {
+    const [pathname, search = ''] = location.split('?');
+    if (pathname !== '/enterprise') {
+      return;
+    }
+
+    const params = new URLSearchParams(search);
+    const requestedTab = params.get('tab');
+    let nextTab: TabValue | null = null;
+
+    if (requestedTab && TAB_VALUES.includes(requestedTab as TabValue)) {
+      nextTab = requestedTab as TabValue;
+    } else if (params.has('scheduler')) {
+      nextTab = 'scheduler';
+    }
+
+    if (nextTab && nextTab !== activeTab) {
+      setActiveTab(nextTab);
+    }
+  }, [location, activeTab]);
+
+  const handleTabChange = useCallback((value: string) => {
+    if (!TAB_VALUES.includes(value as TabValue)) {
+      return;
+    }
+
+    const [pathname] = location.split('?');
+    const params = new URLSearchParams();
+    params.set('tab', value);
+
+    setActiveTab(value as TabValue);
+    navigate(`${pathname}?${params.toString()}`, { replace: true });
+  }, [location, navigate]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -29,7 +68,7 @@ export default function EnterprisePage() {
         </div>
 
         {/* Enterprise Features Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4 lg:grid-cols-4">
             <TabsTrigger value="ai-studio" className="flex items-center gap-2" data-testid="tab-ai-studio">
               <Sparkles className="h-4 w-4" />

@@ -5,15 +5,15 @@ import { textModel } from "../lib/gemini";
 import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
 import { enrichWithTitleCandidates } from "./geminiPipeline";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
-import { extractToneOptions, ToneOptions } from "./toneOptions";
-import { BANNED_WORDS_HINT, variantContainsBannedWord } from "./bannedWords";
+import { extractToneOptions, ToneOptions as _ToneOptions } from "./toneOptions";
+import { BANNED_WORDS_HINT as _BANNED_WORDS_HINT, variantContainsBannedWord } from "./bannedWords";
 import { buildVoiceGuideBlock } from "./stylePack";
 import { serializePromptField } from "./promptUtils";
-import { inferFallbackFromFacts, ensureFallbackCompliance } from "./inferFallbackFromFacts";
+import { inferFallbackFromFacts as _inferFallbackFromFacts, ensureFallbackCompliance } from "./inferFallbackFromFacts";
 import { dedupeVariantsForRanking } from "./dedupeVariants";
 import { dedupeCaptionVariants } from "./dedupeCaptionVariants";
 import {
-  HUMAN_CTA,
+  HUMAN_CTA as _HUMAN_CTA,
   buildRerankHint,
   detectVariantViolations,
   fallbackHashtags,
@@ -21,16 +21,16 @@ import {
   sanitizeFinalVariant
 } from "./rankGuards";
 
-const MAX_VARIANT_ATTEMPTS = 4;
+const _MAX_VARIANT_ATTEMPTS = 4;
 const VARIANT_TARGET = 5;
-const VARIANT_RETRY_LIMIT = 4;
+const _VARIANT_RETRY_LIMIT = 4;
 const CAPTION_KEY_LENGTH = 80;
 
-function captionKey(caption: string): string {
+function _captionKey(caption: string): string {
   return caption.trim().slice(0, 80).toLowerCase();
 }
 
-function hintSnippet(caption: string): string {
+function _hintSnippet(caption: string): string {
   const normalized = caption.trim().replace(/\s+/g, " ");
   return normalized.length > 60 ? `${normalized.slice(0, 57)}…` : normalized;
 }
@@ -69,7 +69,7 @@ function buildRetryHint(
   return parts.join(" ").trim();
 }
 
-function normalizeVariantFields(
+function _normalizeVariantFields(
   variant: Record<string, unknown>, 
   platform: "instagram" | "x" | "reddit" | "tiktok",
   theme?: string,
@@ -113,6 +113,33 @@ function normalizeVariantFields(
 async function load(p:string){ return fs.readFile(path.join(process.cwd(),"prompts",p),"utf8"); }
 function stripToJSON(txt:string){ const i=Math.min(...[txt.indexOf("{"),txt.indexOf("[")].filter(x=>x>=0));
   const j=Math.max(txt.lastIndexOf("}"),txt.lastIndexOf("]")); return JSON.parse((i>=0&&j>=0)?txt.slice(i,j+1):txt); }
+
+type ResponseTextFunction = () => unknown;
+
+interface GeminiTextEnvelope {
+  response?: {
+    text?: ResponseTextFunction | string;
+  };
+}
+
+async function resolveResponseText(payload: unknown): Promise<string | undefined> {
+  if (!payload || typeof payload !== "object") {
+    return undefined;
+  }
+  const { response } = payload as GeminiTextEnvelope;
+  if (!response) {
+    return undefined;
+  }
+  const { text } = response;
+  if (typeof text === "function") {
+    const value = await Promise.resolve(text());
+    return typeof value === "string" ? value : undefined;
+  }
+  if (typeof text === "string") {
+    return text;
+  }
+  return undefined;
+}
 
 function normalizeCaptionText(caption: string): string {
   return caption
@@ -194,7 +221,7 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
     load("variants_textonly.txt")
   ]);
 
-  const voiceGuide = buildVoiceGuideBlock(params.voice);
+  const _voiceGuide = buildVoiceGuideBlock(params.voice);
   const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === "object" && value !== null;
 
@@ -289,14 +316,14 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
       const res = await textModel.generateContent([
         { text: `${sysWithTone}\n${guard}\n${prompt}\n${user}` }
       ]);
-      
-      // Check for empty response
-      if (!res || !res.response?.text) {
+
+      const rawText = await resolveResponseText(res);
+      if (!rawText || rawText.trim().length === 0) {
         console.error('Gemini: empty response received in text-only pipeline');
         throw new Error('Gemini: empty response');
       }
-      
-      const json = stripToJSON(res.response.text());
+
+      const json = stripToJSON(rawText);
       return Array.isArray(json) ? json : [];
     } catch (error) {
       console.error("Gemini textModel.generateContent failed:", error);
@@ -314,7 +341,7 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
   const seenKeys = new Set<string>();
   const duplicatesForHint: string[] = [];
   let bannedDetected = false;
-  let needsBannedHint = false;
+  let _needsBannedHint = false;
   
   // Define safe fallback values
   const safeFallbackCaption = "Here's something I'm proud of today.";
@@ -384,7 +411,7 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
       }
     }
 
-    needsBannedHint = bannedDetected;
+    const _needsBannedHint = bannedDetected;
 
     attempt += 1;
   }
@@ -416,7 +443,7 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
 }
 
 // Helper function to prepare variants for ranking, ensuring correct count and deduplication
-function prepareVariantsForRanking(
+function _prepareVariantsForRanking(
   variants: z.infer<typeof CaptionArray>,
   params: { platform?: string; theme?: string; context?: string },
   options: { targetLength: number }
@@ -469,7 +496,12 @@ async function requestTextOnlyRanking(
     console.error('Text-only textModel.generateContent failed:', error);
     throw error;
   }
-  let json = stripToJSON(res.response.text()) as unknown;
+  const rawText = await resolveResponseText(res);
+  if (!rawText || rawText.trim().length === 0) {
+    console.error('Gemini: empty response received in text-only ranking');
+    throw new Error('Gemini: empty response');
+  }
+  let json = stripToJSON(rawText) as unknown;
   
   if(Array.isArray(json)) {
     const winner = json[0] as Record<string, unknown> | undefined;
