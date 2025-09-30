@@ -1,13 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CaptionItem } from '../schema';
 import { z } from 'zod';
-import type { GeminiModel } from '../../lib/gemini';
+import type { GenerativeModel } from '@google/generative-ai';
 type CaptionItemType = z.infer<typeof CaptionItem>;
 type GeminiContent = Array<{ text: string }>;
-type TextModelMock = vi.MockInstance<
-  ReturnType<GeminiModel['generateContent']>,
-  Parameters<GeminiModel['generateContent']>
->;
+type TextModelMock = ReturnType<typeof vi.fn>;
 
 const createMockResponse = (payload: unknown) => ({
   response: {
@@ -24,10 +21,7 @@ const scenarios: ScenarioConfig[] = [
   {
     label: 'function-based textModel mock',
     applyGeminiMock: () => {
-      const textModelMock = vi.fn<
-        Parameters<GeminiModel['generateContent']>,
-        ReturnType<GeminiModel['generateContent']>
-      >();
+      const textModelMock = vi.fn();
 
       vi.doMock('../../lib/gemini', () => ({
         textModel: null,
@@ -43,12 +37,9 @@ const scenarios: ScenarioConfig[] = [
   {
     label: 'object-based textModel mock',
     applyGeminiMock: () => {
-      const generateContent = vi.fn<
-        Parameters<GeminiModel['generateContent']>,
-        ReturnType<GeminiModel['generateContent']>
-      >();
+      const generateContent = vi.fn();
 
-      const model: GeminiModel = { generateContent };
+      const model = { generateContent } as unknown as GenerativeModel;
 
       vi.doMock('../../lib/gemini', () => ({
         textModel: model,

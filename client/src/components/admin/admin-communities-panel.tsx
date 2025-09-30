@@ -387,7 +387,7 @@ export function AdminCommunitiesPanel({ canManage }: AdminCommunitiesPanelProps)
       await deleteMutation.mutateAsync(id);
       toast({ title: 'Community deleted successfully' });
     } catch (error) {
-      console.error('Delete error:', _error);
+      console.error('Delete error:', error);
       toast({
         title: 'Error',
         description: 'Failed to delete community',

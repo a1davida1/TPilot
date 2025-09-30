@@ -348,7 +348,7 @@ export function UnifiedContentCreator({
         description: "Failed to protect the image. Please try again.",
         variant: "destructive"
       });
-      console.error('ImageShield protection failed:', _error);
+      console.error('ImageShield protection failed:', error);
     }
   };
 

@@ -508,7 +508,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
         variant: 'destructive',
       });
     } catch (error) {
-      const apiError = _error as Partial<ApiError> & Error;
+      const apiError = error as Partial<ApiError> & Error;
       const description = apiError.userMessage ?? apiError.message ?? 'Unable to connect to Reddit.';
       toast({
         title: '❌ Connection Failed',

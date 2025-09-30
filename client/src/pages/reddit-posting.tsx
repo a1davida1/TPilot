@@ -157,24 +157,14 @@ function checkCommunityEligibility(
   const rules = community.rules;
   const minKarmaRequirement = typeof rules?.eligibility?.minKarma === 'number'
     ? rules.eligibility.minKarma
-    : typeof rules?.minKarma === 'number'
-      ? rules.minKarma
-      : null;
+    : null;
   const minAccountAgeRequirement = typeof rules?.eligibility?.minAccountAgeDays === 'number'
     ? rules.eligibility.minAccountAgeDays
-    : typeof rules?.minAccountAgeDays === 'number'
-      ? rules.minAccountAgeDays
-      : typeof rules?.minAccountAge === 'number'
-        ? rules.minAccountAge
-        : null;
-  const sellingPolicy: RedditCommunitySellingPolicy = rules?.content?.sellingPolicy
-    ?? rules?.sellingAllowed
-    ?? 'unknown';
+    : null;
+  const sellingPolicy: RedditCommunitySellingPolicy = rules?.content?.sellingPolicy ?? 'unknown';
   const watermarksAllowed = typeof rules?.content?.watermarksAllowed === 'boolean'
     ? rules.content.watermarksAllowed
-    : typeof rules?.watermarksAllowed === 'boolean'
-      ? rules.watermarksAllowed
-      : null;
+    : null;
 
   if (!account) {
     reasons.push('Account not connected');

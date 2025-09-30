@@ -101,7 +101,7 @@ export function AIGenerator({ onContentGenerated }: AIGeneratorProps) {
       // Reset copied state after 2 seconds
       setTimeout(() => setCopiedItem(null), 2000);
     } catch (err) {
-      console.error('Copy error:', _err);
+      console.error('Copy error:', err);
       toast({
         title: "Copy Failed",
         description: "Unable to copy to clipboard",

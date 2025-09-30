@@ -1459,7 +1459,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
       requireAdmin as express.RequestHandler,
       (req, res) => {
         const session = req.session as SessionWithReddit | undefined;
-        const sessionRecord = session as Record<string, unknown> | undefined;
+        const sessionRecord = session as unknown as Record<string, unknown> | undefined;
         const sessionKeys = sessionRecord
           ? Object.keys(sessionRecord).filter(key => !SENSITIVE_SESSION_KEYS.has(key))
           : [];
