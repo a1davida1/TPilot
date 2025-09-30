@@ -53,9 +53,6 @@ interface GeneratedContent {
   createdAt?: Date | string;
 }
 
-const isApiError = (error: unknown): error is ApiError => {
-  return typeof error === "object" && error !== null && "status" in error && "statusText" in error;
-};
 
 const photoInstructionFields: Array<{ key: keyof ContentGeneration["photoInstructions"]; label: string }> = [
   { key: "lighting", label: "Lighting" },
@@ -90,7 +87,7 @@ interface EnhancedAIGeneratorProps {
 export function EnhancedAIGenerator({
   onContentGenerated,
   userTier = "guest",
-  canGenerate = true
+  canGenerate: _canGenerate = true
 }: EnhancedAIGeneratorProps) {
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
@@ -101,7 +98,8 @@ export function EnhancedAIGenerator({
   const [tone, setTone] = useState<string>("confident");
   const [customPrompt, setCustomPrompt] = useState<string>("");
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
-  const [copiedItem, setCopiedItem] = useState<string | null>(null);
+  // TODO: Implement copy feedback state
+  const [_copiedItem, setCopiedItem] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<"login" | "signup">("signup");
 
@@ -122,7 +120,8 @@ export function EnhancedAIGenerator({
     }
   };
 
-  const currentTierConfig = tierConfig[userTier as keyof typeof tierConfig] || tierConfig.guest;
+  // TODO: Implement tier-based UI customization
+  // const currentTierConfig = tierConfig[userTier as keyof typeof tierConfig] || tierConfig.guest;
 
   const basePhotoInstructions: ContentGeneration["photoInstructions"] = {
     lighting: "Soft natural lighting",
