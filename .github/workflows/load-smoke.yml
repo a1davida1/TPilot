@@ -1,0 +1,21 @@
+name: Load Smoke
+on:
+  schedule: [ { cron: "15 2 * * *" } ]
+  workflow_dispatch:
+jobs:
+  k6:
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ vars.E2E_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skip if BASE_URL unset
+        if: env.BASE_URL == ''
+        run: echo "No BASE_URL; skipping."
+      - name: k6 smoke
+        if: env.BASE_URL != ''
+        uses: grafana/k6-action@v0.2.0
+        with:
+          filename: tests/load/smoke.js
+        env:
+          BASE_URL: ${{ env.BASE_URL }}
