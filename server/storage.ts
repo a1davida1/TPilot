@@ -402,13 +402,9 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(userId: number): Promise<void> {
     try {
-      // always populate updates
-      const now = new Date();
-      const updates = { deletedAt: now, isDeleted: true, email: null, username: `deleted_${userId}` };
-      // bail if empty to avoid 'set ' SQL
-      if (!Object.values(updates).some(v => v !== undefined)) return;
-      await db.update(users).set(updates).where(eq(users.id, userId)).execute();
-      await db.update(userSessions).set({ revokedAt: now }).where(eq(userSessions.userId, userId)).execute();
+      // if you have a soft-delete field, prefer:
+      // return db.update(users).set({ deleted: true, deletedAt: new Date() }).where(eq(users.id, userId));
+      await db.delete(users).where(eq(users.id, userId));
     } catch (error) {
       safeLog('error', 'Storage operation failed - deleting user:', { error: (error as Error).message });
       throw error;
@@ -1063,8 +1059,7 @@ export class DatabaseStorage implements IStorage {
       const [result] = await db
         .insert(savedContent)
         .values(content as typeof savedContent.$inferInsert)
-        .returning()
-        .execute();
+        .returning();
       return result;
     } catch (error) {
       safeLog('error', 'Failed to create saved content record', {
