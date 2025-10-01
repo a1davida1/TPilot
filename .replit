@@ -9,6 +9,7 @@ packages = ["vim", "nano", "nmh", "imagemagick", "yakut"]
 [deployment]
 deploymentTarget = "autoscale"
 run = ["sh", "-c", "npm start"]
+build = ["sh", "-c", "npm run build"]
 
 [[ports]]
 localPort = 5000
@@ -37,10 +38,6 @@ externalPort = 6000
 [[ports]]
 localPort = 41751
 externalPort = 3002
-
-[[ports]]
-localPort = 43533
-externalPort = 5000
 
 [[ports]]
 localPort = 44745
