@@ -1,5 +1,7 @@
 import { GenerativeModel, GoogleGenerativeAI } from "@google/generative-ai";
 
+export type GeminiModel = GenerativeModel;
+
 const apiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY || "";
 
 let client: GoogleGenerativeAI | null = null;

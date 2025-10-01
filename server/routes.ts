@@ -1382,14 +1382,15 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   app.use('/api/caption', captionRouter);
 
   // Register Dashboard Routes
-  import('./routes/dashboard.js').then(({ dashboardRouter }) => {
+  try {
+    const { dashboardRouter } = await import('./routes/dashboard.js');
     app.use('/api/dashboard', dashboardRouter);
-  }).catch(err => {
+  } catch (err) {
     logger.error('Failed to load dashboard routes:', err);
     if (options?.sentry) {
       options.sentry.captureException(err);
     }
-  });
+  }
 
   // ==========================================
   // CONTENT GENERATIONS HISTORY API

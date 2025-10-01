@@ -1,8 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { z } from "zod";
-import { getVisionModel, getTextModel, isGeminiAvailable } from "../lib/gemini-client";
-import type { GenerativeModel } from "@google/generative-ai";
+import { getVisionModel, getTextModel, isGeminiAvailable, type GeminiModel } from "../lib/gemini-client";
 import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { BANNED_WORDS_HINT, variantContainsBannedWord } from "./bannedWords";
@@ -41,28 +40,34 @@ interface CaptionResult {
   titles?: string[];
 }
 
-interface GeminiResponse {
-  response?: {
-    text?: (() => unknown) | string;
-  };
-}
+type GeminiResponse = {
+  text?: (() => unknown) | string;
+  response?: unknown;
+};
 
 async function resolveResponseText(payload: unknown): Promise<string | undefined> {
+  if (typeof payload === "string") {
+    return payload;
+  }
+
   if (!payload || typeof payload !== "object") {
     return undefined;
   }
-  const { response } = payload as GeminiResponse;
-  if (!response) {
-    return undefined;
+
+  const candidate = payload as GeminiResponse;
+  const value = candidate.text;
+  if (typeof value === "string") {
+    return value;
   }
-  const { text } = response;
-  if (typeof text === "function") {
-    const value = await Promise.resolve(text());
-    return typeof value === "string" ? value : undefined;
+  if (typeof value === "function") {
+    const resolved = await Promise.resolve(value());
+    return typeof resolved === "string" ? resolved : undefined;
   }
-  if (typeof text === "string") {
-    return text;
+
+  if (candidate.response) {
+    return resolveResponseText(candidate.response);
   }
+
   return undefined;
 }
 
@@ -1070,7 +1075,7 @@ function truncateReason(reason: string, maxLength = 100): string {
 }
 
 async function requestGeminiRanking(
-  model: GenerativeModel,
+  model: GeminiModel,
   variantsInput: z.infer<typeof CaptionArray>,
   serializedVariants: string,
   promptBlock: string,
@@ -1115,16 +1120,6 @@ async function requestGeminiRanking(
   const resolved = await resolveResponseText(res);
   if (typeof resolved === "string") {
     textOutput = resolved;
-  } else if (res && typeof res === "object") {
-    const geminiRes = res as GeminiResponse;
-    if (geminiRes?.response && typeof geminiRes.response.text === "function") {
-      try {
-        const raw = geminiRes.response.text();
-        textOutput = typeof raw === "string" ? raw : null;
-      } catch (invokeError) {
-        console.error("Gemini: failed to read ranking response:", invokeError);
-      }
-    }
   } else if (typeof res === "string") {
     textOutput = res;
   }

@@ -6,9 +6,7 @@ type GeminiContent = Array<{ text: string }>;
 type TextModelMock = ReturnType<typeof vi.fn>;
 
 const createMockResponse = (payload: unknown) => ({
-  response: {
-    text: () => (typeof payload === 'string' ? payload : JSON.stringify(payload))
-  }
+  text: typeof payload === 'string' ? payload : JSON.stringify(payload)
 });
 
 type ScenarioConfig = {
@@ -23,7 +21,7 @@ const scenarios: ScenarioConfig[] = [
       const textModelMock = vi.fn();
 
 
-      const getTextModelMock = vi.fn(() => textModelMock);
+      const getTextModelMock = vi.fn(() => ({ generateContent: textModelMock }));
 
       vi.doMock('../lib/gemini-client', () => ({
         getTextModel: getTextModelMock,

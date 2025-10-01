@@ -25,7 +25,7 @@ describe('extractFacts', () => {
   it('accepts minimal PNG data URIs without throwing InvalidImageError', async () => {
     const fakeFacts = { objects: ['pixel'] };
     mockVisionModel.generateContent.mockResolvedValue({
-      response: { text: () => JSON.stringify(fakeFacts) }
+      text: JSON.stringify(fakeFacts)
     });
 
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
