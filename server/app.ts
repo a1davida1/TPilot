@@ -15,7 +15,7 @@ import { startQueue } from './bootstrap/queue.js';
 import { prepareResponseLogPayload, truncateLogLine } from './lib/request-logger.js';
 import passport from 'passport'; // Assuming passport is imported elsewhere or needs to be imported here
 import { createSessionMiddleware } from './bootstrap/session.js';
-import { initializeSentry } from './bootstrap/sentry';
+import { Sentry } from './instrument.js';
 import { API_PREFIX } from './lib/api-prefix.js';
 
 export interface CreateAppOptions {
@@ -344,19 +344,44 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
       logger.info('Queue startup disabled for current execution context.');
     }
 
-    const sentry = initializeSentry();
-
     // Commented out to prevent unnecessary Reddit service client registration
     // The community sync worker will check for credentials during initialization
     // registerDefaultRedditClients();
 
     mountStripeWebhook(app, API_PREFIX);
 
-    const server = await registerRoutes(app, API_PREFIX, { sentry });
+    const server = await registerRoutes(app, API_PREFIX, { sentry: Sentry });
 
     if (configureStaticOption) {
       await configureStaticAssets(app, server, enableVite);
     }
+
+    // IMPORTANT: Add Sentry error handler AFTER all routes but BEFORE any other error middleware
+    if (process.env.SENTRY_DSN) {
+      Sentry.setupExpressErrorHandler(app);
+    }
+
+    // Optional fallthrough error handler
+    app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+      logger.error('Unhandled error in Express:', {
+        error: err.message,
+        stack: err.stack,
+        requestId: req.id
+      });
+      
+      // The error id is attached to res.sentry to be optionally displayed to the user
+      if (res.statusCode === 200) {
+        res.statusCode = 500;
+      }
+      
+      if (!res.headersSent) {
+        res.json({
+          error: 'Internal server error',
+          requestId: req.id,
+          sentryId: (res as any).sentry
+        });
+      }
+    });
 
     return { app, server };
   } catch (error) {
