@@ -9,4 +9,4 @@ else
 fi
 
 echo "🚀 Starting production server..."
-NODE_ENV=production node dist/server/index.js
+npm start

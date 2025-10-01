@@ -102,7 +102,7 @@ find dist/client -name "*.js" -o -name "*.css" | xargs gzip -9 --keep
 echo "✅ Production build complete!"
 echo ""
 echo "To run in production:"
-echo "  NODE_ENV=production node dist/server/index.js"
+echo "  npm start"
 echo ""
 echo "Or for deployment:"
 echo "  Use the dist/ directory as your deployment artifact"

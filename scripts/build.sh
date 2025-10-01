@@ -358,7 +358,7 @@ const prodPkg = {
   description: pkg.description,
   main: pkg.main || 'server/index.js',
   scripts: {
-    start: 'node server/index.js',
+    start: 'node --import=./server/instrumentation.js server/index.js',
     'db:push': pkg.scripts['db:push'],
     'db:studio': pkg.scripts['db:studio']
   },

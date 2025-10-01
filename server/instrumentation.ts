@@ -1,2 +1,2 @@
-import { setupSentry } from './bootstrap/sentry.js';
-setupSentry();
+import { initializeSentry } from './bootstrap/sentry.js';
+  initializeSentry();
