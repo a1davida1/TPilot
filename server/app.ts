@@ -14,7 +14,7 @@ import { mountStripeWebhook } from './routes/webhooks.stripe.js';
 import { logger } from './bootstrap/logger.js';
 import { startQueue } from './bootstrap/queue.js';
 import { prepareResponseLogPayload, truncateLogLine } from './lib/request-logger.js';
-import passport from 'passport'; // Assuming passport is imported elsewhere or needs to be imported here
+import passport from 'passport';
 import { createSessionMiddleware } from './bootstrap/session.js';
 import { Sentry } from './bootstrap/sentry.js';
 import { API_PREFIX } from './lib/api-prefix.js';
@@ -157,14 +157,12 @@ async function configureStaticAssets(
     }
     logger.error('Client build not found; unable to locate compiled client assets in any known directory.');
 
-    // Return a 404 handler for all static file requests instead of crashing
     app.get('*', (req, res) => {
       res.status(404).send('Client build not found - static assets unavailable');
     });
     return;
   }
 
-  // Debug middleware to trace all requests
   app.use((req, res, next) => {
     if (req.path.startsWith('/assets/')) {
       logger.info(`Asset request received: ${req.method} ${req.path}`);
@@ -172,8 +170,6 @@ async function configureStaticAssets(
     next();
   });
 
-  // IMPORTANT: Serve static files BEFORE Vite setup to ensure they're accessible
-  // Set index: false to prevent serving index.html for directory requests to avoid conflicts
   app.use(express.static(clientPath, {
     index: false,
     setHeaders: (res, path) => {
@@ -186,7 +182,6 @@ async function configureStaticAssets(
     }
   }));
 
-  // Enable Vite in development by default; allow opt-out via ENABLE_VITE_DEV
   const isDevelopment = app.get('env') === 'development';
   const viteDevFlag = process.env.ENABLE_VITE_DEV?.toLowerCase();
   const isViteExplicitlyDisabled = viteDevFlag === 'false' || viteDevFlag === '0';
@@ -204,9 +199,7 @@ async function configureStaticAssets(
     logger.info('Vite development server disabled via ENABLE_VITE_DEV flag. Remove or set to true to re-enable.');
   }
 
-  // SPA fallback - serve index.html for all non-API routes
   app.get('*', (req, res, next) => {
-    // Let API/auth/webhook/assets routes fall through to 404 handler or static middleware
     const isApiRoute = req.path === API_PREFIX || req.path.startsWith(`${API_PREFIX}/`);
     if (isApiRoute ||
         req.path.startsWith('/auth/') ||
@@ -216,7 +209,6 @@ async function configureStaticAssets(
       return next();
     }
 
-    // Serve index.html for SPA routing
     const indexFile = path.join(clientPath, 'index.html');
     if (fs.existsSync(indexFile)) {
       res.type('html');
@@ -230,7 +222,7 @@ async function configureStaticAssets(
 export async function createApp(options: CreateAppOptions = {}): Promise<CreateAppResult> {
   const app = express();
   app.set('trust proxy', 1);
-  
+
   app.use(generalLimiter);
   app.use(sanitize);
 
@@ -243,22 +235,19 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   });
 
   app.use(permissionsPolicy);
-// Cookie parser MUST come before CSRF
+
   const cookieSecret = process.env.COOKIE_SECRET || process.env.SESSION_SECRET || 'dev-cookie-secret';
-if (!cookieSecret && process.env.NODE_ENV === 'production') {
-  throw new Error('COOKIE_SECRET or SESSION_SECRET must be set in production');
-}
+  if (!cookieSecret && process.env.NODE_ENV === 'production') {
+    throw new Error('COOKIE_SECRET or SESSION_SECRET must be set in production');
+  }
   app.use(cookieParser(cookieSecret));
-  
-  // Body parsers
+
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: false, limit: '50mb' }));
-  
-  // Session middleware
+
   app.use(createSessionMiddleware());
   app.set('sessionConfigured', true);
-  
-  // CSRF protection (double-submit cookie pattern)
+
   const isProd = process.env.NODE_ENV === 'production';
   const csrfProtection: RequestHandler = csrf({
     cookie: {
@@ -269,20 +258,17 @@ if (!cookieSecret && process.env.NODE_ENV === 'production') {
       path: '/',
     },
   });
-  
-  // Expose CSRF token endpoint - apply CSRF middleware just for token generation
+
   app.get(`${API_PREFIX}/csrf-token`, csrfProtection, (req, res) => {
     res.json({ csrfToken: req.csrfToken() });
   });
-  
-  // Apply CSRF protection to all routes except specific exemptions
+
   app.use((req, res, next) => {
-    // Exempt OAuth callbacks, webhooks, and CSRF token endpoint from CSRF protection
     const exemptPaths = [
       `${API_PREFIX}/auth/reddit/callback`,
       `${API_PREFIX}/auth/google/callback`,
       `${API_PREFIX}/auth/facebook/callback`,
-      `${API_PREFIX}/webhooks/`, // Already handled above
+      `${API_PREFIX}/webhooks/`,
       `${API_PREFIX}/health`
     ];
 
@@ -295,11 +281,9 @@ if (!cookieSecret && process.env.NODE_ENV === 'production') {
 
   app.set('csrfProtectionConfigured', true);
 
-  // Passport
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Register authentication, social auth, and billing routes after CSRF middleware
   if (app.get('authRoutesConfigured') !== true) {
     setupAuth(app, API_PREFIX);
     app.set('authRoutesConfigured', true);
@@ -336,22 +320,14 @@ if (!cookieSecret && process.env.NODE_ENV === 'production') {
       logger.info('Queue startup disabled for current execution context.');
     }
 
-    // Commented out to prevent unnecessary Reddit service client registration
-    // The community sync worker will check for credentials during initialization
-    // registerDefaultRedditClients();
-
     mountStripeWebhook(app, API_PREFIX);
+
 
     const server = await registerRoutes(app, API_PREFIX, { sentry: Sentry });
 
     if (configureStaticOption) {
       await configureStaticAssets(app, server, enableVite);
     }
-
-    // Sentry debug test endpoint (remove in production)
-    app.get(`${API_PREFIX}/debug-sentry`, function mainHandler(_req, _res) {
-      throw new Error("My first Sentry error!");
-    });
 
     // IMPORTANT: Add Sentry error handler AFTER all routes but BEFORE any other error middleware
     if (process.env.SENTRY_DSN) {
@@ -365,12 +341,11 @@ if (!cookieSecret && process.env.NODE_ENV === 'production') {
         stack: err.stack,
         requestId: req.id
       });
-      
-      // The error id is attached to res.sentry to be optionally displayed to the user
+
       if (res.statusCode === 200) {
         res.statusCode = 500;
       }
-      
+
       if (!res.headersSent) {
         res.json({
           error: 'Internal server error',

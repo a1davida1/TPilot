@@ -4,7 +4,7 @@ hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["vim", "nano", "nmh", "imagemagick", "yakut"]
+packages = ["vim", "nano", "nmh", "imagemagick", "yakut", "lsof"]
 
 [deployment]
 deploymentTarget = "autoscale"
