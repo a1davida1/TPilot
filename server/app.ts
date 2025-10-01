@@ -274,17 +274,8 @@ if (!cookieSecret && process.env.NODE_ENV === 'production') {
   });
   
   // Expose CSRF token endpoint - apply CSRF middleware just for token generation
-  app.get(`${API_PREFIX}/csrf-token`, csrfProtection as any, (req, res) => {
-    const token = (req as any).csrfToken();
-    
-    // Non-HttpOnly mirror for frontend frameworks to read and echo back
-    res.cookie('XSRF-TOKEN', token, {
-      secure: isProd,
-      sameSite: isProd ? 'strict' : 'lax',
-      path: '/',
-    });
-    
-    res.json({ csrfToken: token });
+  app.get(`${API_PREFIX}/csrf-token`, csrfProtection, (req, res) => {
+    res.json({ csrfToken: req.csrfToken() });
   });
   
   // Apply CSRF protection to all routes except specific exemptions
