@@ -18,6 +18,7 @@ import {
 import { getUserRedditCommunityEligibility } from './lib/reddit.js';
 import { logger } from './bootstrap/logger.js';
 import { recordPostOutcome, summarizeRemovalReasons } from './compliance/ruleViolationTracker.js';
+import { redditIntelligenceService } from './services/reddit-intelligence.js';
 
 interface RedditProfile {
   username: string;
@@ -70,7 +71,7 @@ const buildRedirectLocation = (intent: RedditOAuthIntent, username: string, queu
 
   switch (intent) {
     case 'posting':
-      return `/reddit/posting?${params.toString()}`;
+      return `/reddit?${params.toString()}`;
     case 'intelligence':
       params.set('tab', 'intelligence');
       return `/phase4?${params.toString()}`;
@@ -170,6 +171,21 @@ export function registerRedditRoutes(app: Express) {
       const err = error instanceof Error ? error : new Error(String(error));
       logger.error('Reddit connect error', { error: err.message, stack: err.stack });
       res.status(500).json({ error: 'Failed to initiate Reddit connection' });
+    }
+  });
+
+  app.get('/api/reddit/intelligence', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const dataset = await redditIntelligenceService.getIntelligence({ userId: req.user.id });
+      res.json(dataset);
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Reddit intelligence endpoint failed', { error: err.message });
+      res.status(500).json({ error: 'Failed to load Reddit intelligence' });
     }
   });
 

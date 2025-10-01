@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { CaptionItem } from '../schema';
 import { z } from 'zod';
-import type { GenerativeModel } from '@google/generative-ai';
 type CaptionItemType = z.infer<typeof CaptionItem>;
 type GeminiContent = Array<{ text: string }>;
 type TextModelMock = ReturnType<typeof vi.fn>;

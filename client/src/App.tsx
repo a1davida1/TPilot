@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { SEOOptimization, seoConfigs } from "@/components/seo-optimization";
 import { UnifiedLanding } from "@/components/unified-landing";
 const Dashboard = React.lazy(() => import("@/pages/dashboard"));
+const Phase4Dashboard = React.lazy(() => import("@/pages/phase4"));
 import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import NotFound from "@/pages/not-found";
@@ -107,8 +108,7 @@ function AuthenticatedRoutes() {
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
       <Route path="/imageshield" component={ImageShieldPage} />
       <Route path="/enterprise" component={Enterprise} />
-      {/* ULTRA PREMIUM ROUTE - Hidden for now */}
-      {/* <Route path="/phase4" component={Phase4Dashboard} /> */}
+      <Route path="/phase4" component={Phase4Dashboard} />
       <Route path="/reddit" component={RedditPostingPage} />
       <Route path="/communities" component={() => <CommunitiesPage />} />
       <Route path="/gallery" component={() => <GalleryPage />} />

@@ -201,9 +201,41 @@ describe('Reddit OAuth IP normalization', () => {
 
     expect(callbackResponse.status).toBe(302);
     const redirectLocation = callbackResponse.headers['location'];
-    expect(redirectLocation).toContain('/reddit/posting?');
+    expect(redirectLocation).toContain('/reddit?');
     expect(redirectLocation).toContain('intent=posting');
     expect(redirectLocation).toContain('queue=reddit-posting');
+  });
+
+  it('routes intelligence intents to the intelligence workflow after successful callback', async () => {
+    const app = createTestApp();
+    const connectResponse = await request(app)
+      .get('/api/reddit/connect')
+      .query({ intent: 'intelligence', queue: 'intelligence-dashboard' });
+
+    expect(connectResponse.status).toBe(200);
+    const authUrl = connectResponse.body.authUrl as string;
+    const state = new URL(authUrl).searchParams.get('state');
+    expect(state).toBeTruthy();
+
+    if (state) {
+      lastStoredStateKey = `reddit_state:${state}`;
+    }
+
+    exchangeRedditCodeMock.mockResolvedValueOnce({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    });
+
+    const callbackResponse = await request(app)
+      .get('/api/reddit/callback')
+      .query({ state, code: 'oauth-code' });
+
+    expect(callbackResponse.status).toBe(302);
+    const redirectLocation = callbackResponse.headers['location'];
+    expect(redirectLocation).toContain('/reddit?');
+    expect(redirectLocation).toContain('intent=intelligence');
+    expect(redirectLocation).toContain('tab=intelligence');
+    expect(redirectLocation).toContain('queue=intelligence-dashboard');
   });
 
   it('routes account-link intents back to the dashboard when callback succeeds', async () => {

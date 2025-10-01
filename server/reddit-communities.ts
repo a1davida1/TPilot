@@ -118,9 +118,9 @@ export function normalizeRules(rawRules: unknown, promotionAllowed?: string, cat
     if (Array.isArray(rawRules)) {
       const defaults = createDefaultRules();
       return {
-        ...defaults!,
+        ...defaults,
         content: {
-          ...defaults!.content!,
+          ...defaults.content,
           contentGuidelines: rawRules.filter(rule => typeof rule === 'string'),
           sellingPolicy: inferSellingPolicy(promotionAllowed || 'no', category || 'general')
         }
@@ -141,7 +141,7 @@ export function normalizeRules(rawRules: unknown, promotionAllowed?: string, cat
             } else {
               const defaults = createDefaultRules();
               parsed.content = {
-                ...defaults!.content!,
+                ...defaults.content,
                 sellingPolicy: inferredPolicy
               };
             }

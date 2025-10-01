@@ -1,14 +1,69 @@
 import type { LegacyRedditCommunityRuleSet, RedditCommunityRuleSet } from './schema';
 
+const summarizeLegacyNotes = (notes: unknown): string | null => {
+  if (notes == null) {
+    return null;
+  }
+
+  if (typeof notes === 'string') {
+    const trimmed = notes.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+
+  if (Array.isArray(notes)) {
+    const parts = notes
+      .map(entry => {
+        if (entry == null) {
+          return null;
+        }
+
+        if (typeof entry === 'string') {
+          const trimmed = entry.trim();
+          return trimmed.length > 0 ? trimmed : null;
+        }
+
+        try {
+          const serialized = JSON.stringify(entry);
+          return serialized === 'null' ? null : serialized;
+        } catch {
+          return null;
+        }
+      })
+      .filter((value): value is string => Boolean(value));
+
+    return parts.length > 0 ? parts.join(' | ') : null;
+  }
+
+  if (typeof notes === 'object') {
+    try {
+      const serialized = JSON.stringify(notes);
+      return serialized === '{}' ? null : serialized;
+    } catch {
+      return null;
+    }
+  }
+
+  try {
+    return JSON.stringify(notes);
+  } catch {
+    return null;
+  }
+};
+
 // Helper function to normalize legacy rules to structured rules
-export const normalizeRulesToStructured = (legacyRules: LegacyRedditCommunityRuleSet | null | undefined): RedditCommunityRuleSet | null => {
-  if (!legacyRules) return null;
+export const normalizeRulesToStructured = (
+  legacyRules: LegacyRedditCommunityRuleSet | null | undefined
+): RedditCommunityRuleSet | null => {
+  if (!legacyRules) {
+    return null;
+  }
 
   return {
     eligibility: {
       minKarma: legacyRules.minKarma ?? null,
       minAccountAgeDays: legacyRules.minAccountAgeDays ?? legacyRules.minAccountAge ?? null,
-      verificationRequired: legacyRules.verificationRequired ?? false,
+      verificationRequired:
+        legacyRules.verificationRequired ?? (legacyRules as { verification?: boolean }).verification ?? false,
       requiresApproval: legacyRules.requiresApproval ?? false,
     },
     content: {
@@ -27,6 +82,6 @@ export const normalizeRulesToStructured = (legacyRules: LegacyRedditCommunityRul
       maxPostsPerDay: legacyRules.maxPostsPerDay ?? null,
       cooldownHours: legacyRules.cooldownHours ?? null,
     },
-    notes: legacyRules.notes ?? null,
+    notes: summarizeLegacyNotes(legacyRules.notes),
   };
 };

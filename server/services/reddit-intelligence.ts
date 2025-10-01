@@ -1,0 +1,534 @@
+import { getRedditServiceClient, registerDefaultRedditClients, REDDIT_SERVICE_CLIENT_KEYS } from '../lib/reddit.js';
+import { listCommunities, type NormalizedRedditCommunity } from '../reddit-communities.js';
+import { stateStore } from './state-store.js';
+import { logger } from '../lib/logger.js';
+
+type CacheStore = typeof stateStore;
+
+type SnoowrapClient = {
+  getSubreddit(name: string): {
+    getHot(options: { limit: number }): Promise<unknown>;
+    getRising?(options: { limit: number }): Promise<unknown>;
+    getTop?(options: { limit: number; time?: string }): Promise<unknown>;
+  };
+};
+
+interface SnoowrapSubmissionLike {
+  id: string;
+  title: string;
+  score?: number;
+  num_comments?: number;
+  created_utc?: number;
+  url?: string;
+  link_flair_text?: string | null;
+  over_18?: boolean;
+  subreddit?: string;
+  subreddit_name_prefixed?: string;
+  subreddit_name?: string;
+  subreddit_display_name?: string;
+  subreddit_type?: string;
+  subreddit_subscribers?: number;
+}
+
+export interface RedditTrendingTopic {
+  topic: string;
+  subreddit: string;
+  score: number;
+  comments: number;
+  category: string;
+  url: string;
+  flair?: string;
+  nsfw: boolean;
+  postedAt: string;
+}
+
+export interface SubredditHealthMetric {
+  subreddit: string;
+  members: number;
+  engagementRate: number;
+  growthTrend: string | null;
+  modActivity: string | null;
+  healthScore: number;
+  status: 'excellent' | 'healthy' | 'watch' | 'risky';
+  warnings: string[];
+  sellingPolicy: string;
+  competitionLevel: string | null;
+}
+
+export interface RedditForecastingSignal {
+  subreddit: string;
+  signal: 'surging' | 'steady' | 'cooling';
+  confidence: number;
+  rationale: string;
+  projectedEngagement: number;
+}
+
+export interface RedditIntelligenceDataset {
+  fetchedAt: string;
+  trendingTopics: RedditTrendingTopic[];
+  subredditHealth: SubredditHealthMetric[];
+  forecastingSignals: RedditForecastingSignal[];
+}
+
+interface IntelligenceOptions {
+  userId?: number;
+}
+
+const CACHE_NAMESPACE = 'reddit:intelligence:v1';
+const DEFAULT_CACHE_TTL_SECONDS = 300;
+const MAX_HEALTH_COMMUNITIES = 50;
+const MAX_FORECAST_SIGNALS = 20;
+const TRENDING_LIMIT = 25;
+
+function isIterable(value: unknown): value is Iterable<unknown> {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const iterator = (value as { [Symbol.iterator]?: unknown })[Symbol.iterator];
+  return typeof iterator === 'function';
+}
+
+function isSnoowrapSubmission(value: unknown): value is SnoowrapSubmissionLike {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const record = value as Record<string, unknown>;
+  if (typeof record.id !== 'string' || typeof record.title !== 'string') {
+    return false;
+  }
+  const subredditCandidate = record.subreddit;
+  const prefixedCandidate = record.subreddit_name_prefixed;
+  if (typeof subredditCandidate === 'string') {
+    return true;
+  }
+  if (typeof prefixedCandidate === 'string') {
+    return true;
+  }
+  if (typeof subredditCandidate === 'object' && subredditCandidate !== null) {
+    const nestedDisplayName = (subredditCandidate as Record<string, unknown>).display_name;
+    return typeof nestedDisplayName === 'string';
+  }
+  return false;
+}
+
+function toNumber(value: unknown, fallback = 0): number {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  return fallback;
+}
+
+function normalizeSubredditName(name: string): string {
+  const trimmed = name.trim().toLowerCase();
+  if (trimmed.startsWith('r/')) {
+    return trimmed.slice(2);
+  }
+  return trimmed;
+}
+
+function extractSubredditName(entry: SnoowrapSubmissionLike): string {
+  if (typeof entry.subreddit === 'string' && entry.subreddit.length > 0) {
+    return normalizeSubredditName(entry.subreddit);
+  }
+  if (typeof entry.subreddit_name_prefixed === 'string' && entry.subreddit_name_prefixed.length > 0) {
+    return normalizeSubredditName(entry.subreddit_name_prefixed);
+  }
+  const nested = entry.subreddit;
+  if (typeof nested === 'object' && nested !== null) {
+    const nestedDisplay = (nested as Record<string, unknown>).display_name;
+    if (typeof nestedDisplay === 'string' && nestedDisplay.length > 0) {
+      return normalizeSubredditName(nestedDisplay);
+    }
+  }
+  return 'unknown';
+}
+
+function determineStatus(healthScore: number): 'excellent' | 'healthy' | 'watch' | 'risky' {
+  if (healthScore >= 85) {
+    return 'excellent';
+  }
+  if (healthScore >= 70) {
+    return 'healthy';
+  }
+  if (healthScore >= 50) {
+    return 'watch';
+  }
+  return 'risky';
+}
+
+function deriveSellingPolicy(community: NormalizedRedditCommunity): string {
+  const policy = community.rules?.content?.sellingPolicy;
+  if (policy) {
+    return policy;
+  }
+  return community.promotionAllowed ?? 'unknown';
+}
+
+function calculateSignal(trendScore: number, growthTrend: string | null | undefined): 'surging' | 'steady' | 'cooling' {
+  if (growthTrend === 'down') {
+    return 'cooling';
+  }
+  if (growthTrend === 'up' && trendScore >= 75) {
+    return 'surging';
+  }
+  if (trendScore >= 85) {
+    return 'surging';
+  }
+  return 'steady';
+}
+
+function buildRationale(community: NormalizedRedditCommunity, trend: RedditTrendingTopic, signal: RedditForecastingSignal['signal']): string {
+  const fragments: string[] = [];
+  if (signal === 'surging') {
+    fragments.push('High engagement momentum detected');
+  } else if (signal === 'cooling') {
+    fragments.push('Downward trajectory observed');
+  } else {
+    fragments.push('Stable performance indicators');
+  }
+  if (community.growthTrend) {
+    fragments.push(`Growth trend: ${community.growthTrend}`);
+  }
+  if (community.modActivity) {
+    fragments.push(`Mod activity: ${community.modActivity}`);
+  }
+  fragments.push(`Trend score: ${trend.score}`);
+  return fragments.join(' • ');
+}
+
+function isDataset(value: unknown): value is RedditIntelligenceDataset {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const candidate = value as Record<string, unknown>;
+  if (typeof candidate.fetchedAt !== 'string') {
+    return false;
+  }
+  if (!Array.isArray(candidate.trendingTopics) || !Array.isArray(candidate.subredditHealth) || !Array.isArray(candidate.forecastingSignals)) {
+    return false;
+  }
+  return true;
+}
+
+export class RedditIntelligenceService {
+  private cacheStore: CacheStore;
+  private ttlSeconds: number;
+
+  constructor(options?: { cacheTtlSeconds?: number; store?: CacheStore }) {
+    this.cacheStore = options?.store ?? stateStore;
+    this.ttlSeconds = options?.cacheTtlSeconds ?? DEFAULT_CACHE_TTL_SECONDS;
+  }
+
+  async getIntelligence(options?: IntelligenceOptions): Promise<RedditIntelligenceDataset> {
+    const cacheKey = this.buildCacheKey(options?.userId);
+    try {
+      const cached = await this.cacheStore.get(cacheKey);
+      if (isDataset(cached)) {
+        return cached;
+      }
+    } catch (error) {
+      logger.warn('Failed to read cached Reddit intelligence snapshot', { error });
+    }
+
+    const dataset = await this.buildDataset();
+
+    try {
+      await this.cacheStore.set(cacheKey, dataset, this.ttlSeconds);
+    } catch (error) {
+      logger.warn('Failed to cache Reddit intelligence snapshot', { error });
+    }
+
+    return dataset;
+  }
+
+  async getTrendingTopics(): Promise<RedditTrendingTopic[]> {
+    const dataset = await this.getIntelligence();
+    if (dataset.trendingTopics.length > 0) {
+      return dataset.trendingTopics;
+    }
+    return this.getFallbackTrendingTopics();
+  }
+
+  private buildCacheKey(userId: number | undefined): string {
+    if (typeof userId === 'number' && Number.isFinite(userId)) {
+      return `${CACHE_NAMESPACE}:user:${userId}`;
+    }
+    return `${CACHE_NAMESPACE}:global`;
+  }
+
+  private async buildDataset(): Promise<RedditIntelligenceDataset> {
+    const communities = await listCommunities();
+    const communityMap = new Map<string, NormalizedRedditCommunity>();
+    communities.forEach(community => {
+      const normalizedName = normalizeSubredditName(community.name);
+      communityMap.set(normalizedName, community);
+    });
+
+    const client = await this.getClient();
+    const trendingTopics = await this.fetchTrendingTopics(client, communityMap);
+    const subredditHealth = this.computeSubredditHealth(communities, trendingTopics);
+    const forecastingSignals = this.buildForecastingSignals(trendingTopics, communityMap);
+
+    return {
+      fetchedAt: new Date().toISOString(),
+      trendingTopics,
+      subredditHealth,
+      forecastingSignals,
+    };
+  }
+
+  private async getClient(): Promise<SnoowrapClient | null> {
+    try {
+      registerDefaultRedditClients();
+    } catch (error) {
+      logger.warn('Unable to register default Reddit client', { error });
+    }
+
+    try {
+      const client = getRedditServiceClient(REDDIT_SERVICE_CLIENT_KEYS.COMMUNITY_SYNC);
+      if (!client) {
+        return null;
+      }
+      return client as unknown as SnoowrapClient;
+    } catch (error) {
+      logger.error('Failed to acquire Reddit service client', { error });
+      return null;
+    }
+  }
+
+  private async fetchTrendingTopics(client: SnoowrapClient | null, communityMap: Map<string, NormalizedRedditCommunity>): Promise<RedditTrendingTopic[]> {
+    if (!client) {
+      logger.warn('Reddit service client unavailable; falling back to cached community insights only');
+      return [];
+    }
+
+    const listings: SnoowrapSubmissionLike[] = [];
+
+    const fetchers: Array<Promise<void>> = [
+      this.collectListings(client, 'popular', TRENDING_LIMIT, listings),
+      this.collectListings(client, 'all', Math.floor(TRENDING_LIMIT / 2), listings),
+    ];
+
+    await Promise.all(fetchers);
+
+    const seenTopics = new Set<string>();
+
+    return listings
+      .map(entry => this.transformTrendingEntry(entry, communityMap))
+      .filter((trend): trend is RedditTrendingTopic => {
+        if (!trend) {
+          return false;
+        }
+        if (seenTopics.has(trend.topic.toLowerCase())) {
+          return false;
+        }
+        seenTopics.add(trend.topic.toLowerCase());
+        return true;
+      })
+      .slice(0, TRENDING_LIMIT);
+  }
+
+  private async collectListings(client: SnoowrapClient, subreddit: string, limit: number, sink: SnoowrapSubmissionLike[]): Promise<void> {
+    try {
+      const subredditHandle = client.getSubreddit(subreddit);
+      const listing = await subredditHandle.getHot({ limit });
+      const normalized = this.normalizeListing(listing);
+      sink.push(...normalized);
+    } catch (error) {
+      logger.warn('Failed to collect Reddit listings', { subreddit, error });
+    }
+  }
+
+  private normalizeListing(listing: unknown): SnoowrapSubmissionLike[] {
+    const items: SnoowrapSubmissionLike[] = [];
+    const bucket: unknown[] = [];
+
+    if (Array.isArray(listing)) {
+      bucket.push(...listing);
+    } else if (isIterable(listing)) {
+      for (const entry of listing) {
+        bucket.push(entry);
+      }
+    }
+
+    bucket.forEach(entry => {
+      if (isSnoowrapSubmission(entry)) {
+        items.push(entry);
+      }
+    });
+
+    return items;
+  }
+
+  private transformTrendingEntry(entry: SnoowrapSubmissionLike, communityMap: Map<string, NormalizedRedditCommunity>): RedditTrendingTopic | null {
+    const normalizedSubreddit = extractSubredditName(entry);
+    if (!normalizedSubreddit || normalizedSubreddit === 'unknown') {
+      return null;
+    }
+    const community = communityMap.get(normalizedSubreddit);
+    const category = community?.category ?? 'general';
+    const score = toNumber(entry.score);
+    const comments = toNumber(entry.num_comments);
+    const engagementRate = community?.engagementRate ?? 0;
+    const successProbability = community?.successProbability ?? 60;
+    const growthBoost = community?.growthTrend === 'up' ? 20 : community?.growthTrend === 'down' ? -10 : 0;
+    const modBoost = community?.modActivity === 'high' ? 10 : community?.modActivity === 'low' ? -5 : 0;
+
+    const weightedScore = Math.round(
+      Math.max(0, score * 0.6 + comments * 0.4) + (engagementRate * 0.4) + (successProbability * 0.3) + growthBoost + modBoost,
+    );
+
+    const subredditLabel = community?.displayName ?? `r/${normalizedSubreddit}`;
+
+    return {
+      topic: entry.title,
+      subreddit: subredditLabel,
+      score: weightedScore,
+      comments,
+      category,
+      url: typeof entry.url === 'string' ? entry.url : `https://www.reddit.com/r/${normalizedSubreddit}/`,
+      flair: typeof entry.link_flair_text === 'string' ? entry.link_flair_text : undefined,
+      nsfw: entry.over_18 === true,
+      postedAt: entry.created_utc ? new Date(entry.created_utc * 1000).toISOString() : new Date().toISOString(),
+    };
+  }
+
+  private computeSubredditHealth(
+    communities: NormalizedRedditCommunity[],
+    trendingTopics: RedditTrendingTopic[],
+  ): SubredditHealthMetric[] {
+    const trendingSet = new Set<string>(
+      trendingTopics.map(topic => normalizeSubredditName(topic.subreddit)),
+    );
+
+    return communities
+      .slice(0, MAX_HEALTH_COMMUNITIES)
+      .map(community => this.evaluateCommunityHealth(community, trendingSet))
+      .filter((metric): metric is SubredditHealthMetric => metric !== null);
+  }
+
+  private evaluateCommunityHealth(
+    community: NormalizedRedditCommunity,
+    trendingSet: Set<string>,
+  ): SubredditHealthMetric | null {
+    const normalizedName = normalizeSubredditName(community.name);
+    if (!normalizedName) {
+      return null;
+    }
+
+    const engagementRate = community.engagementRate ?? 0;
+    const successProbability = community.successProbability ?? 60;
+    const averageUpvotes = community.averageUpvotes ?? 0;
+    const growthTrend = community.growthTrend ?? null;
+    const modActivity = community.modActivity ?? null;
+    const trendBoost = trendingSet.has(normalizedName) ? 15 : 0;
+    const growthBoost = growthTrend === 'up' ? 15 : growthTrend === 'down' ? -10 : 0;
+    const modBoost = modActivity === 'high' ? 10 : modActivity === 'low' ? -10 : 0;
+    const competitionPenalty = community.competitionLevel === 'high' ? -10 : 0;
+
+    const healthScore = Math.round(
+      (successProbability * 0.4) + (engagementRate * 0.3) + (averageUpvotes * 0.1) + trendBoost + growthBoost + modBoost + competitionPenalty,
+    );
+
+    const warnings: string[] = [];
+    if (community.verificationRequired) {
+      warnings.push('Verification required');
+    }
+    if (community.promotionAllowed === 'no') {
+      warnings.push('Promotion not allowed');
+    }
+    if (community.promotionAllowed === 'limited') {
+      warnings.push('Promotion limited');
+    }
+    if (community.competitionLevel === 'high') {
+      warnings.push('High competition');
+    }
+    if (community.rules?.posting?.cooldownHours && community.rules.posting.cooldownHours >= 24) {
+      warnings.push(`${community.rules.posting.cooldownHours}h cooldown between posts`);
+    }
+
+    return {
+      subreddit: community.displayName,
+      members: community.members,
+      engagementRate,
+      growthTrend,
+      modActivity,
+      healthScore: Math.max(0, healthScore),
+      status: determineStatus(Math.max(0, healthScore)),
+      warnings,
+      sellingPolicy: deriveSellingPolicy(community),
+      competitionLevel: community.competitionLevel ?? null,
+    };
+  }
+
+  private buildForecastingSignals(
+    trendingTopics: RedditTrendingTopic[],
+    communityMap: Map<string, NormalizedRedditCommunity>,
+  ): RedditForecastingSignal[] {
+    const signals: RedditForecastingSignal[] = [];
+
+    for (const trend of trendingTopics.slice(0, MAX_FORECAST_SIGNALS)) {
+      const normalized = normalizeSubredditName(trend.subreddit);
+      const community = communityMap.get(normalized);
+      if (!community) {
+        continue;
+      }
+      const signal = calculateSignal(trend.score, community.growthTrend);
+      const baseConfidence = community.successProbability ?? 60;
+      const engagementRate = community.engagementRate ?? 0;
+      const confidence = Math.max(40, Math.min(95, Math.round((baseConfidence * 0.5) + (engagementRate * 0.3) + (trend.score * 0.2))));
+      const projectedEngagement = Math.max(0, Math.round((engagementRate || 40) * (1 + trend.score / 150)));
+
+      signals.push({
+        subreddit: community.displayName,
+        signal,
+        confidence,
+        rationale: buildRationale(community, trend, signal),
+        projectedEngagement,
+      });
+    }
+
+    return signals;
+  }
+
+  private getFallbackTrendingTopics(): RedditTrendingTopic[] {
+    const now = new Date().toISOString();
+    return [
+      {
+        topic: 'Behind-the-scenes exclusives',
+        subreddit: 'r/CreatorSuccess',
+        score: 78,
+        comments: 120,
+        category: 'exclusive',
+        url: 'https://www.reddit.com/r/CreatorSuccess/',
+        flair: undefined,
+        nsfw: false,
+        postedAt: now,
+      },
+      {
+        topic: 'Fitness transformation journeys',
+        subreddit: 'r/Fitness',
+        score: 82,
+        comments: 210,
+        category: 'fitness',
+        url: 'https://www.reddit.com/r/Fitness/',
+        flair: undefined,
+        nsfw: false,
+        postedAt: now,
+      },
+      {
+        topic: 'Cosplay build tutorials',
+        subreddit: 'r/Cosplay',
+        score: 75,
+        comments: 95,
+        category: 'creative',
+        url: 'https://www.reddit.com/r/Cosplay/',
+        flair: undefined,
+        nsfw: false,
+        postedAt: now,
+      },
+    ];
+  }
+}
+
+export const redditIntelligenceService = new RedditIntelligenceService();

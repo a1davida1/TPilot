@@ -1,5 +1,4 @@
-import React from 'react';
-import { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,11 +23,49 @@ import {
 } from 'lucide-react';
 
 import type { LucideIcon } from 'lucide-react';
+import { useLocation } from 'wouter';
 
 type IconType = LucideIcon;
 
+const TAB_VALUES = ['overview', 'automation', 'intelligence', 'community', 'optimizer'] as const;
+
+type TabValue = typeof TAB_VALUES[number];
+
+const isValidTabValue = (value: string): value is TabValue => (
+  (TAB_VALUES as readonly string[]).includes(value)
+);
+
 export default function Phase4Dashboard() {
-  const [activeTab, setActiveTab] = useState('overview');
+  const [location] = useLocation();
+  const [activeTab, setActiveTab] = useState<TabValue>('overview');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab && isValidTabValue(tab) && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [location, activeTab]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('tab') === activeTab) {
+      return;
+    }
+
+    params.set('tab', activeTab);
+    const newQuery = params.toString();
+    const newUrl = `${window.location.pathname}${newQuery ? `?${newQuery}` : ''}`;
+    window.history.replaceState({}, '', newUrl);
+  }, [activeTab]);
 
   const phase4Features = [
     {

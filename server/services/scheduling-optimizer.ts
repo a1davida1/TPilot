@@ -1,6 +1,7 @@
 import { db } from '../db';
 import { socialMediaPosts } from '@shared/schema';
 import { and, eq, desc } from 'drizzle-orm';
+import { redditIntelligenceService } from './reddit-intelligence.js';
 
 interface ContentSuggestion {
   topic: string;
@@ -229,8 +230,24 @@ class SchedulingOptimizer {
   }
 
   private async getTrendingTopics(): Promise<TrendingTopic[]> {
-    // In production, this would fetch from Reddit API, Twitter API, etc.
-    // For now, return mock trending topics
+    try {
+      const redditTrends = await redditIntelligenceService.getTrendingTopics();
+      if (redditTrends.length > 0) {
+        return redditTrends.map(trend => ({
+          topic: trend.topic,
+          platform: 'reddit',
+          score: trend.score,
+          category: trend.category
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to load Reddit intelligence trends:', error);
+    }
+
+    return this.getFallbackTrendingTopics();
+  }
+
+  private getFallbackTrendingTopics(): TrendingTopic[] {
     return [
       { topic: 'Fitness transformation', platform: 'instagram', score: 85, category: 'fitness' },
       { topic: 'Behind the scenes', platform: 'onlyfans', score: 92, category: 'exclusive' },
