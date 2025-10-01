@@ -360,7 +360,7 @@ export default function ReferralPage() {
             <CardContent>
               <div className="text-2xl font-bold text-pink-600 dark:text-pink-400 flex items-center">
                 <Users className="h-5 w-5 mr-2" />
-                <span data-testid="referral-total">{stats.totalReferrals}</span>
+                <span data-testid="stat-total-referrals">{stats.totalReferrals}</span>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {stats.activeReferrals} active this month
@@ -375,7 +375,7 @@ export default function ReferralPage() {
             <CardContent>
               <div className="text-2xl font-bold text-green-600 dark:text-green-400 flex items-center">
                 <DollarSign className="h-5 w-5 mr-2" />
-                <span data-testid="referral-commission">${stats.totalCommission.toFixed(2)}</span>
+                <span data-testid="stat-total-commission">${stats.totalCommission.toFixed(2)}</span>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 ${stats.pendingEarnings.toFixed(2)} pending
@@ -389,7 +389,7 @@ export default function ReferralPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                <span data-testid="referral-conversion">{stats.conversionRate}%</span>
+                <span data-testid="stat-conversion-rate">{stats.conversionRate}%</span>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 conversion rate
