@@ -29,29 +29,31 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": true
+        "minAccountAgeDays": null,
+        "verificationRequired": true,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "no",
+        "sellingPolicy": "not_allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Verification required",
           "No selling",
           "OC only"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -81,28 +83,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "no",
+        "sellingPolicy": "not_allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "No selling",
           "Amateur only"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -134,29 +138,31 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": true,
-        "contentGuidelines": [
-          "Promotional content allowed"
-        ]
-      },
-      "posting": {
-        "titleRequirements": [
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [
           "Must follow format"
         ],
-        "maxPostsPerDay": 5,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "contentGuidelines": [
+          "Promotional content allowed"
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "posting": {
+        "maxPostsPerDay": 5,
+        "cooldownHours": null
+      },
+      "notes": null
     }
   },
   {
@@ -187,28 +193,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": true,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "One post per day",
           "Direct links allowed"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -240,28 +248,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Petite only",
           "Limited selling"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -292,28 +302,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Asian creators only",
           "Respectful comments"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -345,28 +357,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Thick/curvy content",
           "Body positive"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -396,27 +410,29 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Theme specific content only"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -447,28 +463,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Latina creators",
           "Respectful content"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -499,29 +517,31 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": true,
-        "contentGuidelines": [
-          "Promotion allowed"
-        ]
-      },
-      "posting": {
-        "titleRequirements": [
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [
           "Follow title format"
         ],
-        "maxPostsPerDay": 5,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "contentGuidelines": [
+          "Promotion allowed"
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "posting": {
+        "maxPostsPerDay": 5,
+        "cooldownHours": null
+      },
+      "notes": null
     }
   },
   {
@@ -552,28 +572,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "no",
+        "sellingPolicy": "not_allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Curvy content only",
           "No selling"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -604,28 +626,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "College age theme",
           "Limited promotion"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -656,28 +680,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "no",
+        "sellingPolicy": "not_allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Cute/adorable theme",
           "No direct selling"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 1,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -708,28 +734,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Reveal content only",
           "OC preferred"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 1,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -760,28 +788,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "no",
+        "sellingPolicy": "not_allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Specific body type",
           "No selling"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 1,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -811,28 +841,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "no",
+        "sellingPolicy": "not_allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "General NSFW",
           "No spam"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -864,28 +896,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Age appropriate content",
           "Respectful"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -916,28 +950,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": true
+        "minAccountAgeDays": null,
+        "verificationRequired": true,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "30+ creators only",
           "Age verification"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -969,28 +1005,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Alternative style",
           "Tattoos/piercings welcome"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -1021,28 +1059,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "no",
+        "sellingPolicy": "not_allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Work themed",
           "No identifying info"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 1,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -1073,29 +1113,31 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
-        "contentGuidelines": [
-          "Two images required"
-        ]
-      },
-      "posting": {
-        "titleRequirements": [
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [
           "Before/after format"
         ],
-        "maxPostsPerDay": 1,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "contentGuidelines": [
+          "Two images required"
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "posting": {
+        "maxPostsPerDay": 1,
+        "cooldownHours": null
+      },
+      "notes": null
     }
   },
   {
@@ -1126,28 +1168,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Drop/reveal content",
           "Video preferred"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 1,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -1178,28 +1222,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Theme specific",
           "Consensual content"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 1,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -1230,28 +1276,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Goth aesthetic",
           "Promotion allowed"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -1282,28 +1330,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Pale skin appreciation",
           "Body positive"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -1334,28 +1384,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Natural or dyed redheads",
           "Hair visible"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -1386,28 +1438,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Blonde hair",
           "Natural or dyed"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -1438,28 +1492,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Brunette hair",
           "Hair visible"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -1490,28 +1546,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Feet content",
           "Selling allowed"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -1542,28 +1600,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Feet focus",
           "Selling welcome"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 5,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -1594,28 +1654,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Safe, sane, consensual",
           "Educational welcome"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -1646,28 +1708,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Female domination theme",
           "Respectful"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -1698,28 +1762,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Financial domination",
           "Clear terms"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 5,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -1751,28 +1817,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Cosplay content",
           "Credit characters"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -1803,28 +1871,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Adult cosplay",
           "Character names required"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -1855,28 +1925,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Geek culture theme",
           "Gaming/anime welcome"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -1907,28 +1979,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Gaming related",
           "Setup pics welcome"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -1960,28 +2034,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Fitness focus",
           "Workout content"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -2012,28 +2088,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Yoga poses",
           "Flexibility content"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -2064,28 +2142,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Mom creators",
           "Age appropriate"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -2116,28 +2196,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Mom body positivity",
           "Natural bodies"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -2168,28 +2250,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Amateur mature content",
           "30+ creators"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -2220,28 +2304,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Black creators",
           "Respectful space"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -2272,28 +2358,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Black creators only",
           "Celebration space"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -2324,28 +2412,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Indian/South Asian creators",
           "Cultural respect"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -2376,28 +2466,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Asian creators",
           "Body positive"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -2428,28 +2520,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Asian creators",
           "Theme specific"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -2480,28 +2574,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Small chest appreciation",
           "Body positive"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -2532,28 +2628,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Petite chest focus",
           "Respectful"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -2584,28 +2682,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Large chest content",
           "Natural or enhanced"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -2636,28 +2736,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "no",
+        "sellingPolicy": "not_allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Large chest focus",
           "No selling"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 1,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -2688,28 +2790,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Natural only",
           "No enhancements"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -2741,28 +2845,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Tattoo visibility",
           "Ink appreciation"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -2793,28 +2899,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Piercing focus",
           "Body modification"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -2845,28 +2953,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Emo aesthetic",
           "Scene welcome"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -2897,28 +3007,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Scene style",
           "Colorful aesthetic"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -2949,28 +3061,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "E-girl aesthetic",
           "Gaming/anime themes"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 4,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -3001,28 +3115,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "College age",
           "School themes"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -3053,28 +3169,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": true
+        "minAccountAgeDays": null,
+        "verificationRequired": true,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "no",
+        "sellingPolicy": "not_allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Age verification required",
           "18+ only"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 1,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -3105,28 +3223,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Born 2000-2005",
           "Young adult content"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -3157,28 +3277,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Snapchat promotion",
           "Username sharing"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 4,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -3210,28 +3332,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "TikTok creators",
           "Dance/trend content"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -3262,28 +3386,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "IG promotion",
           "Model content"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -3314,28 +3440,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Cam promotion",
           "Schedule sharing"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 4,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -3366,28 +3494,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Cam content",
           "Links allowed"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 5,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -3418,28 +3548,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Dancer content",
           "Stage/pole welcome"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -3470,28 +3602,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Pole content",
           "Athletic focus"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -3522,28 +3656,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Amateur content",
           "OC only"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -3574,28 +3710,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "no",
+        "sellingPolicy": "not_allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Amateur only",
           "No pro content"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -3626,28 +3764,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Homemade content",
           "Couples welcome"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -3678,28 +3818,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Couples content",
           "Both partners visible"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -3730,28 +3872,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": true
+        "minAccountAgeDays": null,
+        "verificationRequired": true,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "no",
+        "sellingPolicy": "not_allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Verified couples",
           "No selling"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -3782,28 +3926,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Lifestyle content",
           "Respectful"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -3834,28 +3980,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Consensual content",
           "Partner aware"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -3886,28 +4034,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Swinger lifestyle",
           "Respectful community"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -3938,28 +4088,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Lifestyle content",
           "Consensual"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -3990,28 +4142,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Lifestyle specific",
           "Consensual only"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -4042,28 +4196,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Fantasy content",
           "Role play"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -4094,28 +4250,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Fantasy theme",
           "Role play content"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -4146,28 +4304,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Specific content type",
           "OC preferred"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -4198,28 +4358,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Theme specific",
           "OC welcome"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -4250,28 +4412,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Specific content",
           "OC preferred"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -4302,28 +4466,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Squirt content",
           "OC encouraged"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -4354,28 +4520,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Specific content",
           "Natural only"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -4406,28 +4574,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Wet spot content",
           "Clothing focus"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -4458,28 +4628,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Panty content",
           "Selling allowed"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -4510,28 +4682,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": true
+        "minAccountAgeDays": null,
+        "verificationRequired": true,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": true,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Selling platform",
           "Verification required"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 5,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -4562,28 +4736,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Lingerie focus",
           "Quality content"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -4614,28 +4790,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Stocking/hosiery content",
           "Legs focus"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -4666,28 +4844,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "yes",
+        "sellingPolicy": "allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Thigh high focus",
           "Socks/stockings"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 3,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -4718,28 +4898,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Yoga pants/leggings",
           "Athletic wear"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -4770,28 +4952,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "no",
+        "sellingPolicy": "not_allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Yoga pants only",
           "No nudity"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 1,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -4822,28 +5006,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Specific focus",
           "Close-up content"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -4874,28 +5060,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "Specific focus",
           "Quality content"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 2,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   },
   {
@@ -4926,28 +5114,30 @@
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
-        "sellingPolicy": "no",
+        "sellingPolicy": "not_allowed",
         "watermarksAllowed": false,
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": true,
+        "titleGuidelines": [],
         "contentGuidelines": [
           "High quality only",
           "Aesthetic focus"
-        ]
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": [],
         "maxPostsPerDay": 1,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": true
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     }
   }
 ]
