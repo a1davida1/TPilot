@@ -1,6 +1,3 @@
-// IMPORTANT: Import instrument.ts first to initialize Sentry before anything else
-import './instrument.js';
-
 import { pathToFileURL } from 'node:url';
 import type { Express } from 'express';
 import {

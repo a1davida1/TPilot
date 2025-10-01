@@ -15,7 +15,7 @@ import { startQueue } from './bootstrap/queue.js';
 import { prepareResponseLogPayload, truncateLogLine } from './lib/request-logger.js';
 import passport from 'passport'; // Assuming passport is imported elsewhere or needs to be imported here
 import { createSessionMiddleware } from './bootstrap/session.js';
-import { Sentry } from './instrument.js';
+import { initializeSentry, Sentry } from './bootstrap/sentry.js';
 import { API_PREFIX } from './lib/api-prefix.js';
 
 export interface CreateAppOptions {
@@ -229,6 +229,10 @@ async function configureStaticAssets(
 export async function createApp(options: CreateAppOptions = {}): Promise<CreateAppResult> {
   const app = express();
   app.set('trust proxy', 1);
+  
+  // Initialize Sentry early to capture all errors
+  initializeSentry();
+  
   app.use(generalLimiter);
   app.use(sanitize);
 
