@@ -8,37 +8,54 @@
     "category": "art",
     "verificationRequired": false,
     "promotionAllowed": "limited",
-    "postingLimits": {"daily": 1},
+    "postingLimits": {
+      "daily": 1
+    },
     "rules": {
       "eligibility": {
         "minKarma": null,
-        "minAccountAge": null,
-        "verification": false
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "limited",
         "watermarksAllowed": true,
-        "contentGuidelines": ["Be nice", "No spam", "High quality images only"]
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": false,
+        "titleGuidelines": [
+          "Be descriptive",
+          "No clickbait"
+        ],
+        "contentGuidelines": [
+          "Be nice",
+          "No spam",
+          "High quality images only"
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": ["Be descriptive", "No clickbait"],
         "maxPostsPerDay": 1,
-        "cooldownHours": null,
-        "requiresApproval": false,
-        "nsfwRequired": false
+        "cooldownHours": null
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     },
-    "bestPostingTimes": ["morning", "evening"],
+    "bestPostingTimes": [
+      "morning",
+      "evening"
+    ],
     "averageUpvotes": 100,
     "successProbability": 60,
     "growthTrend": "up",
     "modActivity": "high",
     "description": "A place to share photos.",
-    "tags": ["photography", "art"],
+    "tags": [
+      "photography",
+      "art"
+    ],
     "competitionLevel": "medium"
   },
   {
@@ -50,37 +67,53 @@
     "category": "health",
     "verificationRequired": true,
     "promotionAllowed": "strict",
-    "postingLimits": {"daily": 2},
+    "postingLimits": {
+      "daily": 2
+    },
     "rules": {
       "eligibility": {
         "minKarma": 100,
-        "minAccountAge": 30,
-        "verification": true
+        "minAccountAgeDays": 30,
+        "verificationRequired": true,
+        "requiresApproval": false
       },
       "content": {
         "sellingPolicy": "not_allowed",
         "watermarksAllowed": false,
-        "contentGuidelines": ["No self-promotion", "Stay on topic", "Include progress or advice"]
+        "promotionalLinks": null,
+        "requiresOriginalContent": false,
+        "nsfwRequired": false,
+        "titleGuidelines": [
+          "Include workout type",
+          "No self-promotion"
+        ],
+        "contentGuidelines": [
+          "No self-promotion",
+          "Stay on topic",
+          "Include progress or advice"
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
       },
       "posting": {
-        "titleRequirements": ["Include workout type", "No self-promotion"],
         "maxPostsPerDay": 2,
-        "cooldownHours": 12,
-        "requiresApproval": false,
-        "nsfwRequired": false
+        "cooldownHours": 12
       },
-      "notes": {
-        "additionalInfo": [],
-        "exemptions": []
-      }
+      "notes": null
     },
-    "bestPostingTimes": ["afternoon"],
+    "bestPostingTimes": [
+      "afternoon"
+    ],
     "averageUpvotes": 250,
     "successProbability": 70,
     "growthTrend": "stable",
     "modActivity": "medium",
     "description": "Workout tips and discussion.",
-    "tags": ["fitness", "health"],
+    "tags": [
+      "fitness",
+      "health"
+    ],
     "competitionLevel": "high"
   }
 ]
