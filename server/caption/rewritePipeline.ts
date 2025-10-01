@@ -596,18 +596,23 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", style,
     return { provider: 'gemini', facts, variants, ranked, final: out, titles: out.titles };
   } catch (error) {
     const { openAICaptionFallback } = await import('./openaiFallback');
-    const final = await openAICaptionFallback({ platform, voice, existingCaption, imageUrl });
+    const variants = await openAICaptionFallback({ platform, voice, existingCaption, imageUrl });
+    const final = variants.at(0);
+    if (!final) {
+      throw new Error('OpenAI fallback did not return variants');
+    }
     const ranked = RankResult.parse({
       winner_index: 0,
       scores: [1, 0, 0, 0, 0],
       reason: 'OpenAI fallback selected after Gemini rewrite error',
       final,
     });
-    const enriched = enrichWithTitleCandidates(ranked.final, { ranked });
+    const enriched = enrichWithTitleCandidates(ranked.final, { variants, ranked });
     return {
       provider: 'openai',
       final: enriched.final,
       ranked: enriched.ranked ?? ranked,
+      variants,
       titles: enriched.final.titles,
     } as CaptionResult;
   }

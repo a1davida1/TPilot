@@ -12,6 +12,8 @@ export const CaptionItem = z.object({
   titles: z.array(z.string()).min(1).optional()
 });
 export const CaptionArray = z.array(CaptionItem).length(5);
+export type CaptionVariant = z.infer<typeof CaptionItem>;
+export type CaptionVariants = z.infer<typeof CaptionArray>;
 export const RankResult = z.object({
   winner_index: z.number().min(0).max(4),
   scores: z.array(z.number()).length(5),
