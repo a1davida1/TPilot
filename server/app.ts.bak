@@ -1,5 +1,4 @@
 import express from 'express';
-import type { RequestHandler } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import csrf from 'csurf';
@@ -246,11 +245,11 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   });
 
   app.use(permissionsPolicy);
-// Cookie parser MUST come before CSRF
+
+  app.post(`${API_PREFIX}/webhooks/stripe`, express.raw({ type: 'application/json' }), (_req, _res, next) => next());
+  
+  // Cookie parser MUST come before CSRF
   const cookieSecret = process.env.COOKIE_SECRET || process.env.SESSION_SECRET || 'dev-cookie-secret';
-if (!cookieSecret && process.env.NODE_ENV === 'production') {
-  throw new Error('COOKIE_SECRET or SESSION_SECRET must be set in production');
-}
   app.use(cookieParser(cookieSecret));
   
   // Body parsers
@@ -263,7 +262,7 @@ if (!cookieSecret && process.env.NODE_ENV === 'production') {
   
   // CSRF protection (double-submit cookie pattern)
   const isProd = process.env.NODE_ENV === 'production';
-  const csrfProtection: RequestHandler = csrf({
+  const csrfProtection = csrf({
     cookie: {
       key: '_csrf',
       httpOnly: true,
@@ -294,7 +293,8 @@ if (!cookieSecret && process.env.NODE_ENV === 'production') {
       `${API_PREFIX}/auth/reddit/callback`,
       `${API_PREFIX}/auth/google/callback`,
       `${API_PREFIX}/auth/facebook/callback`,
-      `${API_PREFIX}/webhooks/`, // Already handled above
+      `${API_PREFIX}/webhooks/`,
+      `${API_PREFIX}/csrf-token`, // Already handled above
       `${API_PREFIX}/health`
     ];
 
