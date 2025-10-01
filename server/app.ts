@@ -360,6 +360,11 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
       await configureStaticAssets(app, server, enableVite);
     }
 
+    // Sentry debug test endpoint (remove in production)
+    app.get(`${API_PREFIX}/debug-sentry`, function mainHandler(_req, _res) {
+      throw new Error("My first Sentry error!");
+    });
+
     // IMPORTANT: Add Sentry error handler AFTER all routes but BEFORE any other error middleware
     if (process.env.SENTRY_DSN) {
       Sentry.setupExpressErrorHandler(app);
