@@ -1255,19 +1255,24 @@ type GeminiPipelineArgs = {
 export async function pipeline({ imageUrl, platform, voice = "flirty_playful", nsfw = false, style, mood, ...toneRest }: GeminiPipelineArgs): Promise<CaptionResult> {
   const resolveWithOpenAIFallback = async (reason: string): Promise<CaptionResult> => {
     const { openAICaptionFallback } = await import('./openaiFallback');
-    const final = await openAICaptionFallback({ platform, voice, imageUrl });
+    const variants = await openAICaptionFallback({ platform, voice, imageUrl });
+    const final = variants.at(0);
+    if (!final) {
+      throw new Error('OpenAI fallback did not return variants');
+    }
     const ranked = RankResult.parse({
       winner_index: 0,
       scores: [1, 0, 0, 0, 0],
       reason,
       final,
     });
-    const enriched = enrichWithTitleCandidates(ranked.final, { ranked });
+    const enriched = enrichWithTitleCandidates(ranked.final, { variants, ranked });
     const enrichedRanked = enriched.ranked ?? ranked;
     return {
       provider: 'openai',
       final: enriched.final,
       ranked: enrichedRanked,
+      variants,
       titles: enriched.final.titles,
     } as CaptionResult;
   };

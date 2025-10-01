@@ -59,15 +59,22 @@ describe('openAICaptionFallback safe responses', () => {
     });
 
     expect(mockOpenAIInstance.chat.completions.create).not.toHaveBeenCalled();
-    expect(complianceSpy).toHaveBeenCalledTimes(1);
-    expect(result.caption).toBe(rankingFallback.safeFallbackCaption);
-    expect(result.hashtags).toEqual(Array.from(rankingFallback.safeFallbackHashtags));
-    expect(result.cta).toBe(rankingFallback.safeFallbackCta);
-    expect(result.alt).toBe('Engaging social media content');
-    expect(result.mood).toBe('engaging');
-    expect(result.style).toBe('authentic');
-    expect(result.safety_level).toBe('normal');
-    expect(result.nsfw).toBe(false);
+    expect(complianceSpy).toHaveBeenCalledTimes(5);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result).toHaveLength(5);
+    const primary = result[0];
+    expect(primary.caption).toBe(rankingFallback.safeFallbackCaption);
+    expect(primary.hashtags).toEqual(Array.from(rankingFallback.safeFallbackHashtags));
+    expect(primary.cta).toBe(rankingFallback.safeFallbackCta);
+    expect(primary.alt).toBe('Engaging social media content');
+    expect(primary.mood).toBe('engaging');
+    expect(primary.style).toBe('authentic');
+    expect(primary.safety_level).toBe('normal');
+    expect(primary.nsfw).toBe(false);
+    for (const variant of result) {
+      expect(variant.alt).toBe('Engaging social media content');
+      expect(variant.safety_level).toBe('normal');
+    }
 
     complianceSpy.mockRestore();
   });
@@ -90,15 +97,18 @@ describe('openAICaptionFallback safe responses', () => {
     });
 
     expect(mockOpenAIInstance.chat.completions.create).toHaveBeenCalledTimes(1);
-    expect(complianceSpy).toHaveBeenCalledTimes(1);
-    expect(result.caption).toBe(rankingFallback.safeFallbackCaption);
-    expect(result.hashtags).toEqual(Array.from(rankingFallback.safeFallbackHashtags));
-    expect(result.cta).toBe(rankingFallback.safeFallbackCta);
-    expect(result.alt).toBe('Engaging social media content');
-    expect(result.mood).toBe('engaging');
-    expect(result.style).toBe('authentic');
-    expect(result.safety_level).toBe('normal');
-    expect(result.nsfw).toBe(false);
+    expect(complianceSpy).toHaveBeenCalledTimes(5);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result).toHaveLength(5);
+    const primary = result[0];
+    expect(primary.caption).toBe(rankingFallback.safeFallbackCaption);
+    expect(primary.hashtags).toEqual(Array.from(rankingFallback.safeFallbackHashtags));
+    expect(primary.cta).toBe(rankingFallback.safeFallbackCta);
+    expect(primary.alt).toBe('Engaging social media content');
+    expect(primary.mood).toBe('engaging');
+    expect(primary.style).toBe('authentic');
+    expect(primary.safety_level).toBe('normal');
+    expect(primary.nsfw).toBe(false);
 
     complianceSpy.mockRestore();
   });

@@ -1,4 +1,4 @@
-import type { GenerativeModel, GoogleGenerativeAI } from "@google/generative-ai";
+import type { GoogleGenAI } from "@google/genai";
 import {
   getGoogleGenerativeAI,
   getTextModel as loadTextModel,
@@ -34,16 +34,16 @@ const createLazyProxy = <T extends object>(factory: () => T): T =>
     }
   });
 
-const genAI: GoogleGenerativeAI | null = isGeminiAvailable()
-  ? createLazyProxy<GoogleGenerativeAI>(getGoogleGenerativeAI)
+const genAI: GoogleGenAI | null = isGeminiAvailable()
+  ? createLazyProxy<GoogleGenAI>(getGoogleGenerativeAI)
   : null;
 
-const visionModel: GenerativeModel | null = isGeminiAvailable()
-  ? createLazyProxy<GenerativeModel>(loadVisionModel)
+const visionModel: GeminiModel | null = isGeminiAvailable()
+  ? createLazyProxy<GeminiModel>(loadVisionModel)
   : null;
 
-const textModel: GenerativeModel | null = isGeminiAvailable()
-  ? createLazyProxy<GenerativeModel>(loadTextModel)
+const textModel: GeminiModel | null = isGeminiAvailable()
+  ? createLazyProxy<GeminiModel>(loadTextModel)
   : null;
 
 export {

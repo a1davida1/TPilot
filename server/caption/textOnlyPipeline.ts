@@ -1,8 +1,8 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { z } from "zod";
-import { getTextModel } from "../lib/gemini-client";
-import type { GenerativeModel } from "@google/generative-ai";
+
+import { getTextModel, type GeminiModel } from "../lib/gemini-client";
 import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
 import { enrichWithTitleCandidates } from "./geminiPipeline";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
@@ -524,7 +524,7 @@ function _prepareVariantsForRanking(
 }
 
 async function requestTextOnlyRanking(
-  model: GenerativeModel,
+  model: GeminiModel,
   variantsInput: unknown[],
   serializedVariants: string,
   promptBlock: string,

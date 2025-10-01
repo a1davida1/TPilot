@@ -17,17 +17,20 @@ vi.mock('../../server/lib/gemini.ts', () => ({
 
 import { generationResponseSchema } from '../../shared/types/caption';
 
-vi.mock('../../server/caption/openaiFallback', () => ({
-  openAICaptionFallback: vi.fn().mockResolvedValue({
-    caption: 'Fallback caption',
+const buildMockFallbackVariants = () =>
+  Array.from({ length: 5 }, (_, index) => ({
+    caption: index === 0 ? 'Fallback caption' : `Fallback caption option ${index + 1}`,
     hashtags: ['#fallback1', '#fallback2', '#fallback3'],
     safety_level: 'normal',
-    alt: 'Fallback alt text that is sufficiently long',
+    alt: `Fallback alt text that is sufficiently long option ${index + 1}`,
     mood: 'neutral',
     style: 'informative',
-    cta: 'Check this out',
+    cta: index === 0 ? 'Check this out' : `Check this out option ${index + 1}`,
     nsfw: false,
-  }),
+  }));
+
+vi.mock('../../server/caption/openaiFallback', () => ({
+  openAICaptionFallback: vi.fn().mockImplementation(() => Promise.resolve(buildMockFallbackVariants())),
 }));
 
 // Type interfaces for test safety
@@ -72,16 +75,7 @@ describe('Caption Generation', () => {
     const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.ts');
     const mockOpenAI = vi.mocked(openAICaptionFallback);
     mockOpenAI.mockReset();
-    mockOpenAI.mockResolvedValue({
-      caption: 'Fallback caption',
-      hashtags: ['#fallback1', '#fallback2', '#fallback3'],
-      safety_level: 'normal',
-      alt: 'Fallback alt text that is sufficiently long',
-      mood: 'neutral',
-      style: 'informative',
-      cta: 'Check this out',
-      nsfw: false,
-    });
+    mockOpenAI.mockImplementation(() => Promise.resolve(buildMockFallbackVariants()));
   });
 
   describe('Gemini Pipeline', () => {
