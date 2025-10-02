@@ -1021,18 +1021,25 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
       mood: params.mood,
       nsfw: params.nsfw,
     });
-    const fallbackBase = CaptionItem.parse({ ...fallbackBatch[0] });
-
     while (uniqueVariants.length < VARIANT_TARGET) {
       const index = uniqueVariants.length + 1;
       const source = fallbackBatch[(index - 1) % fallbackBatch.length];
-      const paddedVariant = CaptionItem.parse({
-        ...fallbackBase,
-        ...source,
-        caption: `${source.caption} (retry filler ${index})`,
-        alt: `${source.alt} (retry filler ${index})`,
-      });
-
+      const normalizedSource = normalizeVariantFields(
+        { ...source },
+        params.platform,
+        params.facts,
+        typeof source.caption === "string" ? source.caption : undefined
+      );
+      const paddedVariant = normalizeVariantFields(
+        {
+          ...normalizedSource,
+          caption: `${normalizedSource.caption} (retry filler ${index})`,
+          alt: normalizedSource.alt,
+        } as Record<string, unknown>,
+        params.platform,
+        params.facts,
+        normalizedSource.caption
+      );
       uniqueVariants.push(paddedVariant);
     }
   }

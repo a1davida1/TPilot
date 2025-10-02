@@ -1,0 +1,141 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/tests/unit/caption/fallback-inference.test.ts b/tests/unit/caption/fallback-inference.test.ts
+index 5982d6af9ae004a7a3388a0172d2b584c87cfd39..364f6f40cbb84d3f35a581c25887de59a3892f40 100644
+--- a/tests/unit/caption/fallback-inference.test.ts
++++ b/tests/unit/caption/fallback-inference.test.ts
+@@ -54,50 +54,51 @@ describe('inferFallbackFromFacts helper', () => {
+         objects: ['surfer', 'board'],
+         setting: 'sunny beach cove',
+         colors: ['turquoise water'],
+       },
+     });
+ 
+     expect(fallback.hashtags.some(tag => tag.includes('beach') || tag.includes('surfer') || tag.includes('board'))).toBe(true);
+     expect(fallback.cta.toLowerCase()).toMatch(/beach|surfer|board|turquoise|water/);
+     expect(fallback.alt.toLowerCase()).toMatch(/beach|surfer|board|turquoise|water|scene/);
+   });
+ 
+   it('adapts fallback data for text-only launch themes', async () => {
+     const { inferFallbackFromFacts } = await import('../../../server/caption/inferFallbackFromFacts.ts');
+     const fallback = inferFallbackFromFacts({
+       platform: 'x',
+       theme: 'Fintech product launch',
+       context: 'Beta waitlist opens tonight',
+     });
+ 
+     expect(fallback.hashtags.length).toBeLessThanOrEqual(3);
+     expect(fallback.hashtags.some(tag => tag.includes('launch') || tag.includes('product') || tag.includes('fintech'))).toBe(true);
+     expect(fallback.cta.toLowerCase()).toMatch(/launch|product|fintech|conversation|join/);
+   });
+ });
+ 
++
+ describe('pipeline fallbacks', () => {
+   beforeEach(() => {
+     vi.clearAllMocks();
+     mockTextModel.generateContent.mockReset();
+     mockVisionModel.generateContent.mockReset();
+     mockIsGeminiAvailable.mockReset();
+     mockIsGeminiAvailable.mockReturnValue(true);
+   });
+ 
+   it('fills missing variant fields with contextual beach data', async () => {
+     const variantPayload = [
+       {
+         caption: 'Sunset set vibes',
+         hashtags: ['#beach', '#surfer', '#sunset'],
+         safety_level: 'normal',
+         mood: 'relaxed',
+         style: 'beach',
+         cta: 'Explore beach adventures',
+         alt: 'Beach scene featuring surfer and board',
+         nsfw: false,
+       },
+       {
+         caption: 'Beach day energy with golden light',
+         hashtags: [],
+         safety_level: 'normal',
+diff --git a/tests/unit/caption/fallback-inference.test.ts b/tests/unit/caption/fallback-inference.test.ts
+index 5982d6af9ae004a7a3388a0172d2b584c87cfd39..364f6f40cbb84d3f35a581c25887de59a3892f40 100644
+--- a/tests/unit/caption/fallback-inference.test.ts
++++ b/tests/unit/caption/fallback-inference.test.ts
+@@ -210,26 +211,75 @@ describe('pipeline fallbacks', () => {
+         style: '',
+         cta: '',
+         alt: '',
+         nsfw: false,
+       },
+     ];
+ 
+     mockTextModel.generateContent.mockResolvedValueOnce(
+       createGeminiResponse(variantPayload)
+     );
+ 
+     const { generateVariantsTextOnly } = await import('../../../server/caption/textOnlyPipeline.ts');
+     const variants = await generateVariantsTextOnly({
+       platform: 'x',
+       voice: 'confident',
+       theme: 'SaaS platform launch',
+       context: 'Waitlist opens this Friday',
+       nsfw: false,
+     });
+ 
+     const first = variants[0];
+     expect(first.hashtags.some(tag => tag.includes('launch') || tag.includes('saas') || tag.includes('platform'))).toBe(true);
+     expect(first.cta.toLowerCase()).toMatch(/launch|saas|platform|conversation|join/);
+     expect(first.alt.toLowerCase()).toMatch(/launch|saas|platform|representation|visual/);
+   });
+-});
++
++  it('pads fallback variants without extending alt text beyond schema limits', async () => {
++    const maxAlt = 'A'.repeat(200);
++    const minimalVariantPayload = [
++      {
++        caption: 'Single strong option',
++        hashtags: ['#focus'],
++        safety_level: 'normal',
++        mood: 'confident',
++        style: 'modern',
++        cta: 'Explore more now',
++        alt: maxAlt,
++        nsfw: false,
++      },
++    ];
++
++    mockTextModel.generateContent.mockResolvedValue(
++      createGeminiResponse(minimalVariantPayload)
++    );
++
++    const { generateVariants: generateGeminiVariants } = await import('../../../server/caption/geminiPipeline.ts');
++    const geminiVariants = await generateGeminiVariants({
++      platform: 'instagram',
++      voice: 'bold',
++      facts: { setting: 'studio set' },
++      nsfw: false,
++    });
++
++    expect(geminiVariants).toHaveLength(5);
++    geminiVariants.forEach(variant => {
++      expect(variant.alt.length).toBeLessThanOrEqual(200);
++      expect(variant.alt.toLowerCase().includes('retry filler')).toBe(false);
++    });
++
++    const { generateVariantsTextOnly } = await import('../../../server/caption/textOnlyPipeline.ts');
++    const textOnlyVariants = await generateVariantsTextOnly({
++      platform: 'instagram',
++      voice: 'confident',
++      theme: 'Studio reveal',
++      context: 'Launch day',
++      nsfw: false,
++    });
++
++    expect(textOnlyVariants).toHaveLength(5);
++    textOnlyVariants.forEach(variant => {
++      expect(variant.alt.length).toBeLessThanOrEqual(200);
++      expect(variant.alt.toLowerCase().includes('retry filler')).toBe(false);
++    });
++  });
++});
+ 
+EOF
+)

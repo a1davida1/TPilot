@@ -474,19 +474,35 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
 
   if (uniqueVariants.length < VARIANT_TARGET) {
     const fallbackBatch = buildFallbackBatch();
-    const baseVariant = uniqueVariants[0] ?? CaptionItem.parse({
-      ...fallbackBatch[0],
-      hashtags: [...safeFallbackHashtags],
-    });
+    const baseSource: Record<string, unknown> = uniqueVariants[0]
+      ? { ...uniqueVariants[0] }
+      : {
+          ...fallbackBatch[0],
+          hashtags: [...safeFallbackHashtags],
+        };
+    const baseVariant = _normalizeVariantFields(
+      baseSource,
+      params.platform,
+      params.theme,
+      params.context,
+      typeof baseSource.caption === "string" ? baseSource.caption : undefined
+    );
 
     while (uniqueVariants.length < VARIANT_TARGET) {
       const index = uniqueVariants.length + 1;
       const captionSeed = baseVariant.caption || safeFallbackCaption;
-      uniqueVariants.push({
-        ...baseVariant,
-        caption: `${captionSeed} (retry filler ${index})`,
-        alt: `${baseVariant.alt} (retry filler ${index})`,
-      });
+      const paddedVariant = _normalizeVariantFields(
+        {
+          ...baseVariant,
+          caption: `${captionSeed} (retry filler ${index})`,
+          alt: baseVariant.alt,
+        } as Record<string, unknown>,
+        params.platform,
+        params.theme,
+        params.context,
+        baseVariant.caption
+      );
+      uniqueVariants.push(paddedVariant);
     }
   }
 
@@ -507,25 +523,42 @@ function _prepareVariantsForRanking(
     const safeFallbackHashtags = fallbackHashtags(params.platform || 'instagram');
     const safeFallbackCta = "Comment your thoughts below! 💭";
     
-    const baseVariant = preparedVariants[0] ?? CaptionItem.parse({
-      caption: safeFallbackCaption,
-      alt: safeFallbackAlt,
-      hashtags: [...safeFallbackHashtags],
-      cta: safeFallbackCta,
-      mood: "engaging",
-      style: "authentic",
-      safety_level: "normal",
-      nsfw: false,
-    });
+    const platform = (params.platform ?? "instagram") as "instagram" | "x" | "reddit" | "tiktok";
+    const baseSource: Record<string, unknown> = preparedVariants[0]
+      ? { ...preparedVariants[0] }
+      : {
+          caption: safeFallbackCaption,
+          alt: safeFallbackAlt,
+          hashtags: [...safeFallbackHashtags],
+          cta: safeFallbackCta,
+          mood: "engaging",
+          style: "authentic",
+          safety_level: "normal",
+          nsfw: false,
+        };
+    const baseVariant = _normalizeVariantFields(
+      baseSource,
+      platform,
+      params.theme,
+      params.context,
+      typeof baseSource.caption === "string" ? baseSource.caption : undefined
+    );
 
     while (preparedVariants.length < options.targetLength) {
       const index = preparedVariants.length + 1;
       const captionSeed = baseVariant.caption || "Here's something I'm proud of today.";
-      preparedVariants.push({
-        ...baseVariant,
-        caption: `${captionSeed} (filler ${index})`,
-        alt: `${baseVariant.alt} (filler ${index})`,
-      });
+      const paddedVariant = _normalizeVariantFields(
+        {
+          ...baseVariant,
+          caption: `${captionSeed} (filler ${index})`,
+          alt: baseVariant.alt,
+        } as Record<string, unknown>,
+        platform,
+        params.theme,
+        params.context,
+        baseVariant.caption
+      );
+      preparedVariants.push(paddedVariant);
     }
   }
   // Deduplicate variants based on similarity if needed, though `generateVariantsTextOnly` already aims for uniqueness

@@ -76,6 +76,7 @@ describe('inferFallbackFromFacts helper', () => {
   });
 });
 
+
 describe('pipeline fallbacks', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -231,5 +232,54 @@ describe('pipeline fallbacks', () => {
     expect(first.hashtags.some(tag => tag.includes('launch') || tag.includes('saas') || tag.includes('platform'))).toBe(true);
     expect(first.cta.toLowerCase()).toMatch(/launch|saas|platform|conversation|join/);
     expect(first.alt.toLowerCase()).toMatch(/launch|saas|platform|representation|visual/);
+  });
+
+  it('pads fallback variants without extending alt text beyond schema limits', async () => {
+    const maxAlt = 'A'.repeat(200);
+    const minimalVariantPayload = [
+      {
+        caption: 'Single strong option',
+        hashtags: ['#focus'],
+        safety_level: 'normal',
+        mood: 'confident',
+        style: 'modern',
+        cta: 'Explore more now',
+        alt: maxAlt,
+        nsfw: false,
+      },
+    ];
+
+    mockTextModel.generateContent.mockResolvedValue(
+      createGeminiResponse(minimalVariantPayload)
+    );
+
+    const { generateVariants: generateGeminiVariants } = await import('../../../server/caption/geminiPipeline.ts');
+    const geminiVariants = await generateGeminiVariants({
+      platform: 'instagram',
+      voice: 'bold',
+      facts: { setting: 'studio set' },
+      nsfw: false,
+    });
+
+    expect(geminiVariants).toHaveLength(5);
+    geminiVariants.forEach(variant => {
+      expect(variant.alt.length).toBeLessThanOrEqual(200);
+      expect(variant.alt.toLowerCase().includes('retry filler')).toBe(false);
+    });
+
+    const { generateVariantsTextOnly } = await import('../../../server/caption/textOnlyPipeline.ts');
+    const textOnlyVariants = await generateVariantsTextOnly({
+      platform: 'instagram',
+      voice: 'confident',
+      theme: 'Studio reveal',
+      context: 'Launch day',
+      nsfw: false,
+    });
+
+    expect(textOnlyVariants).toHaveLength(5);
+    textOnlyVariants.forEach(variant => {
+      expect(variant.alt.length).toBeLessThanOrEqual(200);
+      expect(variant.alt.toLowerCase().includes('retry filler')).toBe(false);
+    });
   });
 });
