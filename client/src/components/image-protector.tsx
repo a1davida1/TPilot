@@ -122,13 +122,13 @@ export function ImageProtector({ userTier = 'guest' }: ImageProtectorProps) {
           </Button>
         )
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Processing failed",
         description: "Failed to process the image. Please try again.",
         variant: "destructive"
       });
-      console.error('Image processing error:', error);
+      console.error('Image processing error:', _error);
     } finally {
       setIsProcessing(false);
     }
@@ -148,7 +148,7 @@ export function ImageProtector({ userTier = 'guest' }: ImageProtectorProps) {
         title: "Download started",
         description: "Your protected image is downloading..."
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Download failed",
         description: "Failed to download the image. Please try again.",

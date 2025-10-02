@@ -157,7 +157,7 @@ function readStoredProgress(): OnboardingProgress {
       createdFirstPost:
         typeof parsed.createdFirstPost === 'boolean' ? parsed.createdFirstPost : onboardingDefaults.createdFirstPost,
     };
-  } catch (error) {
+  } catch (_error) {
     return onboardingDefaults;
   }
 }
@@ -240,7 +240,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
       setOnboardingProgress(currentProgress);
       try {
         window.localStorage.setItem(MODERN_DASHBOARD_ONBOARDING_STORAGE_KEY, JSON.stringify(currentProgress));
-      } catch (error) {
+      } catch (_error) {
         // Ignore localStorage errors
       }
     }
@@ -455,7 +455,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
       setOnboardingProgress(updatedProgress);
       try {
         window.localStorage.setItem(MODERN_DASHBOARD_ONBOARDING_STORAGE_KEY, JSON.stringify(updatedProgress));
-      } catch (error) {
+      } catch (_error) {
         // Ignore localStorage errors
       }
     }
@@ -507,8 +507,8 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
         description: fallbackMessage,
         variant: 'destructive',
       });
-    } catch (error) {
-      const apiError = error as Partial<ApiError> & Error;
+    } catch (_error) {
+      const apiError = _error as Partial<ApiError> & Error;
       const description = apiError.userMessage ?? apiError.message ?? 'Unable to connect to Reddit.';
       toast({
         title: '❌ Connection Failed',
@@ -536,7 +536,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     setOnboardingProgress(updatedProgress);
     try {
       window.localStorage.setItem(MODERN_DASHBOARD_ONBOARDING_STORAGE_KEY, JSON.stringify(updatedProgress));
-    } catch (error) {
+    } catch (_error) {
       // Ignore localStorage errors
     }
   };
@@ -549,7 +549,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     setOnboardingProgress(updatedProgress);
     try {
       window.localStorage.setItem(MODERN_DASHBOARD_ONBOARDING_STORAGE_KEY, JSON.stringify(updatedProgress));
-    } catch (error) {
+    } catch (_error) {
       // Ignore localStorage errors
     }
   };
@@ -562,7 +562,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     setOnboardingProgress(updatedProgress);
     try {
       window.localStorage.setItem(MODERN_DASHBOARD_ONBOARDING_STORAGE_KEY, JSON.stringify(updatedProgress));
-    } catch (error) {
+    } catch (_error) {
       // Ignore localStorage errors
     }
   };

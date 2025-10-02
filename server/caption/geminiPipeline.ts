@@ -1,7 +1,12 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { z } from "zod";
-import { getVisionModel, getTextModel, isGeminiAvailable, type GeminiModel } from "../lib/gemini-client";
+import {
+  getVisionModel,
+  getTextModel,
+  isGeminiAvailable,
+  type GeminiModel,
+} from "../lib/gemini.ts";
 import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { BANNED_WORDS_HINT, variantContainsBannedWord } from "./bannedWords";

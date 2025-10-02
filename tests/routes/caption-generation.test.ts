@@ -16,15 +16,20 @@ interface GeminiMockResponse {
 
 type GeminiGenerateContent = (input: unknown) => Promise<GeminiMockResponse>;
 
+const { textModelGenerateContent, visionModelGenerateContent, isGeminiAvailable } =
+  vi.hoisted(() => ({
+    textModelGenerateContent: vi.fn<GeminiGenerateContent>(),
+    visionModelGenerateContent: vi.fn<GeminiGenerateContent>(),
+    isGeminiAvailable: vi.fn<() => boolean>(() => true),
+  }));
+
 const textModel = {
-  generateContent: vi.fn<GeminiGenerateContent>(),
+  generateContent: textModelGenerateContent,
 };
 
 const visionModel = {
-  generateContent: vi.fn<GeminiGenerateContent>(),
+  generateContent: visionModelGenerateContent,
 };
-
-const isGeminiAvailable = vi.fn<() => boolean>(() => true);
 
 vi.mock('../../server/lib/gemini-client', () => ({
   __esModule: true,
@@ -101,8 +106,8 @@ const createGeminiResponse = (payload: string, usage?: GeminiMockResponse['usage
 describe('Caption Generation', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
-    textModel.generateContent.mockReset();
-    visionModel.generateContent.mockReset();
+    textModelGenerateContent.mockReset();
+    visionModelGenerateContent.mockReset();
     isGeminiAvailable.mockReset();
     isGeminiAvailable.mockReturnValue(true);
     const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.ts');
@@ -226,7 +231,7 @@ describe('Caption Generation', () => {
         })
       );
 
-      visionModel.generateContent.mockResolvedValueOnce(mockFactsResponse);
+      visionModelGenerateContent.mockResolvedValueOnce(mockFactsResponse);
       const responseQueue: GeminiMockResponse[] = [
         mockVariantsResponse,
         mockRankResponse,
@@ -235,7 +240,7 @@ describe('Caption Generation', () => {
         finalVariantsResponse,
         finalRankResponse,
       ];
-      textModel.generateContent.mockImplementation(async () => {
+      textModelGenerateContent.mockImplementation(async () => {
         if (responseQueue.length === 0) {
           responseQueue.push(finalVariantsResponse, finalRankResponse);
         }
@@ -369,9 +374,9 @@ describe('Caption Generation', () => {
       };
 
       const { textModel, visionModel } = await import('../../server/lib/gemini.ts');
-      const visionGenerateMock = asMock(visionModel.generateContent);
+      const visionGenerateMock = asMock(visionModelGenerateContent);
       visionGenerateMock.mockResolvedValueOnce(mockFactsResponse);
-      const textGenerateMock = asMock(textModel.generateContent);
+      const textGenerateMock = asMock(textModelGenerateContent);
       textGenerateMock.mockRejectedValueOnce(new Error('Gemini variants unavailable'));
 
       const result = await pipeline({
@@ -523,7 +528,7 @@ describe('Caption Generation', () => {
       };
 
       const { textModel } = await import('../../server/lib/gemini.ts');
-      const textGenerateMock = asMock(textModel.generateContent);
+      const textGenerateMock = asMock(textModelGenerateContent);
       textGenerateMock.mockResolvedValue(mockResponse);
 
       // This would normally be called as part of the pipeline
@@ -633,8 +638,8 @@ describe('Caption Generation', () => {
       };
 
       const { textModel, visionModel } = await import('../../server/lib/gemini.ts');
-      (visionModel.generateContent as Mock).mockResolvedValueOnce(mockFactsResponse);
-      (textModel.generateContent as Mock)
+      (visionModelGenerateContent as Mock).mockResolvedValueOnce(mockFactsResponse);
+      (textModelGenerateContent as Mock)
         .mockResolvedValueOnce(firstVariantsResponse)
         .mockResolvedValueOnce(firstRankResponse)
         .mockResolvedValueOnce(retryVariantsResponse)
@@ -648,7 +653,7 @@ describe('Caption Generation', () => {
         mood,
       });
 
-      const variantRetryCall = (textModel.generateContent as Mock).mock.calls[2]?.[0]?.[0]?.text;
+      const variantRetryCall = (textModelGenerateContent as Mock).mock.calls[2]?.[0]?.[0]?.text;
       expect(variantRetryCall).toContain(`STYLE: ${style}`);
       expect(variantRetryCall).toContain(`MOOD: ${mood}`);
 
@@ -762,8 +767,8 @@ describe('Caption Generation', () => {
       } satisfies MockResponse;
 
       const { textModel, visionModel } = await import('../../server/lib/gemini.ts');
-      (visionModel.generateContent as Mock).mockResolvedValueOnce(mockFactsResponse);
-      (textModel.generateContent as Mock)
+      (visionModelGenerateContent as Mock).mockResolvedValueOnce(mockFactsResponse);
+      (textModelGenerateContent as Mock)
         .mockResolvedValueOnce(initialVariants)
         .mockResolvedValueOnce(initialRank)
         .mockResolvedValueOnce(coverageVariants)
@@ -777,7 +782,7 @@ describe('Caption Generation', () => {
         mood,
       });
 
-      const coverageCall = (textModel.generateContent as Mock).mock.calls.find(call => {
+      const coverageCall = (textModelGenerateContent as Mock).mock.calls.find(call => {
         const prompt = call?.[0]?.[0]?.text;
         return typeof prompt === 'string' && prompt.includes('Work in IMAGE_FACTS');
       });
@@ -859,7 +864,7 @@ describe('Caption Generation', () => {
       );
 
       const { textModel } = await import('../../server/lib/gemini.ts');
-      const textGenerateMock = asMock(textModel.generateContent);
+      const textGenerateMock = asMock(textModelGenerateContent);
       textGenerateMock
         .mockResolvedValueOnce(mockVariantsResponse)
         .mockResolvedValueOnce(mockRankResponse);
@@ -941,7 +946,7 @@ describe('Caption Generation', () => {
       ];
 
       const { textModel } = await import('../../server/lib/gemini.ts');
-      const textGenerateMock = asMock(textModel.generateContent);
+      const textGenerateMock = asMock(textModelGenerateContent);
       textGenerateMock
         .mockResolvedValueOnce({
           response: { text: () => JSON.stringify(duplicateBatch) },
@@ -1025,7 +1030,7 @@ describe('Caption Generation', () => {
       ];
 
       const { textModel } = await import('../../server/lib/gemini.ts');
-      const textGenerateMock = asMock(textModel.generateContent);
+      const textGenerateMock = asMock(textModelGenerateContent);
       textGenerateMock.mockResolvedValue({
         response: {
           text: () => JSON.stringify(variantPayload),
@@ -1118,7 +1123,7 @@ describe('Caption Generation', () => {
       ];
 
       const { textModel } = await import('../../server/lib/gemini.ts');
-      const textGenerateMock = asMock(textModel.generateContent);
+      const textGenerateMock = asMock(textModelGenerateContent);
       textGenerateMock
         .mockResolvedValueOnce({ text: JSON.stringify(duplicateBatch) })
         .mockResolvedValueOnce({ text: JSON.stringify(uniqueBatch) });
@@ -1236,7 +1241,7 @@ describe('Caption Generation', () => {
       };
 
       const { textModel } = await import('../../server/lib/gemini.ts');
-      const textGenerateMock = asMock(textModel.generateContent);
+      const textGenerateMock = asMock(textModelGenerateContent);
       textGenerateMock
         .mockResolvedValueOnce(mockVariantsResponse)
         .mockResolvedValueOnce(mockRankResponse)
@@ -1317,7 +1322,7 @@ describe('Caption Generation', () => {
       };
 
       const { textModel } = await import('../../server/lib/gemini.ts');
-      const textGenerateMock = asMock(textModel.generateContent);
+      const textGenerateMock = asMock(textModelGenerateContent);
       textGenerateMock.mockResolvedValue(mockVariantsResponse);
 
       const { generateVariantsTextOnly } = await import('../../server/caption/textOnlyPipeline.ts');
@@ -1404,7 +1409,7 @@ describe('Caption Generation', () => {
       ];
 
       const { textModel } = await import('../../server/lib/gemini.ts');
-      const textGenerateMock = asMock(textModel.generateContent);
+      const textGenerateMock = asMock(textModelGenerateContent);
       textGenerateMock
         .mockResolvedValueOnce({
           response: { text: () => JSON.stringify(duplicateBatch) },
@@ -1592,7 +1597,7 @@ describe('Caption Generation', () => {
 
       const { textModel } = await import('../../server/lib/gemini.ts');
       const generateSpy = vi.spyOn(textModel, 'generateContent');
-      type GenerateReturn = Awaited<ReturnType<typeof textModel.generateContent>>;
+      type GenerateReturn = Awaited<ReturnType<typeof textModelGenerateContent>>;
 
       generateSpy
         .mockResolvedValueOnce(shortVariantResponse as GenerateReturn)
@@ -1792,7 +1797,7 @@ describe('Caption Generation', () => {
       };
 
       const { textModel } = await import('../../server/lib/gemini.ts');
-      const textGenerateMock = asMock(textModel.generateContent);
+      const textGenerateMock = asMock(textModelGenerateContent);
       textGenerateMock
         .mockResolvedValueOnce(missingVariants)
         .mockResolvedValueOnce(missingRank)

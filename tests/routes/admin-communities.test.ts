@@ -1,7 +1,17 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import supertest from 'supertest';
 import express from 'express';
+import type { Request, Response, NextFunction, RequestHandler } from 'express';
 import { adminCommunitiesRouter } from '../../server/routes/admin-communities.ts';
+
+interface AdminUser {
+  id: number;
+  username: string;
+  email: string;
+  isAdmin: boolean;
+  role: string;
+  tier: string;
+}
 
 // Mock dependencies with factory functions
 vi.mock('../../server/reddit-communities.ts', () => ({
@@ -42,6 +52,7 @@ const mockAuthenticateToken = vi.mocked(authenticateToken);
 const mockRequireAdmin = vi.mocked(requireAdmin);
 const mockSchema = vi.mocked(insertRedditCommunitySchema);
 let mockPartialParse: ReturnType<typeof vi.fn>;
+let authMiddlewareImpl: RequestHandler;
 
 interface ParseOnlySchema {
   parse: (input: unknown) => unknown;
@@ -52,17 +63,13 @@ describe('Admin Communities Routes', () => {
   let request: supertest.SuperTest<supertest.Test>;
 
   beforeEach(() => {
-    app = express();
-    app.use(express.json());
-    app.use('/api/admin/communities', adminCommunitiesRouter);
-    request = supertest(app);
-
     // Reset mocks and setup default successful auth
     vi.clearAllMocks();
     mockPartialParse = vi.fn();
     mockSchema.partial.mockReturnValue({ parse: mockPartialParse } as ParseOnlySchema);
-    mockAuthenticateToken.mockImplementation((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
-      req.user = {
+    authMiddlewareImpl = (req, _res, next) => {
+      const adminRequest = req as Request & { user?: AdminUser };
+      adminRequest.user = {
         id: 1,
         username: 'admin',
         email: 'admin@test.com',
@@ -71,10 +78,21 @@ describe('Admin Communities Routes', () => {
         tier: 'pro'
       };
       next();
+    };
+    mockAuthenticateToken.mockImplementation(() => (req: Request, res: Response, next: NextFunction) => {
+      return authMiddlewareImpl(req, res, next);
     });
-    mockRequireAdmin.mockImplementation((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
+    mockRequireAdmin.mockImplementation((_req: Request, _res: Response, next: NextFunction) => {
       next();
     });
+
+    app = express();
+    app.use(express.json());
+    const adminRouterStack = express.Router();
+    adminRouterStack.use(authenticateToken(true));
+    adminRouterStack.use(adminCommunitiesRouter);
+    app.use('/api/admin/communities', adminRouterStack);
+    request = supertest(app);
   });
 
   afterEach(() => {
@@ -319,7 +337,10 @@ describe('Admin Communities Routes', () => {
 
   describe('Authentication and Authorization', () => {
     it('should return 401 when no authentication token is provided', async () => {
-      mockAuthenticateToken.mockImplementation((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
+      authMiddlewareImpl = (_req, _res, next) => {
+        next();
+      };
+      mockRequireAdmin.mockImplementation((_req: Request, res: Response, _next: NextFunction) => {
         res.status(401).json({ error: 'Access token required' });
       });
 
@@ -328,11 +349,13 @@ describe('Admin Communities Routes', () => {
         .expect(401);
 
       expect(response.body.error).toBe('Access token required');
+      expect(mockAuthenticateToken).toHaveBeenCalledWith(true);
     });
 
     it('should return 403 when user is not admin', async () => {
-      mockAuthenticateToken.mockImplementation((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
-        req.user = {
+      authMiddlewareImpl = (req, _res, next) => {
+        const adminRequest = req as Request & { user?: AdminUser };
+        adminRequest.user = {
           id: 2,
           username: 'regular_user',
           email: 'user@test.com',
@@ -341,9 +364,9 @@ describe('Admin Communities Routes', () => {
           tier: 'free'
         };
         next();
-      });
-      
-      mockRequireAdmin.mockImplementation((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
+      };
+
+      mockRequireAdmin.mockImplementation((_req: Request, res: Response, _next: NextFunction) => {
         res.status(403).json({ message: 'Admin access required' });
       });
 
