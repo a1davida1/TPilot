@@ -1,5 +1,5 @@
 // Basic in-memory metrics - can be extended to database later
-class BasicAuthMetrics {
+export class BasicAuthMetrics {
   private events: Array<{
     action: string;
     success: boolean;
@@ -8,6 +8,21 @@ class BasicAuthMetrics {
     timestamp: string;
   }> = [];
   private maxEvents = 1000; // Keep last 1000 events in memory
+  private readonly maxErrorKeyLength = 120;
+
+  private normalizeErrorKey(error: string): string | null {
+    const normalizedWhitespace = error.replace(/\s+/g, ' ').trim();
+
+    if (!normalizedWhitespace) {
+      return null;
+    }
+
+    if (normalizedWhitespace.length <= this.maxErrorKeyLength) {
+      return normalizedWhitespace;
+    }
+
+    return normalizedWhitespace.slice(0, this.maxErrorKeyLength);
+  }
   
   track(action: string, success: boolean, duration: number, error: string | null = null) {
     const event = {
@@ -62,10 +77,15 @@ class BasicAuthMetrics {
     });
     
     // Count errors
-    recent.filter(e => e.error).forEach(e => {
-      summary.topErrors[e.error!] = (summary.topErrors[e.error!] || 0) + 1;
+    recent.forEach(e => {
+      const errorKey = e.error ? this.normalizeErrorKey(e.error) : null;
+      if (!errorKey) {
+        return;
+      }
+
+      summary.topErrors[errorKey] = (summary.topErrors[errorKey] || 0) + 1;
     });
-    
+
     return summary;
   }
   
