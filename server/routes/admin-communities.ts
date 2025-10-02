@@ -1,7 +1,43 @@
 import express from 'express';
 import { requireAdmin, type AdminRequest } from '../admin-routes.js';
-import { listCommunities, createCommunity, updateCommunity, deleteCommunity, type NormalizedRedditCommunity } from '../reddit-communities.js';
+import {
+  listCommunities,
+  createCommunity,
+  updateCommunity,
+  deleteCommunity,
+  type NormalizedRedditCommunity
+} from '../reddit-communities.js';
 import { insertRedditCommunitySchema } from '@shared/schema';
+import { ZodError } from 'zod';
+import { formatZodError } from '../utils/error.js';
+
+interface ValidationErrorShape {
+  type?: string;
+  code?: string;
+  message?: string;
+}
+
+const VALIDATION_ERROR_TYPES = new Set(['ValidationError']);
+const VALIDATION_ERROR_CODES = new Set(['VALIDATION_ERROR']);
+
+function isKnownValidationError(error: unknown): error is ZodError | ValidationErrorShape {
+  if (error instanceof ZodError) {
+    return true;
+  }
+
+  if (typeof error === 'object' && error !== null) {
+    const candidate = error as ValidationErrorShape;
+    if (typeof candidate.type === 'string' && VALIDATION_ERROR_TYPES.has(candidate.type)) {
+      return true;
+    }
+
+    if (typeof candidate.code === 'string' && VALIDATION_ERROR_CODES.has(candidate.code)) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 const router = express.Router();
 
@@ -118,10 +154,17 @@ router.put('/:id', async (req: AdminRequest, res: express.Response) => {
     res.json({ success: true, data: adminCommunity });
   } catch (error) {
     console.error('Failed to update community:', error);
-    res.status(400).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to update community'
-    });
+    if (isKnownValidationError(error)) {
+      const message = error instanceof ZodError
+        ? formatZodError(error, 'Invalid community update data')
+        : typeof error === 'object' && error !== null && 'message' in error && typeof (error as ValidationErrorShape).message === 'string'
+          ? (error as ValidationErrorShape).message
+          : 'Invalid community data';
+
+      return res.status(400).json({ success: false, error: message });
+    }
+
+    res.status(500).json({ success: false, error: 'Failed to update community' });
   }
 });
 
