@@ -23,9 +23,10 @@ const VARIANT_TARGET = 5;
 function buildSafeFallbackVariants(
   fallbackParams: FallbackInferenceInput,
   voice?: string,
-  options?: { moodOverride?: string }
+  options?: { moodOverride?: string; nsfw?: boolean }
 ): CaptionVariants {
   const baseMood = options?.moodOverride ?? (voice && voice.includes('flirty') ? 'flirty' : 'engaging');
+  const nsfwFlag = options?.nsfw ?? false;
   const safeVariants = Array.from({ length: VARIANT_TARGET }, (_, index) => {
     const caption = index === 0 ? safeFallbackCaption : `${safeFallbackCaption} (${index + 1})`;
     const compliance = ensureFallbackCompliance(
@@ -46,7 +47,7 @@ function buildSafeFallbackVariants(
       style: 'authentic',
       cta: compliance.cta,
       alt: compliance.alt,
-      nsfw: false,
+      nsfw: nsfwFlag,
     });
   });
 
@@ -56,8 +57,10 @@ function buildSafeFallbackVariants(
 function buildTestFallbackVariants(
   params: FallbackInferenceInput,
   voice?: string,
-  existingCaption?: string
+  existingCaption?: string,
+  options?: { nsfw?: boolean }
 ): CaptionVariants {
+  const nsfwFlag = options?.nsfw ?? false;
   const variants = Array.from({ length: VARIANT_TARGET }, (_, index) => {
     const baseCaption = existingCaption || 'Test fallback caption';
     const caption = index === 0 ? baseCaption : `${baseCaption} (variant ${index + 1})`;
@@ -81,7 +84,7 @@ function buildTestFallbackVariants(
       style: 'authentic',
       cta: compliance.cta,
       alt: compliance.alt,
-      nsfw: false,
+      nsfw: nsfwFlag,
     });
   });
 
@@ -161,6 +164,7 @@ export interface FallbackParams {
   theme?: string;
   context?: string;
   existingCaption?: string;
+  nsfw?: boolean;
 }
 
 export async function openAICaptionFallback({
@@ -170,6 +174,7 @@ export async function openAICaptionFallback({
   existingCaption,
   context,
   theme,
+  nsfw = false,
 }: FallbackParams): Promise<CaptionVariants> {
   const fallbackParamsForCompliance: FallbackInferenceInput = {
     platform,
@@ -179,7 +184,7 @@ export async function openAICaptionFallback({
   };
 
   if (process.env.NODE_ENV === 'test') {
-    return buildTestFallbackVariants(fallbackParamsForCompliance, voice, existingCaption);
+    return buildTestFallbackVariants(fallbackParamsForCompliance, voice, existingCaption, { nsfw });
   }
 
   const sanitizedExistingCaption = existingCaption ? serializePromptField(existingCaption) : undefined;
@@ -195,10 +200,10 @@ export async function openAICaptionFallback({
   };
 
   if (!process.env.OPENAI_API_KEY) {
-    return buildSafeFallbackVariants(complianceParams, voice);
+    return buildSafeFallbackVariants(complianceParams, voice, { nsfw });
   }
 
-  const variantStructurePrompt = `\nReturn ONLY a JSON object with this exact structure:\n{\n  "variants": [\n    {\n      "caption": "caption that references visible details",\n      "hashtags": ["#relevant", "#to", "#image"],\n      "safety_level": "normal",\n      "mood": "${voice.includes('flirty') ? 'flirty' : 'confident'}",\n      "style": "authentic",\n      "cta": "short call to action",\n      "alt": "detailed description of the image with at least 20 characters",\n      "nsfw": false\n    }\n  ]\n}\nProvide ${VARIANT_TARGET} unique variants with different captions, CTAs, and hashtags.`;
+  const variantStructurePrompt = `\nReturn ONLY a JSON object with this exact structure:\n{\n  "variants": [\n    {\n      "caption": "caption that references visible details",\n      "hashtags": ["#relevant", "#to", "#image"],\n      "safety_level": "normal",\n      "mood": "${voice.includes('flirty') ? 'flirty' : 'confident'}",\n      "style": "authentic",\n      "cta": "short call to action",\n      "alt": "detailed description of the image with at least 20 characters",\n      "nsfw": ${nsfw ? 'true' : 'false'}\n    }\n  ]\n}\nProvide ${VARIANT_TARGET} unique variants with different captions, CTAs, and hashtags.`;
 
   let messages: ChatCompletionMessageParam[] = [];
 
@@ -283,7 +288,7 @@ export async function openAICaptionFallback({
     }
 
     const candidates = extractVariantCandidates(parsed);
-    const safeFallbacks = buildSafeFallbackVariants(complianceParams, voice);
+    const safeFallbacks = buildSafeFallbackVariants(complianceParams, voice, { nsfw });
 
     const resolved: CaptionVariant[] = candidates
       .slice(0, VARIANT_TARGET)
@@ -300,6 +305,6 @@ export async function openAICaptionFallback({
     return CaptionArray.parse(completed.slice(0, VARIANT_TARGET));
   } catch (error) {
     console.error('Error calling OpenAI API:', error);
-    return buildSafeFallbackVariants(complianceParams, voice);
+    return buildSafeFallbackVariants(complianceParams, voice, { nsfw });
   }
 }

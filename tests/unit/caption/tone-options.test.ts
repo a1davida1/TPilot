@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { buildGeminiPrompt } from '../../../server/caption/geminiPipeline';
 import { extractToneOptions, ToneOptions } from '../../../server/caption/toneOptions';
 
 describe('ToneOptions Helper', () => {
@@ -140,17 +141,13 @@ describe('Tone Parameter Integration', () => {
     const mood = 'confident';
     const facts = { objects: ['test'], colors: ['blue'] };
     
-    // Simulate the prompt building logic that would happen in the pipelines
-    const promptParts = [
-      `PLATFORM: ${platform}`,
-      `VOICE: ${voice}`,
-      style ? `STYLE: ${style}` : '',
-      mood ? `MOOD: ${mood}` : '',
-      `IMAGE_FACTS: ${JSON.stringify(facts)}`,
-      'NSFW: false'
-    ].filter(Boolean);
-    
-    const prompt = promptParts.join('\n');
+    const prompt = buildGeminiPrompt({
+      platform,
+      voice,
+      tone: { style, mood },
+      facts,
+      nsfw: false,
+    });
     
     // Verify all tone parameters are included
     expect(prompt).toContain('PLATFORM: instagram');
@@ -166,14 +163,12 @@ describe('Tone Parameter Integration', () => {
     const voice = 'casual';
     const facts = { objects: ['photo'] };
     
-    const promptParts = [
-      `PLATFORM: ${platform}`,
-      `VOICE: ${voice}`,
-      `IMAGE_FACTS: ${JSON.stringify(facts)}`,
-      'NSFW: false'
-    ];
-    
-    const prompt = promptParts.join('\n');
+    const prompt = buildGeminiPrompt({
+      platform,
+      voice,
+      facts,
+      nsfw: false,
+    });
     
     expect(prompt).toContain('PLATFORM: x');
     expect(prompt).toContain('VOICE: casual');

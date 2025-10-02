@@ -151,6 +151,103 @@ function truncateForHint(caption: string): string {
   return `${trimmed.slice(0, 57)}...`;
 }
 
+export type GeminiPromptTone = {
+  style?: string;
+  mood?: string;
+  extras?: Record<string, string>;
+};
+
+export type GeminiDuplicatePromptConfig = {
+  captions: string[];
+  mode?: "avoid" | "rewrite";
+};
+
+export interface BuildGeminiPromptParams {
+  platform: string;
+  voice: string;
+  tone?: GeminiPromptTone;
+  facts?: Record<string, unknown>;
+  nsfw?: boolean;
+  hint?: string;
+  duplicates?: GeminiDuplicatePromptConfig;
+  voiceContext?: string;
+  existingCaption?: string;
+  mandatoryTokens?: string[];
+}
+
+function formatDuplicateHint(duplicates: GeminiDuplicatePromptConfig | undefined): string | undefined {
+  if (!duplicates) {
+    return undefined;
+  }
+
+  const sanitizedCaptions = duplicates.captions
+    .map(caption => caption.trim())
+    .filter((caption): caption is string => caption.length > 0);
+
+  if (sanitizedCaptions.length === 0) {
+    return undefined;
+  }
+
+  if (duplicates.mode === "rewrite") {
+    const latest = sanitizedCaptions[sanitizedCaptions.length - 1];
+    return `You already wrote "${truncateForHint(latest)}". Provide a completely different approach.`;
+  }
+
+  return `Avoid repeating or lightly editing these captions: ${sanitizedCaptions.join(" | ")}.`;
+}
+
+export function buildGeminiPrompt(params: BuildGeminiPromptParams): string {
+  const toneLines: string[] = [];
+
+  if (params.tone?.style && params.tone.style.trim().length > 0) {
+    toneLines.push(`STYLE: ${params.tone.style.trim()}`);
+  }
+  if (params.tone?.mood && params.tone.mood.trim().length > 0) {
+    toneLines.push(`MOOD: ${params.tone.mood.trim()}`);
+  }
+  if (params.tone?.extras) {
+    for (const [key, value] of Object.entries(params.tone.extras)) {
+      if (typeof value === "string" && value.trim().length > 0) {
+        toneLines.push(`${key.toUpperCase()}: ${value.trim()}`);
+      }
+    }
+  }
+
+  const duplicateHint = formatDuplicateHint(params.duplicates);
+  const hintSegments: Array<string | undefined> = [duplicateHint];
+  if (params.hint && params.hint.trim().length > 0) {
+    hintSegments.push(params.hint.trim());
+  }
+
+  const cleanedHintSegments = hintSegments.filter(
+    (segment): segment is string => Boolean(segment && segment.trim().length > 0)
+  );
+
+  const hintLine = cleanedHintSegments.length > 0
+    ? `HINT:${serializePromptField(cleanedHintSegments.join(" "), { block: true })}`
+    : undefined;
+
+  const lines: Array<string | undefined> = [
+    `PLATFORM: ${params.platform}`,
+    `VOICE: ${params.voice}`,
+    params.voiceContext && params.voiceContext.trim().length > 0 ? params.voiceContext.trim() : undefined,
+    ...toneLines,
+    params.existingCaption
+      ? `EXISTING_CAPTION: ${serializePromptField(params.existingCaption, { block: true })}`
+      : undefined,
+    params.facts ? `IMAGE_FACTS: ${JSON.stringify(params.facts)}` : undefined,
+    `NSFW: ${params.nsfw ?? false}`,
+    params.mandatoryTokens && params.mandatoryTokens.length > 0
+      ? `MANDATORY TOKENS: ${params.mandatoryTokens.join(" | ")}`
+      : undefined,
+    hintLine,
+  ];
+
+  return lines
+    .filter((line): line is string => Boolean(line && line.trim().length > 0))
+    .join("\n");
+}
+
 function toTitleCase(input: string): string {
   return input
     .split(" ")
@@ -395,42 +492,12 @@ export async function variantsRewrite(
   const textModel = getTextModel();
   const voiceGuide = buildVoiceGuideBlock(params.voice);
   const sanitizedBaseHint = sanitizeHintForRetry(params.hint);
-  const mandatoryTokensLine = params.doNotDrop && params.doNotDrop.length > 0
-    ? `MANDATORY TOKENS: ${params.doNotDrop.join(" | ")}`
-    : undefined;
+  const voiceContext = formatVoiceContext(params.voice);
 
   const collectedVariants: z.infer<typeof CaptionItem>[] = [];
   const capturedCaptions: string[] = [];
   const duplicatesThisAttempt: string[] = [];
   let hasBannedWords = false;
-
-  const buildUserPrompt = (varietyHint: string | undefined, duplicateCaption?: string): string => {
-    const toneLines = params.toneExtras
-      ? Object.entries(params.toneExtras).map(([key, value]) => `${key.toUpperCase()}: ${value}`)
-      : [];
-    const voiceContext = formatVoiceContext(params.voice);
-
-    // If we have a duplicate, override the hint
-    const finalHint = duplicateCaption 
-      ? `You already wrote "${truncateForHint(duplicateCaption)}". Provide a completely different approach.`
-      : varietyHint;
-
-    const lines = [
-      `PLATFORM: ${params.platform}`,
-      `VOICE: ${params.voice}`,
-      voiceContext && voiceContext.trim().length > 0 ? voiceContext : undefined,
-      params.style ? `STYLE: ${params.style}` : undefined,
-      params.mood ? `MOOD: ${params.mood}` : undefined,
-      ...toneLines,
-      `EXISTING_CAPTION: ${serializePromptField(params.existingCaption, { block: true })}`,
-      params.facts ? `IMAGE_FACTS: ${JSON.stringify(params.facts)}` : undefined,
-      `NSFW: ${params.nsfw ?? false}`,
-      mandatoryTokensLine,
-      finalHint ? `HINT:${serializePromptField(finalHint, { block: true })}` : undefined,
-    ];
-
-    return lines.filter((line): line is string => Boolean(line && line.trim().length > 0)).join("\n");
-  };
 
   for (let attempt = 0; attempt < VARIANT_RETRY_LIMIT && collectedVariants.length < VARIANT_TARGET; attempt += 1) {
     const needed = VARIANT_TARGET - collectedVariants.length;
@@ -444,8 +511,25 @@ export async function variantsRewrite(
 
     // Pass duplicate for retry hints
     const lastDuplicate = duplicatesThisAttempt.length > 0 ? duplicatesThisAttempt[duplicatesThisAttempt.length - 1] : undefined;
-    const userPrompt = buildUserPrompt(attemptHint, lastDuplicate);
-    
+    const userPrompt = buildGeminiPrompt({
+      platform: params.platform,
+      voice: params.voice,
+      tone: {
+        style: params.style,
+        mood: params.mood,
+        extras: params.toneExtras,
+      },
+      facts: params.facts,
+      nsfw: params.nsfw,
+      hint: lastDuplicate ? undefined : attemptHint,
+      duplicates: lastDuplicate
+        ? { captions: [lastDuplicate], mode: "rewrite" }
+        : undefined,
+      voiceContext,
+      existingCaption: params.existingCaption,
+      mandatoryTokens: params.doNotDrop,
+    });
+
     // Apply tone to system prompt
     const sysWithTone = buildSystemPrompt(sys, { style: params.style, mood: params.mood });
     const promptSections = [sysWithTone, guard, prompt, userPrompt];
@@ -839,11 +923,11 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
     );
   };
 
-  const buildUserPrompt = (
+  const fetchVariants = async (
     varietyHint: string | undefined,
     existingCaptions: string[],
     duplicateCaption?: string
-  ): string => {
+  ) => {
     const styleValue = params.style?.trim() && params.style.trim().length > 0
       ? params.style.trim()
       : "authentic";
@@ -853,56 +937,32 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
 
     const hintSegments: string[] = [];
 
-    if (duplicateCaption) {
-      hintSegments.push(
-        `You already wrote "${truncateForHint(
-          duplicateCaption
-        )}". Create something completely different.`
-      );
-    }
-
     if (varietyHint && varietyHint.trim().length > 0) {
       hintSegments.push(varietyHint.trim());
-    }
-
-    if (existingCaptions.length > 0 && !duplicateCaption) {
-      hintSegments.push(
-        `Avoid repeating or lightly editing these captions: ${existingCaptions.join(
-          " | "
-        )}.`
-      );
     }
 
     hintSegments.push(
       "Provide five options that vary tone, structure, and specific imagery."
     );
 
-    const serializedHint = `HINT:${serializePromptField(
-      hintSegments.join(" "),
-      { block: true }
-    )}`;
+    const duplicatesConfig = duplicateCaption
+      ? { captions: [duplicateCaption], mode: "rewrite" as const }
+      : existingCaptions.length > 0
+        ? { captions: existingCaptions, mode: "avoid" as const }
+        : undefined;
 
-    const lines = [
-      `PLATFORM: ${params.platform}`,
-      `VOICE: ${params.voice}`,
-      `STYLE: ${styleValue}`,
-      `MOOD: ${moodValue}`,
-      `IMAGE_FACTS: ${JSON.stringify(params.facts)}`,
-      `NSFW: ${params.nsfw ?? false}`,
-      serializedHint,
-    ];
-
-    return lines
-      .filter((line): line is string => Boolean(line && line.trim().length > 0))
-      .join("\n");
-  };
-
-  const fetchVariants = async (
-    varietyHint: string | undefined,
-    existingCaptions: string[],
-    duplicateCaption?: string
-  ) => {
-    const user = buildUserPrompt(varietyHint, existingCaptions, duplicateCaption);
+    const user = buildGeminiPrompt({
+      platform: params.platform,
+      voice: params.voice,
+      tone: {
+        style: styleValue,
+        mood: moodValue,
+      },
+      facts: params.facts,
+      nsfw: params.nsfw,
+      hint: hintSegments.join(" "),
+      duplicates: duplicatesConfig,
+    });
 
     const sysWithTone = buildSystemPrompt(sys, {
       style: params.style,
@@ -1280,7 +1340,7 @@ type GeminiPipelineArgs = {
 export async function pipeline({ imageUrl, platform, voice = "flirty_playful", nsfw = false, style, mood, ...toneRest }: GeminiPipelineArgs): Promise<CaptionResult> {
   const resolveWithOpenAIFallback = async (reason: string): Promise<CaptionResult> => {
     const { openAICaptionFallback } = await import('./openaiFallback');
-    const variants = await openAICaptionFallback({ platform, voice, imageUrl });
+    const variants = await openAICaptionFallback({ platform, voice, imageUrl, nsfw });
     const final = variants.at(0);
     if (!final) {
       throw new Error('OpenAI fallback did not return variants');

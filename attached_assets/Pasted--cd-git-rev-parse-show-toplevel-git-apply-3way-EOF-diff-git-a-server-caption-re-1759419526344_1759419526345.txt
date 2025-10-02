@@ -1,0 +1,56 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/server/caption/rewritePipeline.ts b/server/caption/rewritePipeline.ts
+index e4b72988412dfdedc4b3364aec8eca386a508044..a079a03ab159c90d217d893ab36ea60505736b4a 100644
+--- a/server/caption/rewritePipeline.ts
++++ b/server/caption/rewritePipeline.ts
+@@ -574,46 +574,46 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", style,
+       let platformAttempt = await performAttempt(`Fix: ${err}. Be specific, human, and avoid clichés while staying platform safe.`);
+       platformAttempt = await enforceMandatoryTokens(platformAttempt, `Fix: ${err}. Be specific, human, and avoid clichés while staying platform safe.`);
+       if (platformAttempt.final.caption.length <= existingCaption.length) {
+         throw new Error('Platform-specific rewrite failed to improve length');
+       }
+       const platformErr = platformChecks(platform, platformAttempt.final);
+       if (platformErr) {
+         throw new Error(platformErr);
+       }
+       ({ variants, ranked, final: out } = platformAttempt);
+       await enforceCoverage();
+       if (out.caption.length <= existingCaption.length) {
+         throw new Error('Platform-specific rewrite failed to improve length');
+       }
+     }
+ 
+     const enriched = enrichWithTitleCandidates(out, { variants, ranked });
+     out = enriched.final;
+     if (enriched.ranked) {
+       ranked = enriched.ranked;
+     }
+ 
+     return { provider: 'gemini', facts, variants, ranked, final: out, titles: out.titles };
+   } catch (_error) {
+     const { openAICaptionFallback } = await import('./openaiFallback');
+-    const variants = await openAICaptionFallback({ platform, voice, existingCaption, imageUrl });
++    const variants = await openAICaptionFallback({ platform, voice, existingCaption, imageUrl, nsfw });
+     const final = variants.at(0);
+     if (!final) {
+       throw new Error('OpenAI fallback did not return variants');
+     }
+     const ranked = RankResult.parse({
+       winner_index: 0,
+       scores: [1, 0, 0, 0, 0],
+       reason: 'OpenAI fallback selected after Gemini rewrite error',
+       final,
+     });
+     const enriched = enrichWithTitleCandidates(ranked.final, { variants, ranked });
+     return {
+       provider: 'openai',
+       final: enriched.final,
+       ranked: enriched.ranked ?? ranked,
+       variants,
+       titles: enriched.final.titles,
+     } as CaptionResult;
+   }
+ }
+ 
+EOF
+)

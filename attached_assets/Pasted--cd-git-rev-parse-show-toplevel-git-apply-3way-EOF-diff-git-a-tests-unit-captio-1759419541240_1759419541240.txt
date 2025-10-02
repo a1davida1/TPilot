@@ -1,0 +1,98 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/tests/unit/caption/nsfw-fallback.test.ts b/tests/unit/caption/nsfw-fallback.test.ts
+index 6b533f8d76cca3ceb77b1e829ce1ea089cb18ce5..9676509efc98b3a2ef67503c94bd465599ffbd89 100644
+--- a/tests/unit/caption/nsfw-fallback.test.ts
++++ b/tests/unit/caption/nsfw-fallback.test.ts
+@@ -1,33 +1,88 @@
+ import { describe, it, expect, beforeEach, vi } from 'vitest';
++import type { FallbackParams } from '../../../server/caption/openaiFallback.ts';
+ import { nsfwCaptionFallback } from '../../../server/caption/nsfwFallback.ts';
+ 
+ describe('nsfwCaptionFallback', () => {
+   beforeEach(() => {
+     vi.restoreAllMocks();
+   });
+ 
+   it('returns caption tagged as NSFW', async () => {
+     const imgBuffer = Buffer.from('test');
+     const fetchMock = vi.spyOn(global, 'fetch');
+ 
+     fetchMock.mockImplementationOnce(async () => ({
+       ok: true,
+       arrayBuffer: async () => imgBuffer,
+       headers: new Headers({ 'content-type': 'image/jpeg' })
+     }) as unknown as Response);
+ 
+     fetchMock.mockImplementationOnce(async () => ({
+       ok: true,
+       json: async () => [{ label: 'NSFW', score: 0.9 }]
+     }) as unknown as Response);
+ 
+     fetchMock.mockImplementationOnce(async () => ({
+       ok: true,
+       json: async () => [{ generated_text: 'sample caption' }]
+     }) as unknown as Response);
+ 
+     const result = await nsfwCaptionFallback('https://example.com/image.jpg');
+     expect(result.nsfw).toBe(true);
+     expect(result.caption).toContain('[NSFW] sample caption');
+   });
+-});
++
++  it('propagates NSFW flag through OpenAI fallback variants', async () => {
++    const { openAICaptionFallback } = await import('../../../server/caption/openaiFallback.ts');
++
++    const variants = await openAICaptionFallback({ platform: 'instagram', nsfw: true });
++
++    expect(variants).toHaveLength(5);
++    for (const variant of variants) {
++      expect(variant.nsfw).toBe(true);
++    }
++  });
++
++  it('ensures pipeline fallback preserves NSFW metadata and labeling', async () => {
++    vi.resetModules();
++
++    const fallbackCalls: FallbackParams[] = [];
++
++    vi.doMock('../../../server/lib/gemini.ts', () => ({
++      __esModule: true,
++      getVisionModel: vi.fn(),
++      getTextModel: vi.fn(),
++      isGeminiAvailable: () => false,
++    }));
++
++    vi.doMock('../../../server/caption/openaiFallback.ts', async () => {
++      const actual = await vi.importActual<typeof import('../../../server/caption/openaiFallback.ts')>(
++        '../../../server/caption/openaiFallback.ts'
++      );
++      return {
++        __esModule: true,
++        ...actual,
++        openAICaptionFallback: vi.fn(async (params: FallbackParams) => {
++          fallbackCalls.push(params);
++          return actual.openAICaptionFallback(params);
++        }),
++      };
++    });
++
++    const { pipeline } = await import('../../../server/caption/geminiPipeline.ts');
++
++    const result = await pipeline({
++      imageUrl: 'https://example.com/test.jpg',
++      platform: 'instagram',
++      voice: 'confident',
++      nsfw: true,
++    });
++
++    expect(fallbackCalls).toHaveLength(1);
++    expect(fallbackCalls[0].nsfw).toBe(true);
++    expect(result.variants?.every(variant => variant.nsfw)).toBe(true);
++    expect(result.final.nsfw).toBe(true);
++
++    vi.resetModules();
++  });
++});
+ 
+EOF
+)
