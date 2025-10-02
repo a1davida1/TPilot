@@ -1,0 +1,305 @@
+/home/runner/workspace/client/src/components/apple-inspired-app.tsx
+  242:14  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/components/audience-insights.tsx
+  38:16  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/components/auth-modal.tsx
+  330:14  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/components/enhanced-ai-generator.tsx
+  338:14  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/components/generation-history.tsx
+  42:14  warning  'err' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/components/image-protector.tsx
+  151:14  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/components/image-shield-unified.tsx
+  280:14  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/components/image-shield.tsx
+   26:31  warning  'isGuestMode' is assigned a value but never used. Allowed unused args must match /^_/u     unused-imports/no-unused-vars
+   94:15  warning  'settings' is assigned a value but never used. Allowed unused vars must match /^_/u        unused-imports/no-unused-vars
+  139:14  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u           unused-imports/no-unused-vars
+  165:9   warning  'canUseAdvanced' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/components/integrated-fine-tuning.tsx
+  22:11  warning  'TrainingData' is defined but never used. Allowed unused vars must match /^_/u      unused-imports/no-unused-vars
+  77:13  warning  'newData' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/components/modern-dashboard.tsx
+  160:12  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+  243:16  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+  458:16  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+  539:14  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+  552:14  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+  565:14  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/components/optimization/PerformanceOptimizer.tsx
+  149:24  warning  'recommendationId' is defined but never used. Allowed unused args must match /^_/u  unused-imports/no-unused-vars
+  154:20  warning  'recommendationId' is defined but never used. Allowed unused args must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/components/pro-perks.tsx
+  117:28  warning  'userTier' is assigned a value but never used. Allowed unused args must match /^_/u             unused-imports/no-unused-vars
+  123:10  warning  'instructionsLoading' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+  136:28  warning  'isError' is assigned a value but never used. Allowed unused vars must match /^_/u              unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/components/provider-status.tsx
+  8:11  warning  'ProviderInfo' is defined but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/components/pwa/MobilePWA.tsx
+   61:18  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+  171:16  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/components/reddit-accounts.tsx
+  134:14  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/components/reddit-communities.tsx
+   36:11  warning  'RedditCommunity' is defined but never used. Allowed unused vars must match /^_/u                 unused-imports/no-unused-vars
+   85:35  warning  'isLoading' is assigned a value but never used. Allowed unused vars must match /^_/u              unused-imports/no-unused-vars
+  100:9   warning  'formatAllowance' is assigned a value but never used. Allowed unused vars must match /^_/u        unused-imports/no-unused-vars
+  113:9   warning  'formatBoolean' is assigned a value but never used. Allowed unused vars must match /^_/u          unused-imports/no-unused-vars
+  190:9   warning  'getSellingPolicyBadge' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/components/simple-content-generator.tsx
+  35:42  warning  'isGuestMode' is assigned a value but never used. Allowed unused args must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/components/social-login-buttons.tsx
+  10:38  warning  'onClose' is defined but never used. Allowed unused args must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/components/trending-tags-expanded.tsx
+  173:14  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/components/trending-tags.tsx
+  28:31  warning  'isLoading' is assigned a value but never used. Allowed unused vars must match /^_/u       unused-imports/no-unused-vars
+  41:9   warning  'lastUpdateTime' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+  78:14  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u           unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/components/unified-content-creator.tsx
+   49:7   warning  'availableHashtags' is assigned a value but never used. Allowed unused vars must match /^_/u     unused-imports/no-unused-vars
+   93:29  warning  'setSelectedPhotoType' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+   94:28  warning  'setSelectedTextTone' is assigned a value but never used. Allowed unused vars must match /^_/u   unused-imports/no-unused-vars
+  114:28  warning  'user' is assigned a value but never used. Allowed unused vars must match /^_/u                  unused-imports/no-unused-vars
+  197:14  warning  'err' is defined but never used. Allowed unused caught errors must match /^_/u                   unused-imports/no-unused-vars
+  381:14  warning  'error' is defined but never used. Allowed unused args must match /^_/u                          unused-imports/no-unused-vars
+  491:9   warning  'toggleHashtag' is assigned a value but never used. Allowed unused vars must match /^_/u         unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/components/unified-landing.tsx
+  38:9  warning  'handleTryFeatures' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/hooks/use-toast.ts
+  18:7  warning  'actionTypes' is assigned a value but only used as a type. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/hooks/useAuth.ts
+   31:34  warning  'error' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+  149:15  warning  'data' is assigned a value but never used. Allowed unused vars must match /^_/u   unused-imports/no-unused-vars
+  152:14  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/hooks/useOnboarding.ts
+  14:11  warning  'user' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/lib/analytics-tracker.ts
+  294:26  warning  The `Function` type accepts any function-like value.
+Prefer explicitly defining any function parameters and return type  @typescript-eslint/no-unsafe-function-type
+
+/home/runner/workspace/client/src/lib/theme-utils.ts
+  155:14  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/pages/__tests__/referral.test.tsx
+  58:35  warning  'text' is defined but never used. Allowed unused args must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/pages/admin.tsx
+  137:26  warning  'setSelectedPeriod' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+  140:10  warning  'reason' is assigned a value but never used. Allowed unused vars must match /^_/u             unused-imports/no-unused-vars
+  141:10  warning  'duration' is assigned a value but never used. Allowed unused vars must match /^_/u           unused-imports/no-unused-vars
+  141:20  warning  'setDuration' is assigned a value but never used. Allowed unused vars must match /^_/u        unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/pages/change-password.tsx
+  8:10  warning  'location' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/pages/checkout.tsx
+  81:7  warning  'StripeConfigMissing' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/pages/email-verification.tsx
+  70:14  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/pages/forgot-password.tsx
+  45:14  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/pages/phase4.tsx
+  28:6  warning  'IconType' is defined but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/client/src/pages/reddit-posting.tsx
+  132:7   warning  'MS_PER_DAY' is assigned a value but never used. Allowed unused vars must match /^_/u               unused-imports/no-unused-vars
+  308:28  warning  'user' is assigned a value but never used. Allowed unused vars must match /^_/u                     unused-imports/no-unused-vars
+  354:9   warning  'isGalleryFeatureEnabled' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+  357:10  warning  'selectedAccount' is assigned a value but never used. Allowed unused vars must match /^_/u          unused-imports/no-unused-vars
+  357:27  warning  'setSelectedAccount' is assigned a value but never used. Allowed unused vars must match /^_/u       unused-imports/no-unused-vars
+  358:10  warning  'isPreviewMode' is assigned a value but never used. Allowed unused vars must match /^_/u            unused-imports/no-unused-vars
+  358:25  warning  'setIsPreviewMode' is assigned a value but never used. Allowed unused vars must match /^_/u         unused-imports/no-unused-vars
+
+/home/runner/workspace/server/advanced-content-generator.ts
+  1999:9  warning  'readablePhotoType' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/server/api-routes.ts
+  72:3  warning  ES2015 module syntax is preferred over namespaces  @typescript-eslint/no-namespace
+
+/home/runner/workspace/server/api/leads.ts
+  77:12  warning  'lead' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/server/app.ts
+   34:3   warning  ES2015 module syntax is preferred over namespaces                       @typescript-eslint/no-namespace
+  279:34  warning  Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+  279:46  warning  Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+  338:71  warning  'next' is defined but never used. Allowed unused args must match /^_/u  unused-imports/no-unused-vars
+  353:29  warning  Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/bootstrap/sentry.ts
+  25:39  warning  'hint' is defined but never used. Allowed unused args must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/server/bootstrap/session.ts
+  31:11  warning  'RedisStoreConstructor' is defined but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/server/caption/__tests__/ranking-integration.test.ts
+    5:6   warning  'GeminiContent' is defined but never used. Allowed unused vars must match /^_/u                     unused-imports/no-unused-vars
+   60:17  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   94:11  warning  'extractVariantsFromCall' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+  101:16  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u                    unused-imports/no-unused-vars
+  330:16  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u                    unused-imports/no-unused-vars
+
+/home/runner/workspace/server/caption/geminiPipeline.ts
+    81:7   warning  'MAX_VARIANT_ATTEMPTS' is assigned a value but never used. Allowed unused vars must match /^_/u   unused-imports/no-unused-vars
+   128:10  warning  'captionKey' is defined but never used. Allowed unused vars must match /^_/u                      unused-imports/no-unused-vars
+   132:10  warning  'hintSnippet' is defined but never used. Allowed unused vars must match /^_/u                     unused-imports/no-unused-vars
+   137:10  warning  'uniqueCaptionKey' is defined but never used. Allowed unused vars must match /^_/u                unused-imports/no-unused-vars
+   609:10  warning  'collectDuplicateCaptions' is defined but never used. Allowed unused vars must match /^_/u        unused-imports/no-unused-vars
+   635:10  warning  'buildDuplicateRetryHintMessage' is defined but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+   651:11  warning  'vision' is assigned a value but never used. Allowed unused vars must match /^_/u                 unused-imports/no-unused-vars
+  1002:11  warning  'fallbackBase' is assigned a value but never used. Allowed unused vars must match /^_/u           unused-imports/no-unused-vars
+
+/home/runner/workspace/server/caption/rankingGuards.ts
+  42:7  warning  'SAFE_FALLBACK_HASHTAG_SET' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/server/caption/rewritePipeline.ts
+  597:12  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/server/caption/textOnlyPipeline.ts
+  129:16  warning  'invokeTextModel' is defined but never used. Allowed unused vars must match /^_/u                unused-imports/no-unused-vars
+  291:9   warning  'safeFallbackAlt' is assigned a value but never used. Allowed unused vars must match /^_/u       unused-imports/no-unused-vars
+  292:9   warning  'safeFallbackHashtags' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+  293:9   warning  'safeFallbackCta' is assigned a value but never used. Allowed unused vars must match /^_/u       unused-imports/no-unused-vars
+  480:11  warning  'safeFallbackAlt' is assigned a value but never used. Allowed unused vars must match /^_/u       unused-imports/no-unused-vars
+  481:11  warning  'safeFallbackHashtags' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+  482:11  warning  'safeFallbackCta' is assigned a value but never used. Allowed unused vars must match /^_/u       unused-imports/no-unused-vars
+
+/home/runner/workspace/server/lib/payment-providers.ts
+   98:23  warning  'signature' is defined but never used. Allowed unused args must match /^_/u  unused-imports/no-unused-vars
+   98:42  warning  'payload' is defined but never used. Allowed unused args must match /^_/u    unused-imports/no-unused-vars
+  154:23  warning  'signature' is defined but never used. Allowed unused args must match /^_/u  unused-imports/no-unused-vars
+  154:42  warning  'payload' is defined but never used. Allowed unused args must match /^_/u    unused-imports/no-unused-vars
+
+/home/runner/workspace/server/lib/policy-linter.ts
+  209:20  warning  'e' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+  234:20  warning  'e' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/server/lib/pricing.ts
+  15:8  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  16:8  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  17:8  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/lib/queue-factory.ts
+  54:41  warning  'T' is defined but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/server/lib/queue-monitor.ts
+  79:11  warning  'now' is assigned a value but never used. Allowed unused vars must match /^_/u       unused-imports/no-unused-vars
+  81:17  warning  'queueKey' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/server/lib/queue-redis.ts
+  121:11  warning  'queueEvents' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/server/lib/scheduling.ts
+  49:5  warning  'timezone' is assigned a value but never used. Allowed unused args must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/server/lib/workers/ai-promo-worker.ts
+  25:46  warning  'jobId' is defined but never used. Allowed unused args must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/server/lib/workers/batch-posting-worker.ts
+  26:46  warning  'jobId' is defined but never used. Allowed unused args must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/server/lib/workers/dunning-worker.ts
+   32:46  warning  'jobId' is defined but never used. Allowed unused args must match /^_/u  unused-imports/no-unused-vars
+  150:33  warning  Forbidden non-null assertion                                             @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/lib/workers/metrics-worker.ts
+   16:11  warning  'RedditAPI' is defined but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+   44:46  warning  'jobId' is defined but never used. Allowed unused args must match /^_/u      unused-imports/no-unused-vars
+  117:42  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  120:37  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+
+/home/runner/workspace/server/middleware/security.ts
+  18:3  warning  ES2015 module syntax is preferred over namespaces  @typescript-eslint/no-namespace
+
+/home/runner/workspace/server/middleware/streaming-upload.ts
+  35:3  warning  ES2015 module syntax is preferred over namespaces  @typescript-eslint/no-namespace
+
+/home/runner/workspace/server/middleware/tiered-rate-limit.ts
+  126:24  warning  'req' is defined but never used. Allowed unused args must match /^_/u             unused-imports/no-unused-vars
+  145:24  warning  'req' is defined but never used. Allowed unused args must match /^_/u             unused-imports/no-unused-vars
+  182:11  warning  'usage' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/server/reddit-communities.ts
+  151:16  warning  'e' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/server/reddit-routes.ts
+  923:14  warning  'e' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+  933:14  warning  'e' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+  943:14  warning  'e' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/server/routes.ts
+    60:11  warning  'AnalyticsRequest' is defined but never used. Allowed unused vars must match /^_/u                      unused-imports/no-unused-vars
+   479:13  warning  An interface declaring no members is equivalent to its supertype                                        @typescript-eslint/no-empty-object-type
+   546:11  warning  'GenerationRequestBody' is defined but never used. Allowed unused vars must match /^_/u                 unused-imports/no-unused-vars
+   697:74  warning  Unexpected any. Specify a different type                                                                @typescript-eslint/no-explicit-any
+   702:45  warning  Unexpected any. Specify a different type                                                                @typescript-eslint/no-explicit-any
+   729:7   warning  'deriveSharePercentage' is assigned a value but never used. Allowed unused vars must match /^_/u        unused-imports/no-unused-vars
+  1012:12  warning  Unexpected any. Specify a different type                                                                @typescript-eslint/no-explicit-any
+  1129:13  warning  'normalizedPhotoInstructions' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+  1602:46  warning  'variants' is assigned a value but never used. Allowed unused vars must match /^_/u                     unused-imports/no-unused-vars
+
+/home/runner/workspace/server/routes/upload.ts
+  308:7   warning  Forbidden non-null assertion                                                  @typescript-eslint/no-non-null-assertion
+  505:53  warning  'e' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+  508:58  warning  'e' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/server/routes/webhooks.stripe.ts
+  16:71  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/scripts/sync-subreddit-rules.ts
+  112:11  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  138:7   warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  191:34  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  192:35  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  193:32  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/seeds/expense-categories.ts
+   80:16  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+  165:16  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/server/services/analytics-service.ts
+  259:12  warning  Forbidden non-null assertion                                                             @typescript-eslint/no-non-null-assertion
+  288:11  warning  'eventsToSend' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+  302:11  warning  'lastActive' is assigned a value but never used. Allowed unused vars must match /^_/u    unused-imports/no-unused-vars
+
+/home/runner/workspace/server/services/basic-metrics.ts
+  66:25  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  66:56  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/home/runner/workspace/server/services/content-performance-predictor.ts
+  290:62  warning  'score' is defined but never used. Allowed unused args must match /^_/u              unused-imports/no-unused-vars
+  394:21  warning  'actualPerformance' is defined but never used. Allowed unused args must match /^_/u  unused-imports/no-unused-vars
+
+/home/runner/workspace/server/services/enhanced-ai-service.ts
+  208:7   warning  'mode' is assigned a value but never used. Allowed unused vars must match /^_/u  unused-imports/no-unused-vars
+  504:35  warning  'request' is defined but never used. Allowed unused args must match /^_/u        unused-imports/no-unused-vars

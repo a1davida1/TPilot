@@ -327,7 +327,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
         variant: "default",
       });
       setShowResendVerification(false);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to resend verification email",
