@@ -1,5 +1,7 @@
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenAI } from '@google/genai';
+import type { LegacyGoogleGenAI } from '../lib/gemini-client.js';
 import { safeLog } from '../lib/logger-utils.js';
 import { getTextModel, isGeminiAvailable } from '../lib/gemini-client';
 
@@ -30,6 +32,13 @@ function getAnthropic() {
   return process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null;
 }
 
+  export function getGemini(): LegacyGoogleGenAI | null {
+    const apiKey =
+      process.env.GEMINI_API_KEY ?? process.env.GOOGLE_GENAI_API_KEY;
+    return apiKey
+      ? (new GoogleGenAI({ apiKey }) as unknown as LegacyGoogleGenAI)
+      : null;
+  }
 interface MultiAIRequest {
   user: { id: number; email?: string; tier?: string };
   platform: string;

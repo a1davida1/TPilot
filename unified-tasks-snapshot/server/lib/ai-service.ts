@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import OpenAI from "openai";
 import crypto from "crypto";
 import { env } from "./config.js";
@@ -8,7 +8,23 @@ import { eq } from "drizzle-orm";
 
 // AI service initialization
 // Use Gemini as primary (with GEMINI_API_KEY), OpenAI as fallback
-const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || env.GOOGLE_GENAI_API_KEY || '');
+interface GeminiModel {
+  generateContent: (
+    input: unknown
+  ) => Promise<{
+    response?: { text?: () => string; usageMetadata?: { totalTokenCount?: number }; [key: string]: unknown };
+    usageMetadata?: { totalTokenCount?: number };
+    [key: string]: unknown;
+  }>;
+}
+
+type GeminiClient = {
+  getGenerativeModel: (options: { model: string }) => GeminiModel;
+};
+
+const gemini: GeminiClient = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY || env.GOOGLE_GENAI_API_KEY || ''
+}) as GeminiClient;
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
 
 export interface ContentGenerationRequest {

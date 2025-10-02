@@ -1,4 +1,4 @@
-import type { GoogleGenAI } from "@google/genai";
+import type { LegacyGoogleGenAI, GeminiModel } from "./gemini-client";
 import {
   getGoogleGenerativeAI,
   getTextModel as loadTextModel,
@@ -34,8 +34,8 @@ const createLazyProxy = <T extends object>(factory: () => T): T =>
     }
   });
 
-const genAI: GoogleGenAI | null = isGeminiAvailable()
-  ? createLazyProxy<GoogleGenAI>(getGoogleGenerativeAI)
+const genAI: LegacyGoogleGenAI | null = isGeminiAvailable()
+  ? createLazyProxy<LegacyGoogleGenAI>(getGoogleGenerativeAI)
   : null;
 
 const visionModel: GeminiModel | null = isGeminiAvailable()
