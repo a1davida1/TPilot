@@ -28,6 +28,7 @@ interface RedditStrategyOptions {
   clientSecret: string;
   callbackURL: string;
   scope?: string[];
+  state?: boolean;
 }
 
 // Helper function to handle social auth user creation/update
@@ -104,6 +105,7 @@ export function configureSocialAuth(apiPrefix: string = API_PREFIX) {
       clientSecret: process.env.REDDIT_CLIENT_SECRET,
       callbackURL: prefixApiPath('/reddit/callback', apiPrefix),
       scope: ['identity'],
+      state: true,
     };
 
     passport.use(
