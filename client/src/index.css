@@ -1720,7 +1720,7 @@ html {
   }
 }
 
-/* Apply animations with reduced motion support */
+/* Apply animations ONLY when motion is preferred (accessibility-first) */
 @media (prefers-reduced-motion: no-preference) {
   .animate-fade-in {
     animation: fade-in 0.6s ease-out;
@@ -1749,37 +1749,42 @@ html {
   .animate-logo-glow {
     animation: logo-glow 2s ease-in-out infinite;
   }
+  
+  /* Smooth hover effects only when motion is preferred */
+  .smooth-hover:hover {
+    transform: translateY(-2px);
+  }
+  
+  .card-hover:hover {
+    transform: translateY(-4px) scale(1.02);
+  }
+  
+  .button-press:active {
+    transform: scale(0.97);
+  }
 }
 
-/* Smooth hover effects */
-.smooth-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
+/* Base classes - transitions only when motion is preferred */
+@media (prefers-reduced-motion: no-preference) {
+  .smooth-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+  }
+
+  .card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform, box-shadow;
+  }
+
+  .button-press {
+    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+  }
 }
 
-.smooth-hover:hover {
-  transform: translateY(-2px);
-}
-
-/* Card hover lift effect */
-.card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform, box-shadow;
-}
-
+/* Card hover shadow effect (safe for reduced motion) */
 .card-hover:hover {
-  transform: translateY(-4px) scale(1.02);
   box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.15);
-}
-
-/* Button smooth press effect */
-.button-press {
-  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
-}
-
-.button-press:active {
-  transform: scale(0.97);
 }
 
 /* Glassmorphism enhancement */
@@ -1800,8 +1805,9 @@ html {
   animation: shimmer 3s linear infinite;
 }
 
-/* Respect user's motion preferences */
+/* Respect user's motion preferences - ACCESSIBILITY CRITICAL */
 @media (prefers-reduced-motion: reduce) {
+  /* Disable all animations globally */
   *,
   *::before,
   *::after {
@@ -1811,13 +1817,26 @@ html {
     scroll-behavior: auto !important;
   }
   
+  /* Explicitly disable custom animation classes */
   .animate-fade-in,
   .animate-slide-in-left,
   .animate-slide-in-right,
   .animate-scale-up,
   .animate-float,
   .animate-logo-pulse,
-  .animate-logo-glow {
-    animation: none;
+  .animate-logo-glow,
+  .smooth-hover,
+  .card-hover,
+  .button-press,
+  .text-gradient-animated {
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  /* Remove transforms for reduced motion */
+  .smooth-hover:hover,
+  .card-hover:hover,
+  .button-press:active {
+    transform: none !important;
   }
 }
