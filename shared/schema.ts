@@ -229,6 +229,19 @@ export const postJobs = pgTable("post_jobs", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const redditPostOutcomes = pgTable("reddit_post_outcomes", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  subreddit: varchar("subreddit", { length: 100 }).notNull(),
+  status: varchar("status", { length: 20 }).notNull(),
+  reason: text("reason"),
+  occurredAt: timestamp("occurred_at").defaultNow().notNull(),
+}, (table) => ({
+  userIndex: index("reddit_post_outcomes_user_idx").on(table.userId, table.occurredAt),
+  statusIndex: index("reddit_post_outcomes_status_idx").on(table.status),
+  subredditIndex: index("reddit_post_outcomes_subreddit_idx").on(table.subreddit),
+}));
+
 // ==========================================
 // REDDIT COMMUNITY RULE SCHEMAS
 // ==========================================
@@ -743,6 +756,7 @@ export const insertSubredditRuleSchema = createInsertSchema(subredditRules);
 export const insertPostTemplateSchema = createInsertSchema(postTemplates);
 export const insertPostPreviewSchema = createInsertSchema(postPreviews);
 export const insertPostJobSchema = createInsertSchema(postJobs);
+export const insertRedditPostOutcomeSchema = createInsertSchema(redditPostOutcomes);
 export const insertSubscriptionSchema = createInsertSchema(subscriptions);
 export const insertInvoiceSchema = createInsertSchema(invoices);
 export const insertReferralCodeSchema = createInsertSchema(referralCodes);
@@ -809,6 +823,8 @@ export type InsertPostPreview = z.infer<typeof insertPostPreviewSchema>;
 
 export type PostJob = typeof postJobs.$inferSelect;
 export type InsertPostJob = z.infer<typeof insertPostJobSchema>;
+export type RedditPostOutcome = typeof redditPostOutcomes.$inferSelect;
+export type InsertRedditPostOutcome = z.infer<typeof insertRedditPostOutcomeSchema>;
 
 export type Subscription = typeof subscriptions.$inferSelect;
 export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
