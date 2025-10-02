@@ -294,18 +294,30 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
       });
     }
 
-    if (!processedFilePath || !outputFilename) {
+    if (!outputFilename) {
       await fs.unlink(tempFilePath).catch(() => {});
-      logger.error('Processed file path missing after filename generation', {
-        userId: authReq.user?.id
+      logger.error('Filename generation failed: no output filename created', {
+        userId: authReq.user?.id,
+        hasFilename: false,
+        hasPath: Boolean(processedFilePath)
       });
       return res.status(500).json({ message: 'Upload processing failed' });
     }
-    
+
+    if (!processedFilePath) {
+      await fs.unlink(tempFilePath).catch(() => {});
+      logger.error('Filename generation failed: no processed file path created', {
+        userId: authReq.user?.id,
+        hasFilename: true,
+        hasPath: false
+      });
+      return res.status(500).json({ message: 'Upload processing failed' });
+    }
+
     // Apply ImageShield protection with retry and timeout
     const protect = () => applyImageShieldProtection(
       tempFilePath,
-      processedFilePath!,  // Safe: we return early above if undefined
+      processedFilePath,
       validatedRequest.protectionLevel,
       validatedRequest.addWatermark,
       String(authReq.user?.id)

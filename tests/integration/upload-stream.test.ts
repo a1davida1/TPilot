@@ -88,6 +88,7 @@ describe('stream upload error handling', () => {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
   const fixturesDir = path.join(__dirname, '__fixtures__', 'stream');
+  let uploadModule: typeof import('../../server/routes/upload.ts');
 
   beforeAll(async () => {
     await fs.mkdir(fixturesDir, { recursive: true });
@@ -104,11 +105,11 @@ describe('stream upload error handling', () => {
       .png()
       .toFile(sampleImagePath);
 
-    const { uploadRoutes } = await import('../../server/routes/upload.ts');
+    uploadModule = await import('../../server/routes/upload.ts');
 
     app = express();
     app.use(express.json());
-    app.use('/api/uploads', uploadRoutes);
+    app.use('/api/uploads', uploadModule.uploadRoutes);
   });
 
   beforeEach(async () => {
@@ -126,7 +127,7 @@ describe('stream upload error handling', () => {
     await fs.rm(fixturesDir, { recursive: true, force: true });
   });
 
-  test('returns 500 when secure filename generation fails', async () => {
+  async function prepareFilenameFailureScenario(): Promise<{ tempFilePath: string }> {
     const tempFilename = `stream-temp-${Date.now()}.png`;
     const tempFilePath = path.join(uploadsDir, tempFilename);
     await fs.copyFile(sampleImagePath, tempFilePath);
@@ -146,6 +147,12 @@ describe('stream upload error handling', () => {
       protectionLevel: 'standard',
       addWatermark: false
     };
+
+    return { tempFilePath };
+  }
+
+  test('returns 500 when secure filename generation fails', async () => {
+    const { tempFilePath } = await prepareFilenameFailureScenario();
 
     const randomBytesSpy = vi.spyOn(crypto, 'randomBytes').mockImplementation(() => {
       throw new Error('random failure');
@@ -171,5 +178,33 @@ describe('stream upload error handling', () => {
     expect(loggerMock.error).toHaveBeenCalled();
     expect(unlinkArgs).toContain(tempFilePath);
     expect(unlinkArgs.every(arg => typeof arg === 'string' && arg.length > 0)).toBe(true);
+  });
+
+  test('skips ImageShield protection when filename generation fails', async () => {
+    const { tempFilePath } = await prepareFilenameFailureScenario();
+
+    const randomBytesSpy = vi.spyOn(crypto, 'randomBytes').mockImplementation(() => {
+      throw new Error('random failure');
+    });
+    const applySpy = vi.spyOn(uploadModule, 'applyImageShieldProtection');
+
+    let response: request.Response | undefined;
+    try {
+      response = await request(app)
+        .post('/api/uploads/stream')
+        .send({});
+    } finally {
+      randomBytesSpy.mockRestore();
+      applySpy.mockRestore();
+    }
+
+    expect(response?.status).toBe(500);
+    expect(applySpy).not.toHaveBeenCalled();
+
+    const uploadFileExists = await fs
+      .access(tempFilePath)
+      .then(() => true)
+      .catch(() => false);
+    expect(uploadFileExists).toBe(false);
   });
 });

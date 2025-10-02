@@ -78,7 +78,7 @@ function configureCors(app: express.Express): void {
 }
 
 function applyRequestLogging(app: express.Express): void {
-  app.use((req, res, next) => {
+  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
     const start = Date.now();
     const path = req.path;
     let capturedJsonResponse: unknown;
@@ -162,7 +162,7 @@ async function configureStaticAssets(
     return;
   }
 
-  app.use((req, res, next) => {
+  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (req.path.startsWith('/assets/')) {
       logger.info(`Asset request received: ${req.method} ${req.path}`);
     }
@@ -198,7 +198,7 @@ async function configureStaticAssets(
     logger.info('Vite development server disabled via ENABLE_VITE_DEV flag. Remove or set to true to re-enable.');
   }
 
-  app.get('*', (req, res, next) => {
+  app.get('*', (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const isApiRoute = req.path === API_PREFIX || req.path.startsWith(`${API_PREFIX}/`);
     if (isApiRoute ||
         req.path.startsWith('/auth/') ||
@@ -227,7 +227,7 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
 
   configureCors(app);
 
-  app.use((req, res, next) => {
+  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
     req.id = uuidv4();
     res.setHeader('X-Request-ID', req.id);
     next();
@@ -262,7 +262,7 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
     res.json({ csrfToken: req.csrfToken() });
   });
 
-  app.use((req, res, next) => {
+  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
     const exemptPaths = [
       `${API_PREFIX}/auth/reddit/callback`,
       `${API_PREFIX}/auth/google/callback`,
@@ -271,11 +271,11 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
       `${API_PREFIX}/health`
     ];
 
-    if (exemptPaths.some(path => req.path.startsWith(path))) {
+    if (exemptPaths.some((path) => req.path.startsWith(path))) {
       return next();
     }
 
-    return csrfProtection(req as any, res as any, next);
+    return csrfProtection(req, res, next);
   });
 
   app.set('csrfProtectionConfigured', true);
@@ -346,10 +346,11 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
       }
 
       if (!res.headersSent) {
+        const sentryRes = res as express.Response & { sentry?: string };
         res.json({
           error: 'Internal server error',
           requestId: req.id,
-          sentryId: (res as any).sentry
+          sentryId: sentryRes.sentry,
         });
       }
     });
