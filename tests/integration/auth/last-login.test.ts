@@ -1,0 +1,171 @@
+import express from 'express';
+import request from 'supertest';
+import bcrypt from 'bcrypt';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { User, UserUpdate } from '../../../shared/schema.ts';
+import { buildStorageMock } from '../../_helpers/buildStorageMock.ts';
+
+const storageMock = buildStorageMock();
+
+vi.mock('../../../server/db.ts', () => ({
+  db: {
+    select: vi.fn(() => ({
+      from: vi.fn(() => ({ where: vi.fn(() => []) }))
+    })),
+    insert: vi.fn(() => ({
+      values: vi.fn(() => ({ returning: vi.fn(() => []) }))
+    })),
+    update: vi.fn(() => ({
+      set: vi.fn(() => ({
+        where: vi.fn(() => ({ returning: vi.fn(() => []) }))
+      }))
+    })),
+    delete: vi.fn(() => ({
+      where: vi.fn(() => ({ returning: vi.fn(() => []) }))
+    })),
+    query: {}
+  },
+  pool: { end: vi.fn() }
+}));
+
+vi.mock('../../../server/storage.ts', () => ({
+  storage: storageMock
+}));
+
+let setupAuth: typeof import('../../../server/auth.ts')['setupAuth'];
+
+beforeAll(async () => {
+  ({ setupAuth } = await import('../../../server/auth.ts'));
+});
+
+type UserMap = Map<number, User>;
+
+const users: UserMap = new Map();
+
+function applyUserUpdates(user: User, updates: Partial<UserUpdate>): User {
+  const typedEntries = Object.entries(updates) as Array<[
+    keyof UserUpdate,
+    UserUpdate[keyof UserUpdate]
+  ]>;
+
+  const next: User = { ...user };
+  for (const [key, value] of typedEntries) {
+    if (value !== undefined) {
+      (next as Record<keyof UserUpdate, UserUpdate[keyof UserUpdate]>)[key] = value;
+    }
+  }
+  return next;
+}
+
+function findUserByEmail(email?: string | null): User | undefined {
+  if (!email) {
+    return undefined;
+  }
+  for (const record of users.values()) {
+    if (record.email === email) {
+      return record;
+    }
+  }
+  return undefined;
+}
+
+function findUserByUsername(username?: string | null): User | undefined {
+  if (!username) {
+    return undefined;
+  }
+  for (const record of users.values()) {
+    if (record.username === username) {
+      return record;
+    }
+  }
+  return undefined;
+}
+
+describe('Auth lastLogin integration', () => {
+  let app: express.Express;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    users.clear();
+
+    storageMock.getUser.mockImplementation(async (id: number) => users.get(id));
+    storageMock.getUserByEmail.mockImplementation(async (email: string) => findUserByEmail(email));
+    storageMock.getUserByUsername.mockImplementation(async (username: string) => findUserByUsername(username));
+    storageMock.updateUser.mockImplementation(async (userId: number, updates: Partial<UserUpdate>) => {
+      const existing = users.get(userId);
+      if (!existing) {
+        throw new Error('User not found');
+      }
+      const updated = applyUserUpdates(existing, updates);
+      users.set(userId, updated);
+      return updated;
+    });
+
+    app = express();
+    app.use(express.json());
+    setupAuth(app, '/api');
+  });
+
+  it('refreshes the lastLogin timestamp on successful login', async () => {
+    const hashedPassword = await bcrypt.hash('SecurePassword!23', 10);
+    const initialLastLogin = new Date('2024-01-01T00:00:00.000Z');
+    const timestamp = new Date('2024-02-01T00:00:00.000Z');
+
+    const baseUser = {
+      id: 1,
+      username: 'login-user',
+      password: hashedPassword,
+      email: 'login-user@example.com',
+      role: 'user',
+      isAdmin: false,
+      emailVerified: true,
+      firstName: null,
+      lastName: null,
+      tier: 'free',
+      mustChangePassword: false,
+      subscriptionStatus: 'inactive',
+      trialEndsAt: null,
+      provider: null,
+      providerId: null,
+      avatar: null,
+      bio: null,
+      referralCodeId: null,
+      referredBy: null,
+      redditUsername: null,
+      redditAccessToken: null,
+      redditRefreshToken: null,
+      redditId: null,
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+      bannedAt: null,
+      suspendedUntil: null,
+      banReason: null,
+      suspensionReason: null,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      lastLogin: initialLastLogin,
+      passwordResetAt: null,
+      deletedAt: null,
+      isDeleted: false
+    } satisfies User;
+
+    users.set(baseUser.id, { ...baseUser });
+
+    const response = await request(app)
+      .post('/api/auth/login')
+      .set('Content-Type', 'application/json')
+      .send({ email: baseUser.email, password: 'SecurePassword!23' });
+
+    expect(response.status).toBe(200);
+    expect(storageMock.updateUser).toHaveBeenCalledWith(
+      baseUser.id,
+      expect.objectContaining({ lastLogin: expect.any(Date) })
+    );
+
+    const updatedUser = users.get(baseUser.id);
+    expect(updatedUser).toBeDefined();
+    expect(updatedUser?.lastLogin).not.toBeNull();
+    expect(updatedUser?.lastLogin).instanceOf(Date);
+    expect(updatedUser?.lastLogin?.getTime()).toBeGreaterThan(initialLastLogin.getTime());
+  });
+});
