@@ -1,3 +1,4 @@
+import sharp from 'sharp';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockDb = vi.hoisted(() => ({
@@ -84,5 +85,72 @@ describe('MediaManager.getUserStorageUsage', () => {
 
     expect(usage).toEqual({ used: 1_024, quota: mockConfig.mediaQuotas.pro });
     expect(mockDb.select).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('MediaManager.processImage', () => {
+  it('preserves transparency for PNG uploads', async () => {
+    const { MediaManager } = await import('../../../server/lib/media.ts');
+
+    const transparentPng = await sharp({
+      create: {
+        width: 2,
+        height: 2,
+        channels: 4,
+        background: { r: 0, g: 0, b: 255, alpha: 0 },
+      },
+    })
+      .png()
+      .toBuffer();
+
+    const result = await MediaManager.processImage(transparentPng, {
+      applyWatermark: false,
+      quality: 90,
+    });
+
+    expect(result.mime).toBe('image/png');
+    expect(result.extension).toBe('png');
+
+    const metadata = await sharp(result.buffer, { animated: true }).metadata();
+    expect(metadata.format).toBe('png');
+    expect(metadata.hasAlpha ?? false).toBe(true);
+  });
+
+  it('retains animation frames for GIF uploads', async () => {
+    const { MediaManager } = await import('../../../server/lib/media.ts');
+
+    const animatedGif = await sharp({
+      create: {
+        width: 1,
+        height: 2,
+        channels: 4,
+        background: { r: 255, g: 0, b: 0, alpha: 1 },
+      },
+    })
+      .composite([
+        {
+          input: Buffer.from([0, 255, 0, 255]),
+          raw: { width: 1, height: 1, channels: 4 },
+          top: 1,
+          left: 0,
+        },
+      ])
+      .gif({
+        loop: 0,
+        delay: [100, 100],
+      })
+      .toBuffer();
+
+    const result = await MediaManager.processImage(animatedGif, {
+      applyWatermark: false,
+      quality: 90,
+    });
+
+    expect(result.mime).toBe('image/gif');
+    expect(result.extension).toBe('gif');
+
+    const metadata = await sharp(result.buffer, { animated: true }).metadata();
+    expect(metadata.format).toBe('gif');
+    expect((metadata.pages ?? 1) > 1).toBe(true);
   });
 });
