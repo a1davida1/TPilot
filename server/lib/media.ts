@@ -380,9 +380,7 @@ export class MediaManager {
         return { buffer: processedBuffer, mime: 'image/png', extension: 'png' };
       }
       case 'gif': {
-        const processedBuffer = await pipeline.gif({
-          reoptimise: true,
-        }).toBuffer();
+        const processedBuffer = await pipeline.gif().toBuffer();
         return { buffer: processedBuffer, mime: 'image/gif', extension: 'gif' };
       }
       case 'webp': {
