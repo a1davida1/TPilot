@@ -71,6 +71,20 @@
       "when": 1758562032562,
       "tag": "0009_daffy_maestro",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1758600000000,
+      "tag": "0010_normalize_reddit_community_enums",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1758600001000,
+      "tag": "0011_track_reddit_post_outcomes",
+      "breakpoints": true
     }
   ]
 }

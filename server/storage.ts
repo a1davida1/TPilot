@@ -39,7 +39,8 @@ import {
   platformEngagement,
   postSchedule,
   verificationTokens,
-  invoices
+  invoices,
+  redditPostOutcomes
 } from "../shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, sql, count } from "drizzle-orm";
@@ -190,6 +191,12 @@ export interface IStorage {
   getPostSchedule(scheduleId: number): Promise<PostSchedule | undefined>;
   updatePostSchedule(scheduleId: number, updates: Partial<PostSchedule>): Promise<PostSchedule>;
   deletePostSchedule(scheduleId: number): Promise<void>;
+
+  // Reddit post outcome operations
+  recordRedditPostOutcome(outcome: { userId: number; subreddit: string; status: string; reason?: string; occurredAt: Date }): Promise<void>;
+  getRedditPostOutcomes(userId: number): Promise<Array<{ id: number; userId: number; subreddit: string; status: string; reason: string | null; occurredAt: Date }>>;
+  getRedditPostRemovalSummary(userId: number): Promise<Array<{ reason: string | null; count: number | string }>>;
+  clearRedditPostOutcomes(userId?: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1371,6 +1378,74 @@ export class DatabaseStorage implements IStorage {
       await db.delete(postSchedule).where(eq(postSchedule.id, scheduleId));
     } catch (error) {
       console.error('Error deleting post schedule:', { error: (error as Error).message });
+      throw error;
+    }
+  }
+
+  // Reddit post outcome operations
+  async recordRedditPostOutcome(outcome: { userId: number; subreddit: string; status: string; reason?: string; occurredAt: Date }): Promise<void> {
+    try {
+      await db.insert(redditPostOutcomes).values({
+        userId: outcome.userId,
+        subreddit: outcome.subreddit,
+        status: outcome.status,
+        reason: outcome.reason ?? null,
+        occurredAt: outcome.occurredAt
+      });
+    } catch (error) {
+      safeLog('error', 'Storage operation failed - recording reddit post outcome:', { error: (error as Error).message });
+      throw error;
+    }
+  }
+
+  async getRedditPostOutcomes(userId: number): Promise<Array<{ id: number; userId: number; subreddit: string; status: string; reason: string | null; occurredAt: Date }>> {
+    try {
+      const results = await db.select().from(redditPostOutcomes)
+        .where(eq(redditPostOutcomes.userId, userId))
+        .orderBy(desc(redditPostOutcomes.occurredAt));
+      return results.map(row => ({
+        id: row.id,
+        userId: row.userId,
+        subreddit: row.subreddit,
+        status: row.status,
+        reason: row.reason,
+        occurredAt: row.occurredAt
+      }));
+    } catch (error) {
+      safeLog('error', 'Storage operation failed - getting reddit post outcomes:', { error: (error as Error).message });
+      return [];
+    }
+  }
+
+  async getRedditPostRemovalSummary(userId: number): Promise<Array<{ reason: string | null; count: number | string }>> {
+    try {
+      const results = await db
+        .select({
+          reason: redditPostOutcomes.reason,
+          count: count()
+        })
+        .from(redditPostOutcomes)
+        .where(and(
+          eq(redditPostOutcomes.userId, userId),
+          eq(redditPostOutcomes.status, 'removed')
+        ))
+        .groupBy(redditPostOutcomes.reason);
+      return results;
+    } catch (error) {
+      safeLog('error', 'Storage operation failed - getting reddit post removal summary:', { error: (error as Error).message });
+      return [];
+    }
+  }
+
+  async clearRedditPostOutcomes(userId?: number): Promise<void> {
+    try {
+      if (typeof userId === 'number') {
+        await db.delete(redditPostOutcomes).where(eq(redditPostOutcomes.userId, userId));
+      } else {
+        await db.delete(redditPostOutcomes);
+      }
+    } catch (error) {
+      safeLog('error', 'Storage operation failed - clearing reddit post outcomes:', { error: (error as Error).message });
       throw error;
     }
   }
