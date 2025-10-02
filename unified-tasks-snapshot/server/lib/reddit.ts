@@ -119,6 +119,32 @@ function resolvePostType(context: PostCheckContext): PostType {
 /**
  * Securely fetch an image URL with comprehensive SSRF protection
  */
+const IMAGE_HOST_ALLOW_LIST = [
+  // Add domains you consider safe for image downloads.
+  // For example: "i.redd.it", "imgur.com", "i.imgur.com"
+  "i.redd.it",
+  "imgur.com",
+  "i.imgur.com",
+  // Add any others as required...
+];
+
+function isAllowedImageHost(hostname: string): boolean {
+  return IMAGE_HOST_ALLOW_LIST.some(
+    allowed =>
+      hostname === allowed ||
+      hostname.endsWith(`.${allowed}`)
+  );
+}
+
+// Optionally block IP literals (here, basic IPv4/IPv6 regex and local ranges)
+function isIpAddress(hostname: string): boolean {
+  // Simple IPv4 and IPv6 literal check
+  return (
+    /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname) || // IPv4
+    /^\[[0-9a-fA-F:]+\]$/.test(hostname)        // IPv6
+  );
+}
+
 async function secureFetchImage(imageUrl: string): Promise<Buffer> {
   // Validate URL format
   let url;
@@ -126,6 +152,16 @@ async function secureFetchImage(imageUrl: string): Promise<Buffer> {
     url = new URL(imageUrl);
   } catch {
     throw new Error('Invalid URL format');
+  }
+
+  // Hostname allow-list SSRF protection
+  if (!isAllowedImageHost(url.hostname)) {
+    throw new Error('Image URL host is not allowed');
+  }
+
+  // Optionally refuse literal IP addresses (including loopback, private, link-local ranges)
+  if (isIpAddress(url.hostname)) {
+    throw new Error('Image URL must not be an IP address');
   }
 
   // Check protocol
