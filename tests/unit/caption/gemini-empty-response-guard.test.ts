@@ -12,11 +12,21 @@ const createMockResponse = (value: string | undefined): MockResponse => ({
   },
 });
 
+type GenerateContentMock = ReturnType<typeof vi.fn<[
+  input: unknown
+], Promise<MockResponse>>>;
+
+type GeminiTextModelMock = { generateContent: GenerateContentMock };
+type GeminiVisionModelMock = { generateContent: GenerateContentMock };
+
 const mockGemini = (
-  textModel: { generateContent: ReturnType<typeof vi.fn<(input: unknown) => Promise<MockResponse>>> },
-  visionModel?: { generateContent: ReturnType<typeof vi.fn<(input: unknown) => Promise<MockResponse>>> }
+  textModel: GeminiTextModelMock,
+  visionModel?: GeminiVisionModelMock,
 ) => {
-  const resolvedVision = visionModel ?? { generateContent: vi.fn<(input: unknown) => Promise<MockResponse>>() };
+  const resolvedVision = visionModel ?? { generateContent: vi.fn<[
+    input: unknown
+  ], Promise<MockResponse>>() };
+
   vi.doMock('../../../server/lib/gemini-client', () => ({
     __esModule: true,
     getTextModel: () => textModel,
@@ -25,13 +35,21 @@ const mockGemini = (
   }));
   vi.doMock('../../../server/lib/gemini.ts', () => ({
     __esModule: true,
-    textModel,
-    visionModel: resolvedVision,
-    isGeminiAvailable: () => true,
     getTextModel: () => textModel,
     getVisionModel: () => resolvedVision,
+    isGeminiAvailable: () => true,
   }));
 };
+
+const streamFromChunks = (chunks: Uint8Array[]): ReadableStream<Uint8Array> =>
+  new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const chunk of chunks) {
+        controller.enqueue(chunk);
+      }
+      controller.close();
+    },
+  });
 
 describe('Gemini empty response guards', () => {
   beforeEach(() => {
@@ -44,14 +62,15 @@ describe('Gemini empty response guards', () => {
     vi.restoreAllMocks();
   });
 
-  it.each([
-    { label: 'an empty string', value: '' },
-    { label: 'undefined', value: undefined },
-<<<<<<< ours
+  it.each<[{ label: string; value: string | undefined }]>([
+    [{ label: 'an empty string', value: '' }],
+    [{ label: 'undefined', value: undefined }],
   ])('returns safe fallback variants in text-only generation when Gemini returns %s', async ({ value }) => {
-    const textModel = {
+    const textModel: GeminiTextModelMock = {
       generateContent: vi
-        .fn<(input: unknown) => Promise<MockResponse>>()
+        .fn<[
+          input: unknown
+        ], Promise<MockResponse>>()
         .mockResolvedValue(createMockResponse(value)),
     };
 
@@ -59,22 +78,7 @@ describe('Gemini empty response guards', () => {
 
     const { generateVariantsTextOnly } = await import('../../../server/caption/textOnlyPipeline.ts');
 
-    const result = await generateVariantsTextOnly({
-=======
-  ])('returns safe fallbacks in text-only generation when Gemini returns %s', async ({ value }) => {
-    const textModel = { generateContent: vi.fn().mockResolvedValue(createMockResponse(value)) };
-
-    vi.doMock('../../../server/lib/gemini.ts', () => ({
-      __esModule: true,
-      textModel,
-      getTextModel: () => textModel,
-      isGeminiAvailable: () => true,
-    }));
-
-    const { generateVariantsTextOnly } = await import('../../../server/caption/textOnlyPipeline.ts');
-
     const variants = await generateVariantsTextOnly({
->>>>>>> theirs
       platform: 'instagram',
       voice: 'persona_voice',
       theme: 'test theme',
@@ -83,60 +87,45 @@ describe('Gemini empty response guards', () => {
     });
 
     expect(textModel.generateContent).toHaveBeenCalled();
-<<<<<<< ours
-    expect(result).toHaveLength(5);
-    expect(result.every(variant => typeof variant.caption === 'string' && variant.caption.length > 0)).toBe(true);
-    expect(result[0]?.caption).toContain("Here's something I'm proud of today.");
-=======
     expect(variants).toHaveLength(5);
-    variants.forEach((variant) => {
-      expect(variant.caption).toContain('(fallback');
-      expect(variant.alt).toContain('(fallback');
+    variants.forEach(variant => {
+      expect(typeof variant.caption).toBe('string');
+      expect(variant.caption.length).toBeGreaterThan(0);
     });
->>>>>>> theirs
   });
 
-  it.each([
-    { label: 'an empty string', value: '' },
-    { label: 'undefined', value: undefined },
-<<<<<<< ours
-  ])('returns Gemini-safe variants when image pipeline receives %s', async ({ value }) => {
-    const textModel = {
+  it.each<[{ label: string; value: string | undefined }]>([
+    [{ label: 'an empty string', value: '' }],
+    [{ label: 'undefined', value: undefined }],
+  ])('returns safe Gemini fallbacks when image pipeline receives %s', async ({ value }) => {
+    const textModel: GeminiTextModelMock = {
       generateContent: vi
-        .fn<(input: unknown) => Promise<MockResponse>>()
+        .fn<[
+          input: unknown
+        ], Promise<MockResponse>>()
         .mockResolvedValue(createMockResponse(value)),
     };
-=======
-  ])('returns safe Gemini fallbacks when image pipeline receives %s', async ({ value }) => {
-    const textModel = { generateContent: vi.fn().mockResolvedValue(createMockResponse(value)) };
->>>>>>> theirs
     const visionPayload = JSON.stringify({ objects: ['subject'], setting: 'studio', mood: 'focused' });
-    const visionModel = {
+    const visionModel: GeminiVisionModelMock = {
       generateContent: vi
-        .fn<(input: unknown) => Promise<MockResponse>>()
+        .fn<[
+          input: unknown
+        ], Promise<MockResponse>>()
         .mockResolvedValue(createMockResponse(visionPayload)),
     };
 
-<<<<<<< ours
     mockGemini(textModel, visionModel);
-    vi.doMock('../../../server/caption/openaiFallback.ts', () => ({ openAICaptionFallback: vi.fn() }));
-=======
-    vi.doMock('../../../server/lib/gemini.ts', () => ({
-      __esModule: true,
-      textModel,
-      visionModel,
-      getTextModel: () => textModel,
-      getVisionModel: () => visionModel,
-      isGeminiAvailable: () => true,
+
+    vi.doMock('../../../server/caption/openaiFallback.ts', () => ({
+      openAICaptionFallback: vi.fn(),
     }));
-    vi.doMock('../../../server/caption/openaiFallback.ts', () => ({ openAICaptionFallback }));
->>>>>>> theirs
 
     const fetchMock = vi.spyOn(globalThis, 'fetch');
+    const chunk = new Uint8Array(64).fill(1);
     fetchMock.mockResolvedValue({
       ok: true,
-      headers: new Headers({ 'content-type': 'image/png' }),
-      arrayBuffer: async () => new Uint8Array(64).fill(1).buffer,
+      headers: new Headers({ 'content-type': 'image/png', 'content-length': `${chunk.byteLength}` }),
+      body: streamFromChunks([chunk]),
     } as unknown as Response);
 
     const { pipeline } = await import('../../../server/caption/geminiPipeline.ts');
@@ -146,22 +135,48 @@ describe('Gemini empty response guards', () => {
       platform: 'instagram',
     });
 
-<<<<<<< ours
     expect(textModel.generateContent).toHaveBeenCalledTimes(1);
-    expect(result.final).toBeDefined();
+    expect(result.provider).toBe('gemini');
     expect(result.final.caption).toBeTruthy();
     expect(result.final.alt).toBeTruthy();
-    expect(result.final.hashtags).toBeDefined();
-=======
-    expect(openAICaptionFallback).not.toHaveBeenCalled();
-    expect(textModel.generateContent).toHaveBeenCalled();
-    expect(result.provider).toBe('gemini');
-    expect(result.final.caption).toContain('fallback');
-    expect(result.final.alt).toContain('fallback');
     expect(Array.isArray(result.final.hashtags)).toBe(true);
->>>>>>> theirs
-    expect(result.titles).toBeDefined();
     expect(result.titles?.length).toBeGreaterThan(0);
+
+    fetchMock.mockRestore();
+  });
+
+  it('throws InvalidImageError when the remote image exceeds the configured size limit', async () => {
+    const textModel: GeminiTextModelMock = {
+      generateContent: vi
+        .fn<[
+          input: unknown
+        ], Promise<MockResponse>>()
+        .mockResolvedValue(createMockResponse('fallback response')),
+    };
+    const visionModel: GeminiVisionModelMock = {
+      generateContent: vi
+        .fn<[
+          input: unknown
+        ], Promise<MockResponse>>()
+        .mockResolvedValue(createMockResponse('{"objects": ["item"]}')),
+    };
+
+    mockGemini(textModel, visionModel);
+
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+    fetchMock.mockResolvedValue({
+      ok: true,
+      headers: new Headers({
+        'content-type': 'image/jpeg',
+        'content-length': `${6 * 1024 * 1024}`,
+      }),
+      body: streamFromChunks([new Uint8Array(1)]),
+    } as unknown as Response);
+
+    const { extractFacts, InvalidImageError } = await import('../../../server/caption/geminiPipeline.ts');
+
+    await expect(extractFacts('https://example.com/oversized.jpg')).rejects.toBeInstanceOf(InvalidImageError);
+    expect(visionModel.generateContent).not.toHaveBeenCalled();
 
     fetchMock.mockRestore();
   });

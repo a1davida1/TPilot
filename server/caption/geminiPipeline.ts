@@ -129,6 +129,7 @@ function buildVariantFallbackBatch(params: {
 }
 
 const MIN_IMAGE_BYTES = 32;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB limit for inbound images
 
 function _captionKey(caption: string): string {
   return caption.trim().slice(0, 80).toLowerCase();
@@ -457,7 +458,44 @@ async function b64(url: string): Promise<{ base64: string; mimeType: string }> {
     if (!ct.startsWith("image/"))
       throw new InvalidImageError(`unsupported content-type: ${ct}`);
 
-    const b = Buffer.from(await r.arrayBuffer());
+    const contentLengthHeader = r.headers.get("content-length");
+    if (contentLengthHeader) {
+      const declaredLength = Number.parseInt(contentLengthHeader, 10);
+      if (!Number.isNaN(declaredLength) && declaredLength > MAX_IMAGE_BYTES) {
+        throw new InvalidImageError(
+          `image exceeds maximum allowed size (${declaredLength} bytes, limit ${MAX_IMAGE_BYTES})`
+        );
+      }
+    }
+
+    const body = r.body;
+    if (!body) {
+      throw new InvalidImageError("response body is empty");
+    }
+
+    const reader = body.getReader();
+    const chunks: Buffer[] = [];
+    let total = 0;
+    // Stream the body to ensure we never load more than MAX_IMAGE_BYTES into memory
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      if (!value) {
+        continue;
+      }
+      total += value.byteLength;
+      if (total > MAX_IMAGE_BYTES) {
+        await reader.cancel(`image exceeds limit of ${MAX_IMAGE_BYTES} bytes`);
+        throw new InvalidImageError(
+          `image exceeds maximum allowed size (${total} bytes read, limit ${MAX_IMAGE_BYTES})`
+        );
+      }
+      chunks.push(Buffer.from(value));
+    }
+
+    const b = Buffer.concat(chunks, total);
     if (b.length < MIN_IMAGE_BYTES) {
       throw new InvalidImageError(
         `image data too small after decoding (${b.length} bytes)`
