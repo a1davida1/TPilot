@@ -7,29 +7,15 @@ import * as redditStrategyPkg from 'passport-reddit/lib/passport-reddit/index.js
 const RedditStrategy = (
   redditStrategyPkg as unknown as { Strategy: typeof import('passport-reddit').Strategy }
 ).Strategy;
+import type {
+  RedditProfile as RedditStrategyProfile,
+  StrategyOptions as RedditStrategyOptions,
+} from 'passport-reddit';
 import { storage } from './storage';
 import type { User } from '@shared/schema';
 import { API_PREFIX, prefixApiPath } from './lib/api-prefix.js';
 
 type RedditAuthenticateOptions = AuthenticateOptions & { duration?: 'temporary' | 'permanent' };
-
-interface RedditStrategyProfile {
-  id: string;
-  name?: string;
-  icon_img?: string;
-  _json: {
-    icon_img?: string;
-    [key: string]: unknown;
-  };
-}
-
-interface RedditStrategyOptions {
-  clientID: string;
-  clientSecret: string;
-  callbackURL: string;
-  scope?: string[];
-  state?: boolean;
-}
 
 // Helper function to handle social auth user creation/update
 async function handleSocialAuth(
@@ -172,7 +158,7 @@ export const socialAuthRoutes = {
     {
       scope: ['identity'],
       duration: 'permanent',
-    } as RedditAuthenticateOptions,
+    } satisfies RedditAuthenticateOptions as any,
   ),
   redditCallback: passport.authenticate('reddit', { 
     failureRedirect: '/login?error=reddit_auth_failed',

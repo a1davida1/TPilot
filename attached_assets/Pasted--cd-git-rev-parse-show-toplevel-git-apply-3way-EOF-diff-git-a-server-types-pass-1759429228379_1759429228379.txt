@@ -1,0 +1,70 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/server/types/passport-reddit.d.ts b/server/types/passport-reddit.d.ts
+index ee50b6763b00e05b1edb7b9ecca6fc4f824f8834..0c99c382571a719eeeebe7bb6c393636a185a3c9 100644
+--- a/server/types/passport-reddit.d.ts
++++ b/server/types/passport-reddit.d.ts
+@@ -1,24 +1,53 @@
+ declare module 'passport-reddit' {
+-  import { Strategy as OAuth2Strategy } from 'passport-oauth2';
+-  
++  import type { Request } from 'express';
++  import type { Strategy as OAuth2Strategy } from 'passport-oauth2';
++
++  export interface RedditProfileJson extends Record<string, unknown> {
++    icon_img?: string;
++  }
++
+   export interface Profile {
+     id: string;
+     name?: string;
+-    _json: Record<string, unknown>;
+     provider: string;
++    _json: RedditProfileJson;
++  }
++
++  export interface RedditProfile extends Profile {
++    icon_img?: string;
+   }
+-  
++
+   export interface StrategyOptions {
+     clientID: string;
+     clientSecret: string;
+     callbackURL: string;
+     scope?: string[];
++    state?: string | boolean;
++  }
++
++  export interface StrategyOptionsWithRequest extends StrategyOptions {
++    passReqToCallback: true;
+   }
+-  
++
+   export type VerifyCallback = (error: Error | null, user?: unknown, info?: unknown) => void;
+-  export type VerifyFunction = (accessToken: string, refreshToken: string, profile: Profile, done: VerifyCallback) => void;
+-  
++
++  export type VerifyFunction = (
++    accessToken: string,
++    refreshToken: string,
++    profile: RedditProfile,
++    done: VerifyCallback,
++  ) => void | Promise<void>;
++
++  export type VerifyFunctionWithRequest = (
++    req: Request,
++    accessToken: string,
++    refreshToken: string,
++    profile: RedditProfile,
++    done: VerifyCallback,
++  ) => void | Promise<void>;
++
+   export class Strategy extends OAuth2Strategy {
+     constructor(options: StrategyOptions, verify: VerifyFunction);
++    constructor(options: StrategyOptionsWithRequest, verify: VerifyFunctionWithRequest);
+   }
+-}
++}
+ 
+EOF
+)
