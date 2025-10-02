@@ -17,6 +17,16 @@ interface MockVariant {
   nsfw: boolean;
 }
 
+interface VariantPromptEnvelope {
+  platform: string;
+  voice: string;
+  style: string;
+  mood: string;
+  facts: Record<string, unknown>;
+  nsfw: boolean;
+  hint: string;
+}
+
 const createTextModelMock = () => ({
   generateContent: vi.fn<(input: unknown) => Promise<MockGeminiResponse>>()
 });
@@ -209,13 +219,13 @@ describe('Gemini pipelines keep persona tone on retry', () => {
       nsfw: false
     });
 
-    const variantPrompts = extractVariantPrompts(textModel.generateContent.mock.calls);
+    const variantPrompts = extractVariantPromptEnvelopes(textModel.generateContent.mock.calls);
 
     expect(variantPrompts).toHaveLength(2);
     const retryPrompt = variantPrompts[1];
-    expect(retryPrompt).toContain('Fix:');
-    expect(retryPrompt).toContain('STYLE: Bold Persona');
-    expect(retryPrompt).toContain('MOOD: Upbeat');
+    expect(retryPrompt.hint).toContain('Fix:');
+    expect(retryPrompt.style).toBe('Bold Persona');
+    expect(retryPrompt.mood).toBe('Upbeat');
 
     fetchMock.mockRestore();
   });
@@ -242,13 +252,13 @@ describe('Gemini pipelines keep persona tone on retry', () => {
       nsfw: false
     });
 
-    const variantPrompts = extractVariantPrompts(textModel.generateContent.mock.calls);
+    const variantPrompts = extractVariantPromptEnvelopes(textModel.generateContent.mock.calls);
 
     expect(variantPrompts).toHaveLength(2);
     const retryPrompt = variantPrompts[1];
-    expect(retryPrompt).toContain('Fix:');
-    expect(retryPrompt).toContain('STYLE: Bold Persona');
-    expect(retryPrompt).toContain('MOOD: Upbeat');
+    expect(retryPrompt.hint).toContain('Fix:');
+    expect(retryPrompt.style).toBe('Bold Persona');
+    expect(retryPrompt.mood).toBe('Upbeat');
   });
 
   it('forwards tone fields on text-only pipeline retry', async () => {
@@ -273,12 +283,12 @@ describe('Gemini pipelines keep persona tone on retry', () => {
       nsfw: false
     });
 
-    const variantPrompts = extractVariantPrompts(textModel.generateContent.mock.calls);
+    const variantPrompts = extractVariantPromptEnvelopes(textModel.generateContent.mock.calls);
 
     expect(variantPrompts).toHaveLength(2);
     const retryPrompt = variantPrompts[1];
-    expect(retryPrompt).toContain('Fix:');
-    expect(retryPrompt).toContain('STYLE: Bold Persona');
-    expect(retryPrompt).toContain('MOOD: Upbeat');
+    expect(retryPrompt.hint).toContain('Fix:');
+    expect(retryPrompt.style).toBe('Bold Persona');
+    expect(retryPrompt.mood).toBe('Upbeat');
   });
 });

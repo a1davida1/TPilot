@@ -131,6 +131,63 @@ function buildVariantFallbackBatch(params: {
 const MIN_IMAGE_BYTES = 32;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB limit for inbound images
 
+type CaptionPlatform = "instagram" | "x" | "reddit" | "tiktok";
+
+type VariantPromptEnvelope = {
+  platform: CaptionPlatform;
+  voice: string;
+  style: string;
+  mood: string;
+  facts: Record<string, unknown>;
+  nsfw: boolean;
+  hint: string;
+};
+
+function normalizePromptStyle(value?: string): string {
+  const trimmed = value?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : "authentic";
+}
+
+function normalizePromptMood(value?: string): string {
+  const trimmed = value?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : "engaging";
+}
+
+function serializeVariantPromptEnvelope(envelope: VariantPromptEnvelope): string {
+  return JSON.stringify(envelope);
+}
+
+function buildVariantPromptEnvelope(params: {
+  platform: CaptionPlatform;
+  voice: string;
+  style?: string;
+  mood?: string;
+  facts?: Record<string, unknown>;
+  nsfw?: boolean;
+  hintSegments: Array<string | undefined>;
+}): string {
+  const hint = params.hintSegments
+    .map(segment => {
+      if (!segment) return undefined;
+      const trimmed = segment.trim();
+      return trimmed.length > 0 ? trimmed : undefined;
+    })
+    .filter((segment): segment is string => Boolean(segment))
+    .join("\n");
+
+  const envelope: VariantPromptEnvelope = {
+    platform: params.platform,
+    voice: params.voice,
+    style: normalizePromptStyle(params.style),
+    mood: normalizePromptMood(params.mood),
+    facts: params.facts ?? {},
+    nsfw: params.nsfw ?? false,
+    hint,
+  };
+
+  return serializeVariantPromptEnvelope(envelope);
+}
+
 function _captionKey(caption: string): string {
   return caption.trim().slice(0, 80).toLowerCase();
 }
@@ -423,7 +480,7 @@ function normalizeVariantFields(
 }
 
 type RewriteVariantsParams = {
-  platform: "instagram" | "x" | "reddit" | "tiktok";
+  platform: CaptionPlatform;
   voice: string;
   existingCaption: string;
   facts?: Record<string, unknown>;
@@ -933,7 +990,7 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
 }
 
 type GeminiVariantParams = {
-  platform: "instagram" | "x" | "reddit" | "tiktok";
+  platform: CaptionPlatform;
   voice: string;
   facts: Record<string, unknown>;
   hint?: string;
@@ -961,46 +1018,38 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
     );
   };
 
-  const fetchVariants = async (
+  const buildUserPrompt = (
     varietyHint: string | undefined,
     existingCaptions: string[],
     duplicateCaption?: string
-  ) => {
-    const styleValue = params.style?.trim() && params.style.trim().length > 0
-      ? params.style.trim()
-      : "authentic";
-    const moodValue = params.mood?.trim() && params.mood.trim().length > 0
-      ? params.mood.trim()
-      : "engaging";
-
-    const hintSegments: string[] = [];
+  ): string => {
+    const hintSegments: Array<string | undefined> = [];
 
     if (varietyHint && varietyHint.trim().length > 0) {
-      hintSegments.push(varietyHint.trim());
+      hintSegments.push(serializePromptField(varietyHint.trim(), { block: true }));
     }
 
     hintSegments.push(
       "Provide five options that vary tone, structure, and specific imagery."
     );
 
-    const duplicatesConfig = duplicateCaption
-      ? { captions: [duplicateCaption], mode: "rewrite" as const }
-      : existingCaptions.length > 0
-        ? { captions: existingCaptions, mode: "avoid" as const }
-        : undefined;
-
-    const user = buildGeminiPrompt({
+    return buildVariantPromptEnvelope({
       platform: params.platform,
       voice: params.voice,
-      tone: {
-        style: styleValue,
-        mood: moodValue,
-      },
+      style: params.style,
+      mood: params.mood,
       facts: params.facts,
       nsfw: params.nsfw,
-      hint: hintSegments.join(" "),
-      duplicates: duplicatesConfig,
+      hintSegments,
     });
+  };
+
+  const fetchVariants = async (
+    varietyHint: string | undefined,
+    existingCaptions: string[],
+    duplicateCaption?: string
+  ) => {
+    const user = buildUserPrompt(varietyHint, existingCaptions, duplicateCaption);
 
     const sysWithTone = buildSystemPrompt(sys, {
       style: params.style,

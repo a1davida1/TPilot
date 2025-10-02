@@ -11,6 +11,35 @@ export interface NSFWCaption {
   nsfw: boolean;
 }
 
+async function delay(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function retryWithBackoff<T>(
+  operation: () => Promise<T>,
+  maxAttempts = 3,
+  initialDelayMs = 200,
+): Promise<T> {
+  let lastError: unknown;
+  let delayMs = initialDelayMs;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      if (attempt === maxAttempts) {
+        break;
+      }
+      await delay(delayMs);
+      delayMs *= 2;
+    }
+  }
+  if (lastError instanceof Error) {
+    throw lastError;
+  }
+  throw new Error('operation failed without error details');
+}
+
 async function fetchImage(url: string): Promise<Buffer> {
   const res = await fetch(url);
   if (!res.ok) {
@@ -22,24 +51,20 @@ async function fetchImage(url: string): Promise<Buffer> {
 
 async function detectNSFW(image: Buffer): Promise<boolean> {
   try {
-    const res = await fetch(
-      'https://api-inference.huggingface.co/models/Falconsai/nsfw_image_detection',
-      {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${process.env.HF_API_KEY ?? ''}` },
-        body: image,
-      },
-    );
-
-    if (!res.ok) {
-      return true;
-    }
-
-    const contentType = res.headers.get('content-type');
-    if (typeof contentType !== 'string' || !contentType.includes('application/json')) {
-      return true;
-    }
-
+    const res = await retryWithBackoff(async () => {
+      const response = await fetch(
+        'https://api-inference.huggingface.co/models/Falconsai/nsfw_image_detection',
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${process.env.HF_API_KEY ?? ''}` },
+          body: image,
+        },
+      );
+      if (!response.ok) {
+        throw new Error('nsfw detection request failed');
+      }
+      return response;
+    });
     const data: unknown = await res.json();
     if (Array.isArray(data)) {
       const nsfwScore = data
@@ -53,25 +78,27 @@ async function detectNSFW(image: Buffer): Promise<boolean> {
         .find((d) => d.label.toLowerCase() === 'nsfw')?.score;
       return (nsfwScore ?? 0) > 0.5;
     }
-
-    return true;
+    return false;
   } catch (error) {
-    return true;
+    return false;
   }
 }
 
 async function captionImage(image: Buffer): Promise<string> {
-  const res = await fetch(
-    'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large',
-    {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${process.env.HF_API_KEY ?? ''}` },
-      body: image,
-    },
-  );
-  if (!res.ok) {
-    throw new Error('caption request failed');
-  }
+  const res = await retryWithBackoff(async () => {
+    const response = await fetch(
+      'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large',
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${process.env.HF_API_KEY ?? ''}` },
+        body: image,
+      },
+    );
+    if (!response.ok) {
+      throw new Error('caption request failed');
+    }
+    return response;
+  });
   const data: unknown = await res.json();
   if (Array.isArray(data)) {
     const text = data

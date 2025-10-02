@@ -14,22 +14,116 @@ describe('nsfwCaptionFallback', () => {
     fetchMock.mockImplementationOnce(async () => ({
       ok: true,
       arrayBuffer: async () => imgBuffer,
-      headers: new Headers({ 'content-type': 'image/jpeg' })
+      headers: new Headers({ 'content-type': 'image/jpeg' }),
     }) as unknown as Response);
 
     fetchMock.mockImplementationOnce(async () => ({
       ok: true,
-      json: async () => [{ label: 'NSFW', score: 0.9 }]
+      json: async () => [{ label: 'NSFW', score: 0.9 }],
+      headers: new Headers({ 'content-type': 'application/json' }),
     }) as unknown as Response);
 
     fetchMock.mockImplementationOnce(async () => ({
       ok: true,
-      json: async () => [{ generated_text: 'sample caption' }]
+      json: async () => [{ generated_text: 'sample caption' }],
+      headers: new Headers({ 'content-type': 'application/json' }),
     }) as unknown as Response);
 
     const result = await nsfwCaptionFallback('https://example.com/image.jpg');
     expect(result.nsfw).toBe(true);
     expect(result.caption).toContain('[NSFW] sample caption');
+  });
+
+  it('treats image as SFW when detection API exhausts retries with 500 errors', async () => {
+    vi.useFakeTimers();
+    try {
+      const imgBuffer = Buffer.from('test');
+      const fetchMock = vi.spyOn(global, 'fetch');
+
+      fetchMock.mockImplementationOnce(async () => ({
+        ok: true,
+        arrayBuffer: async () => imgBuffer,
+        headers: new Headers({ 'content-type': 'image/jpeg' }),
+      }) as unknown as Response);
+
+      fetchMock.mockImplementationOnce(async () => ({
+        ok: false,
+        status: 500,
+        headers: new Headers({}),
+      }) as unknown as Response);
+
+      fetchMock.mockImplementationOnce(async () => ({
+        ok: false,
+        status: 500,
+        headers: new Headers({}),
+      }) as unknown as Response);
+
+      fetchMock.mockImplementationOnce(async () => ({
+        ok: false,
+        status: 500,
+        headers: new Headers({}),
+      }) as unknown as Response);
+
+      fetchMock.mockImplementationOnce(async () => ({
+        ok: true,
+        json: async () => [{ generated_text: 'sample caption' }],
+        headers: new Headers({ 'content-type': 'application/json' }),
+      }) as unknown as Response);
+
+      const promise = nsfwCaptionFallback('https://example.com/image.jpg');
+      await vi.runAllTimersAsync();
+      const result = await promise;
+      expect(result.nsfw).toBe(false);
+      expect(result.caption).toBe('sample caption');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('treats image as SFW when detection API exhausts retries with 429 errors', async () => {
+    vi.useFakeTimers();
+    try {
+      const imgBuffer = Buffer.from('test');
+      const fetchMock = vi.spyOn(global, 'fetch');
+
+      fetchMock.mockImplementationOnce(async () => ({
+        ok: true,
+        arrayBuffer: async () => imgBuffer,
+        headers: new Headers({ 'content-type': 'image/jpeg' }),
+      }) as unknown as Response);
+
+      fetchMock.mockImplementationOnce(async () => ({
+        ok: false,
+        status: 429,
+        headers: new Headers({}),
+      }) as unknown as Response);
+
+      fetchMock.mockImplementationOnce(async () => ({
+        ok: false,
+        status: 429,
+        headers: new Headers({}),
+      }) as unknown as Response);
+
+      fetchMock.mockImplementationOnce(async () => ({
+        ok: false,
+        status: 429,
+        headers: new Headers({}),
+      }) as unknown as Response);
+
+      fetchMock.mockImplementationOnce(async () => ({
+        ok: true,
+        json: async () => [{ generated_text: 'sample caption' }],
+        headers: new Headers({ 'content-type': 'application/json' }),
+      }) as unknown as Response);
+
+      const promise = nsfwCaptionFallback('https://example.com/image.jpg');
+      await vi.runAllTimersAsync();
+      const result = await promise;
+      expect(result.nsfw).toBe(false);
+      expect(result.caption).toBe('sample caption');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('propagates NSFW flag through OpenAI fallback variants', async () => {
@@ -84,5 +178,99 @@ describe('nsfwCaptionFallback', () => {
     expect(result.final.nsfw).toBe(true);
 
     vi.resetModules();
+  });
+
+  it('retries NSFW detection on transient failures', async () => {
+    vi.useFakeTimers();
+    try {
+      const imgBuffer = Buffer.from('retry');
+      const fetchMock = vi.spyOn(global, 'fetch');
+
+      fetchMock.mockImplementationOnce(async () => ({
+        ok: true,
+        arrayBuffer: async () => imgBuffer,
+      }) as unknown as Response);
+
+      fetchMock.mockImplementationOnce(async () => ({ ok: false }) as Response);
+      fetchMock.mockImplementationOnce(async () => ({ ok: false }) as Response);
+      fetchMock.mockImplementationOnce(async () => ({
+        ok: true,
+        json: async () => [{ label: 'NSFW', score: 0.95 }],
+      }) as unknown as Response);
+
+      fetchMock.mockImplementationOnce(async () => ({
+        ok: true,
+        json: async () => [{ generated_text: 'retry caption' }],
+      }) as unknown as Response);
+
+      const promise = nsfwCaptionFallback('https://example.com/image.jpg');
+      await vi.runAllTimersAsync();
+      const result = await promise;
+      expect(result.nsfw).toBe(true);
+      expect(fetchMock).toHaveBeenCalledTimes(5);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('retries caption generation before succeeding', async () => {
+    vi.useFakeTimers();
+    try {
+      const imgBuffer = Buffer.from('caption');
+      const fetchMock = vi.spyOn(global, 'fetch');
+
+      fetchMock.mockImplementationOnce(async () => ({
+        ok: true,
+        arrayBuffer: async () => imgBuffer,
+      }) as unknown as Response);
+
+      fetchMock.mockImplementationOnce(async () => ({
+        ok: true,
+        json: async () => [{ label: 'SFW', score: 0.1 }],
+      }) as unknown as Response);
+
+      fetchMock.mockImplementationOnce(async () => ({ ok: false }) as Response);
+      fetchMock.mockImplementationOnce(async () => ({
+        ok: true,
+        json: async () => [{ generated_text: 'final caption' }],
+      }) as unknown as Response);
+
+      const promise = nsfwCaptionFallback('https://example.com/image.jpg');
+      await vi.runAllTimersAsync();
+      const result = await promise;
+      expect(result.caption).toBe('final caption');
+      expect(fetchMock).toHaveBeenCalledTimes(4);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('throws after exhausting caption retries', async () => {
+    vi.useFakeTimers();
+    try {
+      const imgBuffer = Buffer.from('caption');
+      const fetchMock = vi.spyOn(global, 'fetch');
+
+      fetchMock.mockImplementationOnce(async () => ({
+        ok: true,
+        arrayBuffer: async () => imgBuffer,
+      }) as unknown as Response);
+
+      fetchMock.mockImplementationOnce(async () => ({
+        ok: true,
+        json: async () => [{ label: 'SFW', score: 0.1 }],
+      }) as unknown as Response);
+
+      fetchMock.mockImplementationOnce(async () => ({ ok: false }) as Response);
+      fetchMock.mockImplementationOnce(async () => ({ ok: false }) as Response);
+      fetchMock.mockImplementationOnce(async () => ({ ok: false }) as Response);
+
+      const promise = nsfwCaptionFallback('https://example.com/image.jpg');
+      await vi.runAllTimersAsync();
+      await expect(promise).rejects.toThrow('caption request failed');
+      expect(fetchMock).toHaveBeenCalledTimes(5);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
