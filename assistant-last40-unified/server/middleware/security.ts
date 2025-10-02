@@ -2,6 +2,7 @@ import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
 import mongoSanitize from "express-mongo-sanitize";
+import sanitizeHtml from "sanitize-html";
 import hpp from "hpp";
 import winston from "winston";
 import dotenv from "dotenv";
@@ -275,13 +276,11 @@ declare module 'express' {
 function sanitizeObject(obj: Record<string, unknown>): void {
   for (const key in obj) {
     if (typeof obj[key] === 'string') {
-      // Remove potential XSS payloads
-      obj[key] = obj[key]
-        .replace(/<script[^>]*>.*?<\/script>/gi, '')
-        .replace(/javascript:/gi, '')
-        .replace(/on\w+\s*=/gi, '')
-        .replace(/eval\s*\(/gi, '')
-        .replace(/expression\s*\(/gi, '');
+      // Use sanitize-html to remove potential XSS payloads
+      obj[key] = sanitizeHtml(obj[key] as string, {
+        allowedTags: [],
+        allowedAttributes: {},
+      });
 
       // Limit string length to prevent DoS
       if ((obj[key] as string).length > 10000) {
