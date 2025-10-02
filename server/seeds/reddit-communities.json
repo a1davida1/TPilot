@@ -9,7 +9,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 1
+      "perDay": 1,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "rules": {
       "eligibility": {
@@ -68,7 +70,9 @@
     "verificationRequired": true,
     "promotionAllowed": "strict",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "rules": {
       "eligibility": {

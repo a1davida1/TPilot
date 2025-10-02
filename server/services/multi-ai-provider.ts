@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
-import { GoogleGenAI } from '@google/genai';
 import { safeLog } from '../lib/logger-utils.js';
+import { getTextModel, isGeminiAvailable } from '../lib/gemini-client';
 
 // Multi-provider AI system for cost optimization
 // Priority: Gemini Flash (cheapest) -> Claude Haiku -> OpenAI (fallback)
@@ -15,7 +15,7 @@ interface AIProvider {
 
 function getProviders(): AIProvider[] {
   return [
-    { name: 'gemini-flash', inputCost: 0.075, outputCost: 0.30, available: !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY) },
+    { name: 'gemini-flash', inputCost: 0.075, outputCost: 0.30, available: isGeminiAvailable() },
     { name: 'claude-haiku', inputCost: 0.80, outputCost: 4.00, available: !!process.env.ANTHROPIC_API_KEY },
     { name: 'openai-gpt4o', inputCost: 5.00, outputCost: 15.00, available: !!process.env.OPENAI_API_KEY }
   ];
@@ -28,11 +28,6 @@ function getOpenAI() {
 
 function getAnthropic() {
   return process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null;
-}
-
-function getGemini() {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY;
-  return apiKey ? new GoogleGenAI({ apiKey }) : null;
 }
 
 interface MultiAIRequest {
@@ -108,11 +103,10 @@ export async function generateWithMultiProvider(request: MultiAIRequest): Promis
 }
 
 async function generateWithGemini(prompt: string) {
-  const gemini = getGemini();
-  if (!gemini) return null;
+  if (!isGeminiAvailable()) return null;
 
   try {
-    const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = getTextModel();
     const response = await model.generateContent({
       contents: [
         {
@@ -120,41 +114,26 @@ async function generateWithGemini(prompt: string) {
           parts: [{ text: prompt }]
         }
       ],
-      generationConfig: {
+      config: {
         temperature: 0.8,
         maxOutputTokens: 1500
       }
     });
 
-    const modelResponse = response.response;
-
-    if (!modelResponse) {
-      safeLog('warn', 'Gemini provider returned empty response', {});
-      return null;
-    }
-
-
-    let text = '';
-
-    if (typeof modelResponse.text === 'function') {
-      const responseText = modelResponse.text();
-      if (typeof responseText === 'string') {
-        text = responseText.trim();
-      }
-    }
+    let text = typeof response.text === 'string' ? response.text.trim() : '';
 
     if (!text) {
-      const candidates = (modelResponse as { candidates?: Array<unknown> }).candidates;
+      const candidates = response.candidates;
       if (Array.isArray(candidates)) {
         for (const candidate of candidates) {
           if (!candidate || typeof candidate !== 'object') {
             continue;
           }
-          const content = (candidate as { content?: unknown }).content;
-          if (!content || typeof content !== 'object') {
+          const candidateContent = (candidate as { content?: unknown }).content;
+          if (!candidateContent || typeof candidateContent !== 'object') {
             continue;
           }
-          const parts = (content as { parts?: Array<unknown> }).parts;
+          const parts = (candidateContent as { parts?: Array<unknown> }).parts;
           if (!Array.isArray(parts)) {
             continue;
           }
@@ -171,20 +150,22 @@ async function generateWithGemini(prompt: string) {
           if (text) {
             break;
           }
-                  }
-                }
-              }
-              if (!text) {
-                safeLog('warn', 'Gemini provider returned empty response', {});
-                return null;
-              }
-              const trimmedText = text.trim();
-              if (trimmedText.length === 0) {
+        }
+      }
+    }
+
+    if (!text) {
+      safeLog('warn', 'Gemini provider returned empty response', {});
+      return null;
+    }
+
+    const trimmedText = text.trim();
+    if (trimmedText.length === 0) {
       safeLog('warn', 'Gemini provider returned no text', {});
       return null;
     }
 
-    // Try to parse as JSON, if it fails, create structured response
+    // Try to parse as JSON, if it fails, create structured response from the text
     let result;
     try {
       result = JSON.parse(trimmedText);

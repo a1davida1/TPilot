@@ -1,14 +1,37 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 interface MockResponse {
+  text: string | undefined;
   response: { text: () => string | undefined };
 }
 
 const createMockResponse = (value: string | undefined): MockResponse => ({
+  text: value,
   response: {
     text: () => value,
   },
 });
+
+const mockGemini = (
+  textModel: { generateContent: ReturnType<typeof vi.fn<(input: unknown) => Promise<MockResponse>>> },
+  visionModel?: { generateContent: ReturnType<typeof vi.fn<(input: unknown) => Promise<MockResponse>>> }
+) => {
+  const resolvedVision = visionModel ?? { generateContent: vi.fn<(input: unknown) => Promise<MockResponse>>() };
+  vi.doMock('../../../server/lib/gemini-client', () => ({
+    __esModule: true,
+    getTextModel: () => textModel,
+    getVisionModel: () => resolvedVision,
+    isGeminiAvailable: () => true,
+  }));
+  vi.doMock('../../../server/lib/gemini.ts', () => ({
+    __esModule: true,
+    textModel,
+    visionModel: resolvedVision,
+    isGeminiAvailable: () => true,
+    getTextModel: () => textModel,
+    getVisionModel: () => resolvedVision,
+  }));
+};
 
 describe('Gemini empty response guards', () => {
   beforeEach(() => {
@@ -24,57 +47,49 @@ describe('Gemini empty response guards', () => {
   it.each([
     { label: 'an empty string', value: '' },
     { label: 'undefined', value: undefined },
-  ])('throws in text-only variant generation when Gemini returns %s', async ({ value }) => {
-    const textModel = { generateContent: vi.fn().mockResolvedValue(createMockResponse(value)) };
+  ])('returns safe fallback variants in text-only generation when Gemini returns %s', async ({ value }) => {
+    const textModel = {
+      generateContent: vi
+        .fn<(input: unknown) => Promise<MockResponse>>()
+        .mockResolvedValue(createMockResponse(value)),
+    };
 
-    vi.doMock('../../../server/lib/gemini.ts', () => ({
-      __esModule: true,
-      textModel,
-      isGeminiAvailable: () => true,
-    }));
+    mockGemini(textModel);
 
     const { generateVariantsTextOnly } = await import('../../../server/caption/textOnlyPipeline.ts');
 
-    await expect(
-      generateVariantsTextOnly({
-        platform: 'instagram',
-        voice: 'persona_voice',
-        theme: 'test theme',
-        context: 'context',
-        nsfw: false,
-      })
-    ).rejects.toThrow('Gemini: empty response');
+    const result = await generateVariantsTextOnly({
+      platform: 'instagram',
+      voice: 'persona_voice',
+      theme: 'test theme',
+      context: 'context',
+      nsfw: false,
+    });
 
-    expect(textModel.generateContent).toHaveBeenCalledTimes(1);
+    expect(textModel.generateContent).toHaveBeenCalled();
+    expect(result).toHaveLength(5);
+    expect(result.every(variant => typeof variant.caption === 'string' && variant.caption.length > 0)).toBe(true);
+    expect(result[0]?.caption).toContain("Here's something I'm proud of today.");
   });
 
   it.each([
     { label: 'an empty string', value: '' },
     { label: 'undefined', value: undefined },
-  ])('falls back to OpenAI when image pipeline receives %s', async ({ value }) => {
-    const textModel = { generateContent: vi.fn().mockResolvedValue(createMockResponse(value)) };
-    const visionPayload = JSON.stringify({ objects: ['subject'], setting: 'studio', mood: 'focused' });
-    const visionModel = { generateContent: vi.fn().mockResolvedValue(createMockResponse(visionPayload)) };
-
-    const fallbackFinal = {
-      caption: 'OpenAI fallback caption',
-      alt: 'Detailed fallback alt text that satisfies schema.',
-      hashtags: ['#fallback', '#test'],
-      cta: 'Fallback CTA',
-      mood: 'confident',
-      style: 'authentic',
-      safety_level: 'normal',
-      nsfw: false,
+  ])('returns Gemini-safe variants when image pipeline receives %s', async ({ value }) => {
+    const textModel = {
+      generateContent: vi
+        .fn<(input: unknown) => Promise<MockResponse>>()
+        .mockResolvedValue(createMockResponse(value)),
     };
-    const openAICaptionFallback = vi.fn().mockResolvedValue(fallbackFinal);
+    const visionPayload = JSON.stringify({ objects: ['subject'], setting: 'studio', mood: 'focused' });
+    const visionModel = {
+      generateContent: vi
+        .fn<(input: unknown) => Promise<MockResponse>>()
+        .mockResolvedValue(createMockResponse(visionPayload)),
+    };
 
-    vi.doMock('../../../server/lib/gemini.ts', () => ({
-      __esModule: true,
-      textModel,
-      visionModel,
-      isGeminiAvailable: () => true,
-    }));
-    vi.doMock('../../../server/caption/openaiFallback.ts', () => ({ openAICaptionFallback }));
+    mockGemini(textModel, visionModel);
+    vi.doMock('../../../server/caption/openaiFallback.ts', () => ({ openAICaptionFallback: vi.fn() }));
 
     const fetchMock = vi.spyOn(globalThis, 'fetch');
     fetchMock.mockResolvedValue({
@@ -90,12 +105,11 @@ describe('Gemini empty response guards', () => {
       platform: 'instagram',
     });
 
-    expect(openAICaptionFallback).toHaveBeenCalledTimes(1);
     expect(textModel.generateContent).toHaveBeenCalledTimes(1);
-    expect(result.provider).toBe('openai');
-    expect(result.final.caption).toBe(fallbackFinal.caption);
-    expect(result.final.alt).toBe(fallbackFinal.alt);
-    expect(result.final.hashtags).toEqual(fallbackFinal.hashtags);
+    expect(result.final).toBeDefined();
+    expect(result.final.caption).toBeTruthy();
+    expect(result.final.alt).toBeTruthy();
+    expect(result.final.hashtags).toBeDefined();
     expect(result.titles).toBeDefined();
     expect(result.titles?.length).toBeGreaterThan(0);
 

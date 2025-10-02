@@ -190,6 +190,63 @@ describe('openAICaptionFallback safe responses', () => {
     consoleSpy.mockRestore();
   });
 
+  it('normalizes whitespace in base64 image payloads before sending to OpenAI', async () => {
+    vi.resetModules();
+    process.env.OPENAI_API_KEY = 'test-key';
+    process.env.NODE_ENV = 'development';
+    delete process.env.CAPTION_DEBUG_IMAGES;
+
+    const base64PayloadWithWhitespace = `${'A'.repeat(50)} ${'B'.repeat(50)}\n${'C'.repeat(50)} DDDD==`;
+    const imageUrl = `data:image/png;base64,${base64PayloadWithWhitespace}`;
+    const expectedImageUrl = `data:image/png;base64,${base64PayloadWithWhitespace.replace(/\s+/g, '')}`;
+
+    mockOpenAIInstance.chat.completions.create.mockResolvedValueOnce({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              caption: 'Caption',
+              hashtags: ['#tag'],
+              cta: 'CTA',
+              alt: 'Alt',
+              safety_level: 'normal',
+              mood: 'confident',
+              style: 'authentic',
+              nsfw: false
+            })
+          }
+        }
+      ]
+    });
+
+    const { openAICaptionFallback } = await import('../openaiFallback');
+
+    await openAICaptionFallback({ platform: 'instagram', voice: 'confident', imageUrl });
+
+    expect(mockOpenAIInstance.chat.completions.create).toHaveBeenCalledTimes(1);
+    const callArgs = mockOpenAIInstance.chat.completions.create.mock.calls[0]?.[0];
+    expect(callArgs && typeof callArgs === 'object').toBe(true);
+
+    const messages = (callArgs as { messages: Array<{ role: string; content: unknown }> }).messages;
+    const userMessage = messages.find(message => message.role === 'user');
+    expect(userMessage).toBeDefined();
+    if (!userMessage) throw new Error('Expected user message to be defined');
+
+    expect(Array.isArray(userMessage.content)).toBe(true);
+    if (!Array.isArray(userMessage.content)) throw new Error('Expected user message content to be an array');
+
+    const imageContent = userMessage.content.find(
+      (part): part is { type: string; image_url?: { url?: string } } =>
+        typeof part === 'object' &&
+        part !== null &&
+        'type' in part &&
+        (part as { type?: unknown }).type === 'image_url'
+    );
+
+    expect(imageContent?.image_url?.url).toBe(expectedImageUrl);
+    expect(imageContent?.image_url?.url?.includes(' ')).toBe(false);
+  });
+
   it('redacts data URL diagnostics when debug logging enabled', async () => {
     vi.resetModules();
     process.env.OPENAI_API_KEY = 'test-key';

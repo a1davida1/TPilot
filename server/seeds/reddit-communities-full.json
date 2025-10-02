@@ -9,8 +9,9 @@
     "verificationRequired": true,
     "promotionAllowed": "no",
     "postingLimits": {
-      "daily": 3,
-      "weekly": 10
+      "perDay": 3,
+      "perWeek": 10,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening",
@@ -66,7 +67,9 @@
     "verificationRequired": false,
     "promotionAllowed": "no",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -119,7 +122,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 5
+      "perDay": 5,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "afternoon",
@@ -175,7 +180,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "afternoon"
@@ -229,7 +236,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening",
@@ -284,7 +293,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -338,7 +349,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "afternoon",
@@ -393,7 +406,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -445,7 +460,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -499,7 +516,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 5
+      "perDay": 5,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "all_day"
@@ -554,7 +573,9 @@
     "verificationRequired": false,
     "promotionAllowed": "no",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -608,7 +629,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -662,7 +685,9 @@
     "verificationRequired": false,
     "promotionAllowed": "no",
     "postingLimits": {
-      "daily": 1
+      "perDay": 1,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "afternoon"
@@ -716,7 +741,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 1
+      "perDay": 1,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -770,7 +797,9 @@
     "verificationRequired": false,
     "promotionAllowed": "no",
     "postingLimits": {
-      "daily": 1
+      "perDay": 1,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -824,7 +853,9 @@
     "verificationRequired": false,
     "promotionAllowed": "no",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -877,7 +908,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "afternoon",
@@ -932,7 +965,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -986,7 +1021,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -1041,7 +1078,9 @@
     "verificationRequired": false,
     "promotionAllowed": "no",
     "postingLimits": {
-      "daily": 1
+      "perDay": 1,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "afternoon"
@@ -1095,7 +1134,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 1
+      "perDay": 1,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -1150,7 +1191,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 1
+      "perDay": 1,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -1204,7 +1247,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 1
+      "perDay": 1,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -1258,7 +1303,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -1312,7 +1359,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -1366,7 +1415,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -1420,7 +1471,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "afternoon"
@@ -1474,7 +1527,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -1528,7 +1583,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "all_day"
@@ -1582,7 +1639,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 5
+      "perDay": 5,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "all_day"
@@ -1636,7 +1695,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -1690,7 +1751,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -1744,7 +1807,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 5
+      "perDay": 5,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "all_day"
@@ -1798,7 +1863,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "afternoon",
@@ -1853,7 +1920,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -1907,7 +1976,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -1961,7 +2032,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -2015,7 +2088,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "morning",
@@ -2070,7 +2145,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "morning"
@@ -2124,7 +2201,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "afternoon"
@@ -2178,7 +2257,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "afternoon"
@@ -2232,7 +2313,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -2286,7 +2369,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -2340,7 +2425,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -2394,7 +2481,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -2448,7 +2537,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -2502,7 +2593,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -2556,7 +2649,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -2610,7 +2705,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -2664,7 +2761,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -2718,7 +2817,9 @@
     "verificationRequired": false,
     "promotionAllowed": "no",
     "postingLimits": {
-      "daily": 1
+      "perDay": 1,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -2772,7 +2873,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -2826,7 +2929,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening",
@@ -2881,7 +2986,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -2935,7 +3042,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -2989,7 +3098,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -3043,7 +3154,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 4
+      "perDay": 4,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -3097,7 +3210,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -3151,7 +3266,9 @@
     "verificationRequired": true,
     "promotionAllowed": "no",
     "postingLimits": {
-      "daily": 1
+      "perDay": 1,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -3205,7 +3322,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -3259,7 +3378,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 4
+      "perDay": 4,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "all_day"
@@ -3313,7 +3434,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "afternoon",
@@ -3368,7 +3491,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "afternoon"
@@ -3422,7 +3547,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 4
+      "perDay": 4,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "all_day"
@@ -3476,7 +3603,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 5
+      "perDay": 5,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "all_day"
@@ -3530,7 +3659,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -3584,7 +3715,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -3638,7 +3771,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -3692,7 +3827,9 @@
     "verificationRequired": false,
     "promotionAllowed": "no",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -3746,7 +3883,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -3800,7 +3939,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -3854,7 +3995,9 @@
     "verificationRequired": true,
     "promotionAllowed": "no",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -3908,7 +4051,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -3962,7 +4107,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -4016,7 +4163,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -4070,7 +4219,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -4124,7 +4275,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -4178,7 +4331,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -4232,7 +4387,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -4286,7 +4443,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -4340,7 +4499,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -4394,7 +4555,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -4448,7 +4611,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -4502,7 +4667,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -4556,7 +4723,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -4610,7 +4779,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -4664,7 +4835,9 @@
     "verificationRequired": true,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 5
+      "perDay": 5,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "all_day"
@@ -4718,7 +4891,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -4772,7 +4947,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -4826,7 +5003,9 @@
     "verificationRequired": false,
     "promotionAllowed": "yes",
     "postingLimits": {
-      "daily": 3
+      "perDay": 3,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"
@@ -4880,7 +5059,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "afternoon"
@@ -4934,7 +5115,9 @@
     "verificationRequired": false,
     "promotionAllowed": "no",
     "postingLimits": {
-      "daily": 1
+      "perDay": 1,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "afternoon"
@@ -4988,7 +5171,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -5042,7 +5227,9 @@
     "verificationRequired": false,
     "promotionAllowed": "limited",
     "postingLimits": {
-      "daily": 2
+      "perDay": 2,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "night"
@@ -5096,7 +5283,9 @@
     "verificationRequired": false,
     "promotionAllowed": "no",
     "postingLimits": {
-      "daily": 1
+      "perDay": 1,
+      "perWeek": null,
+      "cooldownHours": null
     },
     "bestPostingTimes": [
       "evening"

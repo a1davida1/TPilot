@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 interface MockGeminiResponse {
+  text: string;
   response: { text: () => string };
 }
 
@@ -17,12 +18,36 @@ interface MockVariant {
 }
 
 const createTextModelMock = () => ({
-  generateContent: vi.fn()
+  generateContent: vi.fn<(input: unknown) => Promise<MockGeminiResponse>>()
 });
 
 const createMockResponse = (payload: string): MockGeminiResponse => ({
+  text: payload,
   response: { text: () => payload }
 });
+
+type GeminiModelMock = { generateContent: ReturnType<typeof createTextModelMock>['generateContent'] };
+
+const mockGeminiModules = (
+  textModel: ReturnType<typeof createTextModelMock>,
+  visionModel: GeminiModelMock = { generateContent: vi.fn<(input: unknown) => Promise<MockGeminiResponse>>() },
+  isAvailable: () => boolean = () => true
+) => {
+  vi.doMock('../../../server/lib/gemini-client', () => ({
+    __esModule: true,
+    getTextModel: () => textModel,
+    getVisionModel: () => visionModel,
+    isGeminiAvailable: isAvailable,
+  }));
+  vi.doMock('../../../server/lib/gemini.ts', () => ({
+    __esModule: true,
+    textModel,
+    visionModel,
+    isGeminiAvailable: isAvailable,
+    getTextModel: () => textModel,
+    getVisionModel: () => visionModel,
+  }));
+};
 
 const createVariantSet = (caption: string, hashtags: string[]) => {
   const failingCaptionDescriptors = [
@@ -152,14 +177,9 @@ describe('Gemini pipelines keep persona tone on retry', () => {
 
   it('forwards tone fields on image pipeline retry', async () => {
     const textModel = createTextModelMock();
-    const visionModel = { generateContent: vi.fn() };
+    const visionModel: GeminiModelMock = { generateContent: vi.fn<(input: unknown) => Promise<MockGeminiResponse>>() };
 
-    vi.doMock('../../../server/lib/gemini.ts', () => ({
-      __esModule: true,
-      textModel,
-      visionModel,
-      isGeminiAvailable: () => true,
-    }));
+    mockGeminiModules(textModel, visionModel);
 
     const fetchMock = vi.spyOn(global, 'fetch');
     fetchMock.mockResolvedValue({
@@ -168,9 +188,11 @@ describe('Gemini pipelines keep persona tone on retry', () => {
       arrayBuffer: async () => Buffer.alloc(256, 1)
     } as unknown as Response);
 
-    visionModel.generateContent.mockResolvedValue({
-      response: { text: () => JSON.stringify({ objects: ['subject'], setting: 'studio', mood: 'focused' }) }
-    });
+    visionModel.generateContent.mockResolvedValue(
+      createMockResponse(
+        JSON.stringify({ objects: ['subject'], setting: 'studio', mood: 'focused' })
+      )
+    );
 
     const geminiModule = await import('../../../server/caption/geminiPipeline.ts');
 
@@ -201,14 +223,9 @@ describe('Gemini pipelines keep persona tone on retry', () => {
 
   it('forwards tone fields on rewrite pipeline retry', async () => {
     const textModel = createTextModelMock();
-    const visionModel = { generateContent: vi.fn() };
+    const visionModel: GeminiModelMock = { generateContent: vi.fn<(input: unknown) => Promise<MockGeminiResponse>>() };
 
-    vi.doMock('../../../server/lib/gemini.ts', () => ({
-      __esModule: true,
-      textModel,
-      visionModel,
-      isGeminiAvailable: () => true,
-    }));
+    mockGeminiModules(textModel, visionModel);
 
     const rewriteModule = await import('../../../server/caption/rewritePipeline.ts');
 
@@ -238,11 +255,7 @@ describe('Gemini pipelines keep persona tone on retry', () => {
   it('forwards tone fields on text-only pipeline retry', async () => {
     const textModel = createTextModelMock();
 
-    vi.doMock('../../../server/lib/gemini.ts', () => ({
-      __esModule: true,
-      textModel,
-      isGeminiAvailable: () => true,
-    }));
+    mockGeminiModules(textModel);
 
     const textOnlyModule = await import('../../../server/caption/textOnlyPipeline.ts');
 

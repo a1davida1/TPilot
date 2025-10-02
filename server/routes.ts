@@ -10,33 +10,33 @@ import { Pool } from 'pg';
 import Redis from 'ioredis';
 
 // Security and middleware
-import { validateEnvironment, securityMiddleware, ipLoggingMiddleware, errorHandler, logger, generationLimiter } from "./middleware/security";
-import { AppError, CircuitBreaker } from "./lib/errors";
-import { authenticateToken } from "./middleware/auth";
-import { createSessionMiddleware } from "./bootstrap/session";
+import { validateEnvironment, securityMiddleware, ipLoggingMiddleware, errorHandler, logger, generationLimiter } from "./middleware/security.js";
+import { AppError, CircuitBreaker } from "./lib/errors.js";
+import { authenticateToken } from "./middleware/auth.js";
+import { createSessionMiddleware } from "./bootstrap/session.js";
 
 // Route modules
 // import { authRoutes } from "./routes/auth.js"; // Removed - using server/auth.ts instead
-import { uploadRoutes, applyImageShieldProtection, protectionPresets } from "./routes/upload";
-import { mediaRoutes } from "./routes/media";
-import { analyticsRouter } from "./routes/analytics";
-import { referralRouter } from "./routes/referrals";
+import { uploadRoutes, applyImageShieldProtection, protectionPresets } from "./routes/upload.js";
+import { mediaRoutes } from "./routes/media.js";
+import { analyticsRouter } from "./routes/analytics.js";
+import { referralRouter } from "./routes/referrals.js";
 // import { getOpenApiRouter } from "./routes/openapi.js"; // Commented out - file missing
-import { registerExpenseRoutes } from "./expense-routes";
-import { adminCommunitiesRouter } from "./routes/admin-communities";
-import { createCancelSubscriptionHandler } from "./routes/subscription-management";
-import { createLocalDownloadRouter } from "./routes/downloads";
+import { registerExpenseRoutes } from "./expense-routes.js";
+import { adminCommunitiesRouter } from "./routes/admin-communities.js";
+import { createCancelSubscriptionHandler } from "./routes/subscription-management.js";
+import { createLocalDownloadRouter } from "./routes/downloads.js";
 
 // Core imports
-import { storage } from "./storage";
-import { setupAdminRoutes, requireAdmin } from "./admin-routes";
-import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers";
-import { deriveStripeConfig } from "./payments/stripe-config";
-import { buildUploadUrl } from "./lib/uploads";
-import { API_PREFIX, prefixApiPath } from "./lib/api-prefix";
-import { setupAuth } from "./auth";
-import { setupSocialAuth } from "./social-auth";
-import { mountBillingRoutes } from "./routes/billing";
+import { storage } from "./storage.js";
+import { setupAdminRoutes, requireAdmin } from "./admin-routes.js";
+import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers.js";
+import { deriveStripeConfig } from "./payments/stripe-config.js";
+import { buildUploadUrl } from "./lib/uploads.js";
+import { API_PREFIX, prefixApiPath } from "./lib/api-prefix.js";
+import { setupAuth } from "./auth.js";
+import { setupSocialAuth } from "./social-auth.js";
+import { mountBillingRoutes } from "./routes/billing.js";
 
 export function buildCsrfProtectedRoutes(apiPrefix: string = API_PREFIX): string[] {
   return [

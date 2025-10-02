@@ -1,4 +1,3 @@
-import { GoogleGenAI } from "@google/genai";
 import OpenAI from "openai";
 import crypto from "crypto";
 import { env } from "./config.js";
@@ -6,11 +5,11 @@ import { db } from "../db.js";
 import { aiGenerations, users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { assertExists } from "../../helpers/assert";
+import { getTextModel, isGeminiAvailable } from "./gemini-client";
 
 // AI service initialization
 // Use Gemini as primary (checking both GOOGLE_GENAI_API_KEY and GEMINI_API_KEY), OpenAI as fallback
-const geminiApiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY || env.GOOGLE_GENAI_API_KEY || env.GEMINI_API_KEY || '';
-const gemini = geminiApiKey ? new GoogleGenAI({ apiKey: geminiApiKey }) : null;
+const geminiModelName = process.env.GEMINI_TEXT_MODEL || env.GEMINI_TEXT_MODEL;
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
 
 export interface ContentGenerationRequest {
@@ -102,27 +101,26 @@ export class AiService {
   }
   
   private static async generateWithGemini(input: GenerationInput): Promise<Omit<AiResponse, 'cached'>> {
-    if (!gemini) {
+    if (!isGeminiAvailable()) {
       throw new Error("Gemini API not configured - API key is missing");
     }
-    
-    const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash" });
-    
+
+    const model = getTextModel();
+
     const systemPrompt = this.buildSystemPrompt(input.platforms, input.styleHints);
     const userPrompt = input.prompt ?? "Generate engaging content for adult content creator";
-    
-    const result = await model.generateContent([
+
+    const response = await model.generateContent([
       { text: systemPrompt },
       { text: userPrompt },
     ]);
-    
-    const response = await result.response;
-    const content = this.parseGeminiResponse(response.text(), input.platforms);
-    
+
+    const content = this.parseGeminiResponse(response.text ?? "", input.platforms);
+
     return {
       content,
       tokensUsed: response.usageMetadata?.totalTokenCount || 0,
-      model: "gemini-1.5-flash",
+      model: geminiModelName,
     };
   }
   

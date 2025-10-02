@@ -71,7 +71,10 @@ const buildRedirectLocation = (intent: RedditOAuthIntent, username: string, queu
 
   switch (intent) {
     case 'posting':
-      return `/reddit?${params.toString()}`;
+      {
+        const queryString = params.toString();
+        return queryString ? `/reddit?${queryString}` : '/reddit';
+      }
     case 'intelligence':
       params.set('tab', 'intelligence');
       return `/phase4?${params.toString()}`;

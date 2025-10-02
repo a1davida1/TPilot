@@ -5,8 +5,7 @@ import { safeFallbackCaption, safeFallbackCta, safeFallbackHashtags } from './ra
 import { CaptionArray, CaptionItem, type CaptionVariants, type CaptionVariant } from './schema';
 import { serializePromptField } from './promptUtils';
 import { formatVoiceContext } from './voiceTraits';
-import { validateImageUrl, logImageInfo } from './lib/images';
-import { normalizeImageForOpenAI } from './util/normalizeImage';
+import { validateImageUrl, logImageInfo, toOpenAIImageUrl } from './lib/images';
 
 function isImageDiagnosticsEnabled(): boolean {
   if (process.env.NODE_ENV === 'production') {
@@ -206,16 +205,15 @@ export async function openAICaptionFallback({
   if (imageUrl) {
     try {
       console.error('OpenAI fallback: Analyzing image for accurate captions');
-      const normalized = normalizeImageForOpenAI(imageUrl);
-      if (!normalized || !validateImageUrl(normalized)) {
+      const sanitizedUrl = toOpenAIImageUrl(imageUrl);
+      if (!sanitizedUrl || !validateImageUrl(sanitizedUrl)) {
         throw new Error('Invalid or too short image data');
       }
 
       if (isImageDiagnosticsEnabled()) {
         const requestId = `openai-${Date.now()}`;
-        logImageInfo(normalized, requestId);
+        logImageInfo(sanitizedUrl, requestId);
       }
-
       messages = [
         {
           role: 'system',
@@ -232,7 +230,7 @@ export async function openAICaptionFallback({
             },
             {
               type: 'image_url',
-              image_url: { url: normalized },
+              image_url: { url: sanitizedUrl },
             },
           ],
         },

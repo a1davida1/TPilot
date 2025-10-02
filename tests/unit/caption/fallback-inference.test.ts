@@ -1,20 +1,49 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { Mock } from 'vitest';
 
+const createGeminiResponse = (payload: unknown) => {
+  const text = typeof payload === 'string' ? payload : JSON.stringify(payload);
+  return {
+    text,
+    response: { text: () => text },
+  };
+};
+
+type GeminiMockResponse = ReturnType<typeof createGeminiResponse>;
+
+const mockTextModel = {
+  generateContent: vi.fn<(input: unknown) => Promise<GeminiMockResponse>>(),
+};
+
+const mockVisionModel = {
+  generateContent: vi.fn<(input: unknown) => Promise<GeminiMockResponse>>(),
+};
+
+const mockIsGeminiAvailable = vi.fn(() => true);
+
+vi.mock('../../../server/lib/gemini-client', () => ({
+  __esModule: true,
+  getTextModel: () => mockTextModel,
+  getVisionModel: () => mockVisionModel,
+  isGeminiAvailable: mockIsGeminiAvailable,
+}));
+
 vi.mock('../../../server/lib/gemini.ts', () => ({
   __esModule: true,
-  textModel: {
-    generateContent: vi.fn(),
-  },
-  visionModel: {
-    generateContent: vi.fn(),
-  },
-  isGeminiAvailable: vi.fn(() => true),
+  textModel: mockTextModel,
+  visionModel: mockVisionModel,
+  isGeminiAvailable: mockIsGeminiAvailable,
+  getTextModel: () => mockTextModel,
+  getVisionModel: () => mockVisionModel,
 }));
 
 describe('inferFallbackFromFacts helper', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockTextModel.generateContent.mockReset();
+    mockVisionModel.generateContent.mockReset();
+    mockIsGeminiAvailable.mockReset();
+    mockIsGeminiAvailable.mockReturnValue(true);
   });
 
   it('infers beach-centric fallbacks from image facts', async () => {
@@ -48,11 +77,12 @@ describe('inferFallbackFromFacts helper', () => {
 });
 
 describe('pipeline fallbacks', () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.clearAllMocks();
-    const { textModel, visionModel } = await import('../../../server/lib/gemini.ts');
-    (textModel.generateContent as unknown as Mock)?.mockReset?.();
-    (visionModel.generateContent as unknown as Mock)?.mockReset?.();
+    mockTextModel.generateContent.mockReset();
+    mockVisionModel.generateContent.mockReset();
+    mockIsGeminiAvailable.mockReset();
+    mockIsGeminiAvailable.mockReturnValue(true);
   });
 
   it('fills missing variant fields with contextual beach data', async () => {
@@ -109,12 +139,9 @@ describe('pipeline fallbacks', () => {
       },
     ];
 
-    const { textModel } = await import('../../../server/lib/gemini.ts');
-    (textModel.generateContent as unknown as Mock).mockResolvedValueOnce({
-      response: {
-        text: () => JSON.stringify(variantPayload),
-      },
-    });
+    mockTextModel.generateContent.mockResolvedValueOnce(
+      createGeminiResponse(variantPayload)
+    );
 
     const { generateVariants } = await import('../../../server/caption/geminiPipeline.ts');
     const variants = await generateVariants({
@@ -187,12 +214,9 @@ describe('pipeline fallbacks', () => {
       },
     ];
 
-    const { textModel } = await import('../../../server/lib/gemini.ts');
-    (textModel.generateContent as unknown as Mock).mockResolvedValueOnce({
-      response: {
-        text: () => JSON.stringify(variantPayload),
-      },
-    });
+    mockTextModel.generateContent.mockResolvedValueOnce(
+      createGeminiResponse(variantPayload)
+    );
 
     const { generateVariantsTextOnly } = await import('../../../server/caption/textOnlyPipeline.ts');
     const variants = await generateVariantsTextOnly({

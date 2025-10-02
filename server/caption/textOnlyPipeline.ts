@@ -22,9 +22,8 @@ import {
 } from "./rankGuards";
 
 type GeminiResponse = {
-  response?: {
-    text(): string;
-  };
+  text?: (() => unknown) | string;
+  response?: unknown;
 };
 
 const _MAX_VARIANT_ATTEMPTS = 4;
@@ -123,43 +122,41 @@ function stripToJSON(txt:string){ const i=Math.min(...[txt.indexOf("{"),txt.inde
 type ResponseTextFunction = () => unknown;
 
 interface GeminiTextEnvelope {
-  response?: {
-    text?: ResponseTextFunction | string;
-  };
-}
-
-type TextModelFunction = (prompt: Array<{ text: string }>) => Promise<unknown>;
-
-interface TextModelObject {
-  generateContent(prompt: Array<{ text: string }>): Promise<unknown>;
+  text?: ResponseTextFunction | string;
+  response?: unknown;
 }
 
 async function invokeTextModel(prompt: Array<{ text: string }>): Promise<unknown> {
-  const model = getTextModel() as unknown;
-  if (typeof model === "function") {
-    return await (model as TextModelFunction)(prompt);
-  }
-  if (model && typeof (model as TextModelObject).generateContent === "function") {
-    return await (model as TextModelObject).generateContent(prompt);
-  }
-  throw new Error("Gemini text model is neither callable nor exposes generateContent");
+  const model = getTextModel();
+  return model.generateContent(prompt);
 }
 
 async function resolveResponseText(payload: unknown): Promise<string | undefined> {
+  const ensureNonEmpty = (value: string): string => {
+    if (value.trim().length === 0) {
+      throw new Error("Gemini: empty response");
+    }
+    return value;
+  };
+
+  if (typeof payload === "string") {
+    return ensureNonEmpty(payload);
+  }
+
   if (!payload || typeof payload !== "object") {
     return undefined;
   }
-  const { response } = payload as GeminiTextEnvelope;
-  if (!response) {
-    return undefined;
+
+  const { text, response } = payload as GeminiTextEnvelope;
+  if (typeof text === "string") {
+    return ensureNonEmpty(text);
   }
-  const { text } = response;
   if (typeof text === "function") {
     const value = await Promise.resolve(text());
-    return typeof value === "string" ? value : undefined;
+    return typeof value === "string" ? ensureNonEmpty(value) : undefined;
   }
-  if (typeof text === "string") {
-    return text;
+  if (response) {
+    return resolveResponseText(response);
   }
   return undefined;
 }
@@ -245,7 +242,7 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
   ]);
   const textModel = getTextModel();
 
-  const _voiceGuide = buildVoiceGuideBlock(params.voice);
+  const voiceGuide = buildVoiceGuideBlock(params.voice);
   const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === "object" && value !== null;
 
@@ -356,29 +353,41 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
     const fallbackBatch = buildFallbackBatch();
     let candidates: unknown[] = fallbackBatch;
 
-    try {
-      const textModel = getTextModel();
-      const response = await textModel.generateContent([
-        { text: `${sysWithTone}\n${guard}\n${prompt}\n${user}` }
-      ]);
+    const promptSections = [sysWithTone, guard, prompt, user];
+    if (voiceGuide) {
+      promptSections.push(voiceGuide);
+    }
 
-      const rawText = await resolveResponseText(response);
-      if (typeof rawText === "string" && rawText.trim().length > 0) {
-        try {
-          const json = stripToJSON(rawText);
-          if (Array.isArray(json)) {
-            candidates = json;
-          } else {
-            console.error("Gemini: variant payload was not an array in text-only pipeline");
-          }
-        } catch (parseError) {
-          console.error("Gemini text-only variant parsing failed:", parseError);
-        }
-      } else {
-        console.error("Gemini: empty response received in text-only pipeline");
-      }
+    let response: unknown;
+    try {
+      response = await textModel.generateContent([
+        { text: promptSections.join("\n") }
+      ]);
     } catch (error) {
       console.error("Gemini textModel.generateContent failed:", error);
+      throw error;
+    }
+
+    let rawText: string | undefined;
+    try {
+      rawText = await resolveResponseText(response);
+    } catch (error) {
+      console.error("Gemini: empty response received in text-only pipeline");
+      throw error;
+    }
+    if (!rawText) {
+      console.error("Gemini: empty response received in text-only pipeline");
+      throw new Error("Gemini: empty response");
+    }
+
+    try {
+      const json = stripToJSON(rawText);
+      if (Array.isArray(json)) {
+        return json;
+      }
+      console.error("Gemini: variant payload was not an array in text-only pipeline");
+    } catch (parseError) {
+      console.error("Gemini text-only variant parsing failed:", parseError);
     }
 
     return candidates;

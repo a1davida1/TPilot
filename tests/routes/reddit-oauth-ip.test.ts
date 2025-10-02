@@ -201,7 +201,7 @@ describe('Reddit OAuth IP normalization', () => {
 
     expect(callbackResponse.status).toBe(302);
     const redirectLocation = callbackResponse.headers['location'];
-    expect(redirectLocation).toContain('/reddit?');
+    expect(redirectLocation?.startsWith('/reddit?')).toBe(true);
     expect(redirectLocation).toContain('intent=posting');
     expect(redirectLocation).toContain('queue=reddit-posting');
   });
@@ -232,7 +232,7 @@ describe('Reddit OAuth IP normalization', () => {
 
     expect(callbackResponse.status).toBe(302);
     const redirectLocation = callbackResponse.headers['location'];
-    expect(redirectLocation).toContain('/reddit?');
+    expect(redirectLocation?.startsWith('/phase4?')).toBe(true);
     expect(redirectLocation).toContain('intent=intelligence');
     expect(redirectLocation).toContain('tab=intelligence');
     expect(redirectLocation).toContain('queue=intelligence-dashboard');

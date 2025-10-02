@@ -58,6 +58,11 @@ export const normalizeRulesToStructured = (
     return null;
   }
 
+  const rawNotes: unknown =
+    typeof legacyRules === 'object' && legacyRules !== null
+      ? (legacyRules as { notes?: unknown }).notes
+      : undefined;
+
   return {
     eligibility: {
       minKarma: legacyRules.minKarma ?? null,
@@ -82,6 +87,6 @@ export const normalizeRulesToStructured = (
       maxPostsPerDay: legacyRules.maxPostsPerDay ?? null,
       cooldownHours: legacyRules.cooldownHours ?? null,
     },
-    notes: summarizeLegacyNotes(legacyRules.notes),
+    notes: summarizeLegacyNotes(rawNotes),
   };
 };

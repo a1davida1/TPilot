@@ -15,6 +15,9 @@ export const envSchema = z
   GOOGLE_GENAI_API_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
+  GEMINI_TEXT_MODEL: z.string().default("models/gemini-1.5-flash-latest"),
+  GEMINI_VISION_MODEL: z.string().default("models/gemini-1.5-flash-latest"),
+  GEMINI_API_VERSION: z.string().default("v1"),
   
   // AWS S3 (optional for development)
   AWS_ACCESS_KEY_ID: z.string().optional(),
@@ -146,6 +149,9 @@ try {
       GOOGLE_GENAI_API_KEY: process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY || '',
       GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
       OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
+      GEMINI_TEXT_MODEL: process.env.GEMINI_TEXT_MODEL || 'models/gemini-1.5-flash-latest',
+      GEMINI_VISION_MODEL: process.env.GEMINI_VISION_MODEL || 'models/gemini-1.5-flash-latest',
+      GEMINI_API_VERSION: process.env.GEMINI_API_VERSION || 'v1',
       AWS_ACCESS_KEY_ID: '',
       AWS_SECRET_ACCESS_KEY: '',
       AWS_REGION: 'us-east-1',

@@ -1,0 +1,248 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/server/caption/textOnlyPipeline.ts b/server/caption/textOnlyPipeline.ts
+index 9253c727ab5850dba4db2d130f21518d7f1f22ab..1bfe33a19e3e58f360134de551d24f297f8c693e 100644
+--- a/server/caption/textOnlyPipeline.ts
++++ b/server/caption/textOnlyPipeline.ts
+@@ -124,64 +124,71 @@ type ResponseTextFunction = () => unknown;
+ 
+ interface GeminiTextEnvelope {
+   response?: {
+     text?: ResponseTextFunction | string;
+   };
+ }
+ 
+ type TextModelFunction = (prompt: Array<{ text: string }>) => Promise<unknown>;
+ 
+ interface TextModelObject {
+   generateContent(prompt: Array<{ text: string }>): Promise<unknown>;
+ }
+ 
+ async function invokeTextModel(prompt: Array<{ text: string }>): Promise<unknown> {
+   const model = getTextModel() as unknown;
+   if (typeof model === "function") {
+     return await (model as TextModelFunction)(prompt);
+   }
+   if (model && typeof (model as TextModelObject).generateContent === "function") {
+     return await (model as TextModelObject).generateContent(prompt);
+   }
+   throw new Error("Gemini text model is neither callable nor exposes generateContent");
+ }
+ 
+ async function resolveResponseText(payload: unknown): Promise<string | undefined> {
++  const ensureNonEmpty = (value: string): string => {
++    if (value.trim().length === 0) {
++      throw new Error("Gemini: empty response");
++    }
++    return value;
++  };
++
+   if (!payload || typeof payload !== "object") {
+     return undefined;
+   }
+   const { response } = payload as GeminiTextEnvelope;
+   if (!response) {
+     return undefined;
+   }
+   const { text } = response;
+   if (typeof text === "function") {
+     const value = await Promise.resolve(text());
+-    return typeof value === "string" ? value : undefined;
++    return typeof value === "string" ? ensureNonEmpty(value) : undefined;
+   }
+   if (typeof text === "string") {
+-    return text;
++    return ensureNonEmpty(text);
+   }
+   return undefined;
+ }
+ 
+ function normalizeCaptionText(caption: string): string {
+   return caption
+     .normalize("NFKD")
+     .toLowerCase()
+     .replace(/[\u2018\u2019]/g, "'")
+     .replace(/[\u201c\u201d]/g, '"')
+     .replace(/[^\p{L}\p{N}]+/gu, " ")
+     .replace(/\s+/g, " ")
+     .trim();
+ }
+ 
+ function levenshtein(a: string, b: string): number {
+   const rows = a.length + 1;
+   const cols = b.length + 1;
+   const dist: number[][] = Array.from({ length: rows }, (_, i) => {
+     const row = new Array<number>(cols);
+     row[0] = i;
+     return row;
+   });
+ 
+   for (let j = 0; j < cols; j += 1) {
+diff --git a/server/caption/textOnlyPipeline.ts b/server/caption/textOnlyPipeline.ts
+index 9253c727ab5850dba4db2d130f21518d7f1f22ab..1bfe33a19e3e58f360134de551d24f297f8c693e 100644
+--- a/server/caption/textOnlyPipeline.ts
++++ b/server/caption/textOnlyPipeline.ts
+@@ -223,51 +230,51 @@ function captionsAreSimilar(a: string, b: string): boolean {
+   const unionSize = new Set([...tokensA, ...tokensB]).size || 1;
+   const jaccard = intersectionSize / unionSize;
+ 
+   return jaccard > 0.82;
+ }
+ 
+ type TextOnlyVariantParams = {
+   platform:"instagram"|"x"|"reddit"|"tiktok";
+   voice:string;
+   theme:string;
+   context?:string;
+   hint?:string;
+   nsfw?:boolean;
+   style?: string;
+   mood?: string;
+ };
+ 
+ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): Promise<z.infer<typeof CaptionArray>> {
+   const [sys, guard, prompt] = await Promise.all([
+     load("system.txt"),
+     load("guard.txt"),
+     load("variants_textonly.txt")
+   ]);
+   const textModel = getTextModel();
+ 
+-  const _voiceGuide = buildVoiceGuideBlock(params.voice);
++  const voiceGuide = buildVoiceGuideBlock(params.voice);
+   const isRecord = (value: unknown): value is Record<string, unknown> =>
+     typeof value === "object" && value !== null;
+ 
+   const sanitizeVariant = (item: Record<string, unknown>): z.infer<typeof CaptionItem> => {
+     const safetyLevel = normalizeSafetyLevel(
+       typeof item.safety_level === "string" ? item.safety_level : "normal"
+     );
+ 
+ 
+     const caption = typeof item.caption === "string" && item.caption.trim().length > 0
+       ? item.caption
+       : "Sharing something I'm proud of today.";
+ 
+     const mood = typeof item.mood === "string" && item.mood.trim().length >= 2
+       ? item.mood
+       : "engaging";
+     const style = typeof item.style === "string" && item.style.trim().length >= 2
+       ? item.style
+       : "authentic";
+     
+     const cta = typeof item.cta === "string" && item.cta.trim().length >= 2
+       ? item.cta
+       : "Comment your thoughts below! 💭";
+ 
+     const alt = typeof item.alt === "string" && item.alt.trim().length >= 20
+diff --git a/server/caption/textOnlyPipeline.ts b/server/caption/textOnlyPipeline.ts
+index 9253c727ab5850dba4db2d130f21518d7f1f22ab..1bfe33a19e3e58f360134de551d24f297f8c693e 100644
+--- a/server/caption/textOnlyPipeline.ts
++++ b/server/caption/textOnlyPipeline.ts
+@@ -334,73 +341,85 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
+ 
+   const buildFallbackBatch = () =>
+     Array.from({ length: VARIANT_TARGET }, (_, index) => ({
+       caption: `${safeFallbackCaption} (fallback ${index + 1})`,
+       alt: `${safeFallbackAlt} (fallback ${index + 1})`,
+       hashtags: [...safeFallbackHashtags],
+       cta: safeFallbackCta,
+       mood: params.mood ?? "engaging",
+       style: params.style ?? "authentic",
+       safety_level: "normal" as const,
+       nsfw: params.nsfw ?? false,
+     }));
+ 
+   const fetchVariants = async (varietyHint: string | undefined, existingCaptions: string[]) => {
+     const user = buildUserPrompt(varietyHint, existingCaptions);
+ 
+     // Apply tone to system prompt if available
+     const toneLines: string[] = [];
+     if (params.style) toneLines.push(`STYLE: ${params.style}`);
+     if (params.mood) toneLines.push(`MOOD: ${params.mood}`);
+     const sysWithTone = toneLines.length > 0 ? `${sys}\n${toneLines.join('\n')}` : sys;
+ 
+     const fallbackBatch = buildFallbackBatch();
+     let candidates: unknown[] = fallbackBatch;
+ 
++    const promptSections = [sysWithTone, guard, prompt, user];
++    if (voiceGuide) {
++      promptSections.push(voiceGuide);
++    }
++
++    let response: unknown;
+     try {
+-      const textModel = getTextModel();
+-      const response = await textModel.generateContent([
+-        { text: `${sysWithTone}\n${guard}\n${prompt}\n${user}` }
++      response = await textModel.generateContent([
++        { text: promptSections.join("\n") }
+       ]);
+-
+-      const rawText = await resolveResponseText(response);
+-      if (typeof rawText === "string" && rawText.trim().length > 0) {
+-        try {
+-          const json = stripToJSON(rawText);
+-          if (Array.isArray(json)) {
+-            candidates = json;
+-          } else {
+-            console.error("Gemini: variant payload was not an array in text-only pipeline");
+-          }
+-        } catch (parseError) {
+-          console.error("Gemini text-only variant parsing failed:", parseError);
+-        }
+-      } else {
+-        console.error("Gemini: empty response received in text-only pipeline");
+-      }
+     } catch (error) {
+       console.error("Gemini textModel.generateContent failed:", error);
++      throw error;
++    }
++
++    let rawText: string | undefined;
++    try {
++      rawText = await resolveResponseText(response);
++    } catch (error) {
++      console.error("Gemini: empty response received in text-only pipeline");
++      throw error;
++    }
++    if (!rawText) {
++      console.error("Gemini: empty response received in text-only pipeline");
++      throw new Error("Gemini: empty response");
++    }
++
++    try {
++      const json = stripToJSON(rawText);
++      if (Array.isArray(json)) {
++        return json;
++      }
++      console.error("Gemini: variant payload was not an array in text-only pipeline");
++    } catch (parseError) {
++      console.error("Gemini text-only variant parsing failed:", parseError);
+     }
+ 
+     return candidates;
+   };
+ 
+   const uniqueVariants: z.infer<typeof CaptionItem>[] = [];
+   const existingCaptions: string[] = [];
+   const duplicatesThisAttempt: string[] = [];
+   const isTest = process.env.NODE_ENV === 'test';
+   const maxAttempts = isTest ? 2 : 5; // Allow 2 attempts in test for retry logic testing
+   
+   // Track seen keys and duplicates for retry logic
+   const seenKeys = new Set<string>();
+   const duplicatesForHint: string[] = [];
+   let bannedDetected = false;
+   let _needsBannedHint = false;
+ 
+   for (let attempt = 0; attempt < maxAttempts && uniqueVariants.length < 5; attempt += 1) {
+     const needed = 5 - uniqueVariants.length;
+     const varietyHint = attempt === 0
+       ? params.hint
+       : (() => {
+           // Build complete base hint with variety clause first, then pass to buildRetryHint
+           const baseHintWithVariety = `${params.hint ? `${params.hint} ` : ""}Need much more variety across tone, structure, and themes.`;
+           return buildRetryHint(baseHintWithVariety, duplicatesThisAttempt, needed);
+ 
+EOF
+)
