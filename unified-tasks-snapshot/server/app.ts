@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import lusca from 'lusca';
 import { v4 as uuidv4 } from 'uuid';
 import { registerRoutes } from './routes.js';
 import { authLimiter, generalLimiter, sanitize, notFoundHandler } from './middleware/security.js';
@@ -242,6 +243,7 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: false, limit: '50mb' }));
   app.use(createSessionMiddleware());
+  app.use(lusca.csrf());
   app.use(passport.initialize());
   app.use(passport.session());
 
