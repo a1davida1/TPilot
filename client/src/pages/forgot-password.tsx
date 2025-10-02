@@ -42,7 +42,7 @@ export default function ForgotPasswordPage() {
           variant: "destructive"
         });
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Something went wrong. Please try again.",

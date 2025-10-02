@@ -594,7 +594,7 @@ export async function pipelineRewrite({ platform, voice="flirty_playful", style,
     }
 
     return { provider: 'gemini', facts, variants, ranked, final: out, titles: out.titles };
-  } catch (error) {
+  } catch (_error) {
     const { openAICaptionFallback } = await import('./openaiFallback');
     const variants = await openAICaptionFallback({ platform, voice, existingCaption, imageUrl });
     const final = variants.at(0);

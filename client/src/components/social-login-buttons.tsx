@@ -7,7 +7,7 @@ interface SocialLoginButtonsProps {
   onClose?: () => void;
 }
 
-export function SocialLoginButtons({ onClose }: SocialLoginButtonsProps) {
+export function SocialLoginButtons({ onClose: _onClose }: SocialLoginButtonsProps) {
   const handleSocialLogin = (provider: string) => {
     // Redirect to backend OAuth endpoint
     window.location.href = `/api/auth/${provider}`;

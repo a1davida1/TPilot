@@ -76,9 +76,9 @@ export class QueueMonitor {
 
   private async collectMetrics() {
     const queue = getQueueBackend();
-    const now = new Date();
+    const _now = new Date();
 
-    for (const [queueKey, queueName] of Object.entries(QUEUE_NAMES)) {
+    for (const [_queueKey, queueName] of Object.entries(QUEUE_NAMES)) {
       try {
         // Collect basic queue stats
         const [pending, active, failed, delayed] = await Promise.all([

@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import express from 'express';
+import express, { RequestHandler } from 'express';
 import request from 'supertest';
 
 const createSavedContentMock = vi.fn();
 const getUserContentGenerationsMock = vi.fn();
 const getSocialMediaPostMock = vi.fn();
-const authenticateTokenMock = vi.fn();
+const authenticateTokenMock = vi.fn<(requireAuth?: boolean) => RequestHandler>();
 const loggerErrorMock = vi.fn();
 
 vi.mock('../../server/storage.ts', () => ({
@@ -54,10 +54,12 @@ describe('POST /api/saved-content', () => {
     app = express();
     app.use(express.json());
 
-    authenticateTokenMock.mockImplementation((req: express.Request, _res: express.Response, next: express.NextFunction) => {
-      (req as express.Request & { user?: { id: number } }).user = { id: 1 };
-      next();
-    });
+    authenticateTokenMock.mockReturnValue(
+      (req: express.Request, _res: express.Response, next: express.NextFunction) => {
+        (req as express.Request & { user?: { id: number } }).user = { id: 1 };
+        next();
+      }
+    );
 
     registerSavedContentRoutes(app);
   });

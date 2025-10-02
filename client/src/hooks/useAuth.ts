@@ -28,7 +28,7 @@ export function useAuth() {
     return publicPaths.includes(path);
   };
 
-  const { data: user, isLoading, error, refetch } = useQuery<User>({
+  const { data: user, isLoading, error: _error, refetch } = useQuery<User>({
     queryKey: ['/api/auth/user'],
     queryFn: async () => {
       // Use cookie-based authentication only
@@ -146,10 +146,10 @@ export function useAuth() {
       });
       
       if (response.ok) {
-        const data = await response.json();
+        const _data = await response.json();
         login();
       }
-    } catch (error) {
+    } catch (_error) {
       // Silent fail in production
     }
   };

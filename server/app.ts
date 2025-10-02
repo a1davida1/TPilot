@@ -30,11 +30,10 @@ export interface CreateAppResult {
   server: import('http').Server;
 }
 
-declare global {
-  namespace Express {
-    interface Request {
-      id: string;
-    }
+// Augment Express Request interface using ES6 module augmentation
+declare module 'express-serve-static-core' {
+  interface Request {
+    id: string;
   }
 }
 
@@ -335,7 +334,7 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
     }
 
     // Optional fallthrough error handler
-    app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
       logger.error('Unhandled error in Express:', {
         error: err.message,
         stack: err.stack,

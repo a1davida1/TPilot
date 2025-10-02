@@ -39,7 +39,7 @@ export const safeFallbackHashtags = [
   "#storytelling"
 ] as const;
 
-const SAFE_FALLBACK_HASHTAG_SET = new Set(
+const _SAFE_FALLBACK_HASHTAG_SET = new Set(
   safeFallbackHashtags.map(tag => tag.toLowerCase())
 );
 

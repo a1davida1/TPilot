@@ -1,0 +1,129 @@
+Fix ESLint warnings following EXACTLY these rules. DO NOT touch anything not explicitly listed here.
+
+═══════════════════════════════════════════════════════════
+RULE 1: FIX UNUSED VARIABLES/IMPORTS (unused-imports/no-unused-vars)
+═══════════════════════════════════════════════════════════
+
+SAFE TO FIX - Prefix with underscore:
+✓ client/src/hooks/useAuth.ts:149 - data
+✓ client/src/hooks/useAuth.ts:152 - error
+✓ client/src/hooks/useOnboarding.ts:14 - user
+✓ client/src/pages/__tests__/referral.test.tsx:58 - text
+✓ server/advanced-content-generator.ts:1999 - readablePhotoType
+✓ server/caption/__tests__/ranking-integration.test.ts:5 - GeminiContent
+✓ server/caption/__tests__/ranking-integration.test.ts:94 - extractVariantsFromCall
+✓ server/caption/__tests__/ranking-integration.test.ts:101 - error
+✓ server/caption/__tests__/ranking-integration.test.ts:330 - error
+✓ server/caption/geminiPipeline.ts:86 - MAX_VARIANT_ATTEMPTS
+✓ server/caption/geminiPipeline.ts:133 - captionKey
+✓ server/caption/geminiPipeline.ts:137 - hintSnippet
+✓ server/caption/geminiPipeline.ts:142 - uniqueCaptionKey
+✓ server/caption/geminiPipeline.ts:614 - collectDuplicateCaptions
+✓ server/caption/geminiPipeline.ts:640 - buildDuplicateRetryHintMessage
+✓ server/caption/geminiPipeline.ts:656 - vision
+✓ server/caption/geminiPipeline.ts:1007 - fallbackBase
+✓ server/caption/rankingGuards.ts:42 - SAFE_FALLBACK_HASHTAG_SET
+✓ server/lib/payment-providers.ts:98 - signature, payload
+✓ server/lib/payment-providers.ts:154 - signature, payload
+✓ server/lib/policy-linter.ts:209 - e
+✓ server/lib/policy-linter.ts:234 - e
+✓ server/lib/queue-factory.ts:54 - T
+✓ server/lib/queue-monitor.ts:79 - now
+✓ server/lib/queue-monitor.ts:81 - queueKey
+✓ server/lib/queue-redis.ts:121 - queueEvents
+✓ server/lib/scheduling.ts:49 - timezone
+✓ server/lib/workers/ai-promo-worker.ts:25 - jobId
+✓ server/lib/workers/batch-posting-worker.ts:26 - jobId
+✓ server/lib/workers/dunning-worker.ts:32 - jobId
+✓ server/lib/workers/metrics-worker.ts:16 - RedditAPI
+✓ server/lib/workers/metrics-worker.ts:44 - jobId
+✓ server/middleware/tiered-rate-limit.ts:126 - req
+✓ server/middleware/tiered-rate-limit.ts:145 - req
+✓ server/middleware/tiered-rate-limit.ts:182 - usage
+✓ server/reddit-communities.ts:151 - e
+✓ server/reddit-routes.ts:923 - e
+✓ server/reddit-routes.ts:933 - e
+✓ server/reddit-routes.ts:943 - e
+✓ server/routes.ts:60 - AnalyticsRequest
+✓ server/routes.ts:546 - GenerationRequestBody
+✓ server/routes/upload.ts:505 - e
+✓ server/routes/upload.ts:508 - e
+✓ server/seeds/expense-categories.ts:80 - error
+✓ server/seeds/expense-categories.ts:165 - error
+✓ server/services/analytics-service.ts:288 - eventsToSend
+✓ server/services/analytics-service.ts:302 - lastActive
+✓ server/services/content-performance-predictor.ts:290 - score
+✓ server/services/content-performance-predictor.ts:394 - actualPerformance
+✓ server/services/enhanced-ai-service.ts:208 - mode
+✓ server/services/enhanced-ai-service.ts:504 - request
+✓ server/visitor-analytics.ts:214 - amount
+
+EXCEPTIONS - DO NOT TOUCH:
+✗ server/routes.ts:729 - deriveSharePercentage (may be incomplete feature)
+✗ server/routes.ts:1129 - normalizedPhotoInstructions (may be incomplete feature)
+✗ server/routes.ts:1602 - variants (may be incomplete feature)
+✗ server/social-media-routes.ts:356 - connectionRole (may be incomplete feature)
+
+═══════════════════════════════════════════════════════════
+RULE 2: FIX NO-EXPLICIT-ANY
+═══════════════════════════════════════════════════════════
+
+SAFE TO FIX - Replace with proper types based on context:
+✓ server/caption/__tests__/ranking-integration.test.ts:60
+✓ server/storage.ts:203, 220, 223, 242, 267, 292, 1078
+
+EXCEPTIONS - DO NOT TOUCH:
+✗ server/app.ts:279 (x2), 353 (Express middleware types)
+✗ server/lib/workers/metrics-worker.ts:117, 120 (Worker types)
+✗ server/routes.ts:697, 702, 1012 (Route handler types)
+✗ server/social-auth-config.ts:90, 98, 144 (Passport strategy types)
+
+═══════════════════════════════════════════════════════════
+RULE 3: FIX NO-NAMESPACE
+═══════════════════════════════════════════════════════════
+
+SAFE TO FIX - Convert to ES6 exports:
+✓ server/api-routes.ts:72
+✓ server/app.ts:34
+✓ server/middleware/security.ts:18
+✓ server/middleware/streaming-upload.ts:35
+
+═══════════════════════════════════════════════════════════
+RULE 4: FIX OTHER WARNINGS
+═══════════════════════════════════════════════════════════
+
+✓ client/src/lib/analytics-tracker.ts:294 - no-unsafe-function-type
+✓ server/routes.ts:479 - no-empty-object-type
+
+═══════════════════════════════════════════════════════════
+RULE 5: DO NOT TOUCH - MANUAL FIX REQUIRED
+═══════════════════════════════════════════════════════════
+
+✗ server/caption/rewritePipeline.ts:4 (MERGE CONFLICT)
+✗ server/caption/textOnlyPipeline.ts:4 (MERGE CONFLICT)
+
+✗ All @typescript-eslint/no-non-null-assertion warnings (10 files)
+   - server/lib/pricing.ts:15, 16, 17
+   - server/lib/workers/dunning-worker.ts:150
+   - server/routes/upload.ts:308
+   - server/routes/webhooks.stripe.ts:16
+   - server/scripts/sync-subreddit-rules.ts (5 instances)
+   - server/services/analytics-service.ts:259
+   - server/services/basic-metrics.ts:66 (x2)
+
+═══════════════════════════════════════════════════════════
+EXECUTION INSTRUCTIONS
+═══════════════════════════════════════════════════════════
+
+1. Work through RULE 1 first (all unused vars/imports)
+2. Then RULE 2 (safe any types only)
+3. Then RULE 3 (namespaces)
+4. Then RULE 4 (misc)
+5. Skip everything in RULE 5
+
+When prefixing with underscore:
+- Variables: const _data = ...
+- Caught errors: catch (_error)
+- Function params: function foo(_unused, used) { }
+
+Start now. Report progress after each rule.

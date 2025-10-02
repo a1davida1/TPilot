@@ -13,13 +13,11 @@ import { logger as appLogger, validateSentryDSN } from "../bootstrap/logger.js";
 import { AppError } from "../lib/errors.js";
 import { API_PREFIX, prefixApiPath } from "../lib/api-prefix.js";
 
-// Global Express namespace declaration
-declare global {
-  namespace Express {
-    interface Request {
-      userIP?: string;
-      userAgent?: string;
-    }
+// Augment Express Request interface using ES6 module augmentation
+declare module 'express-serve-static-core' {
+  interface Request {
+    userIP?: string;
+    userAgent?: string;
   }
 }
 

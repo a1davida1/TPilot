@@ -206,7 +206,7 @@ export async function lintCaption(input: {
               state = "block";
               break;
             }
-          } catch (e) {
+          } catch (_e) {
             // Invalid regex, skip
           }
         }
@@ -231,7 +231,7 @@ export async function lintCaption(input: {
               state = "block";
               break;
             }
-          } catch (e) {
+          } catch (_e) {
             // Invalid regex, skip
           }
         }

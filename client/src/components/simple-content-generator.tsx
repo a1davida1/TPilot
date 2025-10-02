@@ -32,7 +32,7 @@ interface SimpleContentGeneratorProps {
   onContentGenerated?: (data: unknown) => void;
 }
 
-export function SimpleContentGenerator({ isGuestMode = false, onContentGenerated }: SimpleContentGeneratorProps) {
+export function SimpleContentGenerator({ isGuestMode: _isGuestMode = false, onContentGenerated }: SimpleContentGeneratorProps) {
   const [platform, setPlatform] = useState("reddit");
   const [style, setStyle] = useState("playful");
   const [theme, setTheme] = useState("teasing");

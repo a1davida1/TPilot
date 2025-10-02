@@ -77,7 +77,7 @@ export async function seedExpenseCategories() {
       try {
         await storage.createExpenseCategory(category);
         console.error(`✅ Created category: ${category.name}`);
-      } catch (error) {
+      } catch (_error) {
         // Category might already exist, that's okay
         console.error(`ℹ️ Category ${category.name} might already exist`);
       }
@@ -162,7 +162,7 @@ export async function seedTaxDeductionInfo() {
           applicableFor: ['content creators', 'influencers', 'social media creators']
         });
         console.error(`✅ Created tax info: ${info.title}`);
-      } catch (error) {
+      } catch (_error) {
         console.error(`ℹ️ Tax info ${info.title} might already exist`);
       }
     }

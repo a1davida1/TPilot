@@ -31,12 +31,11 @@ export interface UploadProgress {
   filename: string;
 }
 
-declare global {
-  namespace Express {
-    interface Request {
-      streamingFiles?: UploadedFile[];
-      uploadProgress?: UploadProgress;
-    }
+// Augment Express Request interface using ES6 module augmentation
+declare module 'express-serve-static-core' {
+  interface Request {
+    streamingFiles?: UploadedFile[];
+    uploadProgress?: UploadProgress;
   }
 }
 

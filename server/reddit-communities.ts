@@ -148,7 +148,7 @@ export function normalizeRules(rawRules: unknown, promotionAllowed?: string, cat
           }
           return parsed;
         }
-      } catch (e) {
+      } catch (_e) {
         // Fall back to legacy handling
       }
       

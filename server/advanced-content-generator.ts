@@ -1996,7 +1996,7 @@ function generateTitles(
   const connectors = connectorPool.length > 0 ? connectorPool : fallbackConnectors;
   const basePatterns = toneStyle.titlePatterns && toneStyle.titlePatterns.length > 0 ? toneStyle.titlePatterns : fallbackTitlePatterns;
   const specialPatterns: TitlePatternDefinition[] = [];
-  const readablePhotoType = params.photoType.replace(/-/g, ' ');
+  const _readablePhotoType = params.photoType.replace(/-/g, ' ');
 
   if (params.photoType === 'all-xs') {
     specialPatterns.push(

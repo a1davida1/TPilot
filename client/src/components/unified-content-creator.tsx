@@ -46,7 +46,7 @@ const textTones = [
   { id: 'elegant', label: 'Elegant', emoji: '👑' },
   { id: 'casual', label: 'Casual', emoji: '😊' },
 ];
-const availableHashtags = ['#model', '#photography', '#fashion', '#lifestyle', '#beauty', '#art', '#portrait', '#creative', '#outfit', '#style'];
+const _availableHashtags = ['#model', '#photography', '#fashion', '#lifestyle', '#beauty', '#art', '#portrait', '#creative', '#outfit', '#style'];
 
 // Extended interface for frontend display with dynamic server properties
 interface GeneratedContentDisplay extends Omit<ContentGeneration, 'photoInstructions'> {
@@ -90,8 +90,8 @@ export function UnifiedContentCreator({
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   // State for photo types and text tones
-  const [selectedPhotoType, setSelectedPhotoType] = useState(photoTypes[0].id);
-  const [selectedTextTone, setSelectedTextTone] = useState(textTones[0].id);
+  const [selectedPhotoType, _setSelectedPhotoType] = useState(photoTypes[0].id);
+  const [selectedTextTone, _setSelectedTextTone] = useState(textTones[0].id);
   const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
 
   // Image workflow states
@@ -111,7 +111,7 @@ export function UnifiedContentCreator({
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user: _user } = useAuth();
 
   const canUseImageWorkflow = true; // Image workflow available for all users
 
@@ -194,7 +194,7 @@ export function UnifiedContentCreator({
 
       // Reset copied state after 2 seconds
       setTimeout(() => setCopiedItem(null), 2000);
-    } catch (err) {
+    } catch (_err) {
       toast({
         title: "Copy Failed",
         description: "Unable to copy to clipboard",
@@ -342,13 +342,13 @@ export function UnifiedContentCreator({
         title: "Image Protected!",
         description: `${protectionLevel} protection applied${shouldAddWatermark ? ' with watermark' : ''}`,
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Protection Failed",
         description: "Failed to protect the image. Please try again.",
         variant: "destructive"
       });
-      console.error('ImageShield protection failed:', error);
+      console.error('ImageShield protection failed:', _error);
     }
   };
 
@@ -378,7 +378,7 @@ export function UnifiedContentCreator({
         const filename = `protected_${timestamp}_${originalFileName}`;
         downloadProtectedImage(blob, filename);
       })
-      .catch(error => {
+      .catch(_error => {
         toast({
           title: "Download Failed",
           description: "Failed to download protected image",
@@ -488,7 +488,7 @@ export function UnifiedContentCreator({
     });
   };
 
-  const toggleHashtag = (_hashtag: string) => {
+  const _toggleHashtag = (_hashtag: string) => {
     setSelectedHashtags((prev) =>
       prev.includes(_hashtag)
         ? prev.filter((h) => h !== _hashtag)

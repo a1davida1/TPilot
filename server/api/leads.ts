@@ -74,7 +74,7 @@ export async function createLead(req: Request, res: Response) {
     };
 
     // Upsert lead (update if exists, create if not)
-    const [lead] = await db
+    const [_lead] = await db
       .insert(leads)
       .values(leadData)
       .onConflictDoUpdate({

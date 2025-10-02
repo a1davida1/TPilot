@@ -205,7 +205,7 @@ class EnhancedAIContentGenerator {
 
   private buildEnhancedPrompt(request: EnhancedAIRequest): string {
     const { 
-      mode, prompt, platform, style, theme, tone, contentType,
+      mode: _mode, prompt, platform, style, theme, tone, contentType,
       includePromotion, promotionLevel, targetAudience, customInstructions,
       subreddit, niche, personalBrand
     } = request;
@@ -501,7 +501,7 @@ Create content that feels authentic, drives engagement, and perfectly matches th
     return ctas[request.promotionLevel || 'subtle'] || ctas.subtle;
   }
 
-  private generateEngagementHooks(request: EnhancedAIRequest): string[] {
+  private generateEngagementHooks(_request: EnhancedAIRequest): string[] {
     return [
       "Double tap if you agree!",
       "Save this for later 📌",

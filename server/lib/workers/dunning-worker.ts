@@ -29,7 +29,7 @@ export class DunningWorker {
     logger.info('✅ Dunning worker initialized with queue abstraction');
   }
 
-  private async processJob(jobData: unknown, jobId: string): Promise<void> {
+  private async processJob(jobData: unknown, _jobId: string): Promise<void> {
     const { subscriptionId, attempt, maxAttempts = 3 } = jobData as DunningJobData;
 
     try {

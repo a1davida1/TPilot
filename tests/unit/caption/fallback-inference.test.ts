@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { Mock } from 'vitest';
 
+<<<<<<< ours
 const createGeminiResponse = (payload: unknown) => {
   const text = typeof payload === 'string' ? payload : JSON.stringify(payload);
   return {
@@ -26,15 +27,29 @@ vi.mock('../../../server/lib/gemini-client', () => ({
   getTextModel: () => mockTextModel,
   getVisionModel: () => mockVisionModel,
   isGeminiAvailable: mockIsGeminiAvailable,
+=======
+const mockTextModel = vi.hoisted(() => ({
+  generateContent: vi.fn(),
+}));
+
+const mockVisionModel = vi.hoisted(() => ({
+  generateContent: vi.fn(),
+>>>>>>> theirs
 }));
 
 vi.mock('../../../server/lib/gemini.ts', () => ({
   __esModule: true,
   textModel: mockTextModel,
   visionModel: mockVisionModel,
+<<<<<<< ours
   isGeminiAvailable: mockIsGeminiAvailable,
   getTextModel: () => mockTextModel,
   getVisionModel: () => mockVisionModel,
+=======
+  getTextModel: () => mockTextModel,
+  getVisionModel: () => mockVisionModel,
+  isGeminiAvailable: vi.fn(() => true),
+>>>>>>> theirs
 }));
 
 describe('inferFallbackFromFacts helper', () => {

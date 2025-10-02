@@ -1,12 +1,17 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const mockModel = {
+const googleGenAIModels = vi.hoisted(() => ({
   generateContent: vi.fn()
-};
+}));
 
-const getTextModelMock = vi.hoisted(() => vi.fn(() => mockModel));
-const isGeminiAvailableMock = vi.hoisted(() => vi.fn(() => true));
+const googleGenAIConstructor = vi.hoisted(() =>
+  vi.fn(() => ({
+    models: {
+      generateContent: googleGenAIModels.generateContent
+    }
+  }))
+);
 
 const mockAnthropic = vi.hoisted(() => ({
   messages: {
@@ -27,10 +32,10 @@ const mockSafeLog = vi.hoisted(() => vi.fn());
 const openAIConstructor = vi.hoisted(() => vi.fn(() => mockOpenAI));
 const anthropicConstructor = vi.hoisted(() => vi.fn(() => mockAnthropic));
 
-vi.mock('../../../../server/lib/gemini-client', () => ({
-  getTextModel: getTextModelMock,
-  isGeminiAvailable: isGeminiAvailableMock
+vi.mock('@google/genai', () => ({
+  GoogleGenAI: googleGenAIConstructor
 }));
+
 vi.mock('openai', () => ({ default: openAIConstructor }));
 vi.mock('@anthropic-ai/sdk', () => ({ default: anthropicConstructor }));
 vi.mock('../../../../server/lib/logger-utils.ts', () => ({ safeLog: mockSafeLog }));
@@ -49,11 +54,10 @@ const originalEnv: Record<EnvKey, string | undefined> = {
 describe('generateWithMultiProvider provider selection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockModel.generateContent.mockReset();
+    googleGenAIModels.generateContent.mockReset();
+    googleGenAIConstructor.mockReset();
     mockAnthropic.messages.create.mockReset();
     mockOpenAI.chat.completions.create.mockReset();
-    getTextModelMock.mockReturnValue(mockModel);
-    isGeminiAvailableMock.mockReturnValue(true);
     openAIConstructor.mockReset();
     anthropicConstructor.mockReset();
     mockSafeLog.mockReset();
@@ -75,7 +79,7 @@ describe('generateWithMultiProvider provider selection', () => {
   });
 
   it('prefers Gemini when a Gemini key is available', async () => {
-    process.env.GEMINI_API_KEY = 'gemini-key';
+    process.env.GOOGLE_GENAI_API_KEY = 'genai-key';
     process.env.OPENAI_API_KEY = 'openai-key';
     process.env.ANTHROPIC_API_KEY = 'anthropic-key';
     process.env.GEMINI_TEXT_MODEL = 'models/gemini-test';
@@ -83,7 +87,7 @@ describe('generateWithMultiProvider provider selection', () => {
     vi.resetModules();
     const { generateWithMultiProvider } = await import('../../../../server/services/multi-ai-provider');
 
-    mockModel.generateContent.mockResolvedValueOnce({
+    googleGenAIModels.generateContent.mockResolvedValueOnce({
       text: JSON.stringify({
         titles: ['Gemini wins'],
         content: 'Gemini content that clearly exceeds the fallback length requirement.',
@@ -105,15 +109,21 @@ describe('generateWithMultiProvider provider selection', () => {
     });
 
     expect(response.provider).toBe('gemini-flash');
-    expect(mockModel.generateContent).toHaveBeenCalledTimes(1);
+    expect(googleGenAIConstructor).toHaveBeenCalledTimes(1);
+    expect(googleGenAIConstructor).toHaveBeenCalledWith(expect.objectContaining({ apiKey: 'genai-key' }));
+    expect(googleGenAIModels.generateContent).toHaveBeenCalledTimes(1);
+    const [geminiRequest] = googleGenAIModels.generateContent.mock.calls[0] ?? [];
+    expect(geminiRequest?.model).toBe('models/gemini-test');
+    expect(geminiRequest?.contents?.[0]?.parts?.[0]?.text).toContain('instagram');
     expect(mockAnthropic.messages.create).not.toHaveBeenCalled();
     expect(mockOpenAI.chat.completions.create).not.toHaveBeenCalled();
   });
 
   it('falls back to Claude before OpenAI when Gemini is unavailable', async () => {
+    delete process.env.GOOGLE_GENAI_API_KEY;
+    delete process.env.GEMINI_API_KEY;
     process.env.ANTHROPIC_API_KEY = 'anthropic-key';
     process.env.OPENAI_API_KEY = 'openai-key';
-    isGeminiAvailableMock.mockReturnValue(false);
 
     vi.resetModules();
     const { generateWithMultiProvider } = await import('../../../../server/services/multi-ai-provider');
@@ -145,15 +155,17 @@ describe('generateWithMultiProvider provider selection', () => {
     });
 
     expect(result.provider).toBe('claude-haiku');
-    expect(getTextModelMock).not.toHaveBeenCalled();
+    expect(googleGenAIConstructor).not.toHaveBeenCalled();
+    expect(googleGenAIModels.generateContent).not.toHaveBeenCalled();
     expect(mockAnthropic.messages.create).toHaveBeenCalledTimes(1);
     expect(mockOpenAI.chat.completions.create).not.toHaveBeenCalled();
   });
 
   it('falls back to OpenAI after Claude when Claude fails', async () => {
+    delete process.env.GOOGLE_GENAI_API_KEY;
+    delete process.env.GEMINI_API_KEY;
     process.env.ANTHROPIC_API_KEY = 'anthropic-key';
     process.env.OPENAI_API_KEY = 'openai-key';
-    isGeminiAvailableMock.mockReturnValue(false);
 
     vi.resetModules();
     const { generateWithMultiProvider } = await import('../../../../server/services/multi-ai-provider');
@@ -187,7 +199,8 @@ describe('generateWithMultiProvider provider selection', () => {
     });
 
     expect(response.provider).toBe('openai-gpt4o');
-    expect(getTextModelMock).not.toHaveBeenCalled();
+    expect(googleGenAIConstructor).not.toHaveBeenCalled();
+    expect(googleGenAIModels.generateContent).not.toHaveBeenCalled();
     expect(mockAnthropic.messages.create).toHaveBeenCalledTimes(1);
     expect(mockOpenAI.chat.completions.create).toHaveBeenCalledTimes(1);
 

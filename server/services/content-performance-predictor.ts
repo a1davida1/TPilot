@@ -287,7 +287,7 @@ class ContentPerformancePredictor {
     return completeness / totalFields;
   }
 
-  private generateRecommendations(features: ContentFeatures, score: number): string[] {
+  private generateRecommendations(features: ContentFeatures, _score: number): string[] {
     const recommendations: string[] = [];
     
     // Title recommendations
@@ -391,7 +391,7 @@ class ContentPerformancePredictor {
   }
 
   // Learning from actual performance (for future ML implementation)
-  async updateModel(actualPerformance: { features: ContentFeatures; engagement: number }[]): Promise<void> {
+  async updateModel(_actualPerformance: { features: ContentFeatures; engagement: number }[]): Promise<void> {
     // In production, this would update ML model weights
     // For now, log for analysis
   }

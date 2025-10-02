@@ -5,7 +5,7 @@ import { RefreshCw, DollarSign, CheckCircle, XCircle, AlertCircle } from "lucide
 import { useQuery } from "@tanstack/react-query";
 import { safeArray, safeString } from "@/utils/safeDataAccess";
 
-interface ProviderInfo {
+interface _ProviderInfo {
   name: string;
   status: 'available' | 'unavailable' | 'quota_exceeded';
   inputCost: string;

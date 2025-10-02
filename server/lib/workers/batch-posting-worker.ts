@@ -23,7 +23,7 @@ export class BatchPostingWorker {
     logger.info('✅ Batch posting worker initialized with queue abstraction');
   }
 
-  private async processJob(jobData: unknown, jobId: string): Promise<void> {
+  private async processJob(jobData: unknown, _jobId: string): Promise<void> {
     const { 
       userId, 
       campaignId, 

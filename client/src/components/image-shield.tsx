@@ -23,7 +23,7 @@ interface ImageShieldProps {
   userTier?: "free" | "starter" | "pro";
 }
 
-export function ImageShield({ isGuestMode = false, userTier = "free" }: ImageShieldProps) {
+export function ImageShield({ isGuestMode: _isGuestMode = false, userTier = "free" }: ImageShieldProps) {
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [protectedImage, setProtectedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -91,7 +91,7 @@ export function ImageShield({ isGuestMode = false, userTier = "free" }: ImageShi
         const data = imageData.data;
 
         // Apply protection algorithms
-        const settings = protectionLevels[protectionLevel];
+        const _settings = protectionLevels[protectionLevel];
         const actualBlur = blurStrength[0];
         const actualNoise = noiseLevel[0];
         const actualColor = colorShift[0];
@@ -136,7 +136,7 @@ export function ImageShield({ isGuestMode = false, userTier = "free" }: ImageShi
       };
 
       img.src = originalImage;
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Protection Failed",
         description: "Unable to process image",
@@ -162,7 +162,7 @@ export function ImageShield({ isGuestMode = false, userTier = "free" }: ImageShi
     });
   }, [protectedImage, toast]);
 
-  const canUseAdvanced = true; // ImageShield available for all users
+  const _canUseAdvanced = true; // ImageShield available for all users
 
   return (
     <div className="space-y-6">

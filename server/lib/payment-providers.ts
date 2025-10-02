@@ -95,7 +95,7 @@ export class SegPayProvider extends BasePaymentProvider {
     }
   }
 
-  async verifyWebhook(signature: string, payload: unknown): Promise<boolean> {
+  async verifyWebhook(_signature: string, _payload: unknown): Promise<boolean> {
     // SegPay webhook verification would go here
     return true; // Scaffold implementation
   }
@@ -151,7 +151,7 @@ export class EpochProvider extends BasePaymentProvider {
     }
   }
 
-  async verifyWebhook(signature: string, payload: unknown): Promise<boolean> {
+  async verifyWebhook(_signature: string, _payload: unknown): Promise<boolean> {
     return true; // Scaffold implementation
   }
 

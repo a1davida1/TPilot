@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { CaptionItem } from '../schema';
 import { z } from 'zod';
 type CaptionItemType = z.infer<typeof CaptionItem>;
-type GeminiContent = Array<{ text: string }>;
+type _GeminiContent = Array<{ text: string }>;
 type TextModelMock = ReturnType<typeof vi.fn>;
 
 const createMockResponse = (payload: unknown) => ({
@@ -57,7 +57,7 @@ describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMoc
   let rankAndSelect: (typeof import('../geminiPipeline'))['rankAndSelect'];
   let textModelMock: TextModelMock;
   let getTextModelMock: ReturnType<typeof vi.fn>;
-  let fetchSpy: any;
+  let fetchSpy: ReturnType<typeof vi.spyOn<typeof globalThis, 'fetch'>>;
 
   beforeEach(async () => {
     vi.resetModules();
@@ -91,14 +91,14 @@ describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMoc
 
   describe('rankAndSelect', () => {
 
-    const extractVariantsFromCall = (callIndex: number) => {
+    const _extractVariantsFromCall = (callIndex: number) => {
       const callArgs = textModelMock.mock.calls[callIndex]?.[0];
       const promptEntry = Array.isArray(callArgs) ? callArgs[0] : undefined;
       const promptText = promptEntry && typeof promptEntry.text === 'string' ? promptEntry.text : '';
       const serialized = promptText.slice(promptText.lastIndexOf('\n') + 1);
       try {
         return JSON.parse(serialized);
-      } catch (error) {
+      } catch (_error) {
         return [];
       }
     };
@@ -327,7 +327,7 @@ describe.each(scenarios)('Ranking Integration Tests Part 2 ($label)', ({ applyGe
       const serialized = promptText.slice(promptText.lastIndexOf('\n') + 1);
       try {
         return JSON.parse(serialized);
-      } catch (error) {
+      } catch (_error) {
         return [];
       }
     };

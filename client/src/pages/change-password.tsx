@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import type { User } from '@shared/schema';
 
 export default function ChangePasswordPage() {
-  const [location, navigate] = useLocation();
+  const [_location, navigate] = useLocation();
   const { user } = useAuth();
 
   // Get userId from URL params

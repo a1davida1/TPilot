@@ -51,7 +51,7 @@ export async function enqueue<T = unknown>(
   return queue.enqueue(queueName, payload, options);
 }
 
-export async function registerProcessor<T = unknown>(
+export async function registerProcessor<_T = unknown>(
   queueName: string,
   handler: Parameters<IQueue['process']>[1],
   options?: Parameters<IQueue['process']>[2]

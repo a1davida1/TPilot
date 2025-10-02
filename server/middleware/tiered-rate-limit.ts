@@ -123,7 +123,7 @@ export function createTieredRateLimiter(feature?: keyof typeof featureLimits) {
       
       const limiter = rateLimit({
         ...defaultLimits,
-        keyGenerator: (req) => `${userId}_${tier}_${feature || 'general'}`,
+        keyGenerator: (_req) => `${userId}_${tier}_${feature || 'general'}`,
         handler: (req, res) => {
           res.status(429).json({
             error: defaultLimits.message || 'Rate limit exceeded. Please wait before trying again.',
@@ -142,7 +142,7 @@ export function createTieredRateLimiter(feature?: keyof typeof featureLimits) {
     if (!limiters.has(key)) {
       limiters.set(key, rateLimit({
         ...limits,
-        keyGenerator: (req) => `${userId}_${tier}_${feature || 'general'}`,
+        keyGenerator: (_req) => `${userId}_${tier}_${feature || 'general'}`,
         handler: (req, res) => {
           res.status(429).json({
             error: limits.message || 'Rate limit exceeded. Please wait before trying again.',
@@ -179,7 +179,7 @@ export function trackApiUsage() {
     }
     
     // Track usage (in production, this would go to a metrics service)
-    const usage = {
+    const _usage = {
       userId: req.user.id,
       endpoint: req.path,
       method: req.method,

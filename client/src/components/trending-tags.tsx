@@ -25,7 +25,7 @@ export function TrendingTags() {
   const { toast } = useToast();
 
   // Fetch real trending tags from API
-  const { data: trendingData, isLoading } = useQuery({
+  const { data: trendingData, isLoading: _isLoading } = useQuery({
     queryKey: ['trending-tags', timeRange, categoryFilter],
     queryFn: async () => {
       const response = await fetch(`/api/trending-tags?timeRange=${timeRange}&category=${categoryFilter}`, {
@@ -38,7 +38,7 @@ export function TrendingTags() {
     }
   });
 
-  const lastUpdateTime = trendingData?.lastUpdated ? 
+  const _lastUpdateTime = trendingData?.lastUpdated ? 
     new Date(trendingData.lastUpdated).toLocaleString('en-US', { 
       hour: 'numeric', 
       minute: '2-digit', 
@@ -75,7 +75,7 @@ export function TrendingTags() {
         title: "Tag copied!",
         description: `"#${tag}" copied to clipboard`
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Failed to copy",
         variant: "destructive"

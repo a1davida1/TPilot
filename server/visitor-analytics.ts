@@ -211,7 +211,7 @@ class VisitorAnalytics {
     };
   }
 
-  async recordPayment(customerId: string, amount: number): Promise<void> {
+  async recordPayment(customerId: string, _amount: number): Promise<void> {
     if (!this.stripe) return;
     try {
       await this.stripe.customers.retrieve(customerId);

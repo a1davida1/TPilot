@@ -19,7 +19,7 @@ import {
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
-interface TrainingData {
+interface _TrainingData {
   id: number;
   type: 'post' | 'image' | 'caption';
   content: string;
@@ -74,7 +74,7 @@ export function IntegratedFineTuning() {
   const handleAddTrainingData = (e: React.FormEvent<HTMLTextAreaElement>) => {
     const content = (e.target as HTMLTextAreaElement).value;
     if (content.trim()) {
-      const newData = {
+      const _newData = {
         id: Date.now(),
         type: 'post' as const,
         content: content.trim(),

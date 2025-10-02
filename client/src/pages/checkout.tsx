@@ -78,7 +78,7 @@ const CheckoutForm = ({ plan }: CheckoutFormProps) => {
 };
 
 // Stripe configuration missing component
-const StripeConfigMissing = () => (
+const _StripeConfigMissing = () => (
   <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-pink-900 flex items-center justify-center p-4">
     <Card className="w-full max-w-md border-red-800/20 bg-gray-900/90 backdrop-blur-md">
       <CardHeader className="text-center">

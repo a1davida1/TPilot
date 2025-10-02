@@ -920,7 +920,7 @@ export function registerRedditRoutes(app: Express) {
     try {
       const community = await createCommunity(req.body);
       res.json(community);
-    } catch (e) {
+    } catch (_e) {
       res.status(400).json({ error: 'Invalid community data' });
     }
   });
@@ -930,7 +930,7 @@ export function registerRedditRoutes(app: Express) {
     try {
       const community = await updateCommunity(req.params.id, req.body);
       res.json(community);
-    } catch (e) {
+    } catch (_e) {
       res.status(400).json({ error: 'Invalid community data' });
     }
   });
@@ -940,7 +940,7 @@ export function registerRedditRoutes(app: Express) {
     try {
       await deleteCommunity(req.params.id);
       res.json({ success: true });
-    } catch (e) {
+    } catch (_e) {
       res.status(500).json({ error: 'Failed to delete community' });
     }
   });

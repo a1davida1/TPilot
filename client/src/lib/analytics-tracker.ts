@@ -291,7 +291,7 @@ class AnalyticsTracker {
     });
   }
 
-  private throttle(func: Function, delay: number) {
+  private throttle(func: (...args: unknown[]) => void, delay: number) {
     let timeoutId: number;
     let lastExecTime = 0;
     return function (this: unknown, ...args: unknown[]) {

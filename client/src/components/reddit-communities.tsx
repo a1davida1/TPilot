@@ -33,7 +33,7 @@ import { apiRequest } from "@/lib/queryClient";
 
 type RuleAllowance = 'yes' | 'limited' | 'no';
 
-interface RedditCommunity {
+interface _RedditCommunity {
   id: string;
   name: string;
   displayName: string;
@@ -82,7 +82,7 @@ export function RedditCommunities() {
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   // Fetch communities data
-  const { data: communities = [], isLoading } = useQuery({
+  const { data: communities = [], isLoading: _isLoading } = useQuery({
     queryKey: ['/api/reddit/communities', filterCategory, searchTerm],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -97,7 +97,7 @@ export function RedditCommunities() {
 
   const displayCommunities = communities;
 
-  const formatAllowance = (value?: RuleAllowance) => {
+  const _formatAllowance = (value?: RuleAllowance) => {
     switch (value) {
       case 'yes':
         return 'Allowed';
@@ -110,7 +110,7 @@ export function RedditCommunities() {
     }
   };
 
-  const formatBoolean = (value?: boolean) => {
+  const _formatBoolean = (value?: boolean) => {
     if (typeof value !== 'boolean') return undefined;
     return value ? 'Allowed' : 'Not allowed';
   };
@@ -187,7 +187,7 @@ export function RedditCommunities() {
     }
   };
 
-  const getSellingPolicyBadge = (policy: string | undefined) => {
+  const _getSellingPolicyBadge = (policy: string | undefined) => {
     switch (policy) {
       case 'allowed':
         return <Badge className="bg-success/15 text-success">Selling allowed</Badge>;

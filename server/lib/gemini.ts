@@ -55,3 +55,5 @@ export {
   loadVisionModel as getVisionModel,
   loadTextModel as getTextModel
 };
+
+export type { GeminiModel } from "./gemini-client";

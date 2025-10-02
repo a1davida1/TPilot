@@ -35,7 +35,7 @@ export function UnifiedLanding() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleTryFeatures = () => {
+  const _handleTryFeatures = () => {
     toast({
       description: "Try our features without signing up!",
     });

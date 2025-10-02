@@ -146,12 +146,12 @@ export default function PerformanceOptimizer() {
   });
 
   const applyOptimization = useMutation({
-    mutationFn: async (recommendationId: string) => {
+    mutationFn: async (_recommendationId: string) => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
       return { success: true };
     },
-    onSuccess: (_, recommendationId) => {
+    onSuccess: (_, _recommendationId) => {
       queryClient.invalidateQueries({ queryKey: ['/api/optimization/recommendations'] });
       queryClient.invalidateQueries({ queryKey: ['/api/optimization/score'] });
       toast({

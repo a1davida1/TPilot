@@ -200,7 +200,7 @@ export class DatabaseStorage implements IStorage {
       
       // Guard optional schema fields - filter soft-deleted users
       if ('isDeleted' in users) {
-        conditions.push(eq((users as any).isDeleted, false));
+        conditions.push(eq((users as Record<string, unknown>).isDeleted, false));
       }
       
       const result = await db.select().from(users).where(and(...conditions)).limit(1).execute();
@@ -217,10 +217,10 @@ export class DatabaseStorage implements IStorage {
       // Guard optional schema fields - using db query pattern
       let query = db.select().from(users);
       if ('isDeleted' in users) {
-        query = query.where(eq((users as any).isDeleted, false)) as any;
+        query = query.where(eq((users as Record<string, unknown>).isDeleted, false)) as typeof query;
       }
       if ('createdAt' in users) {
-        query = query.orderBy(desc((users as any).createdAt)) as any;
+        query = query.orderBy(desc((users as Record<string, unknown>).createdAt)) as typeof query;
       }
       const allUsers = await query.execute();
       return allUsers;
@@ -239,7 +239,7 @@ export class DatabaseStorage implements IStorage {
 
       // Guard optional schema fields - filter soft-deleted users
       if ('isDeleted' in users) {
-        conditions.push(eq((users as any).isDeleted, false));
+        conditions.push(eq((users as Record<string, unknown>).isDeleted, false));
       }
 
       // Only add emailVerified condition if explicitly provided
@@ -264,7 +264,7 @@ export class DatabaseStorage implements IStorage {
 
       // Guard optional schema fields - filter soft-deleted users
       if ('isDeleted' in users) {
-        conditions.push(eq((users as any).isDeleted, false));
+        conditions.push(eq((users as Record<string, unknown>).isDeleted, false));
       }
 
       // Only add emailVerified condition if explicitly provided
@@ -289,7 +289,7 @@ export class DatabaseStorage implements IStorage {
 
       // Guard optional schema fields - filter soft-deleted users
       if ('isDeleted' in users) {
-        conditions.push(eq((users as any).isDeleted, false));
+        conditions.push(eq((users as Record<string, unknown>).isDeleted, false));
       }
 
       const result = await db.select().from(users).where(and(...conditions)).limit(1).execute();
@@ -1075,7 +1075,7 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       safeLog('error', 'Failed to create saved content record', {
         error: (error as Error).message,
-        userId: (content as any).userId ?? 'unknown',
+        userId: (content as Record<string, unknown>).userId ?? 'unknown',
       });
       throw error;
     }

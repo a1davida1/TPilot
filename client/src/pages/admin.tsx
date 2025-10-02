@@ -134,11 +134,11 @@ interface Completeness {
 export function AdminDashboard() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [selectedPeriod, setSelectedPeriod] = useState('7d');
+  const [selectedPeriod, _setSelectedPeriod] = useState('7d');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [actionType, setActionType] = useState<'ban' | 'suspend' | 'unban' | 'reset-password' | 'tier-management' | 'user-details' | null>(null);
-  const [reason, setReason] = useState('');
-  const [duration, setDuration] = useState('24');
+  const [_reason, setReason] = useState('');
+  const [_duration, _setDuration] = useState('24');
   const [tempPassword, setTempPassword] = useState('');
   const [newTier, setNewTier] = useState('free');
 

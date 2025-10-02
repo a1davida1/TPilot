@@ -129,7 +129,7 @@ interface PostData {
   }>;
 }
 
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
+const _MS_PER_DAY = 1000 * 60 * 60 * 24;
 
 interface CommunityEligibility {
   community: SubredditCommunity;
@@ -305,7 +305,7 @@ function checkCommunityEligibility(
 export default function RedditPostingPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAuthenticated, user, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, user: _user, isLoading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
   
   // Redirect to landing page if not authenticated
@@ -351,11 +351,11 @@ export default function RedditPostingPage() {
   const [selectedMediaIds, setSelectedMediaIds] = useState<number[]>([]);
   const [mediaCaptions, setMediaCaptions] = useState<Record<number, string>>({});
   const [scheduledAt, setScheduledAt] = useState('');
-  const isGalleryFeatureEnabled = false;
+  const _isGalleryFeatureEnabled = false;
 
   // UI state
-  const [selectedAccount, setSelectedAccount] = useState<string>('');
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [_selectedAccount, _setSelectedAccount] = useState<string>('');
+  const [_isPreviewMode, _setIsPreviewMode] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Add image handling functions

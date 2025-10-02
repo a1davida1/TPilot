@@ -22,7 +22,7 @@ export function initializeSentry(): typeof Sentry | null {
       tracesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0.1'),
       profilesSampleRate: parseFloat(process.env.SENTRY_PROFILES_SAMPLE_RATE || '0.1'),
       integrations: [Sentry.httpIntegration(), Sentry.expressIntegration()],
-        beforeSend(event: ErrorEvent, hint) {
+        beforeSend(event: ErrorEvent, _hint) {
         const err = event.exception?.values?.[0];
         if (err?.type === 'ValidationError' || err?.type === 'AuthenticationError') {
           return null;

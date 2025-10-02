@@ -502,10 +502,10 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, u
     
     // Clean up any temp files
     if (tempFilePath) {
-      try { await fs.unlink(tempFilePath); } catch (e) { /* ignore cleanup errors */ }
+      try { await fs.unlink(tempFilePath); } catch (_e) { /* ignore cleanup errors */ }
     }
     if (protectedFilePath) {
-      try { await fs.unlink(protectedFilePath); } catch (e) { /* ignore cleanup errors */ }
+      try { await fs.unlink(protectedFilePath); } catch (_e) { /* ignore cleanup errors */ }
     }
     
     res.status(500).json({ message: 'Error processing file upload' });

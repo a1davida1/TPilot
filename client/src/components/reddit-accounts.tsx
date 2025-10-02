@@ -131,7 +131,7 @@ export function RedditAccounts() {
           description: "Please complete the authorization in the new window",
         });
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Connection Failed",
         description: "Unable to start Reddit connection process",

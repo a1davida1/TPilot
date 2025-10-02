@@ -67,12 +67,10 @@ interface PostingJobPayload {
 // Create a proper User type alias from the schema
 type UserType = typeof users.$inferSelect;
 
-// Augment Express namespace to add user property
-declare global {
-  namespace Express {
-    interface Request {
-      user?: UserType;
-    }
+// Augment Express Request interface using ES6 module augmentation
+declare module 'express-serve-static-core' {
+  interface Request {
+    user?: UserType;
   }
 }
 

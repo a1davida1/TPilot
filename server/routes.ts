@@ -57,7 +57,7 @@ export function buildCsrfProtectedRoutes(apiPrefix: string = API_PREFIX): string
 
 export const csrfProtectedRoutes = buildCsrfProtectedRoutes();
 // Analytics request type
-interface AnalyticsRequest extends express.Request {
+interface _AnalyticsRequest extends express.Request {
   sessionID: string;
 }
 
@@ -477,7 +477,9 @@ interface RedditSessionData {
 
 declare module 'express-session' {
   interface SessionData extends RedditSessionData {
-    // Extended with Reddit OAuth properties
+    // This interface extends RedditSessionData to add Reddit OAuth properties to express-session
+    // Additional session properties can be added here as needed
+    [key: string]: unknown;
   }
 }
 
@@ -543,7 +545,7 @@ interface AuthRequest extends express.Request {
   user?: typeof users.$inferSelect;
 }
 
-interface GenerationRequestBody {
+interface _GenerationRequestBody {
   mode?: string;
   prompt?: string;
   platform?: string;

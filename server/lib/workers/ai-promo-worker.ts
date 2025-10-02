@@ -22,7 +22,7 @@ export class AiPromoWorker {
     logger.info('✅ AI Promo worker initialized with queue abstraction');
   }
 
-  private async processJob(jobData: unknown, jobId: string): Promise<void> {
+  private async processJob(jobData: unknown, _jobId: string): Promise<void> {
     // Validate job data structure
     if (!jobData || typeof jobData !== 'object') {
       throw new Error('Invalid job data: expected object');

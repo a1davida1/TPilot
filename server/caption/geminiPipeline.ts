@@ -83,7 +83,7 @@ async function resolveResponseText(payload: unknown): Promise<string | undefined
   return undefined;
 }
 
-const MAX_VARIANT_ATTEMPTS = 4;
+const _MAX_VARIANT_ATTEMPTS = 4;
 const VARIANT_TARGET = 5;
 const VARIANT_RETRY_LIMIT = 4;
 const CAPTION_KEY_LENGTH = 80;
@@ -130,16 +130,16 @@ function buildVariantFallbackBatch(params: {
 
 const MIN_IMAGE_BYTES = 32;
 
-function captionKey(caption: string): string {
+function _captionKey(caption: string): string {
   return caption.trim().slice(0, 80).toLowerCase();
 }
 
-function hintSnippet(caption: string): string {
+function _hintSnippet(caption: string): string {
   const normalized = caption.trim().replace(/\s+/g, " ");
   return normalized.length > 60 ? `${normalized.slice(0, 57)}…` : normalized;
 }
 
-function uniqueCaptionKey(caption: string): string {
+function _uniqueCaptionKey(caption: string): string {
   return caption.trim().slice(0, CAPTION_KEY_LENGTH).toLowerCase();
 }
 
@@ -611,7 +611,7 @@ function captionsAreSimilar(a: string, b: string): boolean {
   return jaccard > 0.82;
 }
 
-function collectDuplicateCaptions(
+function _collectDuplicateCaptions(
   variants: z.infer<typeof CaptionArray>
 ): string[] {
   const seen = new Map<string, string>();
@@ -637,7 +637,7 @@ function collectDuplicateCaptions(
   return [...duplicates];
 }
 
-function buildDuplicateRetryHintMessage(duplicates: string[]): string {
+function _buildDuplicateRetryHintMessage(duplicates: string[]): string {
   if (duplicates.length === 0) {
     return "Need more variety across tone, structure, concrete imagery, and CTA.";
   }
@@ -653,7 +653,7 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
   try {
     console.error('Starting fact extraction for image:', imageUrl.substring(0, 100) + '...');
     const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("extract.txt");
-    const vision = getVisionModel();
+    const _vision = getVisionModel();
 
     // Handle data URLs differently from regular URLs
     let imageData: string;
@@ -1004,7 +1004,7 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
       typeof variant.caption === "string" ? variant.caption : undefined
     ));
 
-    const fallbackBase = uniqueVariants[0] ?? fallbackBatch[0];
+    const _fallbackBase = uniqueVariants[0] ?? fallbackBatch[0];
 
     while (uniqueVariants.length < VARIANT_TARGET) {
       const index = uniqueVariants.length + 1;

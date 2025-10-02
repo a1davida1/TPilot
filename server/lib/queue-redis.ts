@@ -118,7 +118,7 @@ export class RedisBullQueue implements IQueue {
   }
 
   async getFailureRate(queueName: string, windowMinutes: number): Promise<QueueFailureStats> {
-    const queueEvents = this.getOrCreateQueueEvents(queueName);
+    const _queueEvents = this.getOrCreateQueueEvents(queueName);
     
     const since = Date.now() - windowMinutes * 60 * 1000;
     

@@ -46,7 +46,7 @@ export class PostScheduler {
   
   static async chooseSendTime(
     subreddit: string, 
-    timezone: string = 'America/New_York',
+    _timezone: string = 'America/New_York',
     dayPreference?: 'weekday' | 'weekend'
   ): Promise<Date> {
     const timing = await this.getSubredditTiming(subreddit);

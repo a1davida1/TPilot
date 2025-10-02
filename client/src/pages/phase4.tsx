@@ -25,7 +25,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useLocation } from 'wouter';
 
-type IconType = LucideIcon;
+type _IconType = LucideIcon;
 
 const TAB_VALUES = ['overview', 'automation', 'intelligence', 'community', 'optimizer'] as const;
 

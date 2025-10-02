@@ -126,7 +126,7 @@ interface GeminiTextEnvelope {
   response?: unknown;
 }
 
-async function invokeTextModel(prompt: Array<{ text: string }>): Promise<unknown> {
+async function _invokeTextModel(prompt: Array<{ text: string }>): Promise<unknown> {
   const model = getTextModel();
   return model.generateContent(prompt);
 }
@@ -288,9 +288,9 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
   };
 
   const safeFallbackCaption = "Here's something I'm proud of today.";
-  const safeFallbackAlt = "Engaging description that highlights the visual story.";
-  const safeFallbackHashtags = fallbackHashtags(params.platform);
-  const safeFallbackCta = "Comment your thoughts below! 💭";
+  const _safeFallbackAlt = "Engaging description that highlights the visual story.";
+  const _safeFallbackHashtags = fallbackHashtags(params.platform);
+  const _safeFallbackCta = "Comment your thoughts below! 💭";
 
   const buildFallbackBatch = () =>
     Array.from({ length: VARIANT_TARGET }, (_, index) => {
@@ -477,9 +477,9 @@ function _prepareVariantsForRanking(
   if (preparedVariants.length < options.targetLength) {
     // If not enough variants, duplicate existing ones or add fallbacks if none exist
     const safeFallbackCaption = "Here's something I'm proud of today.";
-    const safeFallbackAlt = "Engaging description that highlights the visual story.";
-    const safeFallbackHashtags = fallbackHashtags(params.platform || 'instagram');
-    const safeFallbackCta = "Comment your thoughts below! 💭";
+    const _safeFallbackAlt = "Engaging description that highlights the visual story.";
+    const _safeFallbackHashtags = fallbackHashtags(params.platform || 'instagram');
+    const _safeFallbackCta = "Comment your thoughts below! 💭";
 
 
     const fallbackPlatform: "instagram" | "x" | "reddit" | "tiktok" = (() => {

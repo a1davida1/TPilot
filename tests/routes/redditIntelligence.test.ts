@@ -1,13 +1,41 @@
-import express from 'express';
+import express, { RequestHandler } from 'express';
 import request from 'supertest';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-vi.mock('../../server/middleware/auth.ts', () => ({
-  authenticateToken: (req: express.Request, _res: express.Response, next: express.NextFunction) => {
-    const requestWithUser = req as express.Request & { user?: { id: number } };
-    requestWithUser.user = { id: 99 };
+type RequestWithUser = express.Request & { user?: { id: number } };
+
+function createAuthenticatedMiddleware(): RequestHandler {
+  return (req: express.Request, _res: express.Response, next: express.NextFunction) => {
+    (req as RequestWithUser).user = { id: 99 };
     next();
-  }
+  };
+}
+
+type AuthenticateTokenMock = ((required?: boolean) => RequestHandler) & ((
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) => void);
+
+vi.mock('../../server/middleware/auth.ts', () => ({
+  authenticateToken: vi.fn((
+    reqOrRequired?: boolean | express.Request,
+    res?: express.Response,
+    next?: express.NextFunction
+  ) => {
+    const middleware = createAuthenticatedMiddleware();
+
+    if (typeof reqOrRequired === 'boolean' || typeof reqOrRequired === 'undefined') {
+      return middleware;
+    }
+
+    if (!res || !next) {
+      throw new Error('authenticateToken mock requires req, res, and next arguments when invoked directly');
+    }
+
+    middleware(reqOrRequired, res, next);
+    return undefined;
+  }) as unknown as AuthenticateTokenMock
 }));
 
 vi.mock('../../server/services/reddit-intelligence.ts', () => ({

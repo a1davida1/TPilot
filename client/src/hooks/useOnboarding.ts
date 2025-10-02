@@ -11,7 +11,7 @@ interface OnboardingState {
 const ONBOARDING_STORAGE_KEY = 'thottopilot-onboarding';
 
 export function useOnboarding() {
-  const { user, isAuthenticated } = useAuth();
+  const { user: _user, isAuthenticated } = useAuth();
   const [state, setState] = useState<OnboardingState>(() => {
     if (typeof window === 'undefined') {
       return {

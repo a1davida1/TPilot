@@ -28,7 +28,7 @@ const parseInteger = (value: string | undefined, fallback: number): number => {
   return Number.isNaN(parsed) ? fallback : parsed;
 };
 
-interface RedisStoreConstructor {
+interface _RedisStoreConstructor {
   new (options: { client: RedisClient; prefix?: string; disableTouch?: boolean; ttl?: number }): Store;
 }
 

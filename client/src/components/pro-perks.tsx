@@ -114,13 +114,13 @@ const statusStyles: Record<ProPerk["status"], { label: string; className: string
   }
 };
 
-export function ProPerks({ userTier = "pro" }: ProPerksProps) {
+export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>("all");
   const [selectedPerk, setSelectedPerk] = useState<ProPerk | null>(null);
   const [instructionsByPerk, setInstructionsByPerk] = useState<Record<string, SignupInstructions>>({});
   const [referralCodes, setReferralCodes] = useState<Record<string, string>>({});
-  const [instructionsLoading, setInstructionsLoading] = useState<string | null>(null);
+  const [_instructionsLoading, setInstructionsLoading] = useState<string | null>(null);
   const [referralLoading, setReferralLoading] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -133,7 +133,7 @@ export function ProPerks({ userTier = "pro" }: ProPerksProps) {
   );
 
   // Fetch real resources from API
-  const { data, isLoading, isError } = useQuery<ProResourcesResult>({
+  const { data, isLoading, isError: _isError } = useQuery<ProResourcesResult>({
     queryKey: ["pro-resources"],
     queryFn: async () => {
       if (typeof window === "undefined") {

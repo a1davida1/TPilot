@@ -285,12 +285,12 @@ class AnalyticsService {
   async flushEvents() {
     if (this.events.length === 0) return;
     
-    const eventsToSend = [...this.events];
+    const _eventsToSend = [...this.events];
     this.events = [];
     
     // In production, batch send to analytics provider
     if (process.env.NODE_ENV === 'production') {
-      // await this.batchSendToAnalyticsProvider(eventsToSend);
+      // await this.batchSendToAnalyticsProvider(_eventsToSend);
     }
   }
 
@@ -299,7 +299,7 @@ class AnalyticsService {
     // Determine user segment based on behavior
     const userEvents = this.events.filter(e => e.userId === userId);
     const contentCount = userEvents.filter(e => e.event === 'content_generated').length;
-    const lastActive = userEvents[userEvents.length - 1]?.timestamp;
+    const _lastActive = userEvents[userEvents.length - 1]?.timestamp;
     
     if (contentCount > 100) return 'power_user';
     if (contentCount > 20) return 'active_user';

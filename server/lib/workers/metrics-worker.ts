@@ -13,7 +13,7 @@ type RedditSubmission = {
   view_count: number;
 };
 
-interface RedditAPI {
+interface _RedditAPI {
   getSubmission(id: string): Promise<RedditSubmission>;
 }
 
@@ -41,7 +41,7 @@ export class MetricsWorker {
     logger.info('✅ Metrics worker initialized with queue abstraction');
   }
 
-  private async processJob(jobData: unknown, jobId: string): Promise<void> {
+  private async processJob(jobData: unknown, _jobId: string): Promise<void> {
     const { postJobId, redditPostId, scheduledFor } = jobData as MetricsJobData;
 
     try {

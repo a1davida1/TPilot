@@ -55,7 +55,7 @@ const flushPromises = () => new Promise<void>((resolve) => {
   setTimeout(resolve, 0);
 });
 
-const clipboardWriteText = vi.fn((text: string) => Promise.resolve());
+const clipboardWriteText = vi.fn((_text: string) => Promise.resolve());
 
 Object.defineProperty(navigator, 'clipboard', {
   value: {
