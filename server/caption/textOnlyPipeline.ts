@@ -247,51 +247,14 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
     typeof value === "object" && value !== null;
 
   const sanitizeVariant = (item: Record<string, unknown>): z.infer<typeof CaptionItem> => {
-    const safetyLevel = normalizeSafetyLevel(
-      typeof item.safety_level === "string" ? item.safety_level : "normal"
+    const candidateCaption = typeof item.caption === "string" ? item.caption : undefined;
+    return _normalizeVariantFields(
+      item,
+      params.platform,
+      params.theme,
+      params.context,
+      candidateCaption
     );
-
-
-    const caption = typeof item.caption === "string" && item.caption.trim().length > 0
-      ? item.caption
-      : "Sharing something I'm proud of today.";
-
-    const mood = typeof item.mood === "string" && item.mood.trim().length >= 2
-      ? item.mood
-      : "engaging";
-    const style = typeof item.style === "string" && item.style.trim().length >= 2
-      ? item.style
-      : "authentic";
-    
-    const cta = typeof item.cta === "string" && item.cta.trim().length >= 2
-      ? item.cta
-      : "Comment your thoughts below! 💭";
-
-    const alt = typeof item.alt === "string" && item.alt.trim().length >= 20
-      ? item.alt
-      : "Engaging description that highlights the visual story.";
-
-    const hashtags = Array.isArray(item.hashtags)
-      ? item.hashtags
-          .map(tag => (typeof tag === "string" ? tag.trim() : ""))
-          .filter((tag): tag is string => tag.length > 0)
-      : [];
-
-    const fallbackTags = fallbackHashtags(params.platform);
-    const resolvedHashtags = hashtags.length > 0 ? hashtags.slice(0, 10) : [...fallbackTags];
-
-    const nsfw = typeof item.nsfw === "boolean" ? item.nsfw : false;
-
-    return CaptionItem.parse({
-      caption,
-      alt,
-      hashtags: resolvedHashtags,
-      cta,
-      mood,
-      style,
-      safety_level: safetyLevel,
-      nsfw,
-    });
   };
 
   const buildUserPrompt = (varietyHint: string | undefined, existingCaptions: string[]): string => {
@@ -330,16 +293,25 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
   const safeFallbackCta = "Comment your thoughts below! 💭";
 
   const buildFallbackBatch = () =>
-    Array.from({ length: VARIANT_TARGET }, (_, index) => ({
-      caption: `${safeFallbackCaption} (fallback ${index + 1})`,
-      alt: `${safeFallbackAlt} (fallback ${index + 1})`,
-      hashtags: [...safeFallbackHashtags],
-      cta: safeFallbackCta,
-      mood: params.mood ?? "engaging",
-      style: params.style ?? "authentic",
-      safety_level: "normal" as const,
-      nsfw: params.nsfw ?? false,
-    }));
+    Array.from({ length: VARIANT_TARGET }, (_, index) => {
+      const fallbackCaption = `${safeFallbackCaption} (fallback ${index + 1})`;
+      return _normalizeVariantFields(
+        {
+          caption: fallbackCaption,
+          alt: "",
+          hashtags: [],
+          cta: "",
+          mood: params.mood ?? "engaging",
+          style: params.style ?? "authentic",
+          safety_level: "normal" as const,
+          nsfw: params.nsfw ?? false,
+        },
+        params.platform,
+        params.theme,
+        params.context,
+        fallbackCaption
+      );
+    });
 
   const fetchVariants = async (varietyHint: string | undefined, existingCaptions: string[]) => {
     const user = buildUserPrompt(varietyHint, existingCaptions);
@@ -474,35 +446,21 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
 
   if (uniqueVariants.length < VARIANT_TARGET) {
     const fallbackBatch = buildFallbackBatch();
-    const baseSource: Record<string, unknown> = uniqueVariants[0]
-      ? { ...uniqueVariants[0] }
-      : {
-          ...fallbackBatch[0],
-          hashtags: [...safeFallbackHashtags],
-        };
-    const baseVariant = _normalizeVariantFields(
-      baseSource,
-      params.platform,
-      params.theme,
-      params.context,
-      typeof baseSource.caption === "string" ? baseSource.caption : undefined
-    );
+
+    const baseVariant = uniqueVariants[0] ?? fallbackBatch[0];
 
     while (uniqueVariants.length < VARIANT_TARGET) {
       const index = uniqueVariants.length + 1;
-      const captionSeed = baseVariant.caption || safeFallbackCaption;
-      const paddedVariant = _normalizeVariantFields(
-        {
+      const source = fallbackBatch[(index - 1) % fallbackBatch.length];
+      uniqueVariants.push(
+        CaptionItem.parse({
           ...baseVariant,
-          caption: `${captionSeed} (retry filler ${index})`,
-          alt: baseVariant.alt,
-        } as Record<string, unknown>,
-        params.platform,
-        params.theme,
-        params.context,
-        baseVariant.caption
+          ...source,
+          caption: `${source.caption} (retry filler ${index})`,
+          alt: `${source.alt} (retry filler ${index})`,
+        })
       );
-      uniqueVariants.push(paddedVariant);
+
     }
   }
 
@@ -522,43 +480,49 @@ function _prepareVariantsForRanking(
     const safeFallbackAlt = "Engaging description that highlights the visual story.";
     const safeFallbackHashtags = fallbackHashtags(params.platform || 'instagram');
     const safeFallbackCta = "Comment your thoughts below! 💭";
-    
-    const platform = (params.platform ?? "instagram") as "instagram" | "x" | "reddit" | "tiktok";
-    const baseSource: Record<string, unknown> = preparedVariants[0]
-      ? { ...preparedVariants[0] }
-      : {
-          caption: safeFallbackCaption,
-          alt: safeFallbackAlt,
-          hashtags: [...safeFallbackHashtags],
-          cta: safeFallbackCta,
-          mood: "engaging",
-          style: "authentic",
-          safety_level: "normal",
-          nsfw: false,
-        };
-    const baseVariant = _normalizeVariantFields(
-      baseSource,
-      platform,
+
+
+    const fallbackPlatform: "instagram" | "x" | "reddit" | "tiktok" = (() => {
+      switch (params.platform) {
+        case "instagram":
+        case "x":
+        case "reddit":
+        case "tiktok":
+          return params.platform;
+        default:
+          return "instagram";
+      }
+    })();
+    const baseVariant = preparedVariants[0] ?? _normalizeVariantFields(
+      {
+        caption: safeFallbackCaption,
+        alt: "",
+        hashtags: [],
+        cta: "",
+        mood: "engaging",
+        style: "authentic",
+        safety_level: "normal" as const,
+        nsfw: false,
+      },
+      fallbackPlatform,
       params.theme,
       params.context,
-      typeof baseSource.caption === "string" ? baseSource.caption : undefined
+      safeFallbackCaption
+
     );
 
     while (preparedVariants.length < options.targetLength) {
       const index = preparedVariants.length + 1;
       const captionSeed = baseVariant.caption || "Here's something I'm proud of today.";
-      const paddedVariant = _normalizeVariantFields(
-        {
+
+      preparedVariants.push(
+        CaptionItem.parse({
           ...baseVariant,
           caption: `${captionSeed} (filler ${index})`,
-          alt: baseVariant.alt,
-        } as Record<string, unknown>,
-        platform,
-        params.theme,
-        params.context,
-        baseVariant.caption
+          alt: `${baseVariant.alt} (filler ${index})`,
+        })
       );
-      preparedVariants.push(paddedVariant);
+
     }
   }
   // Deduplicate variants based on similarity if needed, though `generateVariantsTextOnly` already aims for uniqueness

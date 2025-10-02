@@ -113,9 +113,9 @@ function buildVariantFallbackBatch(params: {
 }): Record<string, unknown>[] {
   return Array.from({ length: VARIANT_TARGET }, (_, index) => ({
     caption: `${safeFallbackCaption} (fallback ${index + 1})`,
-    alt: `${safeFallbackAlt} (fallback ${index + 1})`,
-    hashtags: [...safeFallbackHashtags],
-    cta: safeFallbackCta,
+    alt: "",
+    hashtags: [],
+    cta: "",
     mood: params.mood ?? "engaging",
     style: params.style ?? "authentic",
     safety_level: "normal",
@@ -824,43 +824,14 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
   const textModel = getTextModel();
   const voiceGuide = buildVoiceGuideBlock(params.voice);
 
-  const sanitizeVariant = (item: Record<string, unknown>): Record<string, unknown> => {
-    const variant = { ...item } as Record<string, unknown>;
-
-    variant.safety_level = normalizeSafetyLevel(
-      typeof variant.safety_level === "string" ? variant.safety_level : "normal"
+  const sanitizeVariant = (item: Record<string, unknown>): z.infer<typeof CaptionItem> => {
+    const candidateCaption = typeof item.caption === "string" ? item.caption : undefined;
+    return normalizeVariantFields(
+      item,
+      params.platform,
+      params.facts,
+      candidateCaption
     );
-
-    const caption = typeof variant.caption === "string" && variant.caption.trim().length > 0
-      ? variant.caption
-      : "Check out this amazing content!";
-    variant.caption = caption;
-
-    variant.mood = typeof variant.mood === "string" && variant.mood.trim().length >= 2
-      ? variant.mood
-      : "engaging";
-    variant.style = typeof variant.style === "string" && variant.style.trim().length >= 2
-      ? variant.style
-      : "authentic";
-    variant.cta = typeof variant.cta === "string" && variant.cta.trim().length >= 2
-      ? variant.cta
-      : "Check it out";
-
-    const alt = typeof variant.alt === "string" && variant.alt.trim().length >= 20
-      ? variant.alt
-      : "Engaging social media content that highlights the visual story.";
-    variant.alt = alt;
-
-    const hashtags = Array.isArray(variant.hashtags)
-      ? variant.hashtags
-          .map(tag => (typeof tag === "string" ? tag.trim() : ""))
-          .filter(tag => tag.length > 0)
-      : [];
-    variant.hashtags = hashtags.length > 0 ? hashtags.slice(0, 10) : ["#content", "#creative", "#amazing"];
-
-    variant.nsfw = typeof variant.nsfw === "boolean" ? variant.nsfw : false;
-
-    return variant;
   };
 
   const buildUserPrompt = (
@@ -1020,7 +991,16 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
       style: params.style,
       mood: params.mood,
       nsfw: params.nsfw,
-    });
+
+    }).map(variant => normalizeVariantFields(
+      variant,
+      params.platform,
+      params.facts,
+      typeof variant.caption === "string" ? variant.caption : undefined
+    ));
+
+    const fallbackBase = uniqueVariants[0] ?? fallbackBatch[0];
+
     while (uniqueVariants.length < VARIANT_TARGET) {
       const index = uniqueVariants.length + 1;
       const source = fallbackBatch[(index - 1) % fallbackBatch.length];
