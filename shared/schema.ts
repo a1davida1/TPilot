@@ -824,8 +824,7 @@ export type InsertPostPreview = z.infer<typeof insertPostPreviewSchema>;
 export type PostJob = typeof postJobs.$inferSelect;
 export type InsertPostJob = z.infer<typeof insertPostJobSchema>;
 export type RedditPostOutcome = typeof redditPostOutcomes.$inferSelect;
-export type InsertRedditPostOutcome = z.infer<typeof insertRedditPostOutcomeSchema>;
-
+export type InsertRedditPostOutcome = typeof redditPostOutcomes.$inferInsert;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
 

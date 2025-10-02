@@ -16,20 +16,31 @@ interface GeminiMockResponse {
 
 type GeminiGenerateContent = (input: unknown) => Promise<GeminiMockResponse>;
 
-const { textModelGenerateContent, visionModelGenerateContent, isGeminiAvailable } =
-  vi.hoisted(() => ({
-    textModelGenerateContent: vi.fn<GeminiGenerateContent>(),
-    visionModelGenerateContent: vi.fn<GeminiGenerateContent>(),
-    isGeminiAvailable: vi.fn<() => boolean>(() => true),
-  }));
+const {
+  textModelGenerateContent,
+  visionModelGenerateContent,
+  isGeminiAvailable,
+  textModel,
+  visionModel,
+} = vi.hoisted(() => {
+  const textModelGenerateContent = vi.fn<GeminiGenerateContent>();
+  const visionModelGenerateContent = vi.fn<GeminiGenerateContent>();
+  const textModel = {
+    generateContent: textModelGenerateContent,
+  };
+  const visionModel = {
+    generateContent: visionModelGenerateContent,
+  };
+  const isGeminiAvailable = vi.fn<() => boolean>(() => true);
 
-const textModel = {
-  generateContent: textModelGenerateContent,
-};
-
-const visionModel = {
-  generateContent: visionModelGenerateContent,
-};
+  return {
+    textModelGenerateContent,
+    visionModelGenerateContent,
+    isGeminiAvailable,
+    textModel,
+    visionModel,
+  };
+});
 
 vi.mock('../../server/lib/gemini-client', () => ({
   __esModule: true,

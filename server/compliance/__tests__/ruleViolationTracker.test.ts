@@ -80,8 +80,8 @@ vi.mock('../../storage.js', () => {
         subreddit: record.subreddit,
         status: record.status,
         reason: record.reason,
-        occurredAt: record.occurredAt,
-      } as RedditPostOutcome));
+        occurredAt: new Date(record.occurredAt),
+      }));
   };
 
   const getRedditPostRemovalSummary = async (
