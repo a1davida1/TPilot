@@ -143,6 +143,9 @@ export async function extractFacts(imageUrl:string){
   try {
     const model = getVisionModel();
     const res=await model.generateContent([{text:sys+"\n"+guard+"\n"+prompt}, img]);
+    if (!res.response) {
+      throw new Error('No response from Gemini vision model');
+    }
     return stripToJSON(res.response.text());
   } catch (error) {
     console.error('Gemini vision model generateContent failed:', error);
