@@ -25,6 +25,7 @@ import {
   type InsertSavedContent,
   type VerificationToken,
   type InsertVerificationToken,
+  type UserUpdate,
   users,
   contentGenerations,
   userPreferences,
@@ -88,8 +89,8 @@ export interface IStorage {
   getUserByProviderId(provider: string, providerId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserTier(userId: number, tier: string): Promise<void>;
-  updateUser(userId: number, updates: Partial<User>): Promise<User>;
-  updateUserProfile(userId: number, updates: Partial<User>): Promise<User | undefined>;
+  updateUser(userId: number, updates: Partial<UserUpdate>): Promise<User>;
+  updateUserProfile(userId: number, updates: Partial<UserUpdate>): Promise<User | undefined>;
   updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
   updateUserEmailVerified(userId: number, verified: boolean): Promise<void>;
   createVerificationToken(token: InsertVerificationToken): Promise<VerificationToken>;
@@ -326,12 +327,20 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateUser(userId: number, updates: Partial<User>): Promise<User> {
+  async updateUser(userId: number, updates: Partial<UserUpdate>): Promise<User> {
     try {
-      // Filter out undefined values and ensure we have something to update
-      const cleanUpdates = Object.fromEntries(
-        Object.entries(updates).filter(([_, value]) => value !== undefined)
-      );
+      // Filter out undefined values while preserving type information
+      const entries = Object.entries(updates) as Array<[
+        keyof UserUpdate,
+        UserUpdate[keyof UserUpdate]
+      ]>;
+
+      const cleanUpdates = entries.reduce<Partial<UserUpdate>>((acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = value;
+        }
+        return acc;
+      }, {});
 
       // If no valid updates, return the existing user
       if (Object.keys(cleanUpdates).length === 0) {
@@ -353,9 +362,21 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateUserProfile(userId: number, updates: Partial<User>): Promise<User | undefined> {
+  async updateUserProfile(userId: number, updates: Partial<UserUpdate>): Promise<User | undefined> {
     try {
-      const result = await db.update(users).set(updates).where(eq(users.id, userId)).returning();
+      const entries = Object.entries(updates) as Array<[
+        keyof UserUpdate,
+        UserUpdate[keyof UserUpdate]
+      ]>;
+
+      const cleanUpdates = entries.reduce<Partial<UserUpdate>>((acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = value;
+        }
+        return acc;
+      }, {});
+
+      const result = await db.update(users).set(cleanUpdates).where(eq(users.id, userId)).returning();
       return result[0];
     } catch (error) {
       safeLog('error', 'Storage operation failed - updating user profile:', { error: (error as Error).message });

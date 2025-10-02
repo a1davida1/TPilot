@@ -206,9 +206,8 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
         });
       }
 
-      // Update last login time - temporarily disabled due to schema export issue
-      // TODO: Fix lastLogin column export in schema
-      // await storage.updateUser(user.id, { lastLogin: new Date() });
+      // Update last login time for auditing and session management
+      await storage.updateUser(user.id, { lastLogin: new Date() });
 
       const token = jwt.sign(
         {
@@ -447,10 +446,9 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
 
       // Update password and clear mustChangePassword flag
       await storage.updateUserPassword(userId, hashedNewPassword);
-      await storage.updateUser(userId, { 
-        mustChangePassword: false
-        // TODO: Fix lastLogin column export in schema
-        // lastLogin: new Date()
+      await storage.updateUser(userId, {
+        mustChangePassword: false,
+        lastLogin: new Date()
       });
 
       // Create token for immediate login
@@ -654,7 +652,7 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
       // Update password, mark email as verified, and clear temporary password flag
       await storage.updateUserPassword(user.id, hashedPassword);
       await storage.updateUserEmailVerified(user.id, true);
-      await storage.updateUser(user.id, { mustChangePassword: false });
+      await storage.updateUser(user.id, { mustChangePassword: false, lastLogin: new Date() });
 
       logger.info('Password reset successful', {
         userId: user.id,
