@@ -21,29 +21,43 @@ async function fetchImage(url: string): Promise<Buffer> {
 }
 
 async function detectNSFW(image: Buffer): Promise<boolean> {
-  const res = await fetch(
-    'https://api-inference.huggingface.co/models/Falconsai/nsfw_image_detection',
-    {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${process.env.HF_API_KEY ?? ''}` },
-      body: image,
-    },
-  );
-  if (!res.ok) return false;
-  const data: unknown = await res.json();
-  if (Array.isArray(data)) {
-    const nsfwScore = data
-      .filter(
-        (d: unknown): d is { label: string; score: number } =>
-          typeof d === 'object' &&
-          d !== null &&
-          typeof (d as { label?: unknown }).label === 'string' &&
-          typeof (d as { score?: unknown }).score === 'number',
-      )
-      .find((d) => d.label.toLowerCase() === 'nsfw')?.score;
-    return (nsfwScore ?? 0) > 0.5;
+  try {
+    const res = await fetch(
+      'https://api-inference.huggingface.co/models/Falconsai/nsfw_image_detection',
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${process.env.HF_API_KEY ?? ''}` },
+        body: image,
+      },
+    );
+
+    if (!res.ok) {
+      return true;
+    }
+
+    const contentType = res.headers.get('content-type');
+    if (typeof contentType !== 'string' || !contentType.includes('application/json')) {
+      return true;
+    }
+
+    const data: unknown = await res.json();
+    if (Array.isArray(data)) {
+      const nsfwScore = data
+        .filter(
+          (d: unknown): d is { label: string; score: number } =>
+            typeof d === 'object' &&
+            d !== null &&
+            typeof (d as { label?: unknown }).label === 'string' &&
+            typeof (d as { score?: unknown }).score === 'number',
+        )
+        .find((d) => d.label.toLowerCase() === 'nsfw')?.score;
+      return (nsfwScore ?? 0) > 0.5;
+    }
+
+    return true;
+  } catch (error) {
+    return true;
   }
-  return false;
 }
 
 async function captionImage(image: Buffer): Promise<string> {
