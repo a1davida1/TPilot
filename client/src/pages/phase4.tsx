@@ -39,6 +39,12 @@ export default function Phase4Dashboard() {
   const [location] = useLocation();
   const [activeTab, setActiveTab] = useState<TabValue>('overview');
 
+  const handleTabChange = (value: string) => {
+    if (isValidTabValue(value)) {
+      setActiveTab(value);
+    }
+  };
+
   useEffect(() => {
     if (typeof window === 'undefined') {
       return;
@@ -220,7 +226,7 @@ export default function Phase4Dashboard() {
           </Badge>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="grid w-full grid-cols-5 bg-gray-800/50 border border-gray-700">
             <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
             <TabsTrigger value="automation" data-testid="tab-automation">Automation</TabsTrigger>
@@ -287,7 +293,7 @@ export default function Phase4Dashboard() {
                       <Button 
                         variant="outline" 
                         className="w-full border-gray-600 hover:border-purple-500 hover:bg-purple-500/10"
-                        onClick={() => setActiveTab(feature.id)}
+                        onClick={() => handleTabChange(feature.id)}
                         data-testid={`open-${feature.id}`}
                       >
                         Open {feature.title}

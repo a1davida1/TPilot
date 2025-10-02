@@ -1,25 +1,21 @@
 import { GoogleGenAI, type GoogleGenAIOptions } from "@google/genai";
 import { env } from "./config.js";
 
-type EnvRecord = Record<string, string | undefined>;
-
-const envConfig = env as EnvRecord;
-
 const apiKey =
   process.env.GOOGLE_GENAI_API_KEY ||
   process.env.GEMINI_API_KEY ||
-  envConfig.GOOGLE_GENAI_API_KEY ||
-  envConfig.GEMINI_API_KEY ||
+  env.GOOGLE_GENAI_API_KEY ||
+  env.GEMINI_API_KEY ||
   "";
 
-const apiVersion = process.env.GEMINI_API_VERSION || envConfig.GEMINI_API_VERSION || undefined;
+const apiVersion = process.env.GEMINI_API_VERSION || env.GEMINI_API_VERSION || undefined;
 const textModelName =
   process.env.GEMINI_TEXT_MODEL ||
-  envConfig.GEMINI_TEXT_MODEL ||
+  env.GEMINI_TEXT_MODEL ||
   "gemini-1.5-flash";
 const visionModelName =
   process.env.GEMINI_VISION_MODEL ||
-  envConfig.GEMINI_VISION_MODEL ||
+  env.GEMINI_VISION_MODEL ||
   textModelName;
 
 type GeminiContentPart = Record<string, unknown> | string | number | boolean | null;

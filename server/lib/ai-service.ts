@@ -5,11 +5,12 @@ import { db } from "../db.js";
 import { aiGenerations, users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { assertExists } from "../../helpers/assert";
-import { getTextModel, isGeminiAvailable } from "./gemini-client";
+import { getTextModel, isGeminiAvailable } from "./gemini-client.js";
 
 // AI service initialization
 // Use Gemini as primary (checking both GOOGLE_GENAI_API_KEY and GEMINI_API_KEY), OpenAI as fallback
-const geminiModelName = process.env.GEMINI_TEXT_MODEL || env.GEMINI_TEXT_MODEL;
+
+const geminiModelName = process.env.GEMINI_TEXT_MODEL ?? env.GEMINI_TEXT_MODEL;
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
 

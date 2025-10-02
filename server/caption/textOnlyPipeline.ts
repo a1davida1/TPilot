@@ -579,7 +579,7 @@ async function requestTextOnlyRanking(
     textOutput = resolved;
   } else if (res && typeof res === "object") {
     const geminiRes = res as GeminiResponse;
-    if (geminiRes.response && typeof geminiRes.response.text === "function") {
+    if (geminiRes.response && typeof geminiRes.response === "object" && "text" in geminiRes.response && typeof geminiRes.response.text === "function") {
       try {
         const raw = geminiRes.response.text();
         textOutput = typeof raw === "string" ? raw : null;
