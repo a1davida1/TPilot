@@ -1,0 +1,170 @@
+client/src/components/__tests__/image-gallery.test.tsx:92:27 - error TS2344: Type 'typeof vi.fn<FetchArgs, FetchReturn>' does not satisfy the constraint '(...args: any) => any'.
+  Type 'typeof vi.fn<FetchArgs, FetchReturn>' provides no match for the signature '(...args: any): any'.
+
+92 let fetchMock: ReturnType<typeof vi.fn<FetchArgs, FetchReturn>>;
+                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+client/src/components/__tests__/image-gallery.test.tsx:92:40 - error TS2635: Type '<T extends Procedure = Procedure>(implementation?: T) => Mock<T>' has no signatures for which the type argument list is applicable.
+
+92 let fetchMock: ReturnType<typeof vi.fn<FetchArgs, FetchReturn>>;
+                                          ~~~~~~~~~~~~~~~~~~~~~~
+
+client/src/components/__tests__/image-gallery.test.tsx:184:21 - error TS2558: Expected 0-1 type arguments, but got 2.
+
+184   fetchMock = vi.fn<FetchArgs, FetchReturn>();
+                        ~~~~~~~~~~~~~~~~~~~~~~
+
+server/caption/__tests__/ranking-integration.test.ts:60:63 - error TS2344: Type '"fetch"' does not satisfy the constraint '"length" | "status" | "performance" | "mime" | "external" | "location" | "ArrayBuffer" | "SharedArrayBuffer" | "Uint8Array" | "Uint8ClampedArray" | "Uint16Array" | "Uint32Array" | ... 710 more ... | "Chai"'.
+
+60   let fetchSpy: ReturnType<typeof vi.spyOn<typeof globalThis, 'fetch'>>;
+                                                                 ~~~~~~~
+
+server/caption/geminiPipeline.ts:9:8 - error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
+
+9 } from "../lib/gemini.ts";
+         ~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:203:28 - error TS2769: No overload matches this call.
+  Overload 1 of 3, '(left: Column<ColumnBaseConfig<ColumnDataType, string>, object, object>, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>'.
+      Type '{}' is missing the following properties from type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>': table, _, name, keyAsName, and 19 more.
+  Overload 2 of 3, '(left: Aliased<boolean>, right: boolean | SQLWrapper): SQL<unknown>', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'Aliased<boolean>'.
+      Type '{}' is missing the following properties from type 'Aliased<boolean>': sql, fieldAlias, _, getSQL
+  Overload 3 of 3, '(left: SQLWrapper, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'SQLWrapper'.
+      Property 'getSQL' is missing in type '{}' but required in type 'SQLWrapper'.
+
+203         conditions.push(eq((users as Record<string, unknown>).isDeleted, false));
+                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  node_modules/drizzle-orm/sql/sql.d.ts:50:5
+    50     getSQL(): SQL;
+           ~~~~~~~~~~~~~~
+    'getSQL' is declared here.
+
+server/storage.ts:203:29 - error TS2352: Conversion of type 'PgTableWithColumns<{ name: "users"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "users"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; ... 6 more ...; generated: undefined; }, {}, {}>; ... 33 more ...; isDeleted: PgColumn<...>;...' to type 'Record<string, unknown>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'PgTable<{ name: "users"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "users"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; ... 6 more ...; generated: undefined; }, {}, {}>; ... 33 more ...; isDeleted: PgColumn<...>; }; dialect...'.
+
+203         conditions.push(eq((users as Record<string, unknown>).isDeleted, false));
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:220:32 - error TS2769: No overload matches this call.
+  Overload 1 of 3, '(left: Column<ColumnBaseConfig<ColumnDataType, string>, object, object>, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>'.
+      Type '{}' is missing the following properties from type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>': table, _, name, keyAsName, and 19 more.
+  Overload 2 of 3, '(left: Aliased<boolean>, right: boolean | SQLWrapper): SQL<unknown>', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'Aliased<boolean>'.
+      Type '{}' is missing the following properties from type 'Aliased<boolean>': sql, fieldAlias, _, getSQL
+  Overload 3 of 3, '(left: SQLWrapper, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'SQLWrapper'.
+      Property 'getSQL' is missing in type '{}' but required in type 'SQLWrapper'.
+
+220         query = query.where(eq((users as Record<string, unknown>).isDeleted, false)) as typeof query;
+                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  node_modules/drizzle-orm/sql/sql.d.ts:50:5
+    50     getSQL(): SQL;
+           ~~~~~~~~~~~~~~
+    'getSQL' is declared here.
+
+server/storage.ts:220:33 - error TS2352: Conversion of type 'PgTableWithColumns<{ name: "users"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "users"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; ... 6 more ...; generated: undefined; }, {}, {}>; ... 33 more ...; isDeleted: PgColumn<...>;...' to type 'Record<string, unknown>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'PgTable<{ name: "users"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "users"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; ... 6 more ...; generated: undefined; }, {}, {}>; ... 33 more ...; isDeleted: PgColumn<...>; }; dialect...'.
+
+220         query = query.where(eq((users as Record<string, unknown>).isDeleted, false)) as typeof query;
+                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:223:36 - error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'SQLWrapper | AnyColumn'.
+
+223         query = query.orderBy(desc((users as Record<string, unknown>).createdAt)) as typeof query;
+                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:223:37 - error TS2352: Conversion of type 'PgTableWithColumns<{ name: "users"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "users"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; ... 6 more ...; generated: undefined; }, {}, {}>; ... 33 more ...; isDeleted: PgColumn<...>;...' to type 'Record<string, unknown>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'PgTable<{ name: "users"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "users"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; ... 6 more ...; generated: undefined; }, {}, {}>; ... 33 more ...; isDeleted: PgColumn<...>; }; dialect...'.
+
+223         query = query.orderBy(desc((users as Record<string, unknown>).createdAt)) as typeof query;
+                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:242:28 - error TS2769: No overload matches this call.
+  Overload 1 of 3, '(left: Column<ColumnBaseConfig<ColumnDataType, string>, object, object>, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>'.
+      Type '{}' is missing the following properties from type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>': table, _, name, keyAsName, and 19 more.
+  Overload 2 of 3, '(left: Aliased<boolean>, right: boolean | SQLWrapper): SQL<unknown>', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'Aliased<boolean>'.
+      Type '{}' is missing the following properties from type 'Aliased<boolean>': sql, fieldAlias, _, getSQL
+  Overload 3 of 3, '(left: SQLWrapper, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'SQLWrapper'.
+      Property 'getSQL' is missing in type '{}' but required in type 'SQLWrapper'.
+
+242         conditions.push(eq((users as Record<string, unknown>).isDeleted, false));
+                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  node_modules/drizzle-orm/sql/sql.d.ts:50:5
+    50     getSQL(): SQL;
+           ~~~~~~~~~~~~~~
+    'getSQL' is declared here.
+
+server/storage.ts:242:29 - error TS2352: Conversion of type 'PgTableWithColumns<{ name: "users"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "users"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; ... 6 more ...; generated: undefined; }, {}, {}>; ... 33 more ...; isDeleted: PgColumn<...>;...' to type 'Record<string, unknown>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'PgTable<{ name: "users"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "users"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; ... 6 more ...; generated: undefined; }, {}, {}>; ... 33 more ...; isDeleted: PgColumn<...>; }; dialect...'.
+
+242         conditions.push(eq((users as Record<string, unknown>).isDeleted, false));
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:267:28 - error TS2769: No overload matches this call.
+  Overload 1 of 3, '(left: Column<ColumnBaseConfig<ColumnDataType, string>, object, object>, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>'.
+      Type '{}' is missing the following properties from type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>': table, _, name, keyAsName, and 19 more.
+  Overload 2 of 3, '(left: Aliased<boolean>, right: boolean | SQLWrapper): SQL<unknown>', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'Aliased<boolean>'.
+      Type '{}' is missing the following properties from type 'Aliased<boolean>': sql, fieldAlias, _, getSQL
+  Overload 3 of 3, '(left: SQLWrapper, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'SQLWrapper'.
+      Property 'getSQL' is missing in type '{}' but required in type 'SQLWrapper'.
+
+267         conditions.push(eq((users as Record<string, unknown>).isDeleted, false));
+                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  node_modules/drizzle-orm/sql/sql.d.ts:50:5
+    50     getSQL(): SQL;
+           ~~~~~~~~~~~~~~
+    'getSQL' is declared here.
+
+server/storage.ts:267:29 - error TS2352: Conversion of type 'PgTableWithColumns<{ name: "users"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "users"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; ... 6 more ...; generated: undefined; }, {}, {}>; ... 33 more ...; isDeleted: PgColumn<...>;...' to type 'Record<string, unknown>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'PgTable<{ name: "users"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "users"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; ... 6 more ...; generated: undefined; }, {}, {}>; ... 33 more ...; isDeleted: PgColumn<...>; }; dialect...'.
+
+267         conditions.push(eq((users as Record<string, unknown>).isDeleted, false));
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+server/storage.ts:292:28 - error TS2769: No overload matches this call.
+  Overload 1 of 3, '(left: Column<ColumnBaseConfig<ColumnDataType, string>, object, object>, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>'.
+      Type '{}' is missing the following properties from type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>': table, _, name, keyAsName, and 19 more.
+  Overload 2 of 3, '(left: Aliased<boolean>, right: boolean | SQLWrapper): SQL<unknown>', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'Aliased<boolean>'.
+      Type '{}' is missing the following properties from type 'Aliased<boolean>': sql, fieldAlias, _, getSQL
+  Overload 3 of 3, '(left: SQLWrapper, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'SQLWrapper'.
+      Property 'getSQL' is missing in type '{}' but required in type 'SQLWrapper'.
+
+292         conditions.push(eq((users as Record<string, unknown>).isDeleted, false));
+                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  node_modules/drizzle-orm/sql/sql.d.ts:50:5
+    50     getSQL(): SQL;
+           ~~~~~~~~~~~~~~
+    'getSQL' is declared here.
+
+server/storage.ts:292:29 - error TS2352: Conversion of type 'PgTableWithColumns<{ name: "users"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "users"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; ... 6 more ...; generated: undefined; }, {}, {}>; ... 33 more ...; isDeleted: PgColumn<...>;...' to type 'Record<string, unknown>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'PgTable<{ name: "users"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "users"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; ... 6 more ...; generated: undefined; }, {}, {}>; ... 33 more ...; isDeleted: PgColumn<...>; }; dialect...'.
+
+292         conditions.push(eq((users as Record<string, unknown>).isDeleted, false));
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Found 17 errors in 4 files.
+
+Errors  Files
+     3  client/src/components/__tests__/image-gallery.test.tsx:92
+     1  server/caption/__tests__/ranking-integration.test.ts:60
+     1  server/caption/geminiPipeline.ts:9
+    12  server/storage.ts:203

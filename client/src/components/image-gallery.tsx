@@ -1,14 +1,14 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { downloadProtectedImage } from '@/lib/image-protection';
-import { Upload, Shield, Download, Trash2, Tag } from 'lucide-react';
+import { Upload, Shield, Download, Trash2, Tag, Share2 } from 'lucide-react';
 
 // Import MediaAsset type from schema
 import type { MediaAsset } from '@shared/schema';
@@ -17,21 +17,180 @@ import type { MediaAsset } from '@shared/schema';
 interface UserImage extends MediaAsset {
   signedUrl?: string;
   downloadUrl?: string;
+  isProtected?: boolean;
+  protectionLevel?: ProtectionLevel;
+  lastRepostedAt?: string;
+}
+
+type ProtectionLevel = 'light' | 'standard' | 'heavy';
+
+interface ProtectImageResponse {
+  success?: boolean;
+  protectedUrl?: string;
+  message?: string;
+}
+
+interface QuickRepostResponse {
+  success?: boolean;
+  repostedAt?: string;
+  message?: string;
+}
+
+interface DeleteImageResponse {
+  success?: boolean;
+  message?: string;
+}
+
+interface ImageDetailModalProps {
+  image: UserImage | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onProtect: (image: UserImage, level: ProtectionLevel) => void;
+  onQuickRepost: (image: UserImage) => void;
+  onDownload: (image: UserImage) => void;
+  onDelete: (image: UserImage) => void;
+  isProtecting: boolean;
+  isReposting: boolean;
+  isDeleting: boolean;
+}
+
+function ImageDetailModal({
+  image,
+  open,
+  onOpenChange,
+  onProtect,
+  onQuickRepost,
+  onDownload,
+  onDelete,
+  isProtecting,
+  isReposting,
+  isDeleting
+}: ImageDetailModalProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {image ? (
+        <DialogContent className="max-w-2xl" data-testid="image-detail-dialog">
+          <DialogHeader>
+            <DialogTitle>Image Details</DialogTitle>
+            <DialogDescription>{image.filename}</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <img
+              src={image.signedUrl || image.downloadUrl || ''}
+              alt={image.filename}
+              className="w-full max-h-96 object-contain rounded-lg"
+            />
+
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">
+                <Tag className="h-3 w-3 mr-1" />
+                {image.mime}
+              </Badge>
+              <Badge variant="outline">
+                {Math.round(image.bytes / 1024)}KB
+              </Badge>
+              <Badge variant="outline">
+                {new Date(image.createdAt).toLocaleDateString()}
+              </Badge>
+              {image.protectionLevel ? (
+                <Badge
+                  variant="secondary"
+                  data-testid="protection-status"
+                  data-protection-level={image.protectionLevel}
+                >
+                  <Shield className="h-3 w-3 mr-1" />
+                  Protected: {image.protectionLevel}
+                </Badge>
+              ) : null}
+              {image.lastRepostedAt ? (
+                <Badge
+                  variant="secondary"
+                  data-testid="repost-status"
+                  data-reposted-at={image.lastRepostedAt}
+                >
+                  <Share2 className="h-3 w-3 mr-1" />
+                  Reposted {new Date(image.lastRepostedAt).toLocaleDateString()}
+                </Badge>
+              ) : null}
+            </div>
+
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                size="sm"
+                onClick={() => onQuickRepost(image)}
+                disabled={isReposting}
+                data-testid="quick-repost-button"
+              >
+                <Share2 className="h-4 w-4 mr-1" />
+                {isReposting ? 'Reposting...' : 'Quick Repost'}
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => onProtect(image, 'standard')}
+                disabled={isProtecting}
+                data-testid="quick-protect-button"
+              >
+                <Shield className="h-4 w-4 mr-1" />
+                {isProtecting ? 'Protecting...' : 'Quick Protect'}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onProtect(image, 'light')}
+                disabled={isProtecting}
+              >
+                <Shield className="h-4 w-4 mr-1" />
+                Light Shield
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onProtect(image, 'heavy')}
+                disabled={isProtecting}
+              >
+                <Shield className="h-4 w-4 mr-1" />
+                Heavy Shield
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onDownload(image)}
+                data-testid="dialog-close-button"
+              >
+                <Download className="h-4 w-4 mr-1" />
+                Download
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => onDelete(image)}
+                disabled={isDeleting}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      ) : null}
+    </Dialog>
+  );
 }
 
 export function ImageGallery() {
   const [selectedTags, setSelectedTags] = useState<string>('');
-  // TODO: Implement image detail modal/viewer
-  const [_selectedImage, _setSelectedImage] = useState<UserImage | null>(null);
+  const [selectedImageId, setSelectedImageId] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuth();
-  
+
   // Authenticated API request - use session-based auth like the rest of the app
-  const authenticatedRequest = async (url: string, method: string = 'GET', data?: unknown) => {
+  const authenticatedRequest = async <T,>(url: string, method: string = 'GET', data?: unknown): Promise<T> => {
     let body: FormData | string | undefined;
-    const headers: { [key: string]: string } = {};
-    
+    const headers: Record<string, string> = {};
+
     if (data instanceof FormData) {
       body = data;
       // Don't set Content-Type for FormData, browser sets it with boundary
@@ -39,14 +198,14 @@ export function ImageGallery() {
       headers['Content-Type'] = 'application/json';
       body = JSON.stringify(data);
     }
-    
+
     const response = await fetch(url, {
       method,
       headers,
       body,
       credentials: 'include' // Include session cookies for authentication
     });
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       let errorMessage;
@@ -58,19 +217,53 @@ export function ImageGallery() {
       }
       throw new Error(errorMessage);
     }
-    
-    return response.json();
+
+    if (response.status === 204) {
+      return {} as T;
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (contentType?.includes('application/json')) {
+      return response.json() as Promise<T>;
+    }
+
+    return {} as T;
   };
 
   const { data: images = [] } = useQuery<UserImage[]>({
     queryKey: ['/api/media'],
-    queryFn: () => authenticatedRequest('/api/media'),
+    queryFn: () => authenticatedRequest<UserImage[]>('/api/media'),
     enabled: true // Always enable to avoid blocking
   });
 
-  const uploadMutation = useMutation({
+  const selectedImage = useMemo(() => {
+    if (selectedImageId === null) {
+      return null;
+    }
+    return images.find(image => image.id === selectedImageId) ?? null;
+  }, [images, selectedImageId]);
+
+  const updateCachedImage = (imageId: number, updater: (image: UserImage) => UserImage): void => {
+    queryClient.setQueryData<UserImage[]>(['/api/media'], (current) => {
+      if (!current) {
+        return current;
+      }
+      return current.map(image => (image.id === imageId ? updater(image) : image));
+    });
+  };
+
+  const removeCachedImage = (imageId: number): void => {
+    queryClient.setQueryData<UserImage[]>(['/api/media'], (current) => {
+      if (!current) {
+        return current;
+      }
+      return current.filter(image => image.id !== imageId);
+    });
+  };
+
+  const uploadMutation = useMutation<unknown, Error, FormData>({
     mutationFn: async (formData: FormData) => {
-      return authenticatedRequest('/api/media/upload', 'POST', formData);
+      return authenticatedRequest<unknown>('/api/media/upload', 'POST', formData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/media'] });
@@ -89,28 +282,76 @@ export function ImageGallery() {
     }
   });
 
-  const protectMutation = useMutation({
-    mutationFn: async ({ imageId, protectionLevel }: { imageId: string, protectionLevel: string }) => {
-      return authenticatedRequest(`/api/protect-image/${imageId}`, 'POST', { protectionLevel });
+  const protectMutation = useMutation<ProtectImageResponse, Error, { imageId: number; protectionLevel: ProtectionLevel }>({
+    mutationFn: async ({ imageId, protectionLevel }) => {
+      return authenticatedRequest<ProtectImageResponse>(`/api/protect-image/${imageId}`, 'POST', { protectionLevel });
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      const protectedUrl = data?.protectedUrl;
+      updateCachedImage(variables.imageId, (image) => ({
+        ...image,
+        protectionLevel: variables.protectionLevel,
+        isProtected: true,
+        ...(protectedUrl ? { signedUrl: protectedUrl, downloadUrl: protectedUrl } : {})
+      }));
       queryClient.invalidateQueries({ queryKey: ['/api/media'] });
       toast({
         title: "Image protected",
-        description: "Your image has been protected against reverse searches."
+        description: data?.message || "Your image has been protected against reverse searches."
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Protection failed",
+        description: error.message,
+        variant: "destructive"
       });
     }
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (imageId: string) => {
-      return authenticatedRequest(`/api/media/${imageId}`, 'DELETE');
+  const quickRepostMutation = useMutation<QuickRepostResponse, Error, number>({
+    mutationFn: async (imageId: number) => {
+      return authenticatedRequest<QuickRepostResponse>('/api/reddit/quick-repost', 'POST', { imageId });
     },
-    onSuccess: () => {
+    onSuccess: (data, imageId) => {
+      const timestamp = data?.repostedAt ?? new Date().toISOString();
+      updateCachedImage(imageId, (image) => ({
+        ...image,
+        lastRepostedAt: timestamp
+      }));
+      queryClient.invalidateQueries({ queryKey: ['/api/reddit/posts'] });
+      toast({
+        title: "Repost queued",
+        description: data?.message || "Your image has been queued for reposting."
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Repost failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  const deleteMutation = useMutation<DeleteImageResponse, Error, number>({
+    mutationFn: async (imageId: number) => {
+      return authenticatedRequest<DeleteImageResponse>(`/api/media/${imageId}`, 'DELETE');
+    },
+    onSuccess: (data, imageId) => {
+      removeCachedImage(imageId);
+      setSelectedImageId((current) => (current === imageId ? null : current));
       queryClient.invalidateQueries({ queryKey: ['/api/media'] });
       toast({
         title: "Image deleted",
-        description: "Image has been removed from your gallery."
+        description: data?.message || "Image has been removed from your gallery."
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Delete failed",
+        description: error.message,
+        variant: "destructive"
       });
     }
   });
@@ -155,8 +396,16 @@ export function ImageGallery() {
     setSelectedTags('');
   };
 
-  const handleProtectImage = async (image: UserImage, level: string) => {
-    protectMutation.mutate({ imageId: image.id.toString(), protectionLevel: level });
+  const handleProtectImage = (image: UserImage, level: ProtectionLevel) => {
+    protectMutation.mutate({ imageId: image.id, protectionLevel: level });
+  };
+
+  const handleQuickRepost = (image: UserImage) => {
+    quickRepostMutation.mutate(image.id);
+  };
+
+  const handleDeleteImage = (image: UserImage) => {
+    deleteMutation.mutate(image.id);
   };
 
   const handleDownloadProtected = async (image: UserImage) => {
@@ -173,9 +422,21 @@ export function ImageGallery() {
     }
   };
 
-  const filteredImages = images.filter(image => 
+  const filteredImages = images.filter(image =>
     !selectedTags || image.filename.toLowerCase().includes(selectedTags.toLowerCase())
   );
+
+  const handleImageSelection = (imageId: number) => {
+    setSelectedImageId(imageId);
+  };
+
+  const handleModalOpenChange = (open: boolean) => {
+    if (!open) {
+      setSelectedImageId(null);
+    }
+  };
+
+  const isModalOpen = selectedImageId !== null && selectedImage !== null;
 
   return (
     <div className="space-y-6">
@@ -196,6 +457,7 @@ export function ImageGallery() {
             <Input
               value={selectedTags}
               onChange={(e) => setSelectedTags(e.target.value)}
+              data-testid="input-tags"
             />
           </div>
           
@@ -207,6 +469,7 @@ export function ImageGallery() {
               onChange={handleFileUpload}
               className="hidden"
               id="bulk-upload"
+              data-testid="input-file-upload"
             />
             <label htmlFor="bulk-upload" className="cursor-pointer">
               <div className="text-center">
@@ -240,114 +503,49 @@ export function ImageGallery() {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {filteredImages.map((image) => (
-                <div key={image.id} className="group relative">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <div className="aspect-square relative overflow-hidden rounded-lg border cursor-pointer hover:shadow-lg transition-shadow">
-                        <img
-                          src={image.signedUrl || image.downloadUrl || ''}
-                          alt={image.filename}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-foreground bg-opacity-0 group-hover:bg-opacity-20 transition-all">
-                          <div className="absolute bottom-2 left-2 right-2">
-                            <div className="flex flex-wrap gap-1">
-                              <Badge variant="secondary" className="text-xs">
-                                {image.mime.split('/')[1].toUpperCase()}
-                              </Badge>
-                              <Badge variant="secondary" className="text-xs">
-                                {Math.round(image.bytes / 1024)}KB
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
+                <button
+                  key={image.id}
+                  type="button"
+                  className="group relative aspect-square overflow-hidden rounded-lg border cursor-pointer hover:shadow-lg transition-shadow"
+                  onClick={() => handleImageSelection(image.id)}
+                  data-testid={`image-card-${image.id}`}
+                >
+                  <img
+                    src={image.signedUrl || image.downloadUrl || ''}
+                    alt={image.filename}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-foreground bg-opacity-0 group-hover:bg-opacity-20 transition-all">
+                    <div className="absolute bottom-2 left-2 right-2">
+                      <div className="flex flex-wrap gap-1">
+                        <Badge variant="secondary" className="text-xs">
+                          {image.mime.split('/')[1].toUpperCase()}
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          {Math.round(image.bytes / 1024)}KB
+                        </Badge>
                       </div>
-                    </DialogTrigger>
-                    
-                    <DialogContent className="max-w-2xl">
-                      <DialogHeader>
-                        <DialogTitle>Image Details</DialogTitle>
-                        <DialogDescription>
-                          {image.filename}
-                        </DialogDescription>
-                      </DialogHeader>
-                      
-                      <div className="space-y-4">
-                        <img
-                          src={image.signedUrl || image.downloadUrl || ''}
-                          alt={image.filename}
-                          className="w-full max-h-96 object-contain rounded-lg"
-                        />
-                        
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant="outline">
-                            <Tag className="h-3 w-3 mr-1" />
-                            {image.mime}
-                          </Badge>
-                          <Badge variant="outline">
-                            {new Date(image.createdAt).toLocaleDateString()}
-                          </Badge>
-                        </div>
-                        
-                        <div className="flex gap-2 flex-wrap">
-                          {
-                            <>
-                              <Button
-                                size="sm"
-                                onClick={() => handleProtectImage(image, 'light')}
-                                disabled={protectMutation.isPending}
-                              >
-                                <Shield className="h-4 w-4 mr-1" />
-                                Light Protection
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => handleProtectImage(image, 'standard')}
-                                disabled={protectMutation.isPending}
-                              >
-                                <Shield className="h-4 w-4 mr-1" />
-                                Standard Protection
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => handleProtectImage(image, 'heavy')}
-                                disabled={protectMutation.isPending}
-                              >
-                                <Shield className="h-4 w-4 mr-1" />
-                                Heavy Protection
-                              </Button>
-                            </>
-                        }
-                          
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDownloadProtected(image)}
-                          >
-                            <Download className="h-4 w-4 mr-1" />
-                            Download
-                          </Button>
-                          
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => deleteMutation.mutate(image.id.toString())}
-                            disabled={deleteMutation.isPending}
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Delete
-                          </Button>
-                        </div>
-                        
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
+                    </div>
+                  </div>
+                </button>
               ))}
             </div>
           )}
         </CardContent>
       </Card>
+
+      <ImageDetailModal
+        image={selectedImage}
+        open={isModalOpen}
+        onOpenChange={handleModalOpenChange}
+        onProtect={handleProtectImage}
+        onQuickRepost={handleQuickRepost}
+        onDownload={handleDownloadProtected}
+        onDelete={handleDeleteImage}
+        isProtecting={protectMutation.isPending}
+        isReposting={quickRepostMutation.isPending}
+        isDeleting={deleteMutation.isPending}
+      />
     </div>
   );
 }

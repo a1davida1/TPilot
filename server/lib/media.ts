@@ -192,18 +192,20 @@ export class MediaManager {
     // Process image if needed
     let finalBuffer = buffer;
     let finalMime = this.getMimeType(filename);
-    
+    let extension = this.getFileExtension(filename);
+
     if (this.isImage(filename)) {
-      finalBuffer = await this.processImage(buffer, {
+      const processed = await this.processImage(buffer, {
         applyWatermark: applyWatermark && config.watermark.enabled,
         quality: visibility === 'preview-watermarked' ? 70 : 90,
       });
-      finalMime = 'image/jpeg'; // Always convert to JPEG for consistency
+      finalBuffer = processed.buffer;
+      finalMime = processed.mime;
+      extension = processed.extension;
     }
-    
+
     // Generate unique key
     const sha256 = crypto.createHash('sha256').update(finalBuffer).digest('hex');
-    const extension = this.getFileExtension(filename);
     const key = `${userId}/${Date.now()}-${sha256.substring(0, 12)}.${extension}`;
     
     // Check if file already exists
@@ -341,37 +343,62 @@ export class MediaManager {
     }
   }
   
-  private static async processImage(buffer: Buffer, options: {
+  static async processImage(buffer: Buffer, options: {
     applyWatermark: boolean;
     quality: number;
-  }): Promise<Buffer> {
-    let image = sharp(buffer)
-      .jpeg({ quality: options.quality })
-      .resize(2048, 2048, { 
-        fit: 'inside',
-        withoutEnlargement: true 
-      });
-    
+  }): Promise<{ buffer: Buffer; mime: string; extension: string }> {
+    const image = sharp(buffer, { animated: true });
+    const metadata = await image.metadata();
+    const sourceFormat = metadata.format ?? 'jpeg';
+
+    let pipeline = image.resize(2048, 2048, {
+      fit: 'inside',
+      withoutEnlargement: true,
+    });
+
     if (options.applyWatermark) {
-      // Add watermark to bottom-right corner
       const watermarkSvg = Buffer.from(`
         <svg width="300" height="60" xmlns="http://www.w3.org/2000/svg">
           <rect width="300" height="60" fill="black" opacity="0.3" rx="8"/>
-          <text x="20" y="35" font-family="Arial, sans-serif" font-size="18" 
+          <text x="20" y="35" font-family="Arial, sans-serif" font-size="18"
                 fill="white" opacity="${config.watermark.opacity}">
             🛡️ ${config.watermark.text}
           </text>
         </svg>
       `);
-      
-      image = image.composite([{
+
+      pipeline = pipeline.composite([{
         input: watermarkSvg,
         gravity: 'southeast',
-        blend: 'over'
+        blend: 'over',
       }]);
     }
-    
-    return image.toBuffer();
+
+    switch (sourceFormat) {
+      case 'png': {
+        const processedBuffer = await pipeline.png({ quality: 100 }).toBuffer();
+        return { buffer: processedBuffer, mime: 'image/png', extension: 'png' };
+      }
+      case 'gif': {
+        const processedBuffer = await pipeline.gif({
+          reoptimise: true,
+        }).toBuffer();
+        return { buffer: processedBuffer, mime: 'image/gif', extension: 'gif' };
+      }
+      case 'webp': {
+        const processedBuffer = await pipeline.webp({ quality: options.quality }).toBuffer();
+        return { buffer: processedBuffer, mime: 'image/webp', extension: 'webp' };
+      }
+      case 'jpeg':
+      case 'jpg': {
+        const processedBuffer = await pipeline.jpeg({ quality: options.quality }).toBuffer();
+        return { buffer: processedBuffer, mime: 'image/jpeg', extension: 'jpg' };
+      }
+      default: {
+        const processedBuffer = await pipeline.jpeg({ quality: options.quality }).toBuffer();
+        return { buffer: processedBuffer, mime: 'image/jpeg', extension: 'jpg' };
+      }
+    }
   }
   
   private static async getSignedUrl(key: string): Promise<string> {
