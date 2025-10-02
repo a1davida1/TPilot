@@ -1,0 +1,1065 @@
+tests/unit/caption/fallback-inference.test.ts
++47-21
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { Mock } from 'vitest';
+
+const createGeminiResponse = (payload: unknown) => {
+  const text = typeof payload === 'string' ? payload : JSON.stringify(payload);
+  return {
+    text,
+    response: { text: () => text },
+  };
+};
+
+type GeminiMockResponse = ReturnType<typeof createGeminiResponse>;
+
+const mockTextModel = {
+  generateContent: vi.fn<(input: unknown) => Promise<GeminiMockResponse>>(),
+};
+
+const mockVisionModel = {
+  generateContent: vi.fn<(input: unknown) => Promise<GeminiMockResponse>>(),
+};
+
+const mockIsGeminiAvailable = vi.fn(() => true);
+
+vi.mock('../../../server/lib/gemini-client', () => ({
+  __esModule: true,
+  getTextModel: () => mockTextModel,
+  getVisionModel: () => mockVisionModel,
+  isGeminiAvailable: mockIsGeminiAvailable,
+}));
+
+vi.mock('../../../server/lib/gemini.ts', () => ({
+  __esModule: true,
+  textModel: {
+    generateContent: vi.fn(),
+  },
+  visionModel: {
+    generateContent: vi.fn(),
+  },
+  isGeminiAvailable: vi.fn(() => true),
+  textModel: mockTextModel,
+  visionModel: mockVisionModel,
+  isGeminiAvailable: mockIsGeminiAvailable,
+  getTextModel: () => mockTextModel,
+  getVisionModel: () => mockVisionModel,
+}));
+
+describe('inferFallbackFromFacts helper', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockTextModel.generateContent.mockReset();
+    mockVisionModel.generateContent.mockReset();
+    mockIsGeminiAvailable.mockReset();
+    mockIsGeminiAvailable.mockReturnValue(true);
+  });
+
+  it('infers beach-centric fallbacks from image facts', async () => {
+    const { inferFallbackFromFacts } = await import('../../../server/caption/inferFallbackFromFacts.ts');
+    const fallback = inferFallbackFromFacts({
+      platform: 'instagram',
+      facts: {
+        objects: ['surfer', 'board'],
+        setting: 'sunny beach cove',
+        colors: ['turquoise water'],
+      },
+    });
+
+    expect(fallback.hashtags.some(tag => tag.includes('beach') || tag.includes('surfer') || tag.includes('board'))).toBe(true);
+    expect(fallback.cta.toLowerCase()).toMatch(/beach|surfer|board|turquoise|water/);
+    expect(fallback.alt.toLowerCase()).toMatch(/beach|surfer|board|turquoise|water|scene/);
+  });
+
+  it('adapts fallback data for text-only launch themes', async () => {
+    const { inferFallbackFromFacts } = await import('../../../server/caption/inferFallbackFromFacts.ts');
+    const fallback = inferFallbackFromFacts({
+      platform: 'x',
+      theme: 'Fintech product launch',
+      context: 'Beta waitlist opens tonight',
+    });
+
+    expect(fallback.hashtags.length).toBeLessThanOrEqual(3);
+    expect(fallback.hashtags.some(tag => tag.includes('launch') || tag.includes('product') || tag.includes('fintech'))).toBe(true);
+    expect(fallback.cta.toLowerCase()).toMatch(/launch|product|fintech|conversation|join/);
+  });
+});
+
+describe('pipeline fallbacks', () => {
+  beforeEach(async () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    const { textModel, visionModel } = await import('../../../server/lib/gemini.ts');
+    (textModel.generateContent as unknown as Mock)?.mockReset?.();
+    (visionModel.generateContent as unknown as Mock)?.mockReset?.();
+    mockTextModel.generateContent.mockReset();
+    mockVisionModel.generateContent.mockReset();
+    mockIsGeminiAvailable.mockReset();
+    mockIsGeminiAvailable.mockReturnValue(true);
+  });
+
+  it('fills missing variant fields with contextual beach data', async () => {
+    const variantPayload = [
+      {
+        caption: 'Sunset set vibes',
+        hashtags: ['#beach', '#surfer', '#sunset'],
+        safety_level: 'normal',
+        mood: 'relaxed',
+        style: 'beach',
+        cta: 'Explore beach adventures',
+        alt: 'Beach scene featuring surfer and board',
+        nsfw: false,
+      },
+      {
+        caption: 'Beach day energy with golden light',
+        hashtags: [],
+        safety_level: 'normal',
+        mood: '',
+        style: '',
+        cta: '',
+        alt: '',
+        nsfw: false,
+      },
+      {
+@@ -88,55 +118,53 @@ describe('pipeline fallbacks', () => {
+        nsfw: false,
+      },
+      {
+        caption: 'Surfboard ready for the next set',
+        hashtags: [],
+        safety_level: 'normal',
+        mood: '',
+        style: '',
+        cta: '',
+        alt: '',
+        nsfw: false,
+      },
+      {
+        caption: 'Ocean breeze and endless possibilities',
+        hashtags: [],
+        safety_level: 'normal',
+        mood: '',
+        style: '',
+        cta: '',
+        alt: '',
+        nsfw: false,
+      },
+    ];
+
+    const { textModel } = await import('../../../server/lib/gemini.ts');
+    (textModel.generateContent as unknown as Mock).mockResolvedValueOnce({
+      response: {
+        text: () => JSON.stringify(variantPayload),
+      },
+    });
+    (textModel.generateContent as unknown as Mock).mockResolvedValueOnce(
+      createGeminiResponse(variantPayload)
+    );
+
+    const { generateVariants } = await import('../../../server/caption/geminiPipeline.ts');
+    const variants = await generateVariants({
+      platform: 'instagram',
+      voice: 'bold',
+      facts: {
+        setting: 'sunny beach cove',
+        objects: ['surfer', 'board'],
+      },
+      nsfw: false,
+    });
+
+    const first = variants[0];
+    expect(first.hashtags.some(tag => tag.includes('beach') || tag.includes('surfer') || tag.includes('board'))).toBe(true);
+    expect(first.cta.toLowerCase()).toMatch(/beach|surfer|board|objects|explore/);
+    expect(first.alt.toLowerCase()).toMatch(/beach|surfer|board|scene|featuring|objects/);
+  });
+
+  it('crafts launch-oriented fallbacks for text-only prompts', async () => {
+    const variantPayload = [
+      {
+        caption: 'Join us for something big',
+        hashtags: ['#launch', '#saas', '#platform'],
+        safety_level: 'normal',
+        mood: 'excited',
+@@ -166,46 +194,44 @@ describe('pipeline fallbacks', () => {
+        nsfw: false,
+      },
+      {
+        caption: 'Waitlist opens with exclusive early access',
+        hashtags: [],
+        safety_level: 'normal',
+        mood: '',
+        style: '',
+        cta: '',
+        alt: '',
+        nsfw: false,
+      },
+      {
+        caption: 'Revolutionary tools coming this week',
+        hashtags: [],
+        safety_level: 'normal',
+        mood: '',
+        style: '',
+        cta: '',
+        alt: '',
+        nsfw: false,
+      },
+    ];
+
+    const { textModel } = await import('../../../server/lib/gemini.ts');
+    (textModel.generateContent as unknown as Mock).mockResolvedValueOnce({
+      response: {
+        text: () => JSON.stringify(variantPayload),
+      },
+    });
+    (textModel.generateContent as unknown as Mock).mockResolvedValueOnce(
+      createGeminiResponse(variantPayload)
+    );
+
+    const { generateVariantsTextOnly } = await import('../../../server/caption/textOnlyPipeline.ts');
+    const variants = await generateVariantsTextOnly({
+      platform: 'x',
+      voice: 'confident',
+      theme: 'SaaS platform launch',
+      context: 'Waitlist opens this Friday',
+      nsfw: false,
+    });
+
+    const first = variants[0];
+    expect(first.hashtags.some(tag => tag.includes('launch') || tag.includes('saas') || tag.includes('platform'))).toBe(true);
+    expect(first.cta.toLowerCase()).toMatch(/launch|saas|platform|conversation|join/);
+    expect(first.alt.toLowerCase()).toMatch(/launch|saas|platform|representation|visual/);
+  });
+});
+tests/unit/caption/gemini-empty-response-guard.test.ts
++61-33
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+interface MockResponse {
+  text: string | undefined;
+  response: { text: () => string | undefined };
+}
+
+const createMockResponse = (value: string | undefined): MockResponse => ({
+  text: value,
+  response: {
+    text: () => value,
+  },
+});
+
+const mockGemini = (
+  textModel: { generateContent: ReturnType<typeof vi.fn<(input: unknown) => Promise<MockResponse>>> },
+  visionModel?: { generateContent: ReturnType<typeof vi.fn<(input: unknown) => Promise<MockResponse>>> }
+) => {
+  const resolvedVision = visionModel ?? { generateContent: vi.fn<(input: unknown) => Promise<MockResponse>>() };
+  vi.doMock('../../../server/lib/gemini-client', () => ({
+    __esModule: true,
+    getTextModel: () => textModel,
+    getVisionModel: () => resolvedVision,
+    isGeminiAvailable: () => true,
+  }));
+  vi.doMock('../../../server/lib/gemini.ts', () => ({
+    __esModule: true,
+    textModel,
+    visionModel: resolvedVision,
+    isGeminiAvailable: () => true,
+    getTextModel: () => textModel,
+    getVisionModel: () => resolvedVision,
+  }));
+};
+
+describe('Gemini empty response guards', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    process.env.NODE_ENV = 'test';
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    vi.restoreAllMocks();
+  });
+
+  it.each([
+    { label: 'an empty string', value: '' },
+    { label: 'undefined', value: undefined },
+  ])('throws in text-only variant generation when Gemini returns %s', async ({ value }) => {
+    const textModel = { generateContent: vi.fn().mockResolvedValue(createMockResponse(value)) };
+  ])('returns safe fallback variants in text-only generation when Gemini returns %s', async ({ value }) => {
+    const textModel = {
+      generateContent: vi
+        .fn<(input: unknown) => Promise<MockResponse>>()
+        .mockResolvedValue(createMockResponse(value)),
+    };
+
+    vi.doMock('../../../server/lib/gemini.ts', () => ({
+      __esModule: true,
+      textModel,
+      isGeminiAvailable: () => true,
+    }));
+    mockGemini(textModel);
+
+    const { generateVariantsTextOnly } = await import('../../../server/caption/textOnlyPipeline.ts');
+
+    await expect(
+      generateVariantsTextOnly({
+        platform: 'instagram',
+        voice: 'persona_voice',
+        theme: 'test theme',
+        context: 'context',
+        nsfw: false,
+      })
+    ).rejects.toThrow('Gemini: empty response');
+
+    expect(textModel.generateContent).toHaveBeenCalledTimes(1);
+    const result = await generateVariantsTextOnly({
+      platform: 'instagram',
+      voice: 'persona_voice',
+      theme: 'test theme',
+      context: 'context',
+      nsfw: false,
+    });
+
+    expect(textModel.generateContent).toHaveBeenCalled();
+    expect(result).toHaveLength(5);
+    expect(result.every(variant => typeof variant.caption === 'string' && variant.caption.length > 0)).toBe(true);
+    expect(result[0]?.caption).toContain("Here's something I'm proud of today.");
+  });
+
+  it.each([
+    { label: 'an empty string', value: '' },
+    { label: 'undefined', value: undefined },
+  ])('falls back to OpenAI when image pipeline receives %s', async ({ value }) => {
+    const textModel = { generateContent: vi.fn().mockResolvedValue(createMockResponse(value)) };
+  ])('returns Gemini-safe variants when image pipeline receives %s', async ({ value }) => {
+    const textModel = {
+      generateContent: vi
+        .fn<(input: unknown) => Promise<MockResponse>>()
+        .mockResolvedValue(createMockResponse(value)),
+    };
+    const visionPayload = JSON.stringify({ objects: ['subject'], setting: 'studio', mood: 'focused' });
+    const visionModel = { generateContent: vi.fn().mockResolvedValue(createMockResponse(visionPayload)) };
+    const visionModel = {
+      generateContent: vi
+        .fn<(input: unknown) => Promise<MockResponse>>()
+        .mockResolvedValue(createMockResponse(visionPayload)),
+    };
+
+    const fallbackFinal = {
+      caption: 'OpenAI fallback caption',
+      alt: 'Detailed fallback alt text that satisfies schema.',
+      hashtags: ['#fallback', '#test'],
+      cta: 'Fallback CTA',
+      mood: 'confident',
+      style: 'authentic',
+      safety_level: 'normal',
+      nsfw: false,
+    };
+    const openAICaptionFallback = vi.fn().mockResolvedValue(fallbackFinal);
+
+    vi.doMock('../../../server/lib/gemini.ts', () => ({
+      __esModule: true,
+      textModel,
+      visionModel,
+      isGeminiAvailable: () => true,
+    }));
+    mockGemini(textModel, visionModel);
+    vi.doMock('../../../server/caption/openaiFallback.ts', () => ({ openAICaptionFallback }));
+
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+    fetchMock.mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'content-type': 'image/png' }),
+      arrayBuffer: async () => new Uint8Array(64).fill(1).buffer,
+    } as unknown as Response);
+
+    const { pipeline } = await import('../../../server/caption/geminiPipeline.ts');
+
+    const result = await pipeline({
+      imageUrl: 'https://example.com/image.png',
+      platform: 'instagram',
+    });
+
+    expect(openAICaptionFallback).toHaveBeenCalledTimes(1);
+    expect(textModel.generateContent).toHaveBeenCalledTimes(1);
+    expect(result.provider).toBe('openai');
+    expect(result.final.caption).toBe(fallbackFinal.caption);
+    expect(result.final.alt).toBe(fallbackFinal.alt);
+    expect(result.final.hashtags).toEqual(fallbackFinal.hashtags);
+    expect(openAICaptionFallback).not.toHaveBeenCalled();
+    expect(textModel.generateContent).toHaveBeenCalled();
+    expect(result.provider).toBe('gemini');
+    expect(typeof result.final.caption).toBe('string');
+    expect(result.final.caption?.toLowerCase()).toContain('fallback');
+    expect(result.final.alt.length).toBeGreaterThan(0);
+    expect(result.final.hashtags.length).toBeGreaterThan(0);
+    expect(result.titles).toBeDefined();
+    expect(result.titles?.length).toBeGreaterThan(0);
+
+    fetchMock.mockRestore();
+  });
+});
+tests/unit/caption/pipeline-tone-retry.test.ts
++36-23
+
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+interface MockGeminiResponse {
+  text: string;
+  response: { text: () => string };
+}
+
+interface MockVariant {
+  caption: string;
+  alt: string;
+  hashtags: string[];
+  cta: string;
+  mood: string;
+  style: string;
+  safety_level: string;
+  nsfw: boolean;
+}
+
+const createTextModelMock = () => ({
+  generateContent: vi.fn()
+  generateContent: vi.fn<(input: unknown) => Promise<MockGeminiResponse>>()
+});
+
+const createMockResponse = (payload: string): MockGeminiResponse => ({
+  text: payload,
+  response: { text: () => payload }
+});
+
+type GeminiModelMock = { generateContent: ReturnType<typeof createTextModelMock>['generateContent'] };
+
+const mockGeminiModules = (
+  textModel: ReturnType<typeof createTextModelMock>,
+  visionModel: GeminiModelMock = { generateContent: vi.fn<(input: unknown) => Promise<MockGeminiResponse>>() },
+  isAvailable: () => boolean = () => true
+) => {
+  vi.doMock('../../../server/lib/gemini-client', () => ({
+    __esModule: true,
+    getTextModel: () => textModel,
+    getVisionModel: () => visionModel,
+    isGeminiAvailable: isAvailable,
+  }));
+  vi.doMock('../../../server/lib/gemini.ts', () => ({
+    __esModule: true,
+    textModel,
+    visionModel,
+    isGeminiAvailable: isAvailable,
+    getTextModel: () => textModel,
+    getVisionModel: () => visionModel,
+  }));
+};
+
+const createVariantSet = (caption: string, hashtags: string[]) => {
+  const failingCaptionDescriptors = [
+    'narrates every studio light focusing on the subject with extended, flowing prose that easily breaks the 250 character ceiling for X while celebrating the studio choreography in lavish detail.',
+    'spends paragraph-length sentences on the subject weaving through studio rigs, stacking descriptive flourishes until the character count rockets far past what X allows, all while repeating the studio spotlight motif.',
+    'writes a sprawling diary entry about the subject pacing around the studio, layering sensory notes, camera setups, and backstage chatter until the caption balloons beyond platform safety.',
+    'keeps riffing on the subject under studio strobes, piling on metaphors and color commentary so aggressively that any social platform moderator would flag the caption for being far too long.',
+    'unfurls an epic about the subject mastering the studio stage, refusing to wrap up and instead cataloging every lighting scheme and angle until the count blows past the allowed limit.'
+  ];
+
+  const failingAltDescriptors = [
+    'Expansive studio narrative about the subject soaking in endless lighting cues.',
+    'Lengthy studio walkthrough describing the subject from every dramatic angle.',
+    'Detailed studio diary chronicling the subject across numerous lighting setups.',
+    'Verbose studio recap of the subject bathed in relentless spotlight changes.',
+    'Epic studio chronicle following the subject through exhaustive lighting choreography.'
+  ];
+
+  const passingCaptionDescriptors = [
+    'spotlighting the subject under warm studio lights.',
+    'showcasing the subject with cinematic studio contrast.',
+    'capturing the subject amid bold studio colors.',
+    'framing the subject against a polished studio backdrop.',
+    'highlighting the subject with creative studio angles.'
+  ];
+
+@@ -130,141 +155,129 @@ interface MockCallPart {
+
+const extractVariantPrompts = (calls: unknown[][]) => calls
+  .map(call => {
+    // Type guard to ensure call structure is what we expect
+    const firstArg = call[0];
+    if (Array.isArray(firstArg) && firstArg.length > 0) {
+      const part = firstArg[0] as MockCallPart;
+      return part.text ?? '';
+    }
+    return '';
+  })
+  .filter(text => text.includes('PLATFORM:'));
+
+describe('Gemini pipelines keep persona tone on retry', () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    vi.restoreAllMocks();
+  });
+
+  it('forwards tone fields on image pipeline retry', async () => {
+    const textModel = createTextModelMock();
+    const visionModel = { generateContent: vi.fn() };
+    const visionModel: GeminiModelMock = { generateContent: vi.fn<(input: unknown) => Promise<MockGeminiResponse>>() };
+
+    vi.doMock('../../../server/lib/gemini.ts', () => ({
+      __esModule: true,
+      textModel,
+      visionModel,
+      isGeminiAvailable: () => true,
+    }));
+    mockGeminiModules(textModel, visionModel);
+
+    const fetchMock = vi.spyOn(global, 'fetch');
+    fetchMock.mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'content-type': 'image/jpeg' }),
+      arrayBuffer: async () => Buffer.alloc(256, 1)
+    } as unknown as Response);
+
+    visionModel.generateContent.mockResolvedValue({
+      response: { text: () => JSON.stringify({ objects: ['subject'], setting: 'studio', mood: 'focused' }) }
+    });
+    visionModel.generateContent.mockResolvedValue(
+      createMockResponse(
+        JSON.stringify({ objects: ['subject'], setting: 'studio', mood: 'focused' })
+      )
+    );
+
+    const geminiModule = await import('../../../server/caption/geminiPipeline.ts');
+
+    const failing = createVariantSet(LONG_FAILING_CAPTION, ['#one', '#two', '#three', '#four']);
+    const passing = createVariantSet('Second attempt caption obeys X rules', ['#one', '#two']);
+
+    configureTextModelMock(textModel, failing, passing);
+
+    await geminiModule.pipeline({
+      imageUrl: 'https://example.com/image.png',
+      platform: 'x',
+      voice: 'Persona Voice',
+      style: 'Bold Persona',
+      mood: 'Upbeat',
+      nsfw: false
+    });
+
+    const variantPrompts = extractVariantPrompts(textModel.generateContent.mock.calls);
+
+    expect(variantPrompts).toHaveLength(2);
+    const retryPrompt = variantPrompts[1];
+    expect(retryPrompt).toContain('Fix:');
+    expect(retryPrompt).toContain('STYLE: Bold Persona');
+    expect(retryPrompt).toContain('MOOD: Upbeat');
+
+    fetchMock.mockRestore();
+  });
+
+  it('forwards tone fields on rewrite pipeline retry', async () => {
+    const textModel = createTextModelMock();
+    const visionModel = { generateContent: vi.fn() };
+    const visionModel: GeminiModelMock = { generateContent: vi.fn<(input: unknown) => Promise<MockGeminiResponse>>() };
+
+    vi.doMock('../../../server/lib/gemini.ts', () => ({
+      __esModule: true,
+      textModel,
+      visionModel,
+      isGeminiAvailable: () => true,
+    }));
+    mockGeminiModules(textModel, visionModel);
+
+    const rewriteModule = await import('../../../server/caption/rewritePipeline.ts');
+
+    const failing = createVariantSet(LONG_FAILING_CAPTION, ['#one', '#two', '#three', '#four']);
+    const passing = createVariantSet('Rewrite attempt passes platform rules', ['#one', '#two']);
+
+    configureTextModelMock(textModel, failing, passing);
+
+    await rewriteModule.pipelineRewrite({
+      platform: 'x',
+      voice: 'Persona Voice',
+      style: 'Bold Persona',
+      mood: 'Upbeat',
+      existingCaption: 'Original',
+      nsfw: false
+    });
+
+    const variantPrompts = extractVariantPrompts(textModel.generateContent.mock.calls);
+
+    expect(variantPrompts).toHaveLength(2);
+    const retryPrompt = variantPrompts[1];
+    expect(retryPrompt).toContain('Fix:');
+    expect(retryPrompt).toContain('STYLE: Bold Persona');
+    expect(retryPrompt).toContain('MOOD: Upbeat');
+  });
+
+  it('forwards tone fields on text-only pipeline retry', async () => {
+    const textModel = createTextModelMock();
+
+    vi.doMock('../../../server/lib/gemini.ts', () => ({
+      __esModule: true,
+      textModel,
+      isGeminiAvailable: () => true,
+    }));
+    mockGeminiModules(textModel);
+
+    const textOnlyModule = await import('../../../server/caption/textOnlyPipeline.ts');
+
+    const failing = createVariantSet(LONG_FAILING_CAPTION, ['#one', '#two', '#three', '#four']);
+    const passing = createVariantSet('Text-only attempt passes platform rules', ['#one', '#two']);
+
+    configureTextModelMock(textModel, failing, passing);
+
+    await textOnlyModule.pipelineTextOnly({
+      platform: 'x',
+      voice: 'Persona Voice',
+      theme: 'Testing theme',
+      context: 'Testing context',
+      style: 'Bold Persona',
+      mood: 'Upbeat',
+      nsfw: false
+    });
+
+    const variantPrompts = extractVariantPrompts(textModel.generateContent.mock.calls);
+
+    expect(variantPrompts).toHaveLength(2);
+    const retryPrompt = variantPrompts[1];
+    expect(retryPrompt).toContain('Fix:');
+    expect(retryPrompt).toContain('STYLE: Bold Persona');
+    expect(retryPrompt).toContain('MOOD: Upbeat');
+tests/unit/caption/voice-guide-prompt.test.ts
++68-43
+
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { buildVoiceGuideBlock } from '../../../server/caption/stylePack';
+import { generateVariants } from '../../../server/caption/geminiPipeline';
+import { generateVariantsTextOnly } from '../../../server/caption/textOnlyPipeline';
+import { variantsRewrite } from '../../../server/caption/rewritePipeline';
+
+const mockTextModel = vi.hoisted(() => ({
+  generateContent: vi.fn(),
+  generateContent: vi.fn<(input: unknown) => Promise<{ text: string; response: { text: () => string } }>>()
+}));
+
+const mockVisionModel = vi.hoisted(() => ({
+  generateContent: vi.fn(),
+  generateContent: vi.fn<(input: unknown) => Promise<{ text: string; response: { text: () => string } }>>()
+}));
+
+vi.mock('../../../../server/lib/gemini.ts', () => ({
+  __esModule: true,
+  textModel: mockTextModel,
+  visionModel: mockVisionModel,
+  isGeminiAvailable: () => true,
+}));
+const mockIsGeminiAvailable = vi.hoisted(() => vi.fn(() => true));
+
+
+type CaptionVariant = {
+  caption: string;
+  alt: string;
+  hashtags: string[];
+  cta: string;
+  mood: string;
+  style: string;
+  safety_level: string;
+  nsfw: boolean;
+};
+
+function makeVariants(): CaptionVariant[] {
+  return Array.from({ length: 5 }, (_, index) => ({
+    caption: `Caption ${index} that is lively and descriptive`,
+    alt: `Detailed alternative text ${index} describing the scene with plenty of texture.`,
+    hashtags: ['#tag1', '#tag2', '#tag3'],
+    cta: 'Learn more',
+    mood: 'joyful',
+    style: 'vibrant',
+    safety_level: 'normal',
+    nsfw: false,
+  }));
+}
+
+const createGeminiResponse = (payload: string) => ({
+  text: payload,
+  response: { text: () => payload },
+});
+
+interface PromptPayload {
+  text: string;
+}
+
+function isPromptPayload(value: unknown): value is PromptPayload {
+  return typeof value === 'object' && value !== null && 'text' in value && typeof (value as { text: unknown }).text === 'string';
+}
+
+function extractPromptText(): string {
+  const firstCall = mockTextModel.generateContent.mock.calls[0];
+  if (!firstCall) {
+    throw new Error('textModel.generateContent was not called');
+  }
+  const [firstArg] = firstCall;
+  if (!Array.isArray(firstArg)) {
+    throw new Error('Expected prompt argument array for textModel.generateContent');
+  }
+  const [payload] = firstArg;
+  if (!isPromptPayload(payload)) {
+    throw new Error('Prompt payload is missing expected text field');
+  }
+  return payload.text;
+function collectPromptTexts(): string[] {
+  return mockTextModel.generateContent.mock.calls
+    .map(([args]) => (Array.isArray(args) ? args[0] : undefined))
+    .filter((payload): payload is PromptPayload => isPromptPayload(payload))
+    .map(payload => payload.text);
+}
+
+describe('Voice guide prompt forwarding', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    mockTextModel.generateContent.mockReset();
+    mockVisionModel.generateContent.mockReset();
+    mockIsGeminiAvailable.mockReset();
+    mockIsGeminiAvailable.mockReturnValue(true);
+    const clientMock = () => ({
+      __esModule: true,
+      getTextModel: () => mockTextModel,
+      getVisionModel: () => mockVisionModel,
+      isGeminiAvailable: mockIsGeminiAvailable,
+    });
+    vi.doMock('../../../server/lib/gemini-client', clientMock);
+    vi.doMock('../../../server/lib/gemini-client.ts', clientMock);
+    const legacyMock = () => ({
+      __esModule: true,
+      textModel: mockTextModel,
+      visionModel: mockVisionModel,
+      isGeminiAvailable: mockIsGeminiAvailable,
+      getTextModel: () => mockTextModel,
+      getVisionModel: () => mockVisionModel,
+    });
+    vi.doMock('../../../server/lib/gemini', legacyMock);
+    vi.doMock('../../../server/lib/gemini.ts', legacyMock);
+  });
+
+  it('includes the voice guide when generating image-based variants', async () => {
+    mockTextModel.generateContent.mockResolvedValueOnce({
+      response: { text: () => JSON.stringify(makeVariants()) },
+    });
+    const { generateVariants } = await import('../../../server/caption/geminiPipeline.ts');
+    mockVisionModel.generateContent.mockResolvedValueOnce(
+      createGeminiResponse(JSON.stringify({ objects: ['sunset'] }))
+    );
+    mockTextModel.generateContent.mockResolvedValueOnce(
+      createGeminiResponse(JSON.stringify(makeVariants()))
+    );
+    const { getTextModel } = await import('../../../server/lib/gemini-client.ts');
+    expect(getTextModel()).toBe(mockTextModel);
+
+    await generateVariants({
+      platform: 'instagram',
+      voice: 'flirty_playful',
+      style: 'bold',
+      mood: 'playful',
+      facts: { objects: ['sunset'] },
+      nsfw: false,
+    });
+
+    expect(mockTextModel.generateContent).toHaveBeenCalledTimes(1);
+    const promptText = extractPromptText();
+    expect(mockTextModel.generateContent).toHaveBeenCalled();
+    const promptTexts = collectPromptTexts();
+    expect(promptTexts.length).toBeGreaterThan(0);
+    const guide = buildVoiceGuideBlock('flirty_playful');
+    if (!guide) throw new Error('Voice guide missing for flirty_playful');
+    expect(promptText).toContain(guide);
+    expect(promptTexts.some(text => text.includes(guide))).toBe(true);
+  });
+
+  it('includes the voice guide for text-only variant generation', async () => {
+    mockTextModel.generateContent.mockResolvedValueOnce({
+      response: { text: () => JSON.stringify(makeVariants()) },
+    });
+    const { generateVariantsTextOnly } = await import('../../../server/caption/textOnlyPipeline.ts');
+    mockTextModel.generateContent.mockResolvedValueOnce(
+      createGeminiResponse(JSON.stringify(makeVariants()))
+    );
+    const { getTextModel } = await import('../../../server/lib/gemini-client.ts');
+    expect(getTextModel()).toBe(mockTextModel);
+
+    await generateVariantsTextOnly({
+      platform: 'x',
+      voice: 'flirty_playful',
+      style: 'bold',
+      mood: 'playful',
+      theme: 'Sunset gaming session',
+      context: 'Highlight the vibrant sky and friendly banter',
+      nsfw: false,
+    });
+
+    expect(mockTextModel.generateContent).toHaveBeenCalledTimes(1);
+    const promptText = extractPromptText();
+    expect(mockTextModel.generateContent).toHaveBeenCalled();
+    const promptTexts = collectPromptTexts();
+    expect(promptTexts.length).toBeGreaterThan(0);
+    const guide = buildVoiceGuideBlock('flirty_playful');
+    if (!guide) throw new Error('Voice guide missing for flirty_playful');
+    expect(promptText).toContain(guide);
+    expect(promptTexts.some(text => text.includes(guide))).toBe(true);
+  });
+
+  it('includes the voice guide when rewriting captions', async () => {
+    mockTextModel.generateContent.mockResolvedValueOnce({
+      response: { text: () => JSON.stringify(makeVariants()) },
+    });
+    const { variantsRewrite } = await import('../../../server/caption/rewritePipeline.ts');
+    mockTextModel.generateContent.mockResolvedValueOnce(
+      createGeminiResponse(JSON.stringify(makeVariants()))
+    );
+    const { getTextModel } = await import('../../../server/lib/gemini-client.ts');
+    expect(getTextModel()).toBe(mockTextModel);
+
+    await variantsRewrite({
+      platform: 'reddit',
+      voice: 'flirty_playful',
+      style: 'bold',
+      mood: 'playful',
+      existingCaption: 'Original caption that needs polish',
+      facts: { setting: 'beach at dusk' },
+      nsfw: false,
+    });
+
+    expect(mockTextModel.generateContent).toHaveBeenCalledTimes(1);
+    const promptText = extractPromptText();
+    expect(mockTextModel.generateContent).toHaveBeenCalled();
+    const promptTexts = collectPromptTexts();
+    expect(promptTexts.length).toBeGreaterThan(0);
+    const guide = buildVoiceGuideBlock('flirty_playful');
+    if (!guide) throw new Error('Voice guide missing for flirty_playful');
+    expect(promptText).toContain(guide);
+    expect(promptTexts.some(text => text.includes(guide))).toBe(true);
+  });
+});
+tests/unit/server/services/multi-ai-provider.test.ts
++26-24
+
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+const mockModel = {
+  generateContent: vi.fn()
+};
+
+const mockGemini = vi.hoisted(() => ({
+  getGenerativeModel: vi.fn(() => mockModel)
+}));
+const getTextModelMock = vi.hoisted(() => vi.fn(() => mockModel));
+const isGeminiAvailableMock = vi.hoisted(() => vi.fn(() => true));
+
+const mockAnthropic = vi.hoisted(() => ({
+  messages: {
+    create: vi.fn()
+  }
+}));
+
+const mockOpenAI = vi.hoisted(() => ({
+  chat: {
+    completions: {
+      create: vi.fn()
+    }
+  }
+}));
+
+const mockSafeLog = vi.hoisted(() => vi.fn());
+
+const googleGenAIConstructor = vi.hoisted(() => vi.fn(() => mockGemini));
+const openAIConstructor = vi.hoisted(() => vi.fn(() => mockOpenAI));
+const anthropicConstructor = vi.hoisted(() => vi.fn(() => mockAnthropic));
+
+vi.mock('@google/generative-ai', () => ({ GoogleGenerativeAI: googleGenAIConstructor }));
+vi.mock('../../../../server/lib/gemini-client', () => ({
+  getTextModel: getTextModelMock,
+  isGeminiAvailable: isGeminiAvailableMock
+}));
+vi.mock('openai', () => ({ default: openAIConstructor }));
+vi.mock('@anthropic-ai/sdk', () => ({ default: anthropicConstructor }));
+vi.mock('../../../../server/lib/logger-utils.ts', () => ({ safeLog: mockSafeLog }));
+
+const envKeys = ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GEMINI_API_KEY', 'GOOGLE_GENAI_API_KEY'] as const;
+const envKeys = ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GEMINI_API_KEY', 'GOOGLE_GENAI_API_KEY', 'GEMINI_TEXT_MODEL'] as const;
+type EnvKey = typeof envKeys[number];
+
+const originalEnv: Record<EnvKey, string | undefined> = {
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  GOOGLE_GENAI_API_KEY: process.env.GOOGLE_GENAI_API_KEY
+};
+
+describe('generateWithMultiProvider provider selection', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockModel.generateContent.mockReset();
+    mockGemini.getGenerativeModel.mockReset();
+    mockAnthropic.messages.create.mockReset();
+    mockOpenAI.chat.completions.create.mockReset();
+    googleGenAIConstructor.mockReset();
+    getTextModelMock.mockReturnValue(mockModel);
+    isGeminiAvailableMock.mockReturnValue(true);
+    openAIConstructor.mockReset();
+    anthropicConstructor.mockReset();
+    mockSafeLog.mockReset();
+
+    envKeys.forEach(key => {
+      delete process.env[key];
+    });
+  });
+
+  afterEach(() => {
+    envKeys.forEach(key => {
+      const value = originalEnv[key];
+      if (typeof value === 'string') {
+        process.env[key] = value;
+      } else {
+        delete process.env[key];
+      }
+    });
+  });
+
+  it('prefers Gemini when a Gemini key is available', async () => {
+    process.env.GEMINI_API_KEY = 'gemini-key';
+    process.env.OPENAI_API_KEY = 'openai-key';
+    process.env.ANTHROPIC_API_KEY = 'anthropic-key';
+    process.env.GEMINI_TEXT_MODEL = 'models/gemini-test';
+
+    vi.resetModules();
+    const { generateWithMultiProvider } = await import('../../../../server/services/multi-ai-provider');
+
+    mockModel.generateContent.mockResolvedValueOnce({
+      response: {
+        text: () => JSON.stringify({
+          titles: ['Gemini wins'],
+          content: 'Gemini content that clearly exceeds the fallback length requirement.',
+          photoInstructions: {
+            lighting: 'soft',
+            cameraAngle: 'eye-level',
+            composition: 'balanced',
+            styling: 'casual',
+            mood: 'relaxed',
+            technicalSettings: 'auto'
+          }
+        })
+      }
+      text: JSON.stringify({
+        titles: ['Gemini wins'],
+        content: 'Gemini content that clearly exceeds the fallback length requirement.',
+        photoInstructions: {
+          lighting: 'soft',
+          cameraAngle: 'eye-level',
+          composition: 'balanced',
+          styling: 'casual',
+          mood: 'relaxed',
+          technicalSettings: 'auto'
+        }
+      })
+    });
+
+    const response = await generateWithMultiProvider({
+      user: { id: 1 },
+      platform: 'instagram',
+      allowsPromotion: 'no'
+    });
+
+    expect(response.provider).toBe('gemini-flash');
+    expect(mockModel.generateContent).toHaveBeenCalledTimes(1);
+    expect(mockAnthropic.messages.create).not.toHaveBeenCalled();
+    expect(mockOpenAI.chat.completions.create).not.toHaveBeenCalled();
+  });
+
+  it('falls back to Claude before OpenAI when Gemini is unavailable', async () => {
+    process.env.ANTHROPIC_API_KEY = 'anthropic-key';
+    process.env.OPENAI_API_KEY = 'openai-key';
+    isGeminiAvailableMock.mockReturnValue(false);
+
+    vi.resetModules();
+    const { generateWithMultiProvider } = await import('../../../../server/services/multi-ai-provider');
+
+    mockAnthropic.messages.create.mockResolvedValueOnce({
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            titles: ['Claude selected'],
+            content: 'Claude response ensuring enough detail for validation.',
+            photoInstructions: {
+              lighting: 'studio',
+              cameraAngle: 'portrait',
+              composition: 'centered',
+              styling: 'formal',
+              mood: 'confident',
+              technicalSettings: 'manual'
+            }
+          })
+        }
+      ]
+    });
+
+    const result = await generateWithMultiProvider({
+      user: { id: 2 },
+      platform: 'tiktok',
+      allowsPromotion: 'yes'
+    });
+
+    expect(result.provider).toBe('claude-haiku');
+    expect(mockGemini.getGenerativeModel).not.toHaveBeenCalled();
+    expect(getTextModelMock).not.toHaveBeenCalled();
+    expect(mockAnthropic.messages.create).toHaveBeenCalledTimes(1);
+    expect(mockOpenAI.chat.completions.create).not.toHaveBeenCalled();
+  });
+
+  it('falls back to OpenAI after Claude when Claude fails', async () => {
+    process.env.ANTHROPIC_API_KEY = 'anthropic-key';
+    process.env.OPENAI_API_KEY = 'openai-key';
+    isGeminiAvailableMock.mockReturnValue(false);
+
+    vi.resetModules();
+    const { generateWithMultiProvider } = await import('../../../../server/services/multi-ai-provider');
+
+    mockAnthropic.messages.create.mockRejectedValueOnce(new Error('Claude unavailable'));
+    mockOpenAI.chat.completions.create.mockResolvedValueOnce({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              titles: ['OpenAI fallback'],
+              content: 'OpenAI provides the final fallback content after Claude fails.',
+              photoInstructions: {
+                lighting: 'dramatic',
+                cameraAngle: 'low-angle',
+                composition: 'dynamic',
+                styling: 'bold',
+                mood: 'intense',
+                technicalSettings: 'advanced'
+              }
+            })
+          }
+        }
+      ]
+    });
+
+    const response = await generateWithMultiProvider({
+      user: { id: 3 },
+      platform: 'reddit',
+      allowsPromotion: 'no'
+    });
+
+    expect(response.provider).toBe('openai-gpt4o');
+    expect(mockGemini.getGenerativeModel).not.toHaveBeenCalled();
+    expect(getTextModelMock).not.toHaveBeenCalled();
+    expect(mockAnthropic.messages.create).toHaveBeenCalledTimes(1);
+    expect(mockOpenAI.chat.completions.create).toHaveBeenCalledTimes(1);
+
+    const claudeCallOrder = mockAnthropic.messages.create.mock.invocationCallOrder[0];
+    const openAICallOrder = mockOpenAI.chat.completions.create.mock.invocationCallOrder[0];
+    expect(claudeCallOrder).toBeLessThan(openAICallOrder);
+  });
+});

@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import { safeLog } from '../lib/logger-utils.js';
 
 // Multi-provider AI system for cost optimization
@@ -32,7 +32,7 @@ function getAnthropic() {
 
 function getGemini() {
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY;
-  return apiKey ? new GoogleGenerativeAI(apiKey) : null;
+  return apiKey ? new GoogleGenAI({ apiKey }) : null;
 }
 
 interface MultiAIRequest {

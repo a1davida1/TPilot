@@ -4,15 +4,42 @@ import { pipelineRewrite, extractKeyEntities } from '../../server/caption/rewrit
 import { pipelineTextOnly } from '../../server/caption/textOnlyPipeline';
 
 // Mock dependencies
+interface GeminiMockResponse {
+  text?: string;
+  response?: {
+    text: () => string;
+    functionCall?: Record<string, unknown>;
+    functionCalls?: Record<string, unknown>[];
+  };
+  usageMetadata?: { totalTokenCount?: number };
+}
+
+type GeminiGenerateContent = (input: unknown) => Promise<GeminiMockResponse>;
+
+const textModel = {
+  generateContent: vi.fn<GeminiGenerateContent>(),
+};
+
+const visionModel = {
+  generateContent: vi.fn<GeminiGenerateContent>(),
+};
+
+const isGeminiAvailable = vi.fn<() => boolean>(() => true);
+
+vi.mock('../../server/lib/gemini-client', () => ({
+  __esModule: true,
+  getTextModel: () => textModel,
+  getVisionModel: () => visionModel,
+  isGeminiAvailable,
+}));
+
 vi.mock('../../server/lib/gemini.ts', () => ({
   __esModule: true,
-  textModel: {
-    generateContent: vi.fn(),
-  },
-  visionModel: {
-    generateContent: vi.fn(),
-  },
-  isGeminiAvailable: vi.fn(() => true),
+  textModel,
+  visionModel,
+  isGeminiAvailable,
+  getTextModel: () => textModel,
+  getVisionModel: () => visionModel,
 }));
 
 import { generationResponseSchema } from '../../shared/types/caption';
@@ -63,15 +90,21 @@ vi.mock('../../server/storage.ts', () => ({
   },
 }));
 
+const createGeminiResponse = (payload: string, usage?: GeminiMockResponse['usageMetadata']): GeminiMockResponse => ({
+  text: payload,
+  response: {
+    text: () => payload,
+  },
+  usageMetadata: usage,
+});
+
 describe('Caption Generation', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
-    const { textModel, visionModel } = await import('../../server/lib/gemini.ts');
-    (textModel.generateContent as Mock | undefined)?.mockReset?.();
-    (visionModel.generateContent as Mock | undefined)?.mockReset?.();
-    const { isGeminiAvailable } = await import('../../server/lib/gemini.ts');
-    asMock(isGeminiAvailable).mockReset?.();
-    asMock(isGeminiAvailable).mockReturnValue(true);
+    textModel.generateContent.mockReset();
+    visionModel.generateContent.mockReset();
+    isGeminiAvailable.mockReset();
+    isGeminiAvailable.mockReturnValue(true);
     const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.ts');
     const mockOpenAI = vi.mocked(openAICaptionFallback);
     mockOpenAI.mockReset();
@@ -87,15 +120,13 @@ describe('Caption Generation', () => {
       const mockVoice = 'flirty_playful';
 
       // Mock successful responses
-      const mockFactsResponse = {
-        response: {
-          text: () => JSON.stringify({
-            objects: ['lingerie'],
-            setting: 'bedroom',
-            mood: 'confident',
-          }),
-        },
-      };
+      const mockFactsResponse = createGeminiResponse(
+        JSON.stringify({
+          objects: ['lingerie'],
+          setting: 'bedroom',
+          mood: 'confident',
+        })
+      );
 
       const variantPayload = [
         {
@@ -150,23 +181,16 @@ describe('Caption Generation', () => {
         },
       ];
 
-      const mockVariantsResponse = {
-        response: {
-          text: () => JSON.stringify(variantPayload),
-        },
-      };
+      const mockVariantsResponse = createGeminiResponse(JSON.stringify(variantPayload));
 
-      const mockRankResponse = {
-        response: {
-          text: () =>
-            JSON.stringify({
-              winner_index: 0,
-              scores: [5, 4, 3, 2, 1],
-              reason: 'Selected based on engagement potential',
-              final: variantPayload[0],
-            }),
-        },
-      };
+      const mockRankResponse = createGeminiResponse(
+        JSON.stringify({
+          winner_index: 0,
+          scores: [5, 4, 3, 2, 1],
+          reason: 'Selected based on engagement potential',
+          final: variantPayload[0],
+        })
+      );
 
       const retryVariantPayload = variantPayload.map((variant, index) => ({
         ...variant,
@@ -174,23 +198,16 @@ describe('Caption Generation', () => {
         alt: `${variant.alt} Retry sequence ${index + 1}.`,
       }));
 
-      const retryVariantsResponse = {
-        response: {
-          text: () => JSON.stringify(retryVariantPayload),
-        },
-      };
+      const retryVariantsResponse = createGeminiResponse(JSON.stringify(retryVariantPayload));
 
-      const retryRankResponse = {
-        response: {
-          text: () =>
-            JSON.stringify({
-              winner_index: 1,
-              scores: [4, 5, 3, 2, 1],
-              reason: 'Retry selection maintains quality variety',
-              final: retryVariantPayload[1],
-            }),
-        },
-      };
+      const retryRankResponse = createGeminiResponse(
+        JSON.stringify({
+          winner_index: 1,
+          scores: [4, 5, 3, 2, 1],
+          reason: 'Retry selection maintains quality variety',
+          final: retryVariantPayload[1],
+        })
+      );
 
       const finalVariantPayload = retryVariantPayload.map((variant, index) => ({
         ...variant,
@@ -198,29 +215,19 @@ describe('Caption Generation', () => {
         alt: `${variant.alt} Stabilized coverage pass ${index + 1}.`,
       }));
 
-      const finalVariantsResponse = {
-        response: {
-          text: () => JSON.stringify(finalVariantPayload),
-        },
-      };
+      const finalVariantsResponse = createGeminiResponse(JSON.stringify(finalVariantPayload));
 
-      const finalRankResponse = {
-        response: {
-          text: () =>
-            JSON.stringify({
-              winner_index: 2,
-              scores: [3, 4, 5, 2, 1],
-              reason: 'Final stabilization ranking',
-              final: finalVariantPayload[2],
-            }),
-        },
-      };
+      const finalRankResponse = createGeminiResponse(
+        JSON.stringify({
+          winner_index: 2,
+          scores: [3, 4, 5, 2, 1],
+          reason: 'Final stabilization ranking',
+          final: finalVariantPayload[2],
+        })
+      );
 
-      const { textModel, visionModel } = await import('../../server/lib/gemini.ts');
-      const visionGenerateMock = asMock(visionModel.generateContent);
-      visionGenerateMock.mockResolvedValueOnce(mockFactsResponse);
-      const textGenerateMock = asMock(textModel.generateContent);
-      const responseQueue = [
+      visionModel.generateContent.mockResolvedValueOnce(mockFactsResponse);
+      const responseQueue: GeminiMockResponse[] = [
         mockVariantsResponse,
         mockRankResponse,
         retryVariantsResponse,
@@ -228,7 +235,7 @@ describe('Caption Generation', () => {
         finalVariantsResponse,
         finalRankResponse,
       ];
-      textGenerateMock.mockImplementation(() => {
+      textModel.generateContent.mockImplementation(async () => {
         if (responseQueue.length === 0) {
           responseQueue.push(finalVariantsResponse, finalRankResponse);
         }
@@ -236,7 +243,7 @@ describe('Caption Generation', () => {
         if (!next) {
           throw new Error('Gemini variants unavailable');
         }
-        return Promise.resolve(next as Awaited<ReturnType<(typeof textModel)['generateContent']>>);
+        return next;
       });
 
       const result = await pipeline({
@@ -840,23 +847,16 @@ describe('Caption Generation', () => {
         },
       ];
 
-      const mockVariantsResponse = {
-        response: {
-          text: () => JSON.stringify(variantPayload),
-        },
-      };
+      const mockVariantsResponse = createGeminiResponse(JSON.stringify(variantPayload));
 
-      const mockRankResponse = {
-        response: {
-          text: () =>
-            JSON.stringify({
-              winner_index: 0,
-              scores: [5, 4, 3, 2, 1],
-              reason: 'Selected based on engagement potential',
-              final: variantPayload[0],
-            }),
-        },
-      };
+      const mockRankResponse = createGeminiResponse(
+        JSON.stringify({
+          winner_index: 0,
+          scores: [5, 4, 3, 2, 1],
+          reason: 'Selected based on engagement potential',
+          final: variantPayload[0],
+        })
+      );
 
       const { textModel } = await import('../../server/lib/gemini.ts');
       const textGenerateMock = asMock(textModel.generateContent);
@@ -1120,8 +1120,8 @@ describe('Caption Generation', () => {
       const { textModel } = await import('../../server/lib/gemini.ts');
       const textGenerateMock = asMock(textModel.generateContent);
       textGenerateMock
-        .mockResolvedValueOnce({ response: { text: () => JSON.stringify(duplicateBatch) } })
-        .mockResolvedValueOnce({ response: { text: () => JSON.stringify(uniqueBatch) } });
+        .mockResolvedValueOnce({ text: JSON.stringify(duplicateBatch) })
+        .mockResolvedValueOnce({ text: JSON.stringify(uniqueBatch) });
 
       const { generateVariants } = await import('../../server/caption/geminiPipeline.ts');
       const baseHint = 'Line1\nLine2 "quoted"';

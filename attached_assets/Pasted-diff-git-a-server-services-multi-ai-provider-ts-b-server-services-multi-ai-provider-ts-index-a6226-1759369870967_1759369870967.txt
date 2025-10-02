@@ -1,0 +1,255 @@
+diff --git a/server/services/multi-ai-provider.ts b/server/services/multi-ai-provider.ts
+index a622624475c00abd90ff231f00273aa9d4cd2fea..8a40081486f51aa29b6ae46add132245e46a359d 100644
+--- a/server/services/multi-ai-provider.ts
++++ b/server/services/multi-ai-provider.ts
+@@ -1,62 +1,57 @@
+ import OpenAI from 'openai';
+ import Anthropic from '@anthropic-ai/sdk';
+-import { GoogleGenerativeAI } from '@google/generative-ai';
+ import { safeLog } from '../lib/logger-utils.js';
++import { getTextModel, isGeminiAvailable } from '../lib/gemini-client';
+ 
+ // Multi-provider AI system for cost optimization
+ // Priority: Gemini Flash (cheapest) -> Claude Haiku -> OpenAI (fallback)
+ 
+ interface AIProvider {
+   name: string;
+   inputCost: number; // per 1M tokens
+   outputCost: number; // per 1M tokens
+   available: boolean;
+ }
+ 
+ function getProviders(): AIProvider[] {
+   return [
+-    { name: 'gemini-flash', inputCost: 0.075, outputCost: 0.30, available: !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY) },
++    { name: 'gemini-flash', inputCost: 0.075, outputCost: 0.30, available: isGeminiAvailable() },
+     { name: 'claude-haiku', inputCost: 0.80, outputCost: 4.00, available: !!process.env.ANTHROPIC_API_KEY },
+     { name: 'openai-gpt4o', inputCost: 5.00, outputCost: 15.00, available: !!process.env.OPENAI_API_KEY }
+   ];
+ }
+ 
+ // Initialize clients dynamically when needed
+ function getOpenAI() {
+   return process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
+ }
+ 
+ function getAnthropic() {
+   return process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null;
+ }
+ 
+-function getGemini() {
+-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY;
+-  return apiKey ? new GoogleGenerativeAI(apiKey) : null;
+-}
+-
+ interface MultiAIRequest {
+   user: { id: number; email?: string; tier?: string };
+   platform: string;
+   imageDescription?: string;
+   customPrompt?: string;
+   subreddit?: string;
+   allowsPromotion: 'yes' | 'no';
+   baseImageUrl?: string;
+ }
+ 
+ interface MultiAIResponse {
+   titles: string[];
+   content: string;
+   photoInstructions: {
+     lighting: string;
+     cameraAngle: string;
+     composition: string;
+     styling: string;
+     mood: string;
+     technicalSettings: string;
+   };
+   provider: string;
+   estimatedCost: number;
+   platform?: string;
+ }
+diff --git a/server/services/multi-ai-provider.ts b/server/services/multi-ai-provider.ts
+index a622624475c00abd90ff231f00273aa9d4cd2fea..8a40081486f51aa29b6ae46add132245e46a359d 100644
+--- a/server/services/multi-ai-provider.ts
++++ b/server/services/multi-ai-provider.ts
+@@ -84,129 +79,114 @@ export async function generateWithMultiProvider(request: MultiAIRequest): Promis
+           break;
+         default:
+           continue;
+       }
+ 
+       if (result && result.content) {
+         safeLog('info', 'AI generation successful', { provider: provider.name });
+         return {
+           ...result,
+           platform: request.platform,
+           provider: provider.name,
+           estimatedCost: calculateCost(prompt, result.content, provider)
+         };
+       } else {
+         safeLog('warn', 'AI provider returned empty result', { provider: provider.name });
+       }
+     } catch (error) {
+       safeLog('warn', 'AI provider failed, trying next', { provider: provider.name, error: error instanceof Error ? error.message : String(error) });
+       continue; // Try next provider
+     }
+   }
+ 
+   safeLog('error', 'All AI providers failed - no fallback available', {});
+   throw new Error('All AI providers failed');
+ }
+-
+ async function generateWithGemini(prompt: string) {
+-  const gemini = getGemini();
+-  if (!gemini) return null;
++  if (!isGeminiAvailable()) return null;
+ 
+   try {
+-    const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
++    const model = getTextModel();
+     const response = await model.generateContent({
+       contents: [
+         {
+           role: 'user',
+           parts: [{ text: prompt }]
+         }
+       ],
+-      generationConfig: {
++      config: {
+         temperature: 0.8,
+         maxOutputTokens: 1500
+       }
+     });
+ 
+-    const modelResponse = response.response;
+-
+-    if (!modelResponse) {
+-      safeLog('warn', 'Gemini provider returned empty response', {});
+-      return null;
+-    }
+-
+-
+-    let text = '';
+-
+-    if (typeof modelResponse.text === 'function') {
+-      const responseText = modelResponse.text();
+-      if (typeof responseText === 'string') {
+-        text = responseText.trim();
+-      }
+-    }
++    let text = typeof response.text === 'string' ? response.text.trim() : '';
+ 
+     if (!text) {
+-      const candidates = (modelResponse as { candidates?: Array<unknown> }).candidates;
++      const candidates = response.candidates;
+       if (Array.isArray(candidates)) {
+         for (const candidate of candidates) {
+           if (!candidate || typeof candidate !== 'object') {
+             continue;
+           }
+-          const content = (candidate as { content?: unknown }).content;
+-          if (!content || typeof content !== 'object') {
++          const candidateContent = (candidate as { content?: unknown }).content;
++          if (!candidateContent || typeof candidateContent !== 'object') {
+             continue;
+           }
+-          const parts = (content as { parts?: Array<unknown> }).parts;
++          const parts = (candidateContent as { parts?: Array<unknown> }).parts;
+           if (!Array.isArray(parts)) {
+             continue;
+           }
+           for (const part of parts) {
+             if (!part || typeof part !== 'object') {
+               continue;
+             }
+             const partText = (part as { text?: unknown }).text;
+             if (typeof partText === 'string' && partText.trim()) {
+               text = partText.trim();
+               break;
+             }
+           }
+           if (text) {
+             break;
+           }
+-                  }
+-                }
+-              }
+-              if (!text) {
+-                safeLog('warn', 'Gemini provider returned empty response', {});
+-                return null;
+-              }
+-              const trimmedText = text.trim();
+-              if (trimmedText.length === 0) {
++        }
++      }
++    }
++
++    if (!text) {
++      safeLog('warn', 'Gemini provider returned empty response', {});
++      return null;
++    }
++
++    const trimmedText = text.trim();
++    if (trimmedText.length === 0) {
+       safeLog('warn', 'Gemini provider returned no text', {});
+       return null;
+     }
+ 
+-    // Try to parse as JSON, if it fails, create structured response
++    // Try to parse as JSON, if it fails, create structured response from the text
+     let result;
+     try {
+       result = JSON.parse(trimmedText);
+     } catch (_parseError) {
+       // If not JSON, create a structured response from the text
+       const lines = trimmedText.split('\n').filter(line => line.trim());
+       result = {
+         titles: [`${lines[0] || 'Generated content'} ✨`, 'Creative content generation 🚀', 'Authentic social media posts 💫'],
+         content: trimmedText,
+         photoInstructions: {
+           lighting: 'Natural lighting preferred',
+           cameraAngle: 'Eye level angle',
+           composition: 'Center composition',
+           styling: 'Authentic styling',
+           mood: 'Confident and natural',
+           technicalSettings: 'Auto settings'
+         }
+       };
+     }
+ 
+     safeLog('info', 'Gemini generation completed successfully', {});
+     return validateAndFormatResponse(result);
+   } catch (error) {
+     safeLog('warn', 'Gemini generation failed', { error: error instanceof Error ? error.message : String(error) });
+     return null; // Don't throw, just return null to try next provider
+diff --git a/server/services/multi-ai-provider.ts b/server/services/multi-ai-provider.ts
+index a622624475c00abd90ff231f00273aa9d4cd2fea..8a40081486f51aa29b6ae46add132245e46a359d 100644
+--- a/server/services/multi-ai-provider.ts
++++ b/server/services/multi-ai-provider.ts
+@@ -347,26 +327,26 @@ Please respond with JSON in this exact format:
+ 
+ Generate 3 different title options. Make the content engaging and authentic.
+ ${profile.includeEmojis ? 'Include appropriate emojis.' : 'Do not use emojis.'}
+ Content length should be ${profile.contentLength}.
+ `;
+ }
+ 
+ function calculateCost(prompt: string, content: string, provider: AIProvider): number {
+   // Rough token estimation (1 token ≈ 4 characters)
+   const inputTokens = prompt.length / 4;
+   const outputTokens = content.length / 4;
+ 
+   const cost = (inputTokens * provider.inputCost / 1000000) + (outputTokens * provider.outputCost / 1000000);
+   return Math.round(cost * 100000) / 100000; // Round to 5 decimal places
+ }
+ 
+ 
+ export function getProviderStatus() {
+   return getProviders().map(p => ({
+     name: p.name,
+     available: p.available,
+     inputCost: p.inputCost,
+     outputCost: p.outputCost,
+     savings: Math.round((1 - p.inputCost / 5.00) * 100) // Savings vs OpenAI baseline
+   }));
+-}
++}

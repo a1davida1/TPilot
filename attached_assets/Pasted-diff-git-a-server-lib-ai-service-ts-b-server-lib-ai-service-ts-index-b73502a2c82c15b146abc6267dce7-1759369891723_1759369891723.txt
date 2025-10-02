@@ -1,0 +1,131 @@
+diff --git a/server/lib/ai-service.ts b/server/lib/ai-service.ts
+index b73502a2c82c15b146abc6267dce7448609537b1..d5531511a48443fbad74e26b8dd250a1abe04467 100644
+--- a/server/lib/ai-service.ts
++++ b/server/lib/ai-service.ts
+@@ -1,38 +1,37 @@
+-import { GoogleGenerativeAI } from "@google/generative-ai";
+ import OpenAI from "openai";
+ import crypto from "crypto";
+ import { env } from "./config.js";
+ import { db } from "../db.js";
+ import { aiGenerations, users } from "@shared/schema";
+ import { eq } from "drizzle-orm";
+ import { assertExists } from "../../helpers/assert";
++import { getTextModel, isGeminiAvailable } from "./gemini-client";
+ 
+ // AI service initialization
+ // Use Gemini as primary (checking both GOOGLE_GENAI_API_KEY and GEMINI_API_KEY), OpenAI as fallback
+-const geminiApiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY || env.GOOGLE_GENAI_API_KEY || env.GEMINI_API_KEY || '';
+-const gemini = geminiApiKey ? new GoogleGenerativeAI(geminiApiKey) : null;
++const geminiModelName = process.env.GEMINI_TEXT_MODEL || env.GEMINI_TEXT_MODEL;
+ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
+ 
+ export interface ContentGenerationRequest {
+   userId: number;
+   prompt?: string;
+   imageKey?: string;
+   platforms: string[];
+   styleHints?: string[];
+   variants?: number;
+   cacheKey?: string;
+ }
+ 
+ export interface GeneratedContent {
+   platform: string;
+   titles: string[];
+   body: string;
+   photoInstructions?: string;
+   hashtags?: string[];
+   style: string;
+   confidence: number;
+ }
+ 
+ export interface AiResponse {
+   content: GeneratedContent[];
+   tokensUsed: number;
+diff --git a/server/lib/ai-service.ts b/server/lib/ai-service.ts
+index b73502a2c82c15b146abc6267dce7448609537b1..d5531511a48443fbad74e26b8dd250a1abe04467 100644
+--- a/server/lib/ai-service.ts
++++ b/server/lib/ai-service.ts
+@@ -80,71 +79,70 @@ export class AiService {
+       }
+       
+       // Fallback to OpenAI
+       try {
+         const response = await this.generateWithOpenAI(inputData);
+         await this.cacheResult(userId, 'openai', inputHash, inputData, response);
+         return { ...response, cached: false };
+       } catch (fallbackError: unknown) {
+         console.error('OpenAI fallback failed:', fallbackError);
+         
+         // Check if it's a quota error
+         const fe = fallbackError as Record<string, unknown>;
+         if (fe?.code === 'insufficient_quota' || fe?.status === 429) {
+           console.error('API quota exceeded, using template fallback...');
+           const platforms = inputData.platforms || ['reddit'];
+           const fallbackContent = this.createFallbackContent(platforms);
+           return { content: fallbackContent, tokensUsed: 0, model: 'fallback', cached: false };
+         }
+         
+         throw new Error('All AI services failed to generate content');
+       }
+     }
+   }
+   
+   private static async generateWithGemini(input: GenerationInput): Promise<Omit<AiResponse, 'cached'>> {
+-    if (!gemini) {
++    if (!isGeminiAvailable()) {
+       throw new Error("Gemini API not configured - API key is missing");
+     }
+-    
+-    const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash" });
+-    
++
++    const model = getTextModel();
++
+     const systemPrompt = this.buildSystemPrompt(input.platforms, input.styleHints);
+     const userPrompt = input.prompt ?? "Generate engaging content for adult content creator";
+-    
+-    const result = await model.generateContent([
++
++    const response = await model.generateContent([
+       { text: systemPrompt },
+       { text: userPrompt },
+     ]);
+-    
+-    const response = await result.response;
+-    const content = this.parseGeminiResponse(response.text(), input.platforms);
+-    
++
++    const content = this.parseGeminiResponse(response.text ?? "", input.platforms);
++
+     return {
+       content,
+       tokensUsed: response.usageMetadata?.totalTokenCount || 0,
+-      model: "gemini-1.5-flash",
++      model: geminiModelName,
+     };
+   }
+   
+   private static async generateWithOpenAI(input: GenerationInput): Promise<Omit<AiResponse, 'cached'>> {
+     const systemPrompt = this.buildSystemPrompt(input.platforms, input.styleHints);
+     const userPrompt = input.prompt ?? "Generate engaging content for adult content creator";
+     
+     const response = await openai.chat.completions.create({
+       model: "gpt-4o",
+       messages: [
+         { role: "system", content: systemPrompt },
+         { role: "user", content: userPrompt }
+       ],
+       max_tokens: 2000,
+       response_format: { type: "json_object" },
+     });
+     
+     assertExists(response.choices[0].message.content, 'OpenAI response content must exist');
+     const content = this.parseOpenAIResponse(
+       response.choices[0].message.content, 
+       input.platforms
+     );
+     
+     return {
+       content,
