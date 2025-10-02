@@ -1,4 +1,5 @@
 import passport from 'passport';
+import type { AuthenticateOptions } from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as FacebookStrategy } from 'passport-facebook';
 // Explicitly import compiled entry to avoid Node's extensionless main deprecation
@@ -9,6 +10,25 @@ const RedditStrategy = (
 import { storage } from './storage';
 import type { User } from '@shared/schema';
 import { API_PREFIX, prefixApiPath } from './lib/api-prefix.js';
+
+type RedditAuthenticateOptions = AuthenticateOptions & { duration?: 'temporary' | 'permanent' };
+
+interface RedditStrategyProfile {
+  id: string;
+  name?: string;
+  icon_img?: string;
+  _json: {
+    icon_img?: string;
+    [key: string]: unknown;
+  };
+}
+
+interface RedditStrategyOptions {
+  clientID: string;
+  clientSecret: string;
+  callbackURL: string;
+  scope?: string[];
+}
 
 // Helper function to handle social auth user creation/update
 async function handleSocialAuth(
@@ -79,23 +99,32 @@ export function configureSocialAuth(apiPrefix: string = API_PREFIX) {
 
   // Reddit OAuth Strategy
   if (process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET) {
+    const redditStrategyOptions: RedditStrategyOptions = {
+      clientID: process.env.REDDIT_CLIENT_ID,
+      clientSecret: process.env.REDDIT_CLIENT_SECRET,
+      callbackURL: prefixApiPath('/reddit/callback', apiPrefix),
+      scope: ['identity'],
+    };
+
     passport.use(
       new RedditStrategy(
-        {
-          clientID: process.env.REDDIT_CLIENT_ID,
-          clientSecret: process.env.REDDIT_CLIENT_SECRET,
-          callbackURL: prefixApiPath('/reddit/callback', apiPrefix),
-          scope: ['identity'],
-          state: true,
-        } as any,
-        async (accessToken, refreshToken, profile, done) => {
+        redditStrategyOptions,
+        async (accessToken, refreshToken, profile: RedditStrategyProfile, done) => {
+          const iconImage =
+            (typeof profile.icon_img === 'string' && profile.icon_img.length > 0
+              ? profile.icon_img
+              : undefined) ??
+            (typeof profile._json.icon_img === 'string' && profile._json.icon_img.length > 0
+              ? profile._json.icon_img
+              : undefined);
+
           await handleSocialAuth(
             'reddit',
             {
               id: profile.id,
-              username: profile.name,
+              username: profile.name ?? `reddit_${profile.id}`,
               emails: [],
-              photos: [{ value: (profile as any).icon_img as string }],
+              photos: iconImage ? [{ value: iconImage }] : [],
             },
             done,
           );
@@ -141,7 +170,7 @@ export const socialAuthRoutes = {
     {
       scope: ['identity'],
       duration: 'permanent',
-    } as any,
+    } as RedditAuthenticateOptions,
   ),
   redditCallback: passport.authenticate('reddit', { 
     failureRedirect: '/login?error=reddit_auth_failed',
