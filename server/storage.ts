@@ -337,7 +337,7 @@ export class DatabaseStorage implements IStorage {
 
       const cleanUpdates = entries.reduce<Partial<UserUpdate>>((acc, [key, value]) => {
         if (value !== undefined) {
-          acc[key] = value;
+          (acc as Record<string, unknown>)[key] = value;
         }
         return acc;
       }, {});
@@ -371,7 +371,7 @@ export class DatabaseStorage implements IStorage {
 
       const cleanUpdates = entries.reduce<Partial<UserUpdate>>((acc, [key, value]) => {
         if (value !== undefined) {
-          acc[key] = value;
+          (acc as Record<string, unknown>)[key] = value;
         }
         return acc;
       }, {});

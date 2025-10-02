@@ -676,7 +676,15 @@ export function registerRedditRoutes(app: Express) {
       }
 
       if (result.success) {
-        recordPostOutcome(userId, subreddit, { status: 'posted' });
+        try {
+          await recordPostOutcome(userId, subreddit, { status: 'posted' });
+        } catch (trackingError) {
+          logger.warn('Failed to persist successful Reddit outcome', {
+            userId,
+            subreddit,
+            error: trackingError instanceof Error ? trackingError.message : String(trackingError)
+          });
+        }
         logger.info('Reddit post successful', {
           userId,
           subreddit,
@@ -721,10 +729,18 @@ export function registerRedditRoutes(app: Express) {
           ?? decisionReasons[0]
           ?? 'Reddit posting failed';
 
-        recordPostOutcome(userId, subreddit, {
-          status: 'removed',
-          reason: removalReason,
-        });
+        try {
+          await recordPostOutcome(userId, subreddit, {
+            status: 'removed',
+            reason: removalReason,
+          });
+        } catch (trackingError) {
+          logger.warn('Failed to persist removal outcome', {
+            userId,
+            subreddit,
+            error: trackingError instanceof Error ? trackingError.message : String(trackingError)
+          });
+        }
         res.status(400).json({
           success: false,
           error: result.error || 'Failed to submit post',
@@ -745,10 +761,18 @@ export function registerRedditRoutes(app: Express) {
         : 'Failed to submit post to Reddit';
 
       if (userId && subreddit) {
-        recordPostOutcome(userId, subreddit, {
-          status: 'removed',
-          reason: failureMessage,
-        });
+        try {
+          await recordPostOutcome(userId, subreddit, {
+            status: 'removed',
+            reason: failureMessage,
+          });
+        } catch (trackingError) {
+          logger.warn('Failed to persist failure outcome', {
+            userId,
+            subreddit,
+            error: trackingError instanceof Error ? trackingError.message : String(trackingError)
+          });
+        }
       }
 
       logger.error('Reddit submit error', {
@@ -890,7 +914,7 @@ export function registerRedditRoutes(app: Express) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      const summary = summarizeRemovalReasons(userId);
+      const summary = await summarizeRemovalReasons(userId);
 
       logger.info('Compliance removal summary requested', {
         userId,

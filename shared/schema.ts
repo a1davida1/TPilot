@@ -769,7 +769,12 @@ export const insertLeadSchema = createInsertSchema(leads);
 export const insertVerificationTokenSchema = createInsertSchema(verificationTokens);
 
 // Types
-export type User = typeof users.$inferSelect;
+type InferUser = typeof users.$inferSelect;
+type InferUserInsert = typeof users.$inferInsert;
+
+export type User = InferUser;
+export type UserUpdate = InferUserInsert;
+export type UserLastLogin = InferUser['lastLogin'];
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type Lead = typeof leads.$inferSelect;

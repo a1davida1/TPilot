@@ -1,0 +1,236 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/server/storage.ts b/server/storage.ts
+index 9dfea4f417b1d7dd4c21deecdd2e4e309d3d0490..f161aae7ea9c0ecf8b49b9b50f485a5ad17e5f66 100644
+--- a/server/storage.ts
++++ b/server/storage.ts
+@@ -1,64 +1,67 @@
+ import {
+   type User,
+   type InsertUser,
+   type ContentGeneration,
+   type InsertContentGeneration,
+   type UserPreference,
+   type InsertUserPreference,
+   type UserImage,
+   type InsertUserImage,
+   type ExpenseCategory,
+   type InsertExpenseCategory,
+   type Expense,
+   type InsertExpense,
+   type TaxDeductionInfo,
+   type InsertTaxDeductionInfo,
+   type SocialMediaAccount,
+   type InsertSocialMediaAccount,
+   type SocialMediaPost,
+   type InsertSocialMediaPost,
+   type PlatformEngagement,
+   type InsertPlatformEngagement,
+   type PostSchedule,
+   type InsertPostSchedule,
++  type RedditPostOutcome,
++  type InsertRedditPostOutcome,
+   type SavedContent,
+   type InsertSavedContent,
+   type VerificationToken,
+   type InsertVerificationToken,
+   users,
+   contentGenerations,
+   userPreferences,
+   userImages,
+   expenseCategories,
+   expenses,
+   taxDeductionInfo,
+   socialMediaAccounts,
+   socialMediaPosts,
+   savedContent,
+   platformEngagement,
+   postSchedule,
++  redditPostOutcomes,
+   verificationTokens,
+   invoices
+ } from "../shared/schema";
+ import { db } from "./db";
+ import { eq, desc, and, gte, sql, count } from "drizzle-orm";
+ import { safeLog } from './lib/logger-utils';
+ 
+ type ExpenseCategoryWithDefaults = ExpenseCategory & {
+   defaultBusinessPurpose?: string | null;
+ };
+ 
+ export interface ExpenseTotalsRow {
+   categoryName: string | null;
+   amount: number;
+   deductionPercentage: number;
+ }
+ 
+ export interface ExpenseTotalsSummary {
+   total: number;
+   deductible: number;
+   byCategory: { [key: string]: number };
+ }
+ 
+ export function summarizeExpenseTotals(rows: ExpenseTotalsRow[]): ExpenseTotalsSummary {
+   let total = 0;
+diff --git a/server/storage.ts b/server/storage.ts
+index 9dfea4f417b1d7dd4c21deecdd2e4e309d3d0490..f161aae7ea9c0ecf8b49b9b50f485a5ad17e5f66 100644
+--- a/server/storage.ts
++++ b/server/storage.ts
+@@ -167,50 +170,56 @@ export interface IStorage {
+   getUserSocialMediaAccounts(userId: number): Promise<SocialMediaAccount[]>;
+   getSocialMediaAccount(accountId: number): Promise<SocialMediaAccount | undefined>;
+   updateSocialMediaAccount(accountId: number, updates: Partial<SocialMediaAccount>): Promise<SocialMediaAccount>;
+   deleteSocialMediaAccount(accountId: number): Promise<void>;
+ 
+   createSocialMediaPost(post: InsertSocialMediaPost): Promise<SocialMediaPost>;
+   getUserSocialMediaPosts(userId: number, filters?: { platform?: string; status?: string; limit?: number; offset?: number }): Promise<SocialMediaPost[]>;
+   getSocialMediaPost(postId: number): Promise<SocialMediaPost | undefined>;
+   updateSocialMediaPost(postId: number, updates: Partial<SocialMediaPost>): Promise<SocialMediaPost>;
+   deleteSocialMediaPost(postId: number): Promise<void>;
+ 
+   // Saved content operations
+   createSavedContent(entry: InsertSavedContent): Promise<SavedContent>;
+   getSavedContentById(id: number, userId: number): Promise<SavedContent | undefined>;
+   getUserSavedContent(userId: number): Promise<SavedContent[]>;
+   deleteSavedContent(id: number, userId: number): Promise<void>;
+ 
+   createPlatformEngagement(engagement: InsertPlatformEngagement): Promise<PlatformEngagement>;
+   getPlatformEngagement(accountId: number, date?: Date): Promise<PlatformEngagement[]>;
+ 
+   createPostSchedule(schedule: InsertPostSchedule): Promise<PostSchedule>;
+   getUserScheduledPosts(userId: number): Promise<PostSchedule[]>;
+   getPostSchedule(scheduleId: number): Promise<PostSchedule | undefined>;
+   updatePostSchedule(scheduleId: number, updates: Partial<PostSchedule>): Promise<PostSchedule>;
+   deletePostSchedule(scheduleId: number): Promise<void>;
++
++  // Compliance operations
++  recordRedditPostOutcome(outcome: InsertRedditPostOutcome): Promise<void>;
++  getRedditPostOutcomes(userId: number): Promise<RedditPostOutcome[]>;
++  getRedditPostRemovalSummary(userId: number): Promise<Array<{ reason: string | null; count: number }>>;
++  clearRedditPostOutcomes(userId?: number): Promise<void>;
+ }
+ 
+ export class DatabaseStorage implements IStorage {
+   // User operations
+   async getUser(id: number): Promise<User | undefined> {
+     try {
+       // Build conditions array to include soft delete filtering
+       const conditions = [eq(users.id, id)];
+       
+       // Guard optional schema fields - filter soft-deleted users
+       if ('isDeleted' in users) {
+         conditions.push(eq((users as Record<string, unknown>).isDeleted, false));
+       }
+       
+       const result = await db.select().from(users).where(and(...conditions)).limit(1).execute();
+       const [user] = result;
+       return user ?? undefined;
+     } catch (error) {
+       safeLog('error', 'Storage operation failed - getting user:', { error: (error as Error).message });
+       return undefined;
+     }
+   }
+ 
+   async getAllUsers(): Promise<User[]> {
+     try {
+diff --git a/server/storage.ts b/server/storage.ts
+index 9dfea4f417b1d7dd4c21deecdd2e4e309d3d0490..f161aae7ea9c0ecf8b49b9b50f485a5ad17e5f66 100644
+--- a/server/storage.ts
++++ b/server/storage.ts
+@@ -1331,29 +1340,94 @@ export class DatabaseStorage implements IStorage {
+       return undefined;
+     }
+   }
+ 
+   async updatePostSchedule(scheduleId: number, updates: Partial<PostSchedule>): Promise<PostSchedule> {
+     try {
+       const [result] = await db.update(postSchedule)
+         .set({ ...updates, updatedAt: new Date() })
+         .where(eq(postSchedule.id, scheduleId))
+         .returning();
+       return result;
+     } catch (error) {
+       console.error('Error updating post schedule:', { error: (error as Error).message });
+       throw error;
+     }
+   }
+ 
+   async deletePostSchedule(scheduleId: number): Promise<void> {
+     try {
+       await db.delete(postSchedule).where(eq(postSchedule.id, scheduleId));
+     } catch (error) {
+       console.error('Error deleting post schedule:', { error: (error as Error).message });
+       throw error;
+     }
+   }
++
++  async recordRedditPostOutcome(outcome: InsertRedditPostOutcome): Promise<void> {
++    try {
++      await db.insert(redditPostOutcomes).values({
++        ...outcome,
++        occurredAt: outcome.occurredAt ?? new Date(),
++      } as typeof redditPostOutcomes.$inferInsert);
++    } catch (error) {
++      console.error('Error recording reddit post outcome:', {
++        error: (error as Error).message,
++        userId: outcome.userId,
++        subreddit: outcome.subreddit,
++      });
++      throw error;
++    }
++  }
++
++  async getRedditPostOutcomes(userId: number): Promise<RedditPostOutcome[]> {
++    try {
++      return await db
++        .select()
++        .from(redditPostOutcomes)
++        .where(eq(redditPostOutcomes.userId, userId))
++        .orderBy(redditPostOutcomes.occurredAt);
++    } catch (error) {
++      console.error('Error fetching reddit post outcomes:', { error: (error as Error).message, userId });
++      return [];
++    }
++  }
++
++  async getRedditPostRemovalSummary(
++    userId: number,
++  ): Promise<Array<{ reason: string | null; count: number }>> {
++    try {
++      return await db
++        .select({
++          reason: redditPostOutcomes.reason,
++          count: sql<number>`CAST(COUNT(*) AS INTEGER)`
++        })
++        .from(redditPostOutcomes)
++        .where(
++          and(
++            eq(redditPostOutcomes.userId, userId),
++            eq(redditPostOutcomes.status, 'removed')
++          )
++        )
++        .groupBy(redditPostOutcomes.reason);
++    } catch (error) {
++      console.error('Error summarizing reddit removal outcomes:', { error: (error as Error).message, userId });
++      return [];
++    }
++  }
++
++  async clearRedditPostOutcomes(userId?: number): Promise<void> {
++    try {
++      if (typeof userId === 'number') {
++        await db.delete(redditPostOutcomes).where(eq(redditPostOutcomes.userId, userId));
++        return;
++      }
++      await db.delete(redditPostOutcomes);
++    } catch (error) {
++      console.error('Error clearing reddit post outcomes:', { error: (error as Error).message, userId });
++      throw error;
++    }
++  }
+ }
+ 
+ // Create and export the storage instance
+ export const storage = new DatabaseStorage();
+ 
+EOF
+)

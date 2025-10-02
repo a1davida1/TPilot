@@ -1,0 +1,66 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/shared/schema.ts b/shared/schema.ts
+index 8154f18eebee21f8a7dc91bea5b89a536dbc493f..6676ad22f4344e95d6728254a53f0a81e8e218df 100644
+--- a/shared/schema.ts
++++ b/shared/schema.ts
+@@ -747,51 +747,56 @@ export const insertSubscriptionSchema = createInsertSchema(subscriptions);
+ export const insertInvoiceSchema = createInsertSchema(invoices);
+ export const insertReferralCodeSchema = createInsertSchema(referralCodes);
+ export const insertReferralSchema = createInsertSchema(referrals);
+ export const insertEventLogSchema = createInsertSchema(eventLogs);
+ export const insertFeatureFlagSchema = createInsertSchema(featureFlags);
+ export const insertMediaAssetSchema = createInsertSchema(mediaAssets);
+ export const insertMediaUsageSchema = createInsertSchema(mediaUsages);
+ export const insertAiGenerationSchema = createInsertSchema(aiGenerations);
+ export const insertQueueJobSchema = createInsertSchema(queueJobs);
+ export const insertPostRateLimitSchema = createInsertSchema(postRateLimits);
+ export const insertPostDuplicateSchema = createInsertSchema(postDuplicates);
+ 
+ 
+ // Phase 5 schemas already included above
+ 
+ // Insert schemas for existing tables
+ export const insertUserSchema = createInsertSchema(users);
+ export const insertContentGenerationSchema = createInsertSchema(contentGenerations);
+ export const insertUserSampleSchema = createInsertSchema(userSamples);
+ export const insertUserPreferenceSchema = createInsertSchema(userPreferences);
+ export const insertUserImageSchema = createInsertSchema(userImages);
+ export const insertLeadSchema = createInsertSchema(leads);
+ export const insertVerificationTokenSchema = createInsertSchema(verificationTokens);
+ 
+ // Types
+-export type User = typeof users.$inferSelect;
++type InferUser = typeof users.$inferSelect;
++type InferUserInsert = typeof users.$inferInsert;
++
++export type User = InferUser;
++export type UserUpdate = InferUserInsert;
++export type UserLastLogin = InferUser['lastLogin'];
+ export type InsertUser = z.infer<typeof insertUserSchema>;
+ 
+ export type Lead = typeof leads.$inferSelect;
+ export type InsertLead = z.infer<typeof insertLeadSchema>;
+ export type VerificationToken = typeof verificationTokens.$inferSelect;
+ export type InsertVerificationToken = z.infer<typeof insertVerificationTokenSchema>;
+ 
+ export type ContentGeneration = typeof contentGenerations.$inferSelect;
+ export type InsertContentGeneration = z.infer<typeof insertContentGenerationSchema>;
+ 
+ export type UserSample = typeof userSamples.$inferSelect;
+ export type InsertUserSample = z.infer<typeof insertUserSampleSchema>;
+ 
+ export type UserPreference = typeof userPreferences.$inferSelect;
+ export type InsertUserPreference = z.infer<typeof insertUserPreferenceSchema>;
+ 
+ export type UserImage = typeof userImages.$inferSelect;
+ export type InsertUserImage = z.infer<typeof insertUserImageSchema>;
+ 
+ // Types for new tables
+ export type CreatorAccount = typeof creatorAccounts.$inferSelect;
+ export type InsertCreatorAccount = z.infer<typeof insertCreatorAccountSchema>;
+ 
+ export type SubredditRule = typeof subredditRules.$inferSelect;
+ export type InsertSubredditRule = z.infer<typeof insertSubredditRuleSchema>;
+ 
+EOF
+)

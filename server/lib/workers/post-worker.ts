@@ -9,7 +9,7 @@ import { storage } from "../../storage.js";
 import { socialMediaManager, type Platform, type PostContent } from "../../social-media/social-media-manager.js";
 // Removed account-metadata imports - module not found
 import { logger } from "../logger.js";
-import { recordPostOutcome } from "../../compliance/ruleViolationTracker.js";
+import { recordPostOutcome, type PostOutcomeInput } from "../../compliance/ruleViolationTracker.js";
 
 export class PostWorker {
   private initialized = false;
@@ -54,7 +54,7 @@ export class PostWorker {
       }
       const canPost = await RedditManager.canPostToSubreddit(userId, subreddit);
       if (!canPost.canPost) {
-        recordPostOutcome(userId, subreddit, {
+        await this.trackOutcome(userId, subreddit, {
           status: 'removed',
           reason: canPost.reason ?? 'Posting not permitted'
         });
@@ -97,7 +97,7 @@ export class PostWorker {
 
       // Update job status in database
       if (result.success) {
-        recordPostOutcome(userId, subreddit, { status: 'posted' });
+        await this.trackOutcome(userId, subreddit, { status: 'posted' });
         if (!postJobId) {
           throw new Error('postJobId is required');
         }
@@ -116,7 +116,7 @@ export class PostWorker {
 
         logger.info(`Post job ${postJobId} completed successfully`, { result });
       } else {
-        recordPostOutcome(userId, subreddit, {
+        await this.trackOutcome(userId, subreddit, {
           status: 'removed',
           reason: result.error ?? 'Reddit posting failed'
         });
@@ -142,6 +142,23 @@ export class PostWorker {
       });
 
       throw error; // Re-throw to mark job as failed
+    }
+  }
+
+  private async trackOutcome(
+    userId: number,
+    subreddit: string,
+    outcome: PostOutcomeInput
+  ): Promise<void> {
+    try {
+      await recordPostOutcome(userId, subreddit, outcome);
+    } catch (error) {
+      logger.warn('Failed to record Reddit post outcome', {
+        userId,
+        subreddit,
+        status: outcome.status,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 

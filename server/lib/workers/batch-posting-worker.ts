@@ -5,7 +5,7 @@ import { postJobs, eventLogs } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { RedditManager, type RedditPostOptions } from "../reddit.js";
 import { logger } from "../logger.js";
-import { recordPostOutcome } from "../../compliance/ruleViolationTracker.js";
+import { recordPostOutcome, type PostOutcomeInput } from "../../compliance/ruleViolationTracker.js";
 
 export class BatchPostingWorker {
   private initialized = false;
@@ -58,7 +58,7 @@ export class BatchPostingWorker {
           // Check if we can post to this subreddit
           const canPost = await RedditManager.canPostToSubreddit(userId, subreddit);
           if (!canPost.canPost) {
-            recordPostOutcome(userId, subreddit, {
+            await this.trackOutcome(userId, subreddit, {
               status: 'removed',
               reason: canPost.reason ?? 'Posting not permitted'
             });
@@ -115,7 +115,7 @@ export class BatchPostingWorker {
           const result = await reddit.submitPost(postOptions);
 
           if (result.success) {
-            recordPostOutcome(userId, subreddit, { status: 'posted' });
+            await this.trackOutcome(userId, subreddit, { status: 'posted' });
             outcomeTracked = true;
             // Update post job status
             await db
@@ -145,7 +145,7 @@ export class BatchPostingWorker {
             successCount++;
 
           } else {
-            recordPostOutcome(userId, subreddit, {
+            await this.trackOutcome(userId, subreddit, {
               status: 'removed',
               reason: result.error ?? 'Reddit posting failed'
             });
@@ -184,7 +184,7 @@ export class BatchPostingWorker {
 
           if (!outcomeTracked) {
             const reason = error instanceof Error ? error.message : 'Unknown error';
-            recordPostOutcome(userId, subreddit, {
+            await this.trackOutcome(userId, subreddit, {
               status: 'removed',
               reason,
             });
@@ -263,6 +263,23 @@ export class BatchPostingWorker {
       title: title.slice(0, 300), // Reddit title limit
       body: body.slice(0, 40000), // Reddit body limit
     };
+  }
+
+  private async trackOutcome(
+    userId: number,
+    subreddit: string,
+    outcome: PostOutcomeInput
+  ): Promise<void> {
+    try {
+      await recordPostOutcome(userId, subreddit, outcome);
+    } catch (error) {
+      logger.warn('Failed to record batch post outcome', {
+        userId,
+        subreddit,
+        status: outcome.status,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   private getSubredditCustomizations(subreddit: string) {
