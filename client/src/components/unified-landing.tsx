@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { ThottoPilotLogo } from "@/components/thottopilot-logo";
 import { 
   Sparkles, 
   Shield,
@@ -60,12 +61,22 @@ export function UnifiedLanding() {
         <div className="relative max-w-7xl mx-auto px-6 py-20">
           {/* Hero Content */}
           <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 dark:bg-purple-900/30 rounded-full text-purple-700 dark:text-purple-300 text-sm font-semibold mb-8">
+            {/* Logo with animation */}
+            <div className="flex justify-center mb-8 animate-fade-in">
+              <div className="animate-float">
+                <ThottoPilotLogo 
+                  size="xl" 
+                  className="h-20 w-20 drop-shadow-2xl"
+                />
+              </div>
+            </div>
+            
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 dark:bg-purple-900/30 rounded-full text-purple-700 dark:text-purple-300 text-sm font-semibold mb-8 animate-slide-in-left">
               <Crown className="h-4 w-4" />
               {metrics ? `Trusted by ${metrics.creators.toLocaleString()} Content Creators` : 'Trusted by creators'}
             </div>
             
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 dark:text-white mb-8 leading-tight">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 dark:text-white mb-8 leading-tight animate-scale-up">
               Create, Protect,{' '}
               <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
                 and Promote
@@ -79,9 +90,9 @@ export function UnifiedLanding() {
             </p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12 animate-slide-in-right">
               <Link to="/login">
-                <Button size="lg" className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold text-lg px-8 py-4 shadow-lg">
+                <Button size="lg" className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold text-lg px-8 py-4 shadow-lg smooth-hover button-press">
                   <Sparkles className="h-5 w-5 mr-2" />
                   Start Creating Free
                 </Button>
@@ -89,7 +100,7 @@ export function UnifiedLanding() {
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="font-semibold text-lg px-8 py-4 border-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="font-semibold text-lg px-8 py-4 border-2 hover:bg-gray-100 dark:hover:bg-gray-800 smooth-hover button-press"
                 onClick={() => window.open('https://www.youtube.com/watch?v=dQw4w9WgXcQ', '_blank')}
               >
                 <Play className="h-5 w-5 mr-2" />
