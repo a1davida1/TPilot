@@ -99,6 +99,7 @@ export interface IStorage {
   createVerificationToken(token: InsertVerificationToken): Promise<VerificationToken>;
   getVerificationToken(token: string): Promise<VerificationToken | undefined>;
   deleteVerificationToken(token: string): Promise<void>;
+  consumeVerificationToken(token: string): Promise<VerificationToken | undefined>;
   deleteUser(userId: number): Promise<void>;
 
   // Generation operations
@@ -443,6 +444,24 @@ export class DatabaseStorage implements IStorage {
       await db.delete(verificationTokens).where(eq(verificationTokens.token, token));
     } catch (error) {
       safeLog('error', 'Storage operation failed - deleting verification token:', { error: (error as Error).message });
+      throw error;
+    }
+  }
+
+  async consumeVerificationToken(token: string): Promise<VerificationToken | undefined> {
+    try {
+      const [consumedToken] = await db
+        .delete(verificationTokens)
+        .where(
+          and(
+            eq(verificationTokens.token, token),
+            gte(verificationTokens.expiresAt, new Date())
+          )
+        )
+        .returning();
+      return consumedToken;
+    } catch (error) {
+      safeLog('error', 'Storage operation failed - consuming verification token:', { error: (error as Error).message });
       throw error;
     }
   }

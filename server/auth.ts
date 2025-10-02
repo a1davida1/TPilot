@@ -521,11 +521,11 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
       }
 
       // Get the verification token from database
-      logger.debug('🔍 Looking up token in database...');
-      const verificationToken = await storage.getVerificationToken(token as string);
+      logger.debug('🔍 Consuming token from database...');
+      const verificationToken = await storage.consumeVerificationToken(token as string);
 
       if (!verificationToken) {
-        logger.warn('❌ EMAIL VERIFICATION FAILED: Token not found in database', {
+        logger.warn('❌ EMAIL VERIFICATION FAILED: Token not found or already consumed', {
           token: `${String(token).substring(0, 8)}...`
         });
         if (isJsonResponse) {
@@ -546,7 +546,6 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
           expiredAt: new Date(verificationToken.expiresAt).toISOString(),
           currentTime: new Date().toISOString()
         });
-        await storage.deleteVerificationToken(token as string);
         if (isJsonResponse) {
           return res.status(400).json({ error: 'Invalid or expired token' });
         }
@@ -573,10 +572,8 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
         logger.debug('✅ Welcome email sent successfully');
       }
 
-      // Delete the used token
-      logger.debug('🗑️ Deleting used verification token...');
-      await storage.deleteVerificationToken(token as string);
-      logger.debug('✅ Token deleted successfully');
+      // Token already consumed earlier in flow; log the outcome
+      logger.debug('🗑️ Verification token consumed successfully');
 
       logger.info('✅ EMAIL VERIFICATION SUCCESSFUL', {
         user: user?.username || 'Unknown',

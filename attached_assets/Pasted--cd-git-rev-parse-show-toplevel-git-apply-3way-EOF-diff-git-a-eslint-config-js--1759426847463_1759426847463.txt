@@ -1,0 +1,83 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/eslint.config.js b/eslint.config.js
+index 06123dd48d41dd13a6ef7374eed273045175313a..4788dc78d766878b96d33ba0855699695da06235 100644
+--- a/eslint.config.js
++++ b/eslint.config.js
+@@ -1,26 +1,25 @@
+-import globals from 'globals';
+ import tseslintPlugin from '@typescript-eslint/eslint-plugin';
+ import tseslintParser from '@typescript-eslint/parser';
+ import reactPlugin from 'eslint-plugin-react';
+ import reactHooksPlugin from 'eslint-plugin-react-hooks';
+ import reactRefreshPlugin from 'eslint-plugin-react-refresh';
+ import unusedImportsPlugin from 'eslint-plugin-unused-imports';
+ 
+ const browserGlobals = {
+   window: 'readonly',
+   document: 'readonly',
+   navigator: 'readonly',
+   location: 'readonly',
+   console: 'readonly',
+   localStorage: 'readonly',
+   sessionStorage: 'readonly',
+   fetch: 'readonly',
+   Request: 'readonly',
+   Response: 'readonly',
+   Headers: 'readonly',
+   FormData: 'readonly',
+   File: 'readonly',
+   Blob: 'readonly',
+   URL: 'readonly',
+   URLSearchParams: 'readonly',
+   Image: 'readonly',
+diff --git a/eslint.config.js b/eslint.config.js
+index 06123dd48d41dd13a6ef7374eed273045175313a..4788dc78d766878b96d33ba0855699695da06235 100644
+--- a/eslint.config.js
++++ b/eslint.config.js
+@@ -163,41 +162,41 @@ export default [
+   },
+   {
+     files: ['server/**/*.{js,ts}', 'scripts/**/*.{js,ts}'],
+     languageOptions: {
+       globals: {
+         ...nodeGlobals,
+       },
+     },
+   },
+   {
+     files: ['tests/**/*.{js,ts}'],
+     languageOptions: {
+       globals: {
+         ...nodeGlobals,
+       },
+     },
+     rules: {
+       '@typescript-eslint/no-require-imports': 'off',
+       'no-undef': 'off',
+     },
+   },
+   {
+     files: ['*.config.{js,ts}', 'server/start-production.js'],
+     languageOptions: {
+       globals: {
+-        ...globals.node,
++        ...nodeGlobals,
+       },
+     },
+     rules: {
+       '@typescript-eslint/no-require-imports': 'off',
+     },
+   },
+   {
+     files: ['vite.config.js'],
+     languageOptions: {
+       globals: {
+-        ...globals.node,
++        ...nodeGlobals,
+       },
+     },
+   },
+ ];
+ 
+EOF
+)

@@ -1,4 +1,3 @@
-import globals from 'globals';
 import tseslintPlugin from '@typescript-eslint/eslint-plugin';
 import tseslintParser from '@typescript-eslint/parser';
 import reactPlugin from 'eslint-plugin-react';
@@ -185,7 +184,7 @@ export default [
     files: ['*.config.{js,ts}', 'server/start-production.js'],
     languageOptions: {
       globals: {
-        ...globals.node,
+        ...nodeGlobals,
       },
     },
     rules: {
@@ -196,7 +195,7 @@ export default [
     files: ['vite.config.js'],
     languageOptions: {
       globals: {
-        ...globals.node,
+        ...nodeGlobals,
       },
     },
   },

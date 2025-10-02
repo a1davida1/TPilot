@@ -4,25 +4,60 @@ import express from 'express';
 import request from 'supertest';
 
 // Mock implementations for storage and email service
-const mockTokens = new Map();
-const mockUsers = new Map();
+type MockTokenRecord = {
+  token: string;
+  userId: number;
+  expiresAt: Date;
+};
 
-const mockStorage = vi.hoisted(() => ({
-  getUserByEmail: vi.fn(),
-  updateUser: vi.fn(),
-  createUser: vi.fn(),
-  getVerificationToken: vi.fn(async (token: string) => mockTokens.get(token)),
-  deleteVerificationToken: vi.fn(async (token: string) => mockTokens.delete(token)),
-  updateUserEmailVerified: vi.fn(async (userId: number, verified: boolean) => {
-    const user = mockUsers.get(userId);
-    if (user) user.emailVerified = verified;
-  }),
-  createVerificationToken: vi.fn(async (data: { token: string; userId: number; expiresAt: Date }) => {
-    mockTokens.set(data.token, data);
-    return data;
-  }),
-  getUser: vi.fn(async (id: number) => mockUsers.get(id))
-}));
+type MockUserRecord = {
+  id: number;
+  username: string;
+  email: string;
+  emailVerified: boolean;
+};
+
+const mockTokens = new Map<string, MockTokenRecord>();
+const mockUsers = new Map<number, MockUserRecord>();
+
+const mockStorage = vi.hoisted(() => {
+  const state = { consumeDelayMs: 0 };
+  return {
+    getUserByEmail: vi.fn(),
+    updateUser: vi.fn(),
+    createUser: vi.fn(),
+    getVerificationToken: vi.fn(async (token: string) => mockTokens.get(token)),
+    deleteVerificationToken: vi.fn(async (token: string) => mockTokens.delete(token)),
+    consumeVerificationToken: vi.fn(async (token: string) => {
+      const tokenRecord = mockTokens.get(token);
+      if (!tokenRecord) {
+        return undefined;
+      }
+      if (tokenRecord.expiresAt < new Date()) {
+        return undefined;
+      }
+      mockTokens.delete(token);
+      if (state.consumeDelayMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, state.consumeDelayMs));
+      }
+      return tokenRecord;
+    }),
+    updateUserEmailVerified: vi.fn(async (userId: number, verified: boolean) => {
+      const user = mockUsers.get(userId);
+      if (user) {
+        user.emailVerified = verified;
+      }
+    }),
+    createVerificationToken: vi.fn(async (data: MockTokenRecord) => {
+      mockTokens.set(data.token, data);
+      return data;
+    }),
+    getUser: vi.fn(async (id: number) => mockUsers.get(id)),
+    __setConsumeDelay: (ms: number) => {
+      state.consumeDelayMs = ms;
+    }
+  };
+});
 
 const mockEmailService = vi.hoisted(() => ({
   sendVerificationEmail: vi.fn().mockResolvedValue(true),
@@ -43,6 +78,7 @@ describe('Email Verification Unit Tests', () => {
     vi.clearAllMocks();
     mockTokens.clear();
     mockUsers.clear();
+    mockStorage.__setConsumeDelay(0);
 
     mockEmailService.sendVerificationEmail.mockResolvedValue(true);
     mockEmailService.sendWelcomeEmail.mockResolvedValue(true);
@@ -79,7 +115,7 @@ describe('Email Verification Unit Tests', () => {
       
       expect(response.status).toBe(400);
       expect(response.body.message ?? response.body.error).toBe('Invalid or expired token');
-      expect(mockStorage.getVerificationToken).toHaveBeenCalledWith('invalid-token-12345');
+      expect(mockStorage.consumeVerificationToken).toHaveBeenCalledWith('invalid-token-12345');
     });
 
     it('should reject expired token', async () => {
@@ -127,7 +163,8 @@ describe('Email Verification Unit Tests', () => {
       expect(response.status).toBe(200);
       expect(response.body.message).toBe('Email verified successfully');
       expect(mockStorage.updateUserEmailVerified).toHaveBeenCalledWith(userId, true);
-      expect(mockStorage.deleteVerificationToken).toHaveBeenCalledWith(validToken);
+      expect(mockStorage.consumeVerificationToken).toHaveBeenCalledWith(validToken);
+      expect(mockTokens.has(validToken)).toBe(false);
     });
   });
 
@@ -152,12 +189,13 @@ describe('Email Verification Unit Tests', () => {
 
       await request(app)
         .get('/api/auth/verify-email?token=' + token);
-      
+
       // Verify the user was marked as verified
       expect(mockStorage.updateUserEmailVerified).toHaveBeenCalledWith(userId, true);
-      
+
       // Verify the token was cleaned up
-      expect(mockStorage.deleteVerificationToken).toHaveBeenCalledWith(token);
+      expect(mockStorage.consumeVerificationToken).toHaveBeenCalledWith(token);
+      expect(mockTokens.has(token)).toBe(false);
     });
 
     it('should cleanup verification token after successful verification', async () => {
@@ -180,9 +218,10 @@ describe('Email Verification Unit Tests', () => {
 
       await request(app)
         .get('/api/auth/verify-email?token=' + token);
-      
-      expect(mockStorage.deleteVerificationToken).toHaveBeenCalledWith(token);
-      expect(mockStorage.deleteVerificationToken).toHaveBeenCalledTimes(1);
+
+      expect(mockStorage.consumeVerificationToken).toHaveBeenCalledWith(token);
+      expect(mockStorage.consumeVerificationToken).toHaveBeenCalledTimes(1);
+      expect(mockTokens.has(token)).toBe(false);
     });
   });
 
@@ -244,7 +283,7 @@ describe('Email Verification Unit Tests', () => {
       const token = 'concurrent-test-token';
       const userId = 999;
       const futureDate = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 hour from now
-      
+
       mockTokens.set(token, {
         token: token,
         userId: userId,
@@ -257,6 +296,8 @@ describe('Email Verification Unit Tests', () => {
         email: 'concurrent@example.com',
         emailVerified: false
       });
+
+      mockStorage.__setConsumeDelay(25);
 
       // Send requests with JSON Accept header for consistent testing
       const jsonPromises = Array.from({ length: 5 }, () =>
@@ -275,6 +316,9 @@ describe('Email Verification Unit Tests', () => {
         .forEach(response => {
           expect(response.status).toBe(400);
         });
+
+      expect(mockStorage.consumeVerificationToken).toHaveBeenCalledTimes(5);
+      expect(mockTokens.has(token)).toBe(false);
     });
   });
 
