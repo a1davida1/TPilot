@@ -2,7 +2,6 @@ import { defineConfig } from 'vitest/config';
 import path from 'path';
 
 const defaultExcludes: string[] = [
-  'assistant-last40-unified/**',
   'unified-tasks-snapshot/**',
   '**/node_modules/**',
   '**/dist/**',
@@ -32,7 +31,7 @@ export default defineConfig({
     globals: true,
     environment: 'node', // Default to Node for server tests
     // Show only failures and errors in output
-    reporter: process.env.NODE_ENV === 'test' ? ['verbose'] : ['basic'],
+    reporters: process.env.NODE_ENV === 'test' ? ['verbose'] : ['basic'],
     exclude: defaultExcludes,
     environmentMatchGlobs: [
       ['client/**', 'jsdom'], // Use jsdom for client tests
