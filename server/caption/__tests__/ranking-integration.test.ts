@@ -57,7 +57,8 @@ describe.each(scenarios)('Ranking Integration Tests ($label)', ({ applyGeminiMoc
   let rankAndSelect: (typeof import('../geminiPipeline'))['rankAndSelect'];
   let textModelMock: TextModelMock;
   let getTextModelMock: ReturnType<typeof vi.fn>;
-  let fetchSpy: ReturnType<typeof vi.spyOn<typeof globalThis, 'fetch'>>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let fetchSpy: any;
 
   beforeEach(async () => {
     vi.resetModules();

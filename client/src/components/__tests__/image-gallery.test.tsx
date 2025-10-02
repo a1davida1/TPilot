@@ -89,7 +89,7 @@ const baseImages: MockImage[] = [
 ];
 
 const originalFetch = globalThis.fetch;
-let fetchMock: ReturnType<typeof vi.fn<FetchArgs, FetchReturn>>;
+let fetchMock: ReturnType<typeof vi.fn>;
 
 function cloneImages(): MockImage[] {
   return baseImages.map((image) => ({ ...image }));
@@ -181,7 +181,7 @@ async function findByTestId(testId: string): Promise<HTMLElement> {
 beforeEach(() => {
   toastMock.mockClear();
   downloadProtectedImageMock.mockClear();
-  fetchMock = vi.fn<FetchArgs, FetchReturn>();
+  fetchMock = vi.fn();
   globalThis.fetch = fetchMock as unknown as typeof fetch;
 });
 

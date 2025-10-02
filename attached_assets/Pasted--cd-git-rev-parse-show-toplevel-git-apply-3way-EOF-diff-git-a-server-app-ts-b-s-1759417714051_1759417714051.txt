@@ -1,0 +1,282 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/server/app.ts b/server/app.ts
+index edf53451e07cfe42937f76a981ddb3a943d401fa..261f2670344d6073845d9f673c7df721ed7bc5ba 100644
+--- a/server/app.ts
++++ b/server/app.ts
+@@ -56,51 +56,51 @@ function configureCors(app: express.Express): void {
+           'http://localhost:3000',
+           'http://127.0.0.1:5000',
+           'http://127.0.0.1:3000',
+         ];
+ 
+         if (devOrigins.includes(origin)) {
+           return callback(null, true);
+         }
+ 
+         if (origin.includes('.replit.dev') || origin.includes('.repl.co') || origin.includes('.replit.app')) {
+           return callback(null, true);
+         }
+       }
+ 
+       if (process.env.NODE_ENV === 'production' && allowedOrigins.length === 0) {
+         return callback(null, false);
+       }
+ 
+       return callback(null, false);
+     },
+     credentials: true,
+   }));
+ }
+ 
+ function applyRequestLogging(app: express.Express): void {
+-  app.use((req, res, next) => {
++  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+     const start = Date.now();
+     const path = req.path;
+     let capturedJsonResponse: unknown;
+ 
+     const originalResJson = res.json.bind(res) as typeof res.json;
+     res.json = function jsonOverride(...args: Parameters<typeof originalResJson>) {
+       const [body] = args;
+       capturedJsonResponse = body;
+       return originalResJson(...args);
+     };
+ 
+     res.on('finish', () => {
+       const duration = Date.now() - start;
+       const isApiRequest = path === API_PREFIX || path.startsWith(`${API_PREFIX}/`);
+       if (isApiRequest) {
+         let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+         const payload = prepareResponseLogPayload(capturedJsonResponse);
+         if (payload) {
+           logLine += ` :: ${payload}`;
+         }
+ 
+         logger.info(truncateLogLine(logLine), { requestId: req.id });
+       }
+     });
+ 
+diff --git a/server/app.ts b/server/app.ts
+index edf53451e07cfe42937f76a981ddb3a943d401fa..261f2670344d6073845d9f673c7df721ed7bc5ba 100644
+--- a/server/app.ts
++++ b/server/app.ts
+@@ -140,164 +140,164 @@ async function configureStaticAssets(
+     }
+ 
+     clientPath = candidate;
+     logger.info(`Serving client from: ${clientPath}`);
+     break;
+   }
+ 
+   if (!clientPath) {
+     if (missingIndexPaths.length > 0) {
+       const missingDescriptions = missingIndexPaths
+         .map((missingPath) => `Client build not found at ${missingPath}`)
+         .join('; ');
+       logger.warn(missingDescriptions);
+     }
+     if (process.env.NODE_ENV === 'production') {
+       logger.error('CRITICAL: Production build missing client files!');
+     }
+     logger.error('Client build not found; unable to locate compiled client assets in any known directory.');
+ 
+     app.get('*', (req, res) => {
+       res.status(404).send('Client build not found - static assets unavailable');
+     });
+     return;
+   }
+ 
+-  app.use((req, res, next) => {
++  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+     if (req.path.startsWith('/assets/')) {
+       logger.info(`Asset request received: ${req.method} ${req.path}`);
+     }
+     next();
+   });
+ 
+   app.use(express.static(clientPath, {
+     index: false,
+     setHeaders: (res, path) => {
+       logger.info(`Static file served: ${path}`);
+       if (path.endsWith('.js')) {
+         res.setHeader('Content-Type', 'application/javascript');
+       } else if (path.endsWith('.css')) {
+         res.setHeader('Content-Type', 'text/css');
+       }
+     }
+   }));
+ 
+   const isDevelopment = app.get('env') === 'development';
+   const viteDevFlag = process.env.ENABLE_VITE_DEV?.toLowerCase();
+   const isViteExplicitlyDisabled = viteDevFlag === 'false' || viteDevFlag === '0';
+   const shouldEnableVite = enableVite && isDevelopment && !isViteExplicitlyDisabled;
+ 
+   if (shouldEnableVite) {
+     try {
+       const { setupVite } = await import('./vite.js');
+       await setupVite(app, server);
+       logger.info('Vite development server configured');
+     } catch (error) {
+       logger.warn('Could not setup Vite in development mode:', error);
+     }
+   } else if (enableVite && isDevelopment) {
+     logger.info('Vite development server disabled via ENABLE_VITE_DEV flag. Remove or set to true to re-enable.');
+   }
+ 
+-  app.get('*', (req, res, next) => {
++  app.get('*', (req: express.Request, res: express.Response, next: express.NextFunction) => {
+     const isApiRoute = req.path === API_PREFIX || req.path.startsWith(`${API_PREFIX}/`);
+     if (isApiRoute ||
+         req.path.startsWith('/auth/') ||
+         req.path.startsWith('/webhook/') ||
+         req.path.startsWith('/assets/')) {
+       logger.debug(`Asset request bypassed SPA fallback: ${req.path}`);
+       return next();
+     }
+ 
+     const indexFile = path.join(clientPath, 'index.html');
+     if (fs.existsSync(indexFile)) {
+       res.type('html');
+       res.sendFile(indexFile);
+     } else {
+       res.status(404).send('Client build not found');
+     }
+   });
+ }
+ 
+ export async function createApp(options: CreateAppOptions = {}): Promise<CreateAppResult> {
+   const app = express();
+   app.set('trust proxy', 1);
+ 
+   app.use(generalLimiter);
+   app.use(sanitize);
+ 
+   configureCors(app);
+ 
+-  app.use((req, res, next) => {
++  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+     req.id = uuidv4();
+     res.setHeader('X-Request-ID', req.id);
+     next();
+   });
+ 
+   app.use(permissionsPolicy);
+ 
+   const cookieSecret = process.env.COOKIE_SECRET || process.env.SESSION_SECRET || 'dev-cookie-secret';
+   if (!cookieSecret && process.env.NODE_ENV === 'production') {
+     throw new Error('COOKIE_SECRET or SESSION_SECRET must be set in production');
+   }
+   app.use(cookieParser(cookieSecret));
+ 
+   app.use(express.json({ limit: '50mb' }));
+   app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+ 
+   app.use(createSessionMiddleware());
+   app.set('sessionConfigured', true);
+ 
+   const isProd = process.env.NODE_ENV === 'production';
+   const csrfProtection: RequestHandler = csrf({
+     cookie: {
+       key: '_csrf',
+       httpOnly: true,
+       secure: isProd,
+       sameSite: isProd ? 'strict' : 'lax',
+       path: '/',
+     },
+   });
+ 
+   app.get(`${API_PREFIX}/csrf-token`, csrfProtection, (req, res) => {
+     res.json({ csrfToken: req.csrfToken() });
+   });
+ 
+-  app.use((req, res, next) => {
++  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+     const exemptPaths = [
+       `${API_PREFIX}/auth/reddit/callback`,
+       `${API_PREFIX}/auth/google/callback`,
+       `${API_PREFIX}/auth/facebook/callback`,
+       `${API_PREFIX}/webhooks/`,
+       `${API_PREFIX}/health`
+     ];
+ 
+-    if (exemptPaths.some(path => req.path.startsWith(path))) {
++    if (exemptPaths.some((path) => req.path.startsWith(path))) {
+       return next();
+     }
+ 
+-    return csrfProtection(req as any, res as any, next);
++    return csrfProtection(req, res, next);
+   });
+ 
+   app.set('csrfProtectionConfigured', true);
+ 
+   app.use(passport.initialize());
+   app.use(passport.session());
+ 
+   if (app.get('authRoutesConfigured') !== true) {
+     setupAuth(app, API_PREFIX);
+     app.set('authRoutesConfigured', true);
+   }
+ 
+   if (app.get('socialAuthConfigured') !== true) {
+     setupSocialAuth(app, API_PREFIX);
+     app.set('socialAuthConfigured', true);
+   }
+ 
+   if (app.get('billingRoutesConfigured') !== true) {
+     mountBillingRoutes(app, API_PREFIX);
+     app.set('billingRoutesConfigured', true);
+   }
+ 
+   applyRequestLogging(app);
+ 
+   const startQueueOption = options.startQueue ?? true;
+diff --git a/server/app.ts b/server/app.ts
+index edf53451e07cfe42937f76a981ddb3a943d401fa..261f2670344d6073845d9f673c7df721ed7bc5ba 100644
+--- a/server/app.ts
++++ b/server/app.ts
+@@ -324,39 +324,40 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
+ 
+     const server = await registerRoutes(app, API_PREFIX, { sentry: Sentry });
+ 
+     if (configureStaticOption) {
+       await configureStaticAssets(app, server, enableVite);
+     }
+ 
+     // IMPORTANT: Add Sentry error handler AFTER all routes but BEFORE any other error middleware
+     if (process.env.SENTRY_DSN) {
+       Sentry.setupExpressErrorHandler(app);
+     }
+ 
+     // Optional fallthrough error handler
+     app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+       logger.error('Unhandled error in Express:', {
+         error: err.message,
+         stack: err.stack,
+         requestId: req.id
+       });
+ 
+       if (res.statusCode === 200) {
+         res.statusCode = 500;
+       }
+ 
+       if (!res.headersSent) {
++        const sentryRes = res as express.Response & { sentry?: string };
+         res.json({
+           error: 'Internal server error',
+           requestId: req.id,
+-          sentryId: (res as any).sentry
++          sentryId: sentryRes.sentry,
+         });
+       }
+     });
+ 
+     return { app, server };
+   } catch (error) {
+     logger.error('Failed to initialise application:', error);
+     throw error;
+   }
+ }
+ 
+EOF
+)
