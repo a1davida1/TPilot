@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { FallbackParams } from '../../../server/caption/openaiFallback.ts';
 import { nsfwCaptionFallback } from '../../../server/caption/nsfwFallback.ts';
 
 describe('nsfwCaptionFallback', () => {
@@ -29,5 +30,59 @@ describe('nsfwCaptionFallback', () => {
     const result = await nsfwCaptionFallback('https://example.com/image.jpg');
     expect(result.nsfw).toBe(true);
     expect(result.caption).toContain('[NSFW] sample caption');
+  });
+
+  it('propagates NSFW flag through OpenAI fallback variants', async () => {
+    const { openAICaptionFallback } = await import('../../../server/caption/openaiFallback.ts');
+
+    const variants = await openAICaptionFallback({ platform: 'instagram', nsfw: true });
+
+    expect(variants).toHaveLength(5);
+    for (const variant of variants) {
+      expect(variant.nsfw).toBe(true);
+    }
+  });
+
+  it('ensures pipeline fallback preserves NSFW metadata and labeling', async () => {
+    vi.resetModules();
+
+    const fallbackCalls: FallbackParams[] = [];
+
+    vi.doMock('../../../server/lib/gemini.ts', () => ({
+      __esModule: true,
+      getVisionModel: vi.fn(),
+      getTextModel: vi.fn(),
+      isGeminiAvailable: () => false,
+    }));
+
+    vi.doMock('../../../server/caption/openaiFallback.ts', async () => {
+      const actual = await vi.importActual<typeof import('../../../server/caption/openaiFallback.ts')>(
+        '../../../server/caption/openaiFallback.ts'
+      );
+      return {
+        __esModule: true,
+        ...actual,
+        openAICaptionFallback: vi.fn(async (params: FallbackParams) => {
+          fallbackCalls.push(params);
+          return actual.openAICaptionFallback(params);
+        }),
+      };
+    });
+
+    const { pipeline } = await import('../../../server/caption/geminiPipeline.ts');
+
+    const result = await pipeline({
+      imageUrl: 'https://example.com/test.jpg',
+      platform: 'instagram',
+      voice: 'confident',
+      nsfw: true,
+    });
+
+    expect(fallbackCalls).toHaveLength(1);
+    expect(fallbackCalls[0].nsfw).toBe(true);
+    expect(result.variants?.every(variant => variant.nsfw)).toBe(true);
+    expect(result.final.nsfw).toBe(true);
+
+    vi.resetModules();
   });
 });
