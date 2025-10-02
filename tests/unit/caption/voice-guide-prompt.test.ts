@@ -14,19 +14,15 @@ const mockVisionModel = vi.hoisted(() => ({
   generateContent: vi.fn<(input: unknown) => Promise<{ text: string; response: { text: () => string } }>>()
 }));
 
-<<<<<<< ours
 const mockIsGeminiAvailable = vi.hoisted(() => vi.fn(() => true));
 
-vi.mock('../../../../server/lib/gemini.ts', () => ({
-=======
 vi.mock('../../../server/lib/gemini.ts', () => ({
->>>>>>> theirs
   __esModule: true,
   textModel: mockTextModel,
   visionModel: mockVisionModel,
   getTextModel: () => mockTextModel,
   getVisionModel: () => mockVisionModel,
-  isGeminiAvailable: () => true,
+  isGeminiAvailable: mockIsGeminiAvailable,
 }));
 
 type CaptionVariant = {
@@ -61,7 +57,6 @@ function isPromptPayload(value: unknown): value is PromptPayload {
   return typeof value === 'object' && value !== null && 'text' in value && typeof (value as { text: unknown }).text === 'string';
 }
 
-<<<<<<< ours
 const createGeminiResponse = (payload: string) => ({
   text: payload,
   response: { text: () => payload },
@@ -72,37 +67,6 @@ function collectPromptTexts(): string[] {
     .map(([args]) => (Array.isArray(args) ? args[0] : undefined))
     .filter((payload): payload is PromptPayload => isPromptPayload(payload))
     .map(payload => payload.text);
-=======
-function extractPromptText(): string {
-  const calls = mockTextModel.generateContent.mock.calls;
-  if (calls.length === 0) {
-    throw new Error('textModel.generateContent was not called');
-  }
-
-  for (const call of calls) {
-    const [arg] = call;
-    if (!Array.isArray(arg)) {
-      continue;
-    }
-    const [payload] = arg;
-    if (!isPromptPayload(payload)) {
-      continue;
-    }
-    if (payload.text.includes('VOICE_GUIDE')) {
-      return payload.text;
-    }
-  }
-
-  const [fallbackArgs] = calls[0];
-  if (!Array.isArray(fallbackArgs)) {
-    throw new Error('Expected prompt argument array for textModel.generateContent');
-  }
-  const [firstPayload] = fallbackArgs;
-  if (!isPromptPayload(firstPayload)) {
-    throw new Error('Prompt payload is missing expected text field');
-  }
-  return firstPayload.text;
->>>>>>> theirs
 }
 
 describe('Voice guide prompt forwarding', () => {
@@ -135,11 +99,13 @@ describe('Voice guide prompt forwarding', () => {
 
   it('includes the voice guide when generating image-based variants', async () => {
     const { generateVariants } = await import('../../../server/caption/geminiPipeline.ts');
-    mockVisionModel.generateContent.mockResolvedValueOnce(
+    
+    const variants = makeVariants();
+    mockVisionModel.generateContent.mockResolvedValue(
       createGeminiResponse(JSON.stringify({ objects: ['sunset'] }))
     );
-    mockTextModel.generateContent.mockResolvedValueOnce(
-      createGeminiResponse(JSON.stringify(makeVariants()))
+    mockTextModel.generateContent.mockResolvedValue(
+      createGeminiResponse(JSON.stringify(variants))
     );
     const { getTextModel } = await import('../../../server/lib/gemini-client.ts');
     expect(getTextModel()).toBe(mockTextModel);
@@ -154,20 +120,14 @@ describe('Voice guide prompt forwarding', () => {
     });
 
     expect(mockTextModel.generateContent).toHaveBeenCalled();
-<<<<<<< ours
     const promptTexts = collectPromptTexts();
     expect(promptTexts.length).toBeGreaterThan(0);
-    const guide = buildVoiceGuideBlock('flirty_playful');
-    if (!guide) throw new Error('Voice guide missing for flirty_playful');
-    expect(promptTexts.some(text => text.includes(guide))).toBe(true);
-=======
-    const promptText = extractPromptText();
+    
     const voiceContext = formatVoiceContext('flirty_playful');
     expect(voiceContext).not.toHaveLength(0);
-    expect(promptText).toContain('VOICE: flirty_playful');
-    expect(promptText).toContain('STYLE: bold');
-    expect(promptText).toContain('MOOD: playful');
->>>>>>> theirs
+    expect(promptTexts.some(text => text.includes('VOICE: flirty_playful'))).toBe(true);
+    expect(promptTexts.some(text => text.includes('STYLE: bold'))).toBe(true);
+    expect(promptTexts.some(text => text.includes('MOOD: playful'))).toBe(true);
   });
 
   it('includes the voice guide for text-only variant generation', async () => {
@@ -189,20 +149,14 @@ describe('Voice guide prompt forwarding', () => {
     });
 
     expect(mockTextModel.generateContent).toHaveBeenCalled();
-<<<<<<< ours
     const promptTexts = collectPromptTexts();
     expect(promptTexts.length).toBeGreaterThan(0);
-    const guide = buildVoiceGuideBlock('flirty_playful');
-    if (!guide) throw new Error('Voice guide missing for flirty_playful');
-    expect(promptTexts.some(text => text.includes(guide))).toBe(true);
-=======
-    const promptText = extractPromptText();
+    
     const voiceContext = formatVoiceContext('flirty_playful');
     expect(voiceContext).not.toHaveLength(0);
-    expect(promptText).toContain('VOICE: flirty_playful');
-    expect(promptText).toContain('STYLE: bold');
-    expect(promptText).toContain('MOOD: playful');
->>>>>>> theirs
+    expect(promptTexts.some(text => text.includes('VOICE: flirty_playful'))).toBe(true);
+    expect(promptTexts.some(text => text.includes('STYLE: bold'))).toBe(true);
+    expect(promptTexts.some(text => text.includes('MOOD: playful'))).toBe(true);
   });
 
   it('includes the voice guide when rewriting captions', async () => {
@@ -224,12 +178,8 @@ describe('Voice guide prompt forwarding', () => {
     });
 
     expect(mockTextModel.generateContent).toHaveBeenCalled();
-<<<<<<< ours
     const promptTexts = collectPromptTexts();
     expect(promptTexts.length).toBeGreaterThan(0);
-=======
-    const promptText = extractPromptText();
->>>>>>> theirs
     const guide = buildVoiceGuideBlock('flirty_playful');
     if (!guide) throw new Error('Voice guide missing for flirty_playful');
     expect(promptTexts.some(text => text.includes(guide))).toBe(true);
