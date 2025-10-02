@@ -3,6 +3,7 @@ import supertest from 'supertest';
 import express from 'express';
 import type { Request, Response, NextFunction, RequestHandler } from 'express';
 import { adminCommunitiesRouter } from '../../server/routes/admin-communities.ts';
+import { ZodError, ZodIssueCode } from 'zod';
 
 interface AdminUser {
   id: number;
@@ -278,6 +279,33 @@ describe('Admin Communities Routes', () => {
       expect(mockUpdateCommunity).toHaveBeenCalledWith('test1', updateData);
     });
 
+    it('should return 400 when validation fails during update', async () => {
+      const invalidUpdate = {
+        displayName: ''
+      };
+
+      const validationError = new ZodError([
+        {
+          code: ZodIssueCode.custom,
+          path: ['displayName'],
+          message: 'Display name is required'
+        }
+      ]);
+
+      mockPartialParse.mockImplementation(() => {
+        throw validationError;
+      });
+
+      const response = await request
+        .put('/api/admin/communities/test1')
+        .send(invalidUpdate)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toContain('displayName');
+      expect(mockUpdateCommunity).not.toHaveBeenCalled();
+    });
+
     it('should handle update community not found', async () => {
       mockUpdateCommunity.mockResolvedValue(undefined);
 
@@ -288,6 +316,22 @@ describe('Admin Communities Routes', () => {
 
       expect(response.body.success).toBe(false);
       expect(response.body.error).toBe('Community not found');
+    });
+
+    it('should return 500 when update community fails unexpectedly', async () => {
+      const updateData = {
+        description: 'Updated description'
+      };
+
+      mockUpdateCommunity.mockRejectedValue(new Error('Unexpected failure'));
+
+      const response = await request
+        .put('/api/admin/communities/test1')
+        .send(updateData)
+        .expect(500);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Failed to update community');
     });
   });
 
