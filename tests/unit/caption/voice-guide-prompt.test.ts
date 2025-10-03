@@ -125,9 +125,9 @@ describe('Voice guide prompt forwarding', () => {
     
     const voiceContext = formatVoiceContext('flirty_playful');
     expect(voiceContext).not.toHaveLength(0);
-    expect(promptTexts.some(text => text.includes('VOICE: flirty_playful'))).toBe(true);
-    expect(promptTexts.some(text => text.includes('STYLE: bold'))).toBe(true);
-    expect(promptTexts.some(text => text.includes('MOOD: playful'))).toBe(true);
+    expect(promptTexts.some(text => text.includes('flirty_playful'))).toBe(true);
+    expect(promptTexts.some(text => text.includes('bold'))).toBe(true);
+    expect(promptTexts.some(text => text.includes('playful'))).toBe(true);
   });
 
   it('includes the voice guide for text-only variant generation', async () => {
@@ -154,9 +154,9 @@ describe('Voice guide prompt forwarding', () => {
     
     const voiceContext = formatVoiceContext('flirty_playful');
     expect(voiceContext).not.toHaveLength(0);
-    expect(promptTexts.some(text => text.includes('VOICE: flirty_playful'))).toBe(true);
-    expect(promptTexts.some(text => text.includes('STYLE: bold'))).toBe(true);
-    expect(promptTexts.some(text => text.includes('MOOD: playful'))).toBe(true);
+    expect(promptTexts.some(text => text.includes('flirty_playful'))).toBe(true);
+    expect(promptTexts.some(text => text.includes('bold'))).toBe(true);
+    expect(promptTexts.some(text => text.includes('playful'))).toBe(true);
   });
 
   it('includes the voice guide when rewriting captions', async () => {

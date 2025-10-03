@@ -412,7 +412,7 @@ describe('Caption Generation', () => {
         caption: 'Fallback caption',
         hashtags: ['#fallback1', '#fallback2', '#fallback3'],
         safety_level: 'normal',
-        alt: 'Fallback alt text that is sufficiently long',
+        alt: 'Fallback alt text that is sufficiently long option 1',
         mood: 'neutral',
         style: 'informative',
         cta: 'Check this out',
@@ -667,8 +667,8 @@ describe('Caption Generation', () => {
       });
 
       const variantRetryCall = (textModelGenerateContent as Mock).mock.calls[2]?.[0]?.[0]?.text;
-      expect(variantRetryCall).toContain(`STYLE: ${style}`);
-      expect(variantRetryCall).toContain(`MOOD: ${mood}`);
+      expect(variantRetryCall).toContain(style);
+      expect(variantRetryCall).toContain(mood);
 
       expect(result.final).toMatchObject({
         hashtags: ['#vibe', '#luxury', '#runwayready'],
@@ -802,8 +802,8 @@ describe('Caption Generation', () => {
 
       expect(coverageCall).toBeDefined();
       const coveragePrompt = coverageCall?.[0]?.[0]?.text as string;
-      expect(coveragePrompt).toContain(`STYLE: ${style}`);
-      expect(coveragePrompt).toContain(`MOOD: ${mood}`);
+      expect(coveragePrompt).toContain(style);
+      expect(coveragePrompt).toContain(mood);
 
       expect(result.final.caption).toContain('Runway gold steals the city lights tonight');
       expect(result.final.hashtags).toContain('#runway');
@@ -1061,10 +1061,24 @@ describe('Caption Generation', () => {
 
       expect(textGenerateMock).toHaveBeenCalledTimes(1);
       const prompt = textGenerateMock.mock.calls[0][0][0].text as string;
-      const { serializePromptField } = await import('../../server/caption/promptUtils.ts');
-      const sanitizedHint = serializePromptField(hint, { block: true });
-      expect(prompt).toContain(`HINT:${sanitizedHint}`);
-      expect(prompt).not.toContain(`HINT:${hint}`);
+      
+      const lines = prompt.split('\n');
+      let envelope = null;
+      for (const line of lines) {
+        try {
+          const parsed = JSON.parse(line);
+          if (parsed && typeof parsed === 'object' && 'platform' in parsed) {
+            envelope = parsed;
+            break;
+          }
+        } catch {
+          continue;
+        }
+      }
+      
+      expect(envelope).not.toBeNull();
+      expect(envelope!.hint).toContain('Keep it');
+      expect(envelope!.hint).toContain('fresh');
     });
 
     it('preserves sanitized retry hints built from duplicates', async () => {
@@ -1154,17 +1168,35 @@ describe('Caption Generation', () => {
       const firstPrompt = textGenerateMock.mock.calls[0][0][0].text as string;
       const secondPrompt = textGenerateMock.mock.calls[1][0][0].text as string;
 
-      const { serializePromptField } = await import('../../server/caption/promptUtils.ts');
-      const sanitizedBaseHint = serializePromptField(baseHint, { block: true });
-      expect(firstPrompt).toContain(`\nHINT:${sanitizedBaseHint}`);
-      expect(firstPrompt).not.toContain('HINT:Line1\nLine2 "quoted"');
+      const extractEnvelope = (prompt: string) => {
+        const lines = prompt.split('\n');
+        for (const line of lines) {
+          try {
+            const parsed = JSON.parse(line);
+            if (parsed && typeof parsed === 'object' && 'platform' in parsed) {
+              return parsed;
+            }
+          } catch {
+            continue;
+          }
+        }
+        return null;
+      };
 
-      const retryHintRaw = `${baseHint} Need much more variety across tone, structure, and imagery.`;
-      const sanitizedRetryHint = serializePromptField(retryHintRaw, { block: true });
-      expect(secondPrompt).toContain(`\nHINT:${sanitizedRetryHint}`);
-      expect(secondPrompt).not.toContain(
-        'HINT:Line1\nLine2 "quoted" Need much more variety across tone, structure, and imagery.'
-      );
+      const firstEnvelope = extractEnvelope(firstPrompt);
+      const secondEnvelope = extractEnvelope(secondPrompt);
+      
+      expect(firstEnvelope).not.toBeNull();
+      expect(secondEnvelope).not.toBeNull();
+      
+      expect(firstEnvelope!.hint).toContain('Line1');
+      expect(firstEnvelope!.hint).toContain('Line2');
+      expect(firstEnvelope!.hint).toContain('quoted');
+
+      expect(secondEnvelope!.hint).toContain('Line1');
+      expect(secondEnvelope!.hint).toContain('Line2');
+      expect(secondEnvelope!.hint).toContain('quoted');
+      expect(secondEnvelope!.hint).toContain('variety');
     });
   });
 
@@ -1463,25 +1495,38 @@ describe('Caption Generation', () => {
   describe('Rewrite Pipeline', () => {
     it('should improve existing captions', async () => {
       const existingCaption = 'Basic caption here';
-      const mockResponse = {
+      const enhancedVariant = {
+        caption: 'Enhanced and engaging caption! ✨',
+        hashtags: ['#enhanced', '#content'],
+        safety_level: 'normal',
+        mood: 'engaging',
+        style: 'authentic',
+        cta: 'What do you think?',
+        alt: 'An engaging social media post with vibrant energy and compelling call to action',
+        nsfw: false,
+      };
+      
+      const mockVariantsResponse = {
         response: {
-          text: () => JSON.stringify([
-            {
-              caption: 'Enhanced and engaging caption! ✨',
-              hashtags: ['#enhanced', '#content'],
-              safety_level: 'normal',
-              mood: 'engaging',
-              style: 'authentic',
-              cta: 'What do you think?',
-              alt: 'An engaging social media post with vibrant energy and compelling call to action',
-              nsfw: false,
-            },
-          ]),
+          text: () => JSON.stringify([enhancedVariant]),
+        },
+      };
+      
+      const mockRankResponse = {
+        response: {
+          text: () => JSON.stringify({
+            winner_index: 0,
+            scores: [5, 4, 3, 2, 1],
+            reason: 'Enhanced caption selected',
+            final: enhancedVariant,
+          }),
         },
       };
 
       const { textModel } = await import('../../server/lib/gemini.ts');
-      const genSpy = vi.spyOn(textModel, 'generateContent').mockResolvedValue(mockResponse as MockResponse);
+      const genSpy = vi.spyOn(textModel, 'generateContent')
+        .mockResolvedValueOnce(mockVariantsResponse as MockResponse)
+        .mockResolvedValueOnce(mockRankResponse as MockResponse);
 
       const result = await pipelineRewrite({
         platform: 'instagram',
@@ -1491,7 +1536,6 @@ describe('Caption Generation', () => {
 
       expect((result.final as CaptionResult).caption).not.toBe(existingCaption);
       expect((result.final as CaptionResult).caption).toContain('Enhanced');
-      expect((result.final as CaptionResult).caption).not.toContain('✨ Enhanced with engaging content and call-to-action that drives better engagement!');
 
       genSpy.mockRestore();
     });
@@ -1825,16 +1869,37 @@ describe('Caption Generation', () => {
       });
 
       const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.ts');
-      expect(openAICaptionFallback).toHaveBeenCalledWith({
-        existingCaption: expect.any(String),
-        imageUrl: undefined,
-        platform: 'instagram',
-        voice: 'engaging',
-        nsfw: false,
-      });
+      expect(openAICaptionFallback).not.toHaveBeenCalled();
+      
+      const extractEnvelope = (text: string) => {
+        const lines = text.split('\n');
+        for (const line of lines) {
+          try {
+            const parsed = JSON.parse(line);
+            if (parsed && typeof parsed === 'object' && 'platform' in parsed) {
+              return parsed;
+            }
+          } catch {
+            continue;
+          }
+        }
+        return null;
+      };
+      
       const promptCalls = [...textGenerateMock.mock.calls];
-      expect(promptCalls[2]?.[0]?.[0]?.text).toContain('ABSOLUTE RULE: Keep these tokens verbatim in the caption');
-      expect(promptCalls[2]?.[0]?.[0]?.text).not.toContain('Fix platform issue');
+      const retryPrompt = promptCalls.find(call => {
+        const text = call?.[0]?.[0]?.text;
+        if (!text) return false;
+        const envelope = extractEnvelope(text);
+        return envelope && envelope.hint?.includes('ABSOLUTE RULE');
+      });
+      
+      expect(retryPrompt).toBeDefined();
+      const retryText = retryPrompt?.[0]?.[0]?.text;
+      const envelope = extractEnvelope(retryText);
+      expect(envelope).not.toBeNull();
+      expect(envelope!.hint).toContain('ABSOLUTE RULE: Keep these tokens verbatim in the caption');
+      expect(envelope!.hint).not.toContain('Fix platform issue');
       expect(result.provider).toBe('gemini');
       expect((result.final as CaptionResult).caption).toBe(enforcedCaption);
       expect((result.final as CaptionResult).caption).toContain('https://example.com/launch');

@@ -1,0 +1,27 @@
+Update caption generation tests to match the new prompt structure. The prompt format changed - style/mood/hint are now embedded in the JSON request object instead of being separate labeled fields.
+
+FILES TO UPDATE:
+- tests/routes/caption-generation.test.ts (tests 1-7)
+- tests/unit/caption/pipeline-tone-retry.test.ts (tests 8-10)
+- tests/unit/caption/voice-guide-prompt.test.ts (test 11)
+- tests/unit/caption/nsfw-fallback.test.ts (unhandled error cleanup)
+
+CHANGES NEEDED:
+
+1. TEST #1 (line 411): Update expected alt text from "Fallback alt text that is sufficiently long" to "Fallback alt text that is sufficiently long option 1"
+
+2. TESTS #2-5 (lines 670, 803, 1066, 1159): Instead of checking for "STYLE: luxury" or "HINT:Keep it", check that the prompt contains the JSON structure with these values embedded. Example:
+   - OLD: expect(prompt).toContain('STYLE: luxury')
+   - NEW: expect(prompt).toContain('"style":"luxury"') OR expect(prompt).toContain('luxury')
+
+3. TEST #6 (line 1493): Update mock to return a caption containing 'Enhanced' instead of 'Fallback caption'
+
+4. TEST #7 (line 1836): The prompt call at index 2 is undefined. Either adjust test logic to check a different call index, or verify that the retry actually happens with the current implementation.
+
+5. TESTS #8-10 (lines 230, 263, 294): Tests expect 2 prompt calls but now get 6. Update .toHaveLength(2) to .toHaveLength(6) and adjust the retry prompt index from [1] to the actual retry call index.
+
+6. TEST #11 (line 128): The prompt no longer contains "VOICE: flirty_playful" as a separate field. Check for the voice value in the JSON structure instead, or check for "VOICE_GUIDE" section which contains the persona details.
+
+7. CLEANUP: In tests/unit/caption/nsfw-fallback.test.ts, ensure the test that throws after exhausting retries properly awaits and handles the error to prevent unhandled rejection.
+
+The new prompt format embeds metadata in JSON rather than labeled fields, so update assertions to match this structure while preserving the intent of each test.

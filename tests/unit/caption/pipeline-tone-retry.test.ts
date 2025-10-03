@@ -62,7 +62,26 @@ const mockGeminiModules = (
 function extractVariantPromptEnvelopes(mockCalls: any[][]) {
   return mockCalls
     .map(call => call[0]?.[0]?.text)
-    .filter(text => text && typeof text === 'string');
+    .filter(text => text && typeof text === 'string')
+    .map(text => {
+      try {
+        const lines = text.split('\n');
+        for (const line of lines) {
+          try {
+            const parsed = JSON.parse(line);
+            if (parsed && typeof parsed === 'object' && 'platform' in parsed && 'voice' in parsed) {
+              return parsed;
+            }
+          } catch {
+            continue;
+          }
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    })
+    .filter(envelope => envelope !== null && typeof envelope === 'object');
 }
 
 const createVariantSet = (caption: string, hashtags: string[]) => {
@@ -227,8 +246,9 @@ describe('Gemini pipelines keep persona tone on retry', () => {
 
     const variantPrompts = extractVariantPromptEnvelopes(textModel.generateContent.mock.calls);
 
-    expect(variantPrompts).toHaveLength(2);
-    const retryPrompt = variantPrompts[1];
+    expect(variantPrompts).toHaveLength(6);
+    const retryPrompt = variantPrompts.find((prompt: any) => prompt.hint?.includes('Fix:'));
+    expect(retryPrompt).toBeDefined();
     expect(retryPrompt.hint).toContain('Fix:');
     expect(retryPrompt.style).toBe('Bold Persona');
     expect(retryPrompt.mood).toBe('Upbeat');
@@ -260,8 +280,9 @@ describe('Gemini pipelines keep persona tone on retry', () => {
 
     const variantPrompts = extractVariantPromptEnvelopes(textModel.generateContent.mock.calls);
 
-    expect(variantPrompts).toHaveLength(2);
-    const retryPrompt = variantPrompts[1];
+    expect(variantPrompts).toHaveLength(6);
+    const retryPrompt = variantPrompts.find((prompt: any) => prompt.hint?.includes('Fix:'));
+    expect(retryPrompt).toBeDefined();
     expect(retryPrompt.hint).toContain('Fix:');
     expect(retryPrompt.style).toBe('Bold Persona');
     expect(retryPrompt.mood).toBe('Upbeat');
@@ -291,8 +312,9 @@ describe('Gemini pipelines keep persona tone on retry', () => {
 
     const variantPrompts = extractVariantPromptEnvelopes(textModel.generateContent.mock.calls);
 
-    expect(variantPrompts).toHaveLength(2);
-    const retryPrompt = variantPrompts[1];
+    expect(variantPrompts).toHaveLength(6);
+    const retryPrompt = variantPrompts.find((prompt: any) => prompt.hint?.includes('Fix:'));
+    expect(retryPrompt).toBeDefined();
     expect(retryPrompt.hint).toContain('Fix:');
     expect(retryPrompt.style).toBe('Bold Persona');
     expect(retryPrompt.mood).toBe('Upbeat');
