@@ -13,6 +13,7 @@ vi.mock('../../server/storage.js', () => ({
     getUserByUsername: vi.fn().mockImplementation(async (username: string) => users.find(u => u.username === username)),
     getUserByEmail: vi.fn().mockImplementation(async (email: string) => users.find(u => u.email === email)),
     updateUser: vi.fn().mockResolvedValue(undefined),
+    updateUserLastLogin: vi.fn().mockResolvedValue(undefined),
     createUser: vi.fn().mockImplementation(async (data: Record<string, unknown>) => {
       const user = { id: users.length + 1, emailVerified: false, ...data };
       users.push(user);

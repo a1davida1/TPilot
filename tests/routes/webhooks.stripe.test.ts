@@ -191,7 +191,11 @@ describe('Stripe webhook integration', () => {
       expect(subscriptionResponse.status).toBe(200);
       expect(subscriptionResponse.body).toEqual({ received: true });
 
-      const subscriptionInsert = insertCalls.find((call) => call.table === subscriptions);
+      const getTableName = (table: unknown) => 
+        (table as Record<string, unknown>)?.[Symbol.for('drizzle:Name')] || 
+        (table as Record<string, unknown>)?.['_']?.['name'];
+
+      const subscriptionInsert = insertCalls.find((call) => getTableName(call.table) === 'subscriptions');
       expect(subscriptionInsert).toBeDefined();
       const subscriptionValues = subscriptionInsert?.values as Record<string, unknown> | undefined;
       expect(subscriptionValues).toMatchObject({
@@ -203,7 +207,7 @@ describe('Stripe webhook integration', () => {
         processorSubId: 'sub_123'
       });
 
-      const subscriptionUpsert = conflictCalls.find((call) => call.table === subscriptions);
+      const subscriptionUpsert = conflictCalls.find((call) => getTableName(call.table) === 'subscriptions');
       expect(subscriptionUpsert).toBeDefined();
       const subscriptionUpsertSet = subscriptionUpsert?.config.set as Record<string, unknown> | undefined;
       expect(subscriptionUpsertSet).toMatchObject({
@@ -214,7 +218,7 @@ describe('Stripe webhook integration', () => {
         processorSubId: 'sub_123'
       });
 
-      const tierUpdate = updateSetCalls.find((call) => call.table === users);
+      const tierUpdate = updateSetCalls.find((call) => getTableName(call.table) === 'users');
       expect(tierUpdate).toBeDefined();
       const tierUpdateValues = tierUpdate?.set as Record<string, unknown> | undefined;
       expect(tierUpdateValues).toMatchObject({ tier: 'pro' });
@@ -248,7 +252,7 @@ describe('Stripe webhook integration', () => {
       expect(invoiceResponse.status).toBe(200);
       expect(invoiceResponse.body).toEqual({ received: true });
 
-      const invoiceInsert = insertCalls.find((call) => call.table === invoices);
+      const invoiceInsert = insertCalls.find((call) => getTableName(call.table) === 'invoices');
       expect(invoiceInsert).toBeDefined();
       const invoiceValues = invoiceInsert?.values as Record<string, unknown> | undefined;
       expect(invoiceValues).toMatchObject({

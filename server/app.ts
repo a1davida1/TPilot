@@ -241,6 +241,9 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   }
   app.use(cookieParser(cookieSecret));
 
+  // Raw body for Stripe webhook signature verification - must come BEFORE express.json()
+  app.post(`${API_PREFIX}/webhooks/stripe`, express.raw({ type: 'application/json' }), (_req, _res, next) => next());
+
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 
