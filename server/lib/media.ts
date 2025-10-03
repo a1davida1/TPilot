@@ -347,7 +347,7 @@ export class MediaManager {
     applyWatermark: boolean;
     quality: number;
   }): Promise<{ buffer: Buffer; mime: string; extension: string }> {
-    const image = sharp(buffer, { animated: true });
+    const image = sharp(buffer, { animated: true, pages: -1 });
     const metadata = await image.metadata();
     const sourceFormat = metadata.format ?? 'jpeg';
 
@@ -380,7 +380,7 @@ export class MediaManager {
         return { buffer: processedBuffer, mime: 'image/png', extension: 'png' };
       }
       case 'gif': {
-        const processedBuffer = await pipeline.gif().toBuffer();
+        const processedBuffer = await pipeline.gif({ loop: 0 }).toBuffer();
         return { buffer: processedBuffer, mime: 'image/gif', extension: 'gif' };
       }
       case 'webp': {

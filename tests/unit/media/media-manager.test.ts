@@ -119,27 +119,16 @@ describe('MediaManager.processImage', () => {
   it('retains animation frames for GIF uploads', async () => {
     const { MediaManager } = await import('../../../server/lib/media.ts');
 
-    const animatedGif = await sharp({
-      create: {
-        width: 1,
-        height: 2,
-        channels: 4,
-        background: { r: 255, g: 0, b: 0, alpha: 1 },
-      },
-    })
-      .composite([
-        {
-          input: Buffer.from([0, 255, 0, 255]),
-          raw: { width: 1, height: 1, channels: 4 },
-          top: 1,
-          left: 0,
-        },
-      ])
-      .gif({
-        loop: 0,
-        delay: [100, 100],
-      })
-      .toBuffer();
+    // Minimal 2-frame animated GIF (4x4 pixels, 100ms delay per frame)
+    // Verified to have 2 frames using Sharp metadata
+    const animatedGifBase64 =
+      'R0lGODlhBAAEAPAAAP8AAAAAACH/C05FVFNDQVBFMi4wAwEAAAAh+QQACgAAACwAAAAABAAEAAACBISPCQUAIfkEAAoAAAAsAAAAAAQABACAAP8AAAAAAgSEjwkFADs=';
+
+    const animatedGif = Buffer.from(animatedGifBase64, 'base64');
+
+    // Verify input has multiple frames
+    const inputMetadata = await sharp(animatedGif, { animated: true, pages: -1 }).metadata();
+    expect((inputMetadata.pages ?? 1) > 1).toBe(true);
 
     const result = await MediaManager.processImage(animatedGif, {
       applyWatermark: false,
@@ -149,7 +138,7 @@ describe('MediaManager.processImage', () => {
     expect(result.mime).toBe('image/gif');
     expect(result.extension).toBe('gif');
 
-    const metadata = await sharp(result.buffer, { animated: true }).metadata();
+    const metadata = await sharp(result.buffer, { animated: true, pages: -1 }).metadata();
     expect(metadata.format).toBe('gif');
     expect((metadata.pages ?? 1) > 1).toBe(true);
   });

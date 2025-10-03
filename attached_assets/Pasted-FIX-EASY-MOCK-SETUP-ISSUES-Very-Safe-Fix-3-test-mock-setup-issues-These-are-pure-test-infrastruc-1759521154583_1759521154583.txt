@@ -1,0 +1,58 @@
+FIX EASY MOCK SETUP ISSUES (Very Safe)
+
+Fix 3 test mock setup issues. These are pure test infrastructure problems with no production impact.
+
+ISSUE 1: Missing Mock Method - consumeVerificationToken
+Files:
+- tests/auth/signup.test.ts
+- tests/unit/auth/email-verification-redirect.test.ts
+
+Error: "__vite_ssr_import_2__.storage.consumeVerificationToken is not a function"
+
+Problem: The mock storage object is missing the consumeVerificationToken method that the email verification code is trying to call.
+
+Fix: Add the consumeVerificationToken method to all storage mocks in these test files.
+
+Pattern to follow (example):
+const mockStorage = {
+  // ... existing methods
+  consumeVerificationToken: vi.fn().mockResolvedValue({ userId: 2, email: 'user@example.com', expiresAt: new Date() }),
+  // ... rest of methods
+};
+
+The method should:
+- Accept a token string parameter
+- Return a Promise that resolves to an object with: { userId, email, expiresAt }
+- Return null for invalid/expired tokens
+- Follow the same pattern as other mock storage methods
+
+ISSUE 2: Malformed SQL Query in Login Tests
+File: tests/unit/auth/login-identifier.test.ts
+
+Error: 'Failed query: update "users" set  where "users"."id" = $1'
+
+Problem: SQL has no SET clause, meaning updateUser is being called with no fields. This is either:
+A) Mock not properly set up to handle the user update after login
+B) Login code trying to update user with empty object
+
+Investigation needed:
+1. Find where user is updated after successful login (likely setting last_login or similar)
+2. Check if mock updateUser handles this call correctly
+3. Ensure mock doesn't try to execute actual SQL
+
+Likely fix: Mock updateUser should return success without executing SQL:
+mockStorage.updateUser = vi.fn().mockResolvedValue(mockUser);
+
+Or if the login code needs to update specific fields, ensure the mock handles it.
+
+ISSUE 3: Batch 2 Leftovers (if not already fixed)
+Check if these are still failing:
+- tests/unit/media/media-manager.test.ts (GIF animation frames)
+- tests/unit/caption/fallback-inference.test.ts (alt text pollution)
+
+If they are, refer to the Batch 2 fixes that were already provided.
+
+VALIDATION:
+Run: npm test -- email-verification login-identifier signup.test
+
+All email verification and login tests should pass.

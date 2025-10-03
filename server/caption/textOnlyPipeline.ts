@@ -457,7 +457,7 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
           ...baseVariant,
           ...source,
           caption: `${source.caption} (retry filler ${index})`,
-          alt: `${source.alt} (retry filler ${index})`,
+          alt: source.alt,
         })
       );
 
