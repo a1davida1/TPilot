@@ -59,6 +59,12 @@ const mockGeminiModules = (
   }));
 };
 
+function extractVariantPromptEnvelopes(mockCalls: any[][]) {
+  return mockCalls
+    .map(call => call[0]?.[0]?.text)
+    .filter(text => text && typeof text === 'string');
+}
+
 const createVariantSet = (caption: string, hashtags: string[]) => {
   const failingCaptionDescriptors = [
     'narrates every studio light focusing on the subject with extended, flowing prose that easily breaks the 250 character ceiling for X while celebrating the studio choreography in lavish detail.',

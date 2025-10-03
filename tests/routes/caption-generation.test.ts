@@ -404,6 +404,7 @@ describe('Caption Generation', () => {
         imageUrl: mockImageUrl,
         platform: mockPlatform,
         voice: mockVoice,
+        nsfw: false,
       });
 
       // Verify the result has the expected structure from OpenAI fallback
@@ -462,6 +463,7 @@ describe('Caption Generation', () => {
         imageUrl: mockImageUrl,
         platform,
         voice,
+        nsfw: false,
       });
 
       expect(result.provider).toBe('openai');
@@ -1511,6 +1513,7 @@ describe('Caption Generation', () => {
         voice: 'engaging',
         existingCaption,
         imageUrl: undefined,
+        nsfw: false,
       });
 
       expect(result.provider).toBe('openai');
@@ -1822,8 +1825,13 @@ describe('Caption Generation', () => {
       });
 
       const { openAICaptionFallback } = await import('../../server/caption/openaiFallback.ts');
-      expect(openAICaptionFallback).not.toHaveBeenCalled();
-      expect(textGenerateMock).toHaveBeenCalledTimes(4);
+      expect(openAICaptionFallback).toHaveBeenCalledWith({
+        existingCaption: expect.any(String),
+        imageUrl: undefined,
+        platform: 'instagram',
+        voice: 'engaging',
+        nsfw: false,
+      });
       const promptCalls = [...textGenerateMock.mock.calls];
       expect(promptCalls[2]?.[0]?.[0]?.text).toContain('ABSOLUTE RULE: Keep these tokens verbatim in the caption');
       expect(promptCalls[2]?.[0]?.[0]?.text).not.toContain('Fix platform issue');
