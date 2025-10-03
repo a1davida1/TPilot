@@ -14,8 +14,10 @@ import { act } from 'react-dom/test-utils';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { QueryClient as QueryClientType } from '@tanstack/react-query';
 
-const toastMock = vi.fn();
-const downloadProtectedImageMock = vi.fn();
+const { toastMock, downloadProtectedImageMock } = vi.hoisted(() => ({
+  toastMock: vi.fn(),
+  downloadProtectedImageMock: vi.fn()
+}));
 
 vi.mock('@/hooks/use-toast', () => ({
   useToast: () => ({ toast: toastMock })

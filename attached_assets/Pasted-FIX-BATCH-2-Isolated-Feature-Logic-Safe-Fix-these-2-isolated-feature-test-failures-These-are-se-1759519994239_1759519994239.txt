@@ -1,0 +1,53 @@
+FIX BATCH 2: Isolated Feature Logic (Safe)
+
+Fix these 2 isolated feature test failures. These are self-contained issues.
+
+ISSUE 1: GIF Animation Frame Loss
+File: tests/unit/media/media-manager.test.ts
+Test: "retains animation frames for GIF uploads"
+Error: `expect((metadata.pages ?? 1) > 1).toBe(true)` - GIF is losing frames during processing
+
+Problem: When processing animated GIFs through sharp, the output has only 1 page instead of multiple frames.
+
+Investigation needed:
+1. Check MediaManager.processImage() implementation
+2. Look for sharp() calls that might not pass `{ animated: true }` option
+3. Verify GIF processing pipeline preserves animation
+
+Likely fix location: server/media/media-manager.ts or similar
+
+Example fix:
+// Ensure all sharp operations use animated option for GIFs
+if (fileExtension === 'gif') {
+  return sharp(buffer, { animated: true })
+    .gif({ ... }) // operations
+    .toBuffer();
+}
+
+ISSUE 2: Fallback Variant Alt Text Pollution
+File: tests/unit/caption/fallback-inference.test.ts
+Test: "pads fallback variants without extending alt text beyond schema limits"
+Error: `expect(variant.alt.toLowerCase().includes('retry filler')).toBe(false)` - Alt text contains unwanted retry artifacts
+
+Problem: When generating fallback caption variants, the alt text is being contaminated with "retry filler" debugging text that should only appear in captions for testing purposes.
+
+Investigation needed:
+1. Find where fallback variants are generated (likely server/caption/fallbackInference.ts or similar)
+2. Look for code that pads/generates variants with placeholder text
+3. Ensure alt text is kept clean while caption can have test markers
+
+Fix pattern:
+// Don't copy caption filler text into alt field
+{
+  caption: "...(retry filler)...", // OK for testing
+  alt: "Clean description", // NO filler text
+  // ...
+}
+
+Possibly check:
+- padVariantsWithFallback() or similar function
+- Ensure alt text generation is separate from caption generation
+
+VALIDATION:
+Run: npm test -- media-manager.test fallback-inference.test
+Both tests should pass with animation frames preserved and clean alt text.

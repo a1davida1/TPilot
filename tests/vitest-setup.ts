@@ -35,8 +35,8 @@ ensureTestEnvDefaults();
 
 Assertion.overwriteChainableMethod(
   'contain',
-  (_super) =>
-    function patchedContain(this: Assertion, expected: unknown) {
+  (_super: any) =>
+    function patchedContain(this: any, expected: unknown) {
       if (
         expected &&
         typeof expected === 'object' &&
@@ -59,10 +59,10 @@ Assertion.overwriteChainableMethod(
 
       _super.call(this, expected);
     },
-  (_super) =>
-    function chained(this: Assertion) {
-      _super.call(this);
-    },
+  // @ts-expect-error - Chai type definitions don't match runtime behavior for chainable property
+  (_super: any) => function (this: any) {
+    _super.call(this);
+  },
 );
 
 // Clean up between tests
