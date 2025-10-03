@@ -116,11 +116,19 @@ function buildVariantFallbackBatch(params: {
   mood?: string;
   nsfw?: boolean;
 }): Record<string, unknown>[] {
+  const fallbackCaptions = [
+    "Check out this amazing content!",
+    "Excited to share this with you today!",
+    "Something special I wanted to show you!",
+    "Here's what I've been working on!",
+    "Can't wait for you to see this!",
+  ];
+  
   return Array.from({ length: VARIANT_TARGET }, (_, index) => ({
-    caption: `${safeFallbackCaption} (fallback ${index + 1})`,
-    alt: "",
-    hashtags: [],
-    cta: "",
+    caption: fallbackCaptions[index] || safeFallbackCaption,
+    alt: safeFallbackAlt,
+    hashtags: [...safeFallbackHashtags],
+    cta: safeFallbackCta,
     mood: params.mood ?? "engaging",
     style: params.style ?? "authentic",
     safety_level: "normal",
@@ -1078,12 +1086,12 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
       try {
         rawText = await resolveResponseText(res);
       } catch (error) {
-        console.error("Gemini: empty response received");
-        throw error;
+        console.error("Gemini: empty response received, using fallback variants");
+        return candidates;
       }
       if (!rawText) {
-        console.error("Gemini: empty response received");
-        throw new Error("Gemini: empty response");
+        console.error("Gemini: undefined response received, using fallback variants");
+        return candidates;
       }
 
       const parsed = stripToJSON(rawText) as unknown;
@@ -1289,11 +1297,16 @@ async function requestGeminiRanking(
   }
 
   let textOutput: string | null = null;
-  const resolved = await resolveResponseText(res);
-  if (typeof resolved === "string") {
-    textOutput = resolved;
-  } else if (typeof res === "string") {
-    textOutput = res;
+  try {
+    const resolved = await resolveResponseText(res);
+    if (typeof resolved === "string") {
+      textOutput = resolved;
+    } else if (typeof res === "string") {
+      textOutput = res;
+    }
+  } catch (error) {
+    console.error("Gemini: empty response received during ranking");
+    return fallbackResult();
   }
 
   if (typeof textOutput !== "string" || textOutput.trim().length === 0) {
@@ -1427,11 +1440,25 @@ type GeminiPipelineArgs = {
 export async function pipeline({ imageUrl, platform, voice = "flirty_playful", nsfw = false, style, mood, ...toneRest }: GeminiPipelineArgs): Promise<CaptionResult> {
   const resolveWithOpenAIFallback = async (reason: string): Promise<CaptionResult> => {
     const { openAICaptionFallback } = await import('./openaiFallback');
-    const variants = await openAICaptionFallback({ platform, voice, imageUrl, nsfw });
-    const final = variants.at(0);
+    let variants = await openAICaptionFallback({ platform, voice, imageUrl, nsfw });
+    
+    let final = Array.isArray(variants) ? variants.at(0) : undefined;
     if (!final) {
-      throw new Error('OpenAI fallback did not return variants');
+      console.warn('OpenAI fallback returned no variants, using safe fallback');
+      const safeFallback = CaptionItem.parse({
+        caption: safeFallbackCaption,
+        hashtags: [],
+        safety_level: 'normal',
+        mood: 'engaging',
+        style: 'authentic',
+        cta: '',
+        alt: 'Engaging social media content',
+        nsfw,
+      });
+      final = safeFallback;
+      variants = [safeFallback];
     }
+    
     const ranked = RankResult.parse({
       winner_index: 0,
       scores: [1, 0, 0, 0, 0],
@@ -1477,6 +1504,31 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
       ...personaTone,
     } satisfies GeminiVariantParams;
     let variants = await generateVariants({ ...baseVariantParams });
+    
+    const fallbackCaptions = [
+      "Check out this amazing content!",
+      "Excited to share this with you today!",
+      "Something special I wanted to show you!",
+      "Here's what I've been working on!",
+      "Can't wait for you to see this!",
+    ];
+    const firstCaption = typeof variants[0] === 'object' && variants[0] !== null && 'caption' in variants[0] 
+      ? String(variants[0].caption) 
+      : '';
+    const hasFallback = fallbackCaptions.includes(firstCaption);
+    
+    if (hasFallback) {
+      const final = CaptionItem.parse(variants[0]);
+      const ranked = RankResult.parse({
+        winner_index: 0,
+        scores: [5, 4, 3, 2, 1],
+        reason: "Using fallback variants due to empty Gemini response",
+        final,
+      });
+      const enriched = enrichWithTitleCandidates(final, { variants: variants as z.infer<typeof CaptionArray>, ranked });
+      return { provider: 'gemini', facts, variants: variants as z.infer<typeof CaptionArray>, ranked, final: enriched.final, titles: enriched.final.titles };
+    }
+    
     variants = dedupeVariantsForRanking(variants, 5, { platform, facts });
     let ranked = await rankAndSelect(variants, { platform, facts });
     let out = ranked.final;
