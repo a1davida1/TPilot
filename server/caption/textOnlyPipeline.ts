@@ -2,7 +2,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { z } from "zod";
 
-import { getTextModel, type GeminiModel } from "../lib/gemini-client";
+import { getTextModel, type GeminiModel } from "../lib/gemini-client.js";
 import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
 import { enrichWithTitleCandidates } from "./geminiPipeline";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";

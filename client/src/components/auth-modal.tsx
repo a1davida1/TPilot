@@ -254,32 +254,61 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
         setFormData({ username: '', email: '', password: '' });
       }
     },
-    onError: async (error: AuthError) => {
+    onError: async (error: unknown) => {
+      const isVerificationError = (value: unknown): value is { code?: string; email?: string } => {
+        if (typeof value !== 'object' || value === null) {
+          return false;
+        }
+
+        const candidate = value as { code?: unknown; email?: unknown };
+        const codeIsValid = candidate.code === undefined || typeof candidate.code === 'string';
+        const emailIsValid = candidate.email === undefined || typeof candidate.email === 'string';
+
+        return codeIsValid && emailIsValid;
+      };
+
+      const getErrorMessage = (value: unknown): string | undefined => {
+        if (value instanceof Error && value.message) {
+          return value.message;
+        }
+
+        if (typeof value === 'object' && value !== null && 'message' in value) {
+          const message = (value as { message?: unknown }).message;
+          if (typeof message === 'string') {
+            return message;
+          }
+        }
+
+        return undefined;
+      };
+
       // Handle email not verified error specially
-      if (error.code === 'EMAIL_NOT_VERIFIED') {
+      if (isVerificationError(error) && error.code === 'EMAIL_NOT_VERIFIED') {
+        const email = error.email || formData.username;
         setShowResendVerification(true);
-        setResendEmail(error.email || formData.username);
+        setResendEmail(email);
         toast({
           title: 'Email not verified',
           description: 'Please verify your email to continue.',
           variant: 'default',
           action: (
-            <Button 
+            <Button
               size="sm"
               variant="outline"
-              onClick={() => resendVerification(error.email || formData.username)}
+              onClick={() => resendVerification(email)}
             >
               Resend
             </Button>
           )
         });
-      } else {
-        toast({
-          title: 'Error',
-          description: error.message || 'Authentication failed. Please try again.',
-          variant: 'destructive'
-        });
+        return;
       }
+
+      toast({
+        title: 'Error',
+        description: getErrorMessage(error) || 'Authentication failed. Please try again.',
+        variant: 'destructive'
+      });
     }
   });
 

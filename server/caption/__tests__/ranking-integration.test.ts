@@ -23,7 +23,7 @@ const scenarios: ScenarioConfig[] = [
 
       const getTextModelMock = vi.fn(() => ({ generateContent: textModelMock }));
 
-      vi.doMock('../lib/gemini-client', () => ({
+      vi.doMock('../lib/gemini-client.js', () => ({
         getTextModel: getTextModelMock,
         getVisionModel: vi.fn(),
         isGeminiAvailable: () => true
@@ -42,7 +42,7 @@ const scenarios: ScenarioConfig[] = [
 
       const getTextModelMock = vi.fn(() => ({ generateContent }));
 
-      vi.doMock('../lib/gemini-client', () => ({
+      vi.doMock('../lib/gemini-client.js', () => ({
         getTextModel: getTextModelMock,
         getVisionModel: vi.fn(),
         isGeminiAvailable: () => true

@@ -6,7 +6,7 @@ const mockVisionModel = vi.hoisted(() => ({
 
 const getVisionModelMock = vi.hoisted(() => vi.fn(() => mockVisionModel));
 
-vi.mock('../../lib/gemini-client', () => ({
+vi.mock('../../lib/gemini-client.js', () => ({
   getVisionModel: getVisionModelMock,
   getTextModel: vi.fn(),
   isGeminiAvailable: vi.fn(() => true)

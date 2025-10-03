@@ -1,10 +1,10 @@
-import type { LegacyGoogleGenAI, GeminiModel } from "./gemini-client";
+import type { LegacyGoogleGenAI, GeminiModel } from "./gemini-client.js";
 import {
   getGoogleGenerativeAI,
-  getTextModel as loadTextModel,
-  getVisionModel as loadVisionModel,
+  getTextModel,
+  getVisionModel,
   isGeminiAvailable
-} from "./gemini-client";
+} from "./gemini-client.js";
 
 const createLazyProxy = <T extends object>(factory: () => T): T =>
   new Proxy({} as T, {
@@ -39,11 +39,11 @@ const genAI: LegacyGoogleGenAI | null = isGeminiAvailable()
   : null;
 
 const visionModel: GeminiModel | null = isGeminiAvailable()
-  ? createLazyProxy<GeminiModel>(loadVisionModel)
+  ? createLazyProxy<GeminiModel>(getVisionModel)
   : null;
 
 const textModel: GeminiModel | null = isGeminiAvailable()
-  ? createLazyProxy<GeminiModel>(loadTextModel)
+  ? createLazyProxy<GeminiModel>(getTextModel)
   : null;
 
 export {
@@ -52,8 +52,8 @@ export {
   textModel,
   isGeminiAvailable,
   getGoogleGenerativeAI,
-  loadVisionModel as getVisionModel,
-  loadTextModel as getTextModel
+  getVisionModel,
+  getTextModel
 };
 
-export type { GeminiModel } from "./gemini-client";
+export type { GeminiModel } from "./gemini-client.js";

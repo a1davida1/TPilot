@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenAI } from '@google/genai';
 import type { LegacyGoogleGenAI } from '../lib/gemini-client.js';
 import { safeLog } from '../lib/logger-utils.js';
-import { getTextModel, isGeminiAvailable } from '../lib/gemini-client';
+import { getTextModel, isGeminiAvailable } from '../lib/gemini-client.js';
 
 // Multi-provider AI system for cost optimization
 // Priority: Gemini Flash (cheapest) -> Claude Haiku -> OpenAI (fallback)

@@ -16,6 +16,7 @@ import {
 import { eq, desc, gte, lte, and, count, sum, avg, sql } from 'drizzle-orm';
 import { Reader } from '@maxmind/geoip2-node';
 import { assertIsObject } from '../helpers/assert';
+import { storage } from './storage.js';
 
 let geoReader: Reader | null = null;
 export async function initGeoReader() {
@@ -137,6 +138,58 @@ export function registerAnalyticsRoutes(app: Express) {
     } catch (error) {
       console.error('Analytics events error:', error);
       res.status(500).json({ error: 'Failed to process analytics events' });
+    }
+  });
+
+  app.get('/api/stats', authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(403).json({ error: 'Authentication required' });
+      }
+
+      const [contentStats, analytics] = await Promise.all([
+        storage.getContentGenerationStats(userId),
+        analyticsService.getAnalyticsData(userId, new Date(0), new Date())
+      ]);
+
+      const {
+        total: totalGeneratedRaw = 0,
+        totalGenerations: totalGenerationsOverride,
+        thisWeek: thisWeekRaw = 0,
+        thisMonth: thisMonthRaw = 0,
+        dailyStreak: dailyStreakRaw = 0
+      } = contentStats;
+
+      const totalGenerations = sanitizeNonNegativeInteger(
+        analytics.totalGenerations ?? totalGenerationsOverride ?? totalGeneratedRaw
+      );
+
+      const successfulGenerations = Math.min(
+        sanitizeNonNegativeInteger(analytics.successfulGenerations ?? totalGenerations),
+        totalGenerations
+      );
+
+      const failedGenerations = Math.max(totalGenerations - successfulGenerations, 0);
+
+      const successRate = totalGenerations === 0
+        ? 0
+        : Number(((successfulGenerations / totalGenerations) * 100).toFixed(2));
+
+      const platformDistribution = buildPlatformDistribution(analytics.platformDistribution);
+
+      res.json({
+        totalGenerations,
+        successfulGenerations,
+        failedGenerations,
+        successRate,
+        thisWeek: sanitizeNonNegativeInteger(thisWeekRaw),
+        thisMonth: sanitizeNonNegativeInteger(thisMonthRaw),
+        dailyStreak: sanitizeNonNegativeInteger(dailyStreakRaw),
+        platformDistribution
+      });
+    } catch (error) {
+      handleAnalyticsError(error, res, 'Failed to fetch content stats');
     }
   });
 
@@ -269,6 +322,30 @@ export function registerAnalyticsRoutes(app: Express) {
       res.status(500).json({ error: 'Failed to fetch revenue' });
     }
   });
+}
+
+function sanitizeNonNegativeInteger(value: unknown): number {
+  const numeric = typeof value === 'number' ? value : Number(value ?? 0);
+  if (!Number.isFinite(numeric) || numeric < 0) {
+    return 0;
+  }
+  return Math.round(numeric);
+}
+
+function buildPlatformDistribution(
+  distribution: unknown
+): Record<string, number> {
+  if (!distribution || typeof distribution !== 'object') {
+    return {};
+  }
+
+  return Object.entries(distribution as Record<string, unknown>).reduce<Record<string, number>>(
+    (accumulator, [platform, count]) => {
+      accumulator[platform] = sanitizeNonNegativeInteger(count);
+      return accumulator;
+    },
+    {}
+  );
 }
 
 // Helper Functions
