@@ -96,6 +96,7 @@ export interface IStorage {
   updateUserProfile(userId: number, updates: Partial<UserUpdate>): Promise<User | undefined>;
   updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
   updateUserEmailVerified(userId: number, verified: boolean): Promise<void>;
+  updateUserLastLogin(userId: number, lastLogin: Date): Promise<void>;
   createVerificationToken(token: InsertVerificationToken): Promise<VerificationToken>;
   getVerificationToken(token: string): Promise<VerificationToken | undefined>;
   deleteVerificationToken(token: string): Promise<void>;
@@ -361,7 +362,7 @@ export class DatabaseStorage implements IStorage {
         return user;
       }
 
-      const result = await db.update(users).set(cleanUpdates).where(eq(users.id, userId)).returning();
+      const result = await db.update(users).set(cleanUpdates as any).where(eq(users.id, userId)).returning();
       if (!result[0]) {
         throw new Error('User not found');
       }
@@ -408,6 +409,16 @@ export class DatabaseStorage implements IStorage {
       await db.update(users).set({ emailVerified: verified }).where(eq(users.id, userId));
     } catch (error) {
       safeLog('error', 'Storage operation failed - updating email verification:', { error: (error as Error).message });
+      throw error;
+    }
+  }
+
+  async updateUserLastLogin(userId: number, lastLogin: Date): Promise<void> {
+    try {
+      // Use raw SQL because Drizzle has issues with lastLogin field
+      await db.execute(sql`UPDATE users SET last_login = ${lastLogin} WHERE id = ${userId}`);
+    } catch (error) {
+      safeLog('error', 'Storage operation failed - updating last login:', { error: (error as Error).message });
       throw error;
     }
   }

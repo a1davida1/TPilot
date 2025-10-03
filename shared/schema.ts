@@ -787,7 +787,7 @@ type InferUser = typeof users.$inferSelect;
 type InferUserInsert = typeof users.$inferInsert;
 
 export type User = InferUser;
-export type UserUpdate = InferUserInsert;
+export type UserUpdate = Partial<Omit<InferUserInsert, 'id' | 'createdAt'>>;
 export type UserLastLogin = InferUser['lastLogin'];
 export type InsertUser = z.infer<typeof insertUserSchema>;
 

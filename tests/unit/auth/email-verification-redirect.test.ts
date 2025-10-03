@@ -5,12 +5,20 @@ import express from 'express';
 // Mock the storage and email service for redirect testing
 const mockStorage = vi.hoisted(() => ({
   getUserByEmail: vi.fn(),
-  updateUser: vi.fn(),
+  updateUser: vi.fn().mockResolvedValue(undefined),
   createUser: vi.fn(),
   getVerificationToken: vi.fn(),
   getUser: vi.fn(),
   updateUserEmailVerified: vi.fn(),
   deleteVerificationToken: vi.fn(),
+  consumeVerificationToken: vi.fn().mockImplementation(async (token: string) => {
+    const tokenData = await mockStorage.getVerificationToken(token);
+    if (tokenData) {
+      await mockStorage.deleteVerificationToken(token);
+      return tokenData;
+    }
+    return null;
+  }),
 }));
 
 const mockEmailService = vi.hoisted(() => ({

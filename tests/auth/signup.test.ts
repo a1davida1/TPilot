@@ -12,7 +12,7 @@ vi.mock('../../server/storage.js', () => ({
     getUser: vi.fn().mockImplementation(async (id: number) => users.find(u => u.id === id)),
     getUserByUsername: vi.fn().mockImplementation(async (username: string) => users.find(u => u.username === username)),
     getUserByEmail: vi.fn().mockImplementation(async (email: string) => users.find(u => u.email === email)),
-    updateUser: vi.fn(),
+    updateUser: vi.fn().mockResolvedValue(undefined),
     createUser: vi.fn().mockImplementation(async (data: Record<string, unknown>) => {
       const user = { id: users.length + 1, emailVerified: false, ...data };
       users.push(user);
@@ -28,6 +28,13 @@ vi.mock('../../server/storage.js', () => ({
       return token;
     }),
     getVerificationToken: vi.fn().mockImplementation(async (token: string) => tokens.find(t => t.token === token)),
+    consumeVerificationToken: vi.fn().mockImplementation(async (token: string) => {
+      const found = tokens.find(t => t.token === token);
+      if (!found) return null;
+      const idx = tokens.findIndex(t => t.token === token);
+      if (idx !== -1) tokens.splice(idx, 1);
+      return found;
+    }),
     deleteVerificationToken: vi.fn().mockImplementation(async (token: string) => {
       const idx = tokens.findIndex(t => t.token === token);
       if (idx !== -1) tokens.splice(idx, 1);
