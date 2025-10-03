@@ -385,9 +385,8 @@ export const securityMiddleware = [
           // Allow specific style sources
           "https://fonts.googleapis.com",
           "https://checkout.stripe.com",
-          // Allow data: URLs for CSS-in-JS libraries and unsafe-inline for custom animations
-          "data:",
-          "'unsafe-inline'"
+          // Allow data: URLs for CSS-in-JS libraries
+          "data:"
         ].filter(Boolean),
         imgSrc: [
           "'self'",

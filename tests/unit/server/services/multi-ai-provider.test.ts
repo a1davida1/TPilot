@@ -40,7 +40,14 @@ vi.mock('openai', () => ({ default: openAIConstructor }));
 vi.mock('@anthropic-ai/sdk', () => ({ default: anthropicConstructor }));
 vi.mock('../../../../server/lib/logger-utils.ts', () => ({ safeLog: mockSafeLog }));
 
-const envKeys = ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GEMINI_API_KEY', 'GOOGLE_GENAI_API_KEY', 'GEMINI_TEXT_MODEL'] as const;
+const envKeys = [
+  'OPENAI_API_KEY',
+  'ANTHROPIC_API_KEY',
+  'GEMINI_API_KEY',
+  'GOOGLE_GENAI_API_KEY',
+  'GEMINI_TEXT_MODEL',
+  'GEMINI_VISION_MODEL'
+] as const;
 type EnvKey = typeof envKeys[number];
 
 const originalEnv: Record<EnvKey, string | undefined> = {
@@ -48,7 +55,8 @@ const originalEnv: Record<EnvKey, string | undefined> = {
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   GOOGLE_GENAI_API_KEY: process.env.GOOGLE_GENAI_API_KEY,
-  GEMINI_TEXT_MODEL: process.env.GEMINI_TEXT_MODEL
+  GEMINI_TEXT_MODEL: process.env.GEMINI_TEXT_MODEL,
+  GEMINI_VISION_MODEL: process.env.GEMINI_VISION_MODEL
 };
 
 describe('generateWithMultiProvider provider selection', () => {
@@ -113,10 +121,45 @@ describe('generateWithMultiProvider provider selection', () => {
     expect(googleGenAIConstructor).toHaveBeenCalledWith(expect.objectContaining({ apiKey: 'genai-key' }));
     expect(googleGenAIModels.generateContent).toHaveBeenCalledTimes(1);
     const [geminiRequest] = googleGenAIModels.generateContent.mock.calls[0] ?? [];
-    expect(geminiRequest?.model).toBe('models/gemini-test');
+    expect(geminiRequest?.model).toBe('models/gemini-test-latest');
     expect(geminiRequest?.contents?.[0]?.parts?.[0]?.text).toContain('instagram');
     expect(mockAnthropic.messages.create).not.toHaveBeenCalled();
     expect(mockOpenAI.chat.completions.create).not.toHaveBeenCalled();
+  });
+
+  it('normalizes Gemini model names without explicit versions', async () => {
+    process.env.GOOGLE_GENAI_API_KEY = 'genai-key';
+    process.env.OPENAI_API_KEY = 'openai-key';
+    process.env.ANTHROPIC_API_KEY = 'anthropic-key';
+    process.env.GEMINI_TEXT_MODEL = 'gemini-1.5-flash';
+
+    vi.resetModules();
+    const { generateWithMultiProvider } = await import('../../../../server/services/multi-ai-provider');
+
+    googleGenAIModels.generateContent.mockResolvedValueOnce({
+      text: JSON.stringify({
+        titles: ['Normalized Gemini model'],
+        content: 'Gemini responds using the normalized model name to avoid 404 errors.',
+        photoInstructions: {
+          lighting: 'natural',
+          cameraAngle: 'eye-level',
+          composition: 'symmetrical',
+          styling: 'minimalist',
+          mood: 'serene',
+          technicalSettings: 'auto'
+        }
+      })
+    });
+
+    await generateWithMultiProvider({
+      user: { id: 4 },
+      platform: 'instagram',
+      allowsPromotion: 'no'
+    });
+
+    expect(googleGenAIModels.generateContent).toHaveBeenCalledTimes(1);
+    const [geminiRequest] = googleGenAIModels.generateContent.mock.calls[0] ?? [];
+    expect(geminiRequest?.model).toBe('models/gemini-1.5-flash-latest');
   });
 
   it('falls back to Claude before OpenAI when Gemini is unavailable', async () => {
