@@ -1,0 +1,198 @@
+diff --git a//dev/null b/client/src/components/__tests__/auth-modal.test.tsx
+index 0000000000000000000000000000000000000000..8516bacec312a5a8833d70927cbf8d1ecab59716 100644
+--- a//dev/null
++++ b/client/src/components/__tests__/auth-modal.test.tsx
+@@ -0,0 +1,193 @@
++import React from "react";
++import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
++import { createRoot } from "react-dom/client";
++import type { Root } from "react-dom/client";
++import { act } from "react-dom/test-utils";
++
++const toastMock = vi.fn();
++const loginMock = vi.fn();
++const apiRequestMock = vi.fn<(...args: unknown[]) => Promise<Response>>();
++const mutationConfigs: Array<Record<string, unknown>> = [];
++
++const useMutationMock = vi.fn((options?: Record<string, unknown>) => {
++  mutationConfigs.push(options ?? {});
++  return {
++    mutate: vi.fn(),
++    mutateAsync: vi.fn(),
++    reset: vi.fn(),
++    data: undefined,
++    error: undefined,
++    isPending: false,
++    isSuccess: false,
++    status: "idle",
++  };
++});
++
++vi.mock("@tanstack/react-query", () => ({
++  useMutation: (options?: Record<string, unknown>) => useMutationMock(options),
++}));
++
++vi.mock("@/components/ui/button", () => ({
++  Button: ({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
++    <button {...props}>{children}</button>
++  ),
++}));
++
++vi.mock("@/components/ui/input", () => ({
++  Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
++}));
++
++vi.mock("@/components/ui/label", () => ({
++  Label: ({ children, ...props }: React.LabelHTMLAttributes<HTMLLabelElement>) => (
++    <label {...props}>{children}</label>
++  ),
++}));
++
++vi.mock("@/components/ui/separator", () => ({
++  Separator: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
++    <div {...props}>{children}</div>
++  ),
++}));
++
++vi.mock("@/components/ui/alert", () => ({
++  Alert: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
++    <div role="alert" {...props}>{children}</div>
++  ),
++  AlertDescription: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
++    <div {...props}>{children}</div>
++  ),
++}));
++
++vi.mock("@/components/ui/dialog", () => ({
++  Dialog: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
++  DialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
++  DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
++  DialogTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
++}));
++
++vi.mock("@/hooks/use-toast", () => ({
++  useToast: () => ({ toast: toastMock }),
++}));
++
++vi.mock("@/hooks/useAuth", () => ({
++  useAuth: () => ({ login: loginMock }),
++}));
++
++vi.mock("react-icons/fa", () => ({
++  FaGoogle: () => <span />, // eslint-disable-line react/display-name
++  FaFacebook: () => <span />, // eslint-disable-line react/display-name
++  FaReddit: () => <span />, // eslint-disable-line react/display-name
++}));
++
++vi.mock("lucide-react", () => ({
++  Mail: () => <span />, // eslint-disable-line react/display-name
++  Lock: () => <span />, // eslint-disable-line react/display-name
++  User: () => <span />, // eslint-disable-line react/display-name
++  ArrowRight: () => <span />, // eslint-disable-line react/display-name
++  Sparkles: () => <span />, // eslint-disable-line react/display-name
++  CheckCircle: () => <span />, // eslint-disable-line react/display-name
++  AlertCircle: () => <span />, // eslint-disable-line react/display-name
++}));
++
++vi.mock("@/lib/queryClient", async () => {
++  const actual = await vi.importActual<typeof import("@/lib/queryClient")>("@/lib/queryClient");
++  return {
++    ...actual,
++    apiRequest: apiRequestMock,
++  };
++});
++
++import type { ApiError } from "@/lib/queryClient";
++import { AuthModal } from "../auth-modal";
++
++describe("AuthModal resend verification", () => {
++  let container: HTMLDivElement;
++  let root: Root;
++
++  beforeEach(() => {
++    mutationConfigs.length = 0;
++    toastMock.mockClear();
++    loginMock.mockClear();
++    apiRequestMock.mockReset();
++    useMutationMock.mockReset();
++    useMutationMock.mockImplementation((options?: Record<string, unknown>) => {
++      mutationConfigs.push(options ?? {});
++      return {
++        mutate: vi.fn(),
++        mutateAsync: vi.fn(),
++        reset: vi.fn(),
++        data: undefined,
++        error: undefined,
++        isPending: false,
++        isSuccess: false,
++        status: "idle",
++      };
++    });
++
++    apiRequestMock.mockResolvedValue(
++      new Response(JSON.stringify({ success: true }), {
++        status: 200,
++        headers: { "Content-Type": "application/json" },
++      })
++    );
++
++    container = document.createElement("div");
++    document.body.appendChild(container);
++    root = createRoot(container);
++  });
++
++  afterEach(() => {
++    act(() => {
++      root.unmount();
++    });
++    container.remove();
++    vi.clearAllMocks();
++  });
++
++  it("shows the resend alert and wires the resend action when login fails with EMAIL_NOT_VERIFIED", async () => {
++    await act(async () => {
++      root.render(
++        <AuthModal
++          isOpen
++          onClose={() => {}}
++          onSuccess={() => {}}
++          initialMode="login"
++        />
++      );
++    });
++
++    const authMutationOptions = mutationConfigs[0];
++    expect(authMutationOptions).toBeDefined();
++    const onError = authMutationOptions?.onError as ((error: ApiError) => Promise<void>) | undefined;
++    expect(typeof onError).toBe("function");
++
++    const apiError = new Error("Please verify your email") as ApiError;
++    apiError.code = "EMAIL_NOT_VERIFIED";
++    apiError.email = "user@example.com";
++
++    await act(async () => {
++      await onError?.(apiError);
++    });
++
++    const resendButton = container.querySelector(
++      '[data-testid="button-resend-verification"]'
++    ) as HTMLButtonElement | null;
++
++    expect(resendButton).not.toBeNull();
++
++    await act(async () => {
++      resendButton?.click();
++      await Promise.resolve();
++    });
++
++    expect(apiRequestMock).toHaveBeenCalledWith(
++      "POST",
++      "/api/auth/resend-verification",
++      { email: "user@example.com" }
++    );
++
++    expect(toastMock).toHaveBeenCalledWith(
++      expect.objectContaining({ title: "Email not verified" })
++    );
++  });
++});

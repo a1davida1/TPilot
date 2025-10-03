@@ -1,0 +1,137 @@
+diff --git a/tests/integration/analytics-security.test.ts b/tests/integration/analytics-security.test.ts
+index 57e1ef8256896407234ae410455f5a7ba73fb9df..c07cc3fd1a779004db2e45bb300be0fb961a22d4 100644
+--- a/tests/integration/analytics-security.test.ts
++++ b/tests/integration/analytics-security.test.ts
+@@ -1,40 +1,41 @@
+ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+ import request from 'supertest';
+ import express, { type Express, type Request, type Response, type NextFunction } from 'express';
+ 
+ interface MockUser { id: number }
+ 
+ type AuthenticatedRequest = Request & { user?: MockUser };
+ 
+ let authImpl: (req: AuthenticatedRequest, res: Response, next: NextFunction) => void = (_req, _res, next) => next();
+ 
+ vi.mock('../../server/middleware/auth.ts', () => ({
+   authenticateToken: (req: AuthenticatedRequest, res: Response, next: NextFunction) => authImpl(req, res, next)
+ }));
+ 
+ import * as analyticsModule from '../../server/analytics-routes.ts';
++import { storage } from '../../server/storage.ts';
+ 
+ const { registerAnalyticsRoutes, analyticsService } = analyticsModule;
+ 
+ function createApp(): Express {
+   const app = express();
+   app.use(express.json());
+   registerAnalyticsRoutes(app);
+   return app;
+ }
+ 
+ describe('Analytics route authentication', () => {
+   beforeEach(() => {
+     authImpl = (_req, _res, next) => next();
+     vi.restoreAllMocks();
+   });
+ 
+   afterEach(() => {
+     vi.restoreAllMocks();
+   });
+ 
+   it('rejects unauthenticated analytics requests', async () => {
+     const analyticsSpy = vi.spyOn(analyticsService, 'getAnalyticsData');
+     const app = createApp();
+ 
+     const response = await request(app).get('/api/analytics/7d');
+diff --git a/tests/integration/analytics-security.test.ts b/tests/integration/analytics-security.test.ts
+index 57e1ef8256896407234ae410455f5a7ba73fb9df..c07cc3fd1a779004db2e45bb300be0fb961a22d4 100644
+--- a/tests/integration/analytics-security.test.ts
++++ b/tests/integration/analytics-security.test.ts
+@@ -67,26 +68,86 @@ describe('Analytics route authentication', () => {
+       contentId: 55,
+       totalViews: 3,
+       uniqueViewers: 2,
+       platformBreakdown: { instagram: 3 }
+     });
+     expect(getContentAnalyticsMock).toHaveBeenCalledWith(55, 42);
+   });
+ 
+   it('does not expose content analytics for other users', async () => {
+     authImpl = (req, _res, next) => {
+       req.user = { id: 42 };
+       next();
+     };
+ 
+     const getContentAnalyticsMock = vi
+       .spyOn(analyticsService, 'getContentAnalytics')
+       .mockResolvedValue(null);
+ 
+     const app = createApp();
+     const response = await request(app).get('/api/analytics/content/99');
+ 
+     expect(response.status).toBe(404);
+     expect(response.body).toEqual({ error: 'Content not found' });
+     expect(getContentAnalyticsMock).toHaveBeenCalledWith(99, 42);
+   });
++
++  it('rejects unauthenticated stats requests', async () => {
++    const analyticsSpy = vi.spyOn(analyticsService, 'getAnalyticsData');
++    const storageSpy = vi.spyOn(storage, 'getContentGenerationStats');
++
++    const app = createApp();
++    const response = await request(app).get('/api/stats');
++
++    expect(response.status).toBe(403);
++    expect(response.body).toEqual({ error: 'Authentication required' });
++    expect(analyticsSpy).not.toHaveBeenCalled();
++    expect(storageSpy).not.toHaveBeenCalled();
++  });
++
++  it('returns aggregated stats for authenticated users', async () => {
++    authImpl = (req, _res, next) => {
++      req.user = { id: 7 };
++      next();
++    };
++
++    const storageSpy = vi.spyOn(storage, 'getContentGenerationStats').mockResolvedValue({
++      total: 10,
++      thisWeek: 3,
++      thisMonth: 6,
++      totalGenerations: 12,
++      dailyStreak: 4
++    });
++
++    const analyticsSpy = vi.spyOn(analyticsService, 'getAnalyticsData').mockResolvedValue({
++      totalViews: 0,
++      totalSessions: 0,
++      uniqueUsers: 0,
++      averageSessionDuration: 0,
++      totalGenerations: 12,
++      successfulGenerations: 9,
++      topPerformingPosts: [],
++      platformDistribution: { reddit: 7, instagram: 5 }
++    });
++
++    const app = createApp();
++    const response = await request(app).get('/api/stats');
++
++    expect(response.status).toBe(200);
++    expect(response.body).toEqual({
++      totalGenerations: 12,
++      successfulGenerations: 9,
++      failedGenerations: 3,
++      successRate: 75,
++      thisWeek: 3,
++      thisMonth: 6,
++      dailyStreak: 4,
++      platformDistribution: {
++        reddit: 7,
++        instagram: 5
++      }
++    });
++
++    expect(storageSpy).toHaveBeenCalledWith(7);
++    expect(analyticsSpy).toHaveBeenCalledWith(7, expect.any(Date), expect.any(Date));
++  });
+ });

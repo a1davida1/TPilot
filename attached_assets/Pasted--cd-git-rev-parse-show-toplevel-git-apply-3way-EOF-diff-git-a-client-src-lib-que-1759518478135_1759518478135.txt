@@ -1,0 +1,348 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/client/src/lib/queryClient.ts b/client/src/lib/queryClient.ts
+index e27e4daf197563045fa40cb5fddee006ef31269d..7d93c40664173a48e866c861a13c29df8b89949b 100644
+--- a/client/src/lib/queryClient.ts
++++ b/client/src/lib/queryClient.ts
+@@ -1,33 +1,36 @@
+ import { QueryClient, QueryFunction } from "@tanstack/react-query";
+ 
+ // Enhanced error interface for better error handling
+ export interface ApiError extends Error {
+   status: number;
+   statusText: string;
+   isAuthError?: boolean;
+   userMessage?: string;
++  code?: string;
++  email?: string;
++  responseBody?: unknown;
+ }
+ 
+ // CSRF token management
+ let csrfToken: string | null = null;
+ let csrfTokenPromise: Promise<string> | null = null;
+ 
+ async function getCsrfToken(): Promise<string> {
+   // If we have a valid token, return it
+   if (csrfToken) {
+     return csrfToken;
+   }
+ 
+   // If we're already fetching a token, wait for that request
+   if (csrfTokenPromise) {
+     return csrfTokenPromise;
+   }
+ 
+   // Otherwise, fetch a new token
+   csrfTokenPromise = fetch('/api/csrf-token', {
+     method: 'GET',
+     credentials: 'include',
+   })
+     .then(async (res) => {
+       if (!res.ok) {
+         throw new Error('Failed to fetch CSRF token');
+diff --git a/client/src/lib/queryClient.ts b/client/src/lib/queryClient.ts
+index e27e4daf197563045fa40cb5fddee006ef31269d..7d93c40664173a48e866c861a13c29df8b89949b 100644
+--- a/client/src/lib/queryClient.ts
++++ b/client/src/lib/queryClient.ts
+@@ -56,164 +59,235 @@ async function getCsrfToken(): Promise<string> {
+ 
+ // Clear CSRF token when auth changes
+ export function clearCsrfToken() {
+   csrfToken = null;
+   csrfTokenPromise = null;
+ }
+ 
+ // Helper function to get an error message based on status and error data
+ function getErrorMessage(status: number, errorData: Record<string, unknown>): string | undefined {
+   if (errorData.message && typeof errorData.message === 'string') {
+     return errorData.message;
+   }
+   switch (status) {
+     case 401:
+       return "Authentication failed. Please log in again.";
+     case 403:
+       return "You do not have permission to access this resource.";
+     case 404:
+       return "The requested resource was not found.";
+     default:
+       return `An error occurred: ${status}`;
+   }
+ }
+ 
+ async function throwIfResNotOk(res: Response) {
+-  if (!res.ok) {
+-    const text = (await res.text()) || res.statusText;
+-    console.error(`❌ API Error: ${res.status} ${res.statusText} - ${text}`);
+-
+-    // Create enhanced error object
+-    const error = new Error(`${res.status}: ${text}`) as ApiError;
+-    error.status = res.status;
+-    error.statusText = res.statusText;
+-
+-    // Enhanced error messages for common auth scenarios
+-    if (res.status === 401) {
+-      error.isAuthError = true;
+-      if (text.includes("Access token required")) {
++  if (res.ok) {
++    return;
++  }
++
++  let parsedBody: unknown;
++  let bodyText: string | undefined;
++
++  try {
++    parsedBody = await res.clone().json();
++  } catch (error) {
++    if (error instanceof Error) {
++      // Ignore JSON parse errors and fall back to text handling below
++    }
++  }
++
++  if (parsedBody === undefined) {
++    try {
++      const text = await res.clone().text();
++      bodyText = text || undefined;
++    } catch (error) {
++      if (error instanceof Error) {
++        bodyText = undefined;
++      }
++    }
++  } else if (typeof parsedBody === "string") {
++    bodyText = parsedBody;
++  } else {
++    try {
++      bodyText = JSON.stringify(parsedBody);
++    } catch (error) {
++      if (error instanceof Error) {
++        bodyText = undefined;
++      }
++    }
++  }
++
++  const logMessage = bodyText ?? res.statusText;
++  console.error(`❌ API Error: ${res.status} ${res.statusText} - ${logMessage}`);
++
++  const serverMessage =
++    typeof parsedBody === "object" && parsedBody !== null && "message" in parsedBody &&
++    typeof (parsedBody as { message: unknown }).message === "string"
++      ? (parsedBody as { message: string }).message
++      : undefined;
++  const serverCode =
++    typeof parsedBody === "object" && parsedBody !== null && "code" in parsedBody &&
++    typeof (parsedBody as { code: unknown }).code === "string"
++      ? (parsedBody as { code: string }).code
++      : undefined;
++  const serverEmail =
++    typeof parsedBody === "object" && parsedBody !== null && "email" in parsedBody &&
++    typeof (parsedBody as { email: unknown }).email === "string"
++      ? (parsedBody as { email: string }).email
++      : undefined;
++
++  const fallbackText = serverMessage ?? bodyText ?? res.statusText;
++
++  // Create enhanced error object
++  const error = new Error(fallbackText ? `${res.status}: ${fallbackText}` : `${res.status}`) as ApiError;
++  error.status = res.status;
++  error.statusText = res.statusText;
++  error.responseBody = parsedBody ?? bodyText;
++
++  if (serverMessage) {
++    error.message = serverMessage;
++    error.userMessage = serverMessage;
++  }
++
++  if (serverCode) {
++    error.code = serverCode;
++  }
++
++  if (serverEmail) {
++    error.email = serverEmail;
++  }
++
++  // Enhanced error messages for common auth scenarios
++  if (res.status === 401) {
++    error.isAuthError = true;
++    if (!error.userMessage) {
++      if (fallbackText.includes("Access token required")) {
+         error.userMessage = "Please log in to continue. Creating an account takes just 30 seconds!";
+-      } else if (text.includes("Invalid credentials")) {
++      } else if (fallbackText.includes("Invalid credentials")) {
+         error.userMessage = "Invalid login credentials. Please check your username/email and password.";
+-      } else if (text.includes("Email not verified")) {
++      } else if (fallbackText.includes("Email not verified")) {
+         error.userMessage = "Please verify your email before logging in. Check your inbox for the verification link.";
+       } else {
+         error.userMessage = "Authentication required. Please log in to access this feature.";
+       }
+-    } else if (res.status === 403) {
+-      error.isAuthError = true;
+-      if (text.includes("Insufficient permissions")) {
++    }
++  } else if (res.status === 403) {
++    error.isAuthError = true;
++    if (!error.userMessage) {
++      if (fallbackText.includes("Insufficient permissions")) {
+         error.userMessage = "You don't have permission to perform this action. Please contact support if you think this is an error.";
+       } else {
+         error.userMessage = "Access denied. Please ensure you're logged in with the correct account.";
+       }
+-    } else if (res.status === 404) {
++    }
++  } else if (res.status === 404) {
++    if (!error.userMessage) {
+       error.userMessage = "The requested resource was not found. Please check the URL or try again.";
+-    } else if (res.status >= 500) {
++    }
++  } else if (res.status >= 500) {
++    if (!error.userMessage) {
+       error.userMessage = "Server error occurred. Please try again in a few moments.";
+-    } else {
+-      error.userMessage = `Request failed: ${text}`;
+     }
+-
+-    throw error;
++  } else if (!error.userMessage) {
++    error.userMessage = `Request failed: ${fallbackText}`;
+   }
++
++  throw error;
+ }
+ 
+ export async function apiRequest(
+   method: string,
+   url: string,
+   data?: unknown,
+ ): Promise<Response> {
+   const headers: Record<string, string> = {};
+   let body: BodyInit | undefined;
+ 
+   if (typeof window !== "undefined") {
+     try {
+       const storedToken = window.localStorage?.getItem("authToken");
+       if (storedToken && !headers["Authorization"]) {
+         headers["Authorization"] = `Bearer ${storedToken}`;
+       }
+     } catch (error) {
+       console.warn("Unable to access auth token from localStorage", error);
+     }
+   }
+ 
+   // Get CSRF token for state-changing requests
+   if (method !== 'GET' && method !== 'HEAD') {
+     try {
+       const token = await getCsrfToken();
+       if (token) {
+         headers['X-CSRF-Token'] = token;
+       }
+     } catch (error) {
+       console.warn('Failed to get CSRF token:', error);
+       // Continue without CSRF token - the server will reject if needed
+     }
+   }
+ 
+   if (data instanceof FormData) {
+     body = data;
+   } else if (data !== undefined) {
+     headers["Content-Type"] = "application/json";
+     body = JSON.stringify(data);
+   }
+ 
+   const res = await fetch(url, {
+     method,
+     headers,
+     body,
+     credentials: "include", // Cookie-based auth only
+   });
+ 
+   // If we get a 403 with CSRF error, clear token and retry once
+   if (res.status === 403) {
+-    const text = await res.text();
++    const text = await res.clone().text();
+     if (text.includes('CSRF') || text.includes('csrf')) {
+       clearCsrfToken();
+-      
++
+       // Retry with fresh token
+       const newToken = await getCsrfToken();
+       if (newToken) {
+         headers['X-CSRF-Token'] = newToken;
+         
+         const retryRes = await fetch(url, {
+           method,
+           headers,
+           body,
+           credentials: "include",
+         });
+         
+         await throwIfResNotOk(retryRes);
+         return retryRes;
+       }
+     }
+-    
++
+     // Not a CSRF error, throw the original error
+-    const error = new Error(`403: ${text}`) as ApiError;
+-    error.status = 403;
+-    error.statusText = 'Forbidden';
+-    throw error;
++    await throwIfResNotOk(res);
+   }
+ 
+   await throwIfResNotOk(res);
+   return res;
+ }
+ 
+ type UnauthorizedBehavior = "returnNull" | "throw";
+ export const getQueryFn: <T = unknown>(options: {
+   on401: UnauthorizedBehavior;
+ }) => QueryFunction<T> =
+   ({ on401: _unauthorizedBehavior }) =>
+   async ({ queryKey: key, signal }) => {
+     // Validate that the key is a string or array containing string
+     let queryKey: string;
+     if (Array.isArray(key)) {
+       queryKey = String(key[0]);
+     } else {
+       queryKey = String(key);
+     }
+     const url = queryKey.startsWith('/') ? queryKey : `/${queryKey}`;
+ 
+     if (!queryKey || typeof queryKey !== 'string') {
+       throw new Error('Invalid query key');
+     }
+ 
+diff --git a/client/src/lib/queryClient.ts b/client/src/lib/queryClient.ts
+index e27e4daf197563045fa40cb5fddee006ef31269d..7d93c40664173a48e866c861a13c29df8b89949b 100644
+--- a/client/src/lib/queryClient.ts
++++ b/client/src/lib/queryClient.ts
+@@ -274,26 +348,26 @@ export const getQueryFn: <T = unknown>(options: {
+         const networkError: ApiError = new Error('Network connection failed') as ApiError;
+         networkError.status = 0;
+         networkError.statusText = 'Network Error';
+         networkError.userMessage = 'Please check your internet connection and try again.';
+         throw networkError;
+       }
+ 
+       throw error;
+     }
+   };
+ 
+ 
+ export const queryClient = new QueryClient({
+   defaultOptions: {
+     queries: {
+       queryFn: getQueryFn({ on401: "throw" }),
+       refetchInterval: false,
+       refetchOnWindowFocus: false,
+       staleTime: Infinity,
+       retry: false,
+     },
+     mutations: {
+       retry: false,
+     },
+   },
+-});
++});
+ 
+EOF
+)

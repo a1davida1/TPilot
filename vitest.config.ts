@@ -49,6 +49,10 @@ export default defineConfig({
       },
     },
   },
+  esbuild: {
+    jsx: 'automatic',
+    jsxImportSource: 'react',
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './client/src'),

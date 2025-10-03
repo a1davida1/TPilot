@@ -6,6 +6,9 @@ export interface ApiError extends Error {
   statusText: string;
   isAuthError?: boolean;
   userMessage?: string;
+  code?: string;
+  email?: string;
+  responseBody?: Record<string, unknown>;
 }
 
 // CSRF token management
@@ -82,10 +85,30 @@ async function throwIfResNotOk(res: Response) {
     const text = (await res.text()) || res.statusText;
     console.error(`❌ API Error: ${res.status} ${res.statusText} - ${text}`);
 
+    // Try to parse JSON response
+    let parsedBody: Record<string, unknown> | null = null;
+    try {
+      parsedBody = JSON.parse(text);
+    } catch {
+      // Not JSON, continue with text
+    }
+
     // Create enhanced error object
-    const error = new Error(`${res.status}: ${text}`) as ApiError;
+    const errorMessage = parsedBody?.message || text;
+    const error = new Error(`${res.status}: ${errorMessage}`) as ApiError;
     error.status = res.status;
     error.statusText = res.statusText;
+
+    // Attach structured error data if available
+    if (parsedBody) {
+      error.responseBody = parsedBody;
+      if (typeof parsedBody.code === 'string') {
+        error.code = parsedBody.code;
+      }
+      if (typeof parsedBody.email === 'string') {
+        error.email = parsedBody.email;
+      }
+    }
 
     // Enhanced error messages for common auth scenarios
     if (res.status === 401) {
@@ -101,7 +124,9 @@ async function throwIfResNotOk(res: Response) {
       }
     } else if (res.status === 403) {
       error.isAuthError = true;
-      if (text.includes("Insufficient permissions")) {
+      if (error.code === 'EMAIL_NOT_VERIFIED') {
+        error.userMessage = "Please verify your email before logging in. Check your inbox for the verification link.";
+      } else if (text.includes("Insufficient permissions")) {
         error.userMessage = "You don't have permission to perform this action. Please contact support if you think this is an error.";
       } else {
         error.userMessage = "Access denied. Please ensure you're logged in with the correct account.";
@@ -111,7 +136,7 @@ async function throwIfResNotOk(res: Response) {
     } else if (res.status >= 500) {
       error.userMessage = "Server error occurred. Please try again in a few moments.";
     } else {
-      error.userMessage = `Request failed: ${text}`;
+      error.userMessage = `Request failed: ${errorMessage}`;
     }
 
     throw error;
@@ -166,7 +191,10 @@ export async function apiRequest(
 
   // If we get a 403 with CSRF error, clear token and retry once
   if (res.status === 403) {
-    const text = await res.text();
+    // Clone response so we can read body multiple times
+    const clonedRes = res.clone();
+    const text = await clonedRes.text();
+    
     if (text.includes('CSRF') || text.includes('csrf')) {
       clearCsrfToken();
       
@@ -187,11 +215,9 @@ export async function apiRequest(
       }
     }
     
-    // Not a CSRF error, throw the original error
-    const error = new Error(`403: ${text}`) as ApiError;
-    error.status = 403;
-    error.statusText = 'Forbidden';
-    throw error;
+    // Not a CSRF error, use throwIfResNotOk for proper error handling
+    await throwIfResNotOk(res);
+    return res;
   }
 
   await throwIfResNotOk(res);
