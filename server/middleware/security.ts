@@ -385,9 +385,9 @@ export const securityMiddleware = [
           // Allow specific style sources
           "https://fonts.googleapis.com",
           "https://checkout.stripe.com",
-          // In development, allow data: URLs for CSS-in-JS libraries and unsafe-inline for Vite
-          process.env.NODE_ENV === 'development' ? "data:" : "",
-          process.env.NODE_ENV === 'development' ? "'unsafe-inline'" : ""
+          // Allow data: URLs for CSS-in-JS libraries and unsafe-inline for custom animations
+          "data:",
+          "'unsafe-inline'"
         ].filter(Boolean),
         imgSrc: [
           "'self'",

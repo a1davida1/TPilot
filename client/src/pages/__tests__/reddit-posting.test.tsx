@@ -8,6 +8,16 @@ const mockUseMutation = vi.fn();
 const mockInvalidateQueries = vi.fn();
 const mockSetQueryData = vi.fn();
 const mockApiRequest = vi.fn(async () => ({ json: async () => ({}) }));
+const mockAuthState = {
+  isAuthenticated: true,
+  user: { id: 1, emailVerified: true, bannedAt: null as string | null, suspendedUntil: null as string | null },
+  isLoading: false,
+  hasFullAccess: true,
+  isVerified: true,
+  login: vi.fn(),
+  logout: vi.fn(),
+  refetch: vi.fn(),
+};
 
 vi.mock('@tanstack/react-query', async () => {
   const actual = await vi.importActual<typeof import('@tanstack/react-query')>(
@@ -30,7 +40,7 @@ vi.mock('@/hooks/use-toast', () => ({
 }));
 
 vi.mock('@/hooks/useAuth', () => ({
-  useAuth: () => ({ isAuthenticated: true, user: { id: 1 } }),
+  useAuth: () => mockAuthState,
 }));
 
 vi.mock('@/components/MediaLibrarySelector', () => ({
@@ -85,6 +95,16 @@ describe('RedditPosting community picker', () => {
     mockInvalidateQueries.mockReset();
     mockSetQueryData.mockReset();
     mockApiRequest.mockReset();
+    mockAuthState.isAuthenticated = true;
+    mockAuthState.hasFullAccess = true;
+    mockAuthState.isVerified = true;
+    mockAuthState.isLoading = false;
+    mockAuthState.user = {
+      id: 1,
+      emailVerified: true,
+      bannedAt: null,
+      suspendedUntil: null,
+    };
   });
 
   afterEach(() => {
@@ -234,6 +254,55 @@ describe('RedditPosting community picker', () => {
       root.unmount();
     });
     container.remove();
+  });
+
+  it('skips community fetch and prompts for verification when access is restricted', async () => {
+    mockAuthState.hasFullAccess = false;
+    mockAuthState.isVerified = false;
+    mockAuthState.user = {
+      id: 1,
+      emailVerified: false,
+      bannedAt: null,
+      suspendedUntil: null,
+    };
+
+    mockUseQuery.mockImplementation(({ queryKey }: { queryKey: unknown[] }) => {
+      const key = Array.isArray(queryKey) ? queryKey[0] : queryKey;
+      switch (key) {
+        case '/api/reddit/accounts':
+        case '/api/media':
+          return { data: [], isLoading: false, error: null };
+        case '/api/reddit/communities':
+          return { data: [], isLoading: false, error: null };
+        default:
+          return { data: undefined, isLoading: false, error: null };
+      }
+    });
+
+    const { default: RedditPostingPage } = await import('../reddit-posting');
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<RedditPostingPage />);
+    });
+
+    await act(async () => {
+      await flushPromises();
+    });
+
+    const communitiesCall = mockUseQuery.mock.calls.find(([options]) => {
+      const key = Array.isArray(options?.queryKey) ? options.queryKey[0] : options?.queryKey;
+      return key === '/api/reddit/communities';
+    });
+
+    expect(communitiesCall?.[0]?.enabled).toBe(false);
+
+    const accessMessage = container.querySelector('[data-testid="communities-access-message"]');
+    expect(accessMessage).toBeTruthy();
+    expect(accessMessage?.textContent ?? '').toMatch(/verify your email/i);
   });
 
   it('disables legacy-shaped communities when selling or watermarks are restricted', async () => {

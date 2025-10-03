@@ -7,12 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, type ApiError } from '@/lib/queryClient';
 import { AuthModal } from '@/components/auth-modal';
+import { getCommunityAccessState } from '@/lib/community-access';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Command,
@@ -305,7 +306,7 @@ function checkCommunityEligibility(
 export default function RedditPostingPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAuthenticated, user: _user, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, user, isLoading: authLoading, hasFullAccess, isVerified } = useAuth();
   const [, setLocation] = useLocation();
   
   // Redirect to landing page if not authenticated
@@ -392,9 +393,21 @@ export default function RedditPostingPage() {
   });
 
   // Fetch subreddit communities data
-  const { data: communities = [] } = useQuery<SubredditCommunity[]>({
+  const {
+    data: communities = [],
+    error: communitiesError,
+  } = useQuery<SubredditCommunity[]>({
     queryKey: ['/api/reddit/communities'],
     retry: false,
+    enabled: hasFullAccess,
+  });
+
+  const communityAccessState = getCommunityAccessState({
+    hasFullAccess,
+    isVerified,
+    bannedAt: user?.bannedAt ?? null,
+    suspendedUntil: user?.suspendedUntil ?? null,
+    error: isApiError(communitiesError) ? communitiesError : null,
   });
 
   // Fetch media assets
@@ -1079,100 +1092,111 @@ export default function RedditPostingPage() {
                 {/* Community Picker */}
                 <div className="space-y-2">
                   <Label>Subreddit</Label>
-                  <Popover open={communityPickerOpen} onOpenChange={setCommunityPickerOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={communityPickerOpen}
-                        className="w-full justify-between"
-                        data-testid="community-picker-trigger"
-                      >
-                        {subreddit ? (
-                          (() => {
-                            const selected = sortedCommunities.find(sc => sc.community.id === subreddit);
-                            return selected ? selected.community.displayName : subreddit;
-                          })()
-                        ) : (
-                          'Select community...'
-                        )}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0">
-                      <Command>
-                        <CommandInput placeholder="Search communities..." />
-                        <CommandEmpty>No communities found.</CommandEmpty>
-                        <CommandList>
-                          <CommandGroup heading="Eligible Communities">
-                            {sortedCommunities
-                              .filter(sc => sc.isEligible)
-                              .map((sc) => (
-                                <CommandItem
-                                  key={sc.community.id}
-                                  value={sc.community.id}
-                                  onSelect={(currentValue) => {
-                                    setSubreddit(currentValue === subreddit ? '' : currentValue);
-                                    setCommunityPickerOpen(false);
-                                  }}
-                                  data-testid={`community-option-${sc.community.id}`}
-                                  disabled={false}
-                                  aria-disabled={false}
-                                  data-disabled={false}
-                                >
-                                  <div className="flex items-center justify-between w-full">
-                                    <div className="flex-1">
-                                      <div className="font-medium">{sc.community.displayName}</div>
-                                      <div className="text-xs text-gray-500 truncate">
-                                        {sc.community.members.toLocaleString()} members • {sc.community.successProbability}% success
+                  {communityAccessState.blocked ? (
+                    <Alert variant="destructive" data-testid="communities-access-message">
+                      {communityAccessState.title && <AlertTitle>{communityAccessState.title}</AlertTitle>}
+                      {communityAccessState.description && (
+                        <AlertDescription>{communityAccessState.description}</AlertDescription>
+                      )}
+                    </Alert>
+                  ) : (
+                    <Popover open={communityPickerOpen} onOpenChange={setCommunityPickerOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={communityPickerOpen}
+                          className="w-full justify-between"
+                          data-testid="community-picker-trigger"
+                        >
+                          {subreddit ? (
+                            (() => {
+                              const selected = sortedCommunities.find(sc => sc.community.id === subreddit);
+                              return selected ? selected.community.displayName : subreddit;
+                            })()
+                          ) : (
+                            'Select community...'
+                          )}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput placeholder="Search communities..." />
+                          <CommandEmpty>No communities found.</CommandEmpty>
+                          <CommandList>
+                            <CommandGroup heading="Eligible Communities">
+                              {sortedCommunities
+                                .filter(sc => sc.isEligible)
+                                .map((sc) => (
+                                  <CommandItem
+                                    key={sc.community.id}
+                                    value={sc.community.id}
+                                    onSelect={(currentValue) => {
+                                      setSubreddit(currentValue === subreddit ? '' : currentValue);
+                                      setCommunityPickerOpen(false);
+                                    }}
+                                    data-testid={`community-option-${sc.community.id}`}
+                                    disabled={false}
+                                    aria-disabled={false}
+                                    data-disabled={false}
+                                  >
+                                    <div className="flex items-center justify-between w-full">
+                                      <div className="flex-1">
+                                        <div className="font-medium">{sc.community.displayName}</div>
+                                        <div className="text-xs text-gray-500 truncate">
+                                          {sc.community.members.toLocaleString()} members • {sc.community.successProbability}% success
+                                        </div>
+                                      </div>
+                                      <div className="flex gap-1 ml-2">
+                                        {sc.badges.karmaOk && <Badge variant="secondary" className="text-xs">Karma OK</Badge>}
+                                        {sc.badges.ageOk && <Badge variant="secondary" className="text-xs">Age OK</Badge>}
+                                        {sc.badges.sellingOk && <Badge variant="secondary" className="text-xs">Selling OK</Badge>}
                                       </div>
                                     </div>
-                                    <div className="flex gap-1 ml-2">
-                                      {sc.badges.karmaOk && <Badge variant="secondary" className="text-xs">Karma OK</Badge>}
-                                      {sc.badges.ageOk && <Badge variant="secondary" className="text-xs">Age OK</Badge>}
-                                      {sc.badges.sellingOk && <Badge variant="secondary" className="text-xs">Selling OK</Badge>}
-                                    </div>
-                                  </div>
-                                </CommandItem>
-                              ))}
-                          </CommandGroup>
+                                  </CommandItem>
+                                ))}
+                            </CommandGroup>
 
-                          {sortedCommunities.some(sc => !sc.isEligible) && (
-                            <>
-                              <CommandSeparator />
-                              <CommandGroup heading="Requires Qualification">
-                                {sortedCommunities
-                                  .filter(sc => !sc.isEligible)
-                                  .map((sc) => (
-                                    <CommandItem
-                                      key={sc.community.id}
-                                      value={sc.community.id}
-                                      disabled={true}
-                                      aria-disabled={true}
-                                      data-disabled={true}
-                                      data-testid={`community-option-${sc.community.id}`}
-                                    >
-                                      <div className="flex items-center justify-between w-full opacity-50">
-                                        <div className="flex-1">
-                                          <div className="font-medium">{sc.community.displayName}</div>
-                                          <div className="text-xs text-red-600" data-testid={`community-option-${sc.community.id}-reasons`}>
-                                            {sc.reasons.join(', ')}
+                            {sortedCommunities.some(sc => !sc.isEligible) && (
+                              <>
+                                <CommandSeparator />
+                                <CommandGroup heading="Requires Qualification">
+                                  {sortedCommunities
+                                    .filter(sc => !sc.isEligible)
+                                    .map((sc) => (
+                                      <CommandItem
+                                        key={sc.community.id}
+                                        value={sc.community.id}
+                                        disabled={true}
+                                        aria-disabled={true}
+                                        data-disabled={true}
+                                        data-testid={`community-option-${sc.community.id}`}
+                                      >
+                                        <div className="flex items-center justify-between w-full opacity-50">
+                                          <div className="flex-1">
+                                            <div className="font-medium">{sc.community.displayName}</div>
+                                            <div className="text-xs text-red-600" data-testid={`community-option-${sc.community.id}-reasons`}>
+                                              {sc.reasons.join(', ')}
+                                            </div>
+                                          </div>
+                                          <div className="flex gap-1 ml-2">
+                                            {!sc.badges.karmaOk && <Badge variant="destructive" className="text-xs">Karma</Badge>}
+                                            {!sc.badges.ageOk && <Badge variant="destructive" className="text-xs">Age</Badge>}
+                                            {!sc.badges.sellingOk && <Badge variant="destructive" className="text-xs">Selling</Badge>}
                                           </div>
                                         </div>
-                                        <div className="flex gap-1 ml-2">
-                                          {!sc.badges.karmaOk && <Badge variant="destructive" className="text-xs">Karma</Badge>}
-                                          {!sc.badges.ageOk && <Badge variant="destructive" className="text-xs">Age</Badge>}
-                                        </div>
-                                      </div>
-                                    </CommandItem>
-                                  ))}
-                              </CommandGroup>
-                            </>
-                          )}
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                                      </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                              </>
+                            )}
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  )}
+
 
                   {/* Enhanced Community Insights */}
                   {selectedCommunity && (() => {
