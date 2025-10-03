@@ -8,7 +8,7 @@ export interface ApiError extends Error {
   userMessage?: string;
   code?: string;
   email?: string;
-  responseBody?: Record<string, unknown>;
+  responseBody?: unknown;
 }
 
 // CSRF token management
@@ -81,66 +81,118 @@ function getErrorMessage(status: number, errorData: Record<string, unknown>): st
 }
 
 async function throwIfResNotOk(res: Response) {
-  if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    console.error(`❌ API Error: ${res.status} ${res.statusText} - ${text}`);
+  if (res.ok) {
+    return;
+  }
 
-    // Try to parse JSON response
-    let parsedBody: Record<string, unknown> | null = null;
+  let parsedBody: unknown;
+  let bodyText: string | undefined;
+
+  try {
+    parsedBody = await res.clone().json();
+  } catch (error) {
+    if (error instanceof Error) {
+      // Ignore JSON parse errors and fall back to text handling below
+    }
+  }
+
+  if (parsedBody === undefined) {
     try {
-      parsedBody = JSON.parse(text);
-    } catch {
-      // Not JSON, continue with text
-    }
-
-    // Create enhanced error object
-    const errorMessage = parsedBody?.message || text;
-    const error = new Error(`${res.status}: ${errorMessage}`) as ApiError;
-    error.status = res.status;
-    error.statusText = res.statusText;
-
-    // Attach structured error data if available
-    if (parsedBody) {
-      error.responseBody = parsedBody;
-      if (typeof parsedBody.code === 'string') {
-        error.code = parsedBody.code;
-      }
-      if (typeof parsedBody.email === 'string') {
-        error.email = parsedBody.email;
+      const text = await res.clone().text();
+      bodyText = text || undefined;
+    } catch (error) {
+      if (error instanceof Error) {
+        bodyText = undefined;
       }
     }
+  } else if (typeof parsedBody === "string") {
+    bodyText = parsedBody;
+  } else {
+    try {
+      bodyText = JSON.stringify(parsedBody);
+    } catch (error) {
+      if (error instanceof Error) {
+        bodyText = undefined;
+      }
+    }
+  }
 
-    // Enhanced error messages for common auth scenarios
-    if (res.status === 401) {
-      error.isAuthError = true;
-      if (text.includes("Access token required")) {
+  const logMessage = bodyText ?? res.statusText;
+  console.error(`❌ API Error: ${res.status} ${res.statusText} - ${logMessage}`);
+
+  const serverMessage =
+    typeof parsedBody === "object" && parsedBody !== null && "message" in parsedBody &&
+    typeof (parsedBody as { message: unknown }).message === "string"
+      ? (parsedBody as { message: string }).message
+      : undefined;
+  const serverCode =
+    typeof parsedBody === "object" && parsedBody !== null && "code" in parsedBody &&
+    typeof (parsedBody as { code: unknown }).code === "string"
+      ? (parsedBody as { code: string }).code
+      : undefined;
+  const serverEmail =
+    typeof parsedBody === "object" && parsedBody !== null && "email" in parsedBody &&
+    typeof (parsedBody as { email: unknown }).email === "string"
+      ? (parsedBody as { email: string }).email
+      : undefined;
+
+  const fallbackText = serverMessage ?? bodyText ?? res.statusText;
+
+  // Create enhanced error object
+  const error = new Error(fallbackText ? `${res.status}: ${fallbackText}` : `${res.status}`) as ApiError;
+  error.status = res.status;
+  error.statusText = res.statusText;
+  error.responseBody = parsedBody ?? bodyText;
+
+  if (serverMessage) {
+    error.message = serverMessage;
+    error.userMessage = serverMessage;
+  }
+
+  if (serverCode) {
+    error.code = serverCode;
+  }
+
+  if (serverEmail) {
+    error.email = serverEmail;
+  }
+
+  // Enhanced error messages for common auth scenarios
+  if (res.status === 401) {
+    error.isAuthError = true;
+    if (!error.userMessage) {
+      if (fallbackText.includes("Access token required")) {
         error.userMessage = "Please log in to continue. Creating an account takes just 30 seconds!";
-      } else if (text.includes("Invalid credentials")) {
+      } else if (fallbackText.includes("Invalid credentials")) {
         error.userMessage = "Invalid login credentials. Please check your username/email and password.";
-      } else if (text.includes("Email not verified")) {
+      } else if (fallbackText.includes("Email not verified")) {
         error.userMessage = "Please verify your email before logging in. Check your inbox for the verification link.";
       } else {
         error.userMessage = "Authentication required. Please log in to access this feature.";
       }
-    } else if (res.status === 403) {
-      error.isAuthError = true;
-      if (error.code === 'EMAIL_NOT_VERIFIED') {
-        error.userMessage = "Please verify your email before logging in. Check your inbox for the verification link.";
-      } else if (text.includes("Insufficient permissions")) {
+    }
+  } else if (res.status === 403) {
+    error.isAuthError = true;
+    if (!error.userMessage) {
+      if (fallbackText.includes("Insufficient permissions")) {
         error.userMessage = "You don't have permission to perform this action. Please contact support if you think this is an error.";
       } else {
         error.userMessage = "Access denied. Please ensure you're logged in with the correct account.";
       }
-    } else if (res.status === 404) {
-      error.userMessage = "The requested resource was not found. Please check the URL or try again.";
-    } else if (res.status >= 500) {
-      error.userMessage = "Server error occurred. Please try again in a few moments.";
-    } else {
-      error.userMessage = `Request failed: ${errorMessage}`;
     }
-
-    throw error;
+  } else if (res.status === 404) {
+    if (!error.userMessage) {
+      error.userMessage = "The requested resource was not found. Please check the URL or try again.";
+    }
+  } else if (res.status >= 500) {
+    if (!error.userMessage) {
+      error.userMessage = "Server error occurred. Please try again in a few moments.";
+    }
+  } else if (!error.userMessage) {
+    error.userMessage = `Request failed: ${fallbackText}`;
   }
+
+  throw error;
 }
 
 export async function apiRequest(

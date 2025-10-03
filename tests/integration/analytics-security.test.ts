@@ -13,6 +13,7 @@ vi.mock('../../server/middleware/auth.ts', () => ({
 }));
 
 import * as analyticsModule from '../../server/analytics-routes.ts';
+import { storage } from '../../server/storage.ts';
 
 const { registerAnalyticsRoutes, analyticsService } = analyticsModule;
 
@@ -88,5 +89,65 @@ describe('Analytics route authentication', () => {
     expect(response.status).toBe(404);
     expect(response.body).toEqual({ error: 'Content not found' });
     expect(getContentAnalyticsMock).toHaveBeenCalledWith(99, 42);
+  });
+
+  it('rejects unauthenticated stats requests', async () => {
+    const analyticsSpy = vi.spyOn(analyticsService, 'getAnalyticsData');
+    const storageSpy = vi.spyOn(storage, 'getContentGenerationStats');
+
+    const app = createApp();
+    const response = await request(app).get('/api/stats');
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({ error: 'Authentication required' });
+    expect(analyticsSpy).not.toHaveBeenCalled();
+    expect(storageSpy).not.toHaveBeenCalled();
+  });
+
+  it('returns aggregated stats for authenticated users', async () => {
+    authImpl = (req, _res, next) => {
+      req.user = { id: 7 };
+      next();
+    };
+
+    const storageSpy = vi.spyOn(storage, 'getContentGenerationStats').mockResolvedValue({
+      total: 10,
+      thisWeek: 3,
+      thisMonth: 6,
+      totalGenerations: 12,
+      dailyStreak: 4
+    });
+
+    const analyticsSpy = vi.spyOn(analyticsService, 'getAnalyticsData').mockResolvedValue({
+      totalViews: 0,
+      totalSessions: 0,
+      uniqueUsers: 0,
+      averageSessionDuration: 0,
+      totalGenerations: 12,
+      successfulGenerations: 9,
+      topPerformingPosts: [],
+      platformDistribution: { reddit: 7, instagram: 5 }
+    });
+
+    const app = createApp();
+    const response = await request(app).get('/api/stats');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      totalGenerations: 12,
+      successfulGenerations: 9,
+      failedGenerations: 3,
+      successRate: 75,
+      thisWeek: 3,
+      thisMonth: 6,
+      dailyStreak: 4,
+      platformDistribution: {
+        reddit: 7,
+        instagram: 5
+      }
+    });
+
+    expect(storageSpy).toHaveBeenCalledWith(7);
+    expect(analyticsSpy).toHaveBeenCalledWith(7, expect.any(Date), expect.any(Date));
   });
 });
