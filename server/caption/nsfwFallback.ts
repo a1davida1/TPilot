@@ -78,7 +78,6 @@ async function detectNSFW(image: Buffer): Promise<boolean> {
         .find((d) => d.label.toLowerCase() === 'nsfw')?.score;
       return (nsfwScore ?? 0) > 0.5;
     }
-    return false;
   } catch (error) {
     return false;
   }
