@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -17,11 +18,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { 
-  Users, 
-  TrendingUp, 
-  Shield, 
-  Megaphone, 
+import {
+  Users,
+  TrendingUp,
+  Shield,
+  Megaphone,
   Search,
   ChevronUp,
   ChevronDown,
@@ -30,6 +31,9 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import type { ApiError } from "@/lib/queryClient";
+import { getCommunityAccessState } from "@/lib/community-access";
+import { useAuth } from "@/hooks/useAuth";
 
 type RuleAllowance = 'yes' | 'limited' | 'no';
 
@@ -73,6 +77,14 @@ interface _RedditCommunity {
   competitionLevel: 'low' | 'medium' | 'high';
 }
 
+const isApiError = (error: unknown): error is ApiError =>
+  Boolean(
+    error &&
+    typeof error === 'object' &&
+    'status' in (error as Record<string, unknown>) &&
+    typeof (error as { status?: unknown }).status === 'number'
+  );
+
 export function RedditCommunities() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<'members' | 'engagement' | 'upvotes' | 'name' | 'success'>('success');
@@ -80,9 +92,14 @@ export function RedditCommunities() {
   const [filterPromotion, setFilterPromotion] = useState<string>('all');
   const [filterVerification, setFilterVerification] = useState<string>('all');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const { hasFullAccess, isVerified, user, isLoading: authLoading } = useAuth();
 
   // Fetch communities data
-  const { data: communities = [], isLoading: _isLoading } = useQuery({
+  const {
+    data: communities = [],
+    isLoading: communitiesLoading,
+    error: communitiesError,
+  } = useQuery({
     queryKey: ['/api/reddit/communities', filterCategory, searchTerm],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -92,7 +109,16 @@ export function RedditCommunities() {
       const response = await apiRequest('GET', `/api/reddit/communities?${params.toString()}`);
       return response.json();
     },
-    retry: false
+    retry: false,
+    enabled: hasFullAccess,
+  });
+
+  const communityAccessState = getCommunityAccessState({
+    hasFullAccess,
+    isVerified,
+    bannedAt: user?.bannedAt ?? null,
+    suspendedUntil: user?.suspendedUntil ?? null,
+    error: isApiError(communitiesError) ? communitiesError : null,
   });
 
   const displayCommunities = communities;
@@ -283,6 +309,13 @@ export function RedditCommunities() {
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
+        {communityAccessState.blocked && (
+          <Alert variant="destructive" data-testid="alert-access-blocked">
+            <AlertTitle>{communityAccessState.title}</AlertTitle>
+            <AlertDescription>{communityAccessState.description}</AlertDescription>
+          </Alert>
+        )}
+        
         {/* Filters and Search */}
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="relative flex-1">

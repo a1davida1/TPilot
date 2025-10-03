@@ -11,6 +11,9 @@ interface User {
   isAdmin?: boolean;
   subscription_status?: string;
   role?: string;
+  emailVerified?: boolean;
+  bannedAt?: string | null;
+  suspendedUntil?: string | null;
 }
 
 export function useAuth() {
@@ -28,7 +31,7 @@ export function useAuth() {
     return publicPaths.includes(path);
   };
 
-  const { data: user, isLoading, error: _error, refetch } = useQuery<User>({
+  const { data: user, isLoading, error: _error, refetch } = useQuery<User | null>({
     queryKey: ['/api/auth/user'],
     queryFn: async () => {
       // Use cookie-based authentication only
@@ -38,9 +41,9 @@ export function useAuth() {
       
       if (response.ok) {
         const userData = await response.json();
-        return userData;
+        return userData ?? null;
       }
-      
+
       // Return null instead of throwing error to allow guest mode
       return null;
     },
@@ -154,10 +157,20 @@ export function useAuth() {
     }
   };
 
+  const isVerified = Boolean(user?.emailVerified);
+  const isBanned = Boolean(user?.bannedAt);
+  const suspensionDate = user?.suspendedUntil ? new Date(user.suspendedUntil) : null;
+  const isSuspended = Boolean(
+    suspensionDate && !Number.isNaN(suspensionDate.getTime()) && suspensionDate.getTime() > Date.now()
+  );
+  const hasFullAccess = Boolean(user && isVerified && !isBanned && !isSuspended);
+
   return {
     user,
     isLoading,
     isAuthenticated: !!user,
+    isVerified,
+    hasFullAccess,
     login,
     logout,
     refetch,

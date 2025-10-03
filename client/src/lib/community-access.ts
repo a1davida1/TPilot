@@ -1,0 +1,83 @@
+import type { ApiError } from '@/lib/queryClient';
+
+interface CommunityAccessOptions {
+  hasFullAccess: boolean;
+  isVerified: boolean;
+  bannedAt?: string | null;
+  suspendedUntil?: string | null;
+  error?: ApiError | null;
+}
+
+interface CommunityAccessState {
+  blocked: boolean;
+  title?: string;
+  description?: string;
+}
+
+function isSuspensionActive(suspendedUntil?: string | null): boolean {
+  if (!suspendedUntil) {
+    return false;
+  }
+
+  const suspensionDate = new Date(suspendedUntil);
+  if (Number.isNaN(suspensionDate.getTime())) {
+    return false;
+  }
+
+  return suspensionDate.getTime() > Date.now();
+}
+
+export function getCommunityAccessState(options: CommunityAccessOptions): CommunityAccessState {
+  const { hasFullAccess, isVerified, bannedAt, suspendedUntil, error } = options;
+
+  const suspensionActive = isSuspensionActive(suspendedUntil);
+  const isBanned = Boolean(bannedAt);
+  const isForbidden = Boolean(error && error.status === 403);
+
+  if (!hasFullAccess) {
+    if (!isVerified) {
+      return {
+        blocked: true,
+        title: 'Verify your email to continue',
+        description: 'Verify your email address to unlock Reddit community insights and posting tools.',
+      };
+    }
+
+    if (isBanned) {
+      return {
+        blocked: true,
+        title: 'Account access restricted',
+        description: 'Your account is currently banned. Please contact support to review the restriction.',
+      };
+    }
+
+    if (suspensionActive) {
+      const until = suspendedUntil ? new Date(suspendedUntil).toLocaleString() : null;
+      const description = until
+        ? `Your account is suspended until ${until}. Resolve the suspension to regain Reddit community access.`
+        : 'Your account is suspended. Resolve the suspension to regain Reddit community access.';
+
+      return {
+        blocked: true,
+        title: 'Account temporarily suspended',
+        description,
+      };
+    }
+
+    return {
+      blocked: true,
+      title: 'Resolve account restrictions',
+      description: 'Please resolve account restrictions to access Reddit communities.',
+    };
+  }
+
+  if (isForbidden) {
+    return {
+      blocked: true,
+      title: 'Access currently blocked',
+      description: 'We could not load communities. Please verify your email or resolve account restrictions and try again.',
+    };
+  }
+
+  return { blocked: false };
+}
