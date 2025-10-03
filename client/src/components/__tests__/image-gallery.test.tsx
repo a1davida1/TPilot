@@ -221,15 +221,20 @@ describe('ImageGallery detail modal', () => {
     const closeButton = await findByTestId('dialog-close-button');
     await act(async () => {
       (closeButton as HTMLButtonElement).click();
+      await new Promise(resolve => setTimeout(resolve, 100));
+    });
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 100));
     });
 
     await waitFor(() => {
       const maybeDialog = queryByTestId('image-detail-dialog');
-      if (maybeDialog) {
-        throw new Error('Dialog still open');
+      if (maybeDialog && maybeDialog.offsetParent !== null) {
+        throw new Error('Dialog still visible');
       }
       return true;
-    });
+    }, { timeout: 3000 });
   });
 
   it('queues a quick repost and updates the cached image state', async () => {

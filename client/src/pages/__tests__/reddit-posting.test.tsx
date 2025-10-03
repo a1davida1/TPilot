@@ -27,7 +27,12 @@ vi.mock('@tanstack/react-query', async () => {
   return {
     ...actual,
     useQuery: (options: { queryKey: unknown[] }) => mockUseQuery(options),
-    useMutation: () => mockUseMutation(),
+    useMutation: () => mockUseMutation() ?? {
+      mutate: vi.fn(),
+      mutateAsync: vi.fn(),
+      isPending: false,
+      reset: vi.fn(),
+    },
     useQueryClient: () => ({
       invalidateQueries: mockInvalidateQueries,
       setQueryData: mockSetQueryData,
@@ -92,6 +97,12 @@ describe('RedditPosting community picker', () => {
     vi.resetModules();
     mockUseQuery.mockReset();
     mockUseMutation.mockReset();
+    mockUseMutation.mockReturnValue({
+      mutate: vi.fn(),
+      mutateAsync: vi.fn(),
+      isPending: false,
+      reset: vi.fn(),
+    });
     mockInvalidateQueries.mockReset();
     mockSetQueryData.mockReset();
     mockApiRequest.mockReset();

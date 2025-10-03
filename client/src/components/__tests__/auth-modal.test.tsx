@@ -4,16 +4,39 @@ import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
 import { act } from "react-dom/test-utils";
 
-const toastMock = vi.fn();
-const loginMock = vi.fn();
-const apiRequestMock = vi.fn<(...args: unknown[]) => Promise<Response>>();
+const { toastMock, loginMock, apiRequestMock } = vi.hoisted(() => ({
+  toastMock: vi.fn(),
+  loginMock: vi.fn(),
+  apiRequestMock: vi.fn<(...args: unknown[]) => Promise<Response>>(),
+}));
 const mutationConfigs: Array<Record<string, unknown>> = [];
 
 const useMutationMock = vi.fn((options?: Record<string, unknown>) => {
   mutationConfigs.push(options ?? {});
+  const mutationFn = (options as { mutationFn?: (...args: unknown[]) => Promise<unknown> })?.mutationFn;
+  
   return {
-    mutate: vi.fn(),
-    mutateAsync: vi.fn(),
+    mutate: vi.fn(async (variables: unknown) => {
+      if (mutationFn) {
+        try {
+          const result = await mutationFn(variables);
+          const onSuccess = (options as { onSuccess?: (data: unknown) => void })?.onSuccess;
+          if (onSuccess) {
+            onSuccess(result);
+          }
+        } catch (error) {
+          const onError = (options as { onError?: (error: unknown) => void })?.onError;
+          if (onError) {
+            onError(error);
+          }
+        }
+      }
+    }),
+    mutateAsync: vi.fn(async (variables: unknown) => {
+      if (mutationFn) {
+        return await mutationFn(variables);
+      }
+    }),
     reset: vi.fn(),
     data: undefined,
     error: undefined,
@@ -27,11 +50,7 @@ vi.mock("@tanstack/react-query", () => ({
   useMutation: (options?: Record<string, unknown>) => useMutationMock(options),
 }));
 
-vi.mock("@/components/ui/button", () => ({
-  Button: ({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
-    <button {...props}>{children}</button>
-  ),
-}));
+// Button component is not mocked - using actual component to ensure onClick works
 
 vi.mock("@/components/ui/input", () => ({
   Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
@@ -89,13 +108,13 @@ vi.mock("lucide-react", () => ({
   AlertCircle: () => <span />,
 }));
 
-vi.mock("@/lib/queryClient", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/queryClient")>("@/lib/queryClient");
-  return {
-    ...actual,
-    apiRequest: apiRequestMock,
-  };
-});
+vi.doMock("@/lib/queryClient", () => ({
+  apiRequest: apiRequestMock,
+  queryClient: {
+    invalidateQueries: vi.fn(),
+    setQueryData: vi.fn(),
+  },
+}));
 
 import type { ApiError } from "@/lib/queryClient";
 import { AuthModal } from "../auth-modal";
@@ -112,9 +131,30 @@ describe("AuthModal resend verification", () => {
     useMutationMock.mockReset();
     useMutationMock.mockImplementation((options?: Record<string, unknown>) => {
       mutationConfigs.push(options ?? {});
+      const mutationFn = (options as { mutationFn?: (...args: unknown[]) => Promise<unknown> })?.mutationFn;
+      
       return {
-        mutate: vi.fn(),
-        mutateAsync: vi.fn(),
+        mutate: vi.fn(async (variables: unknown) => {
+          if (mutationFn) {
+            try {
+              const result = await mutationFn(variables);
+              const onSuccess = (options as { onSuccess?: (data: unknown) => void })?.onSuccess;
+              if (onSuccess) {
+                onSuccess(result);
+              }
+            } catch (error) {
+              const onError = (options as { onError?: (error: unknown) => void })?.onError;
+              if (onError) {
+                onError(error);
+              }
+            }
+          }
+        }),
+        mutateAsync: vi.fn(async (variables: unknown) => {
+          if (mutationFn) {
+            return await mutationFn(variables);
+          }
+        }),
         reset: vi.fn(),
         data: undefined,
         error: undefined,
@@ -177,7 +217,14 @@ describe("AuthModal resend verification", () => {
 
     await act(async () => {
       resendButton?.click();
-      await Promise.resolve();
+    });
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 10));
     });
 
     expect(apiRequestMock).toHaveBeenCalledWith(
