@@ -8,15 +8,26 @@ const apiKey =
   env.GEMINI_API_KEY ||
   "";
 
+const DEFAULT_TEXT_MODEL = "gemini-1.5-flash";
+
+const normalizeModelName = (name: string): string => {
+  const trimmed = name.trim();
+  const withoutPrefix = trimmed.startsWith("models/")
+    ? trimmed.slice("models/".length)
+    : trimmed;
+  const baseName = withoutPrefix.length > 0 ? withoutPrefix : DEFAULT_TEXT_MODEL;
+  const hasVersionSuffix = /-(?:latest|\d[\w]*)$/i.test(baseName);
+  const candidate = hasVersionSuffix ? baseName : `${baseName}-latest`;
+  return `models/${candidate}`;
+};
+
 const apiVersion = process.env.GEMINI_API_VERSION || env.GEMINI_API_VERSION || undefined;
-const textModelName =
-  process.env.GEMINI_TEXT_MODEL ||
-  env.GEMINI_TEXT_MODEL ||
-  "gemini-1.5-flash";
-const visionModelName =
-  process.env.GEMINI_VISION_MODEL ||
-  env.GEMINI_VISION_MODEL ||
-  textModelName;
+const textModelNameSource =
+  process.env.GEMINI_TEXT_MODEL || env.GEMINI_TEXT_MODEL || DEFAULT_TEXT_MODEL;
+const textModelName = normalizeModelName(textModelNameSource);
+const visionModelNameSource =
+  process.env.GEMINI_VISION_MODEL || env.GEMINI_VISION_MODEL || textModelNameSource;
+const visionModelName = normalizeModelName(visionModelNameSource);
 
 type GeminiContentPart = Record<string, unknown> | string | number | boolean | null;
 
