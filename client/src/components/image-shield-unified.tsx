@@ -61,6 +61,10 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
   const [dragActive, setDragActive] = useState(false);
   const [selectedImage, setSelectedImage] = useState<MediaAsset | null>(null);
   const [activeTab, setActiveTab] = useState<string>('protect');
+  const [galleryProtectedImages, setGalleryProtectedImages] = useState<Record<number, string>>({});
+  const [galleryProcessing, setGalleryProcessing] = useState<Record<number, boolean>>({});
+  const [galleryComparison, setGalleryComparison] = useState<Record<number, boolean>>({});
+  const [galleryComparisonPosition, setGalleryComparisonPosition] = useState<Record<number, number>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -307,6 +311,66 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
   const toggleComparison = () => {
     setShowComparison(prev => !prev);
     setComparisonPosition(50);
+  };
+
+  const protectGalleryImage = async (image: MediaAsset) => {
+    setGalleryProcessing(prev => ({ ...prev, [image.id]: true }));
+    try {
+      // Fetch the image
+      const response = await fetch(image.signedUrl);
+      const blob = await response.blob();
+      const file = new File([blob], image.filename, { type: image.mime });
+      
+      const settings = protectionPresets[preset];
+      const protectedBlob = await protectImage(file, settings, false); // No watermark for Pro users
+      
+      const url = URL.createObjectURL(protectedBlob);
+      setGalleryProtectedImages(prev => ({ ...prev, [image.id]: url }));
+      setGalleryComparison(prev => ({ ...prev, [image.id]: true }));
+      setGalleryComparisonPosition(prev => ({ ...prev, [image.id]: 50 }));
+      
+      toast({
+        title: "Image protected!",
+        description: "Your gallery image is now protected. Compare and download below."
+      });
+    } catch (error) {
+      toast({
+        title: "Protection failed",
+        description: getErrorMessage(error),
+        variant: "destructive"
+      });
+    } finally {
+      setGalleryProcessing(prev => ({ ...prev, [image.id]: false }));
+    }
+  };
+
+  const toggleGalleryComparison = (imageId: number) => {
+    setGalleryComparison(prev => ({ ...prev, [imageId]: !prev[imageId] }));
+    setGalleryComparisonPosition(prev => ({ ...prev, [imageId]: 50 }));
+  };
+
+  const downloadGalleryImage = async (image: MediaAsset) => {
+    const protectedUrl = galleryProtectedImages[image.id];
+    if (!protectedUrl) return;
+    
+    try {
+      const response = await fetch(protectedUrl);
+      const blob = await response.blob();
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const filename = `protected_${timestamp}_${image.filename}`;
+      downloadProtectedImage(blob, filename);
+      
+      toast({
+        title: "Download started",
+        description: "Your protected image is downloading..."
+      });
+    } catch (error) {
+      toast({
+        title: "Download failed",
+        description: getErrorMessage(error),
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -813,20 +877,71 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
                             
                             <DialogContent className="max-w-2xl">
                               <DialogHeader>
-                                <DialogTitle>Image Details</DialogTitle>
+                                <DialogTitle className="flex items-center justify-between">
+                                  <span>Image Details</span>
+                                  {galleryProtectedImages[image.id] && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => toggleGalleryComparison(image.id)}
+                                      data-testid={`button-toggle-comparison-${image.id}`}
+                                    >
+                                      <ArrowLeftRight className="h-4 w-4 mr-2" />
+                                      {galleryComparison[image.id] ? 'Hide' : 'Compare'}
+                                    </Button>
+                                  )}
+                                </DialogTitle>
                                 <DialogDescription>
                                   {image.filename}
                                 </DialogDescription>
                               </DialogHeader>
                               
                               <div className="space-y-4">
-                                <img
-                                  src={image.signedUrl}
-                                  alt={image.filename}
-                                  className="w-full max-h-96 object-contain rounded-lg"
-                                />
+                                {galleryProtectedImages[image.id] && galleryComparison[image.id] ? (
+                                  <ComparisonSlider
+                                    originalImage={image.signedUrl}
+                                    protectedImage={galleryProtectedImages[image.id]}
+                                    initialPosition={galleryComparisonPosition[image.id] || 50}
+                                    onPositionChange={(pos) => setGalleryComparisonPosition(prev => ({ ...prev, [image.id]: pos }))}
+                                  />
+                                ) : (
+                                  <img
+                                    src={galleryProtectedImages[image.id] || image.signedUrl}
+                                    alt={image.filename}
+                                    className="w-full max-h-96 object-contain rounded-lg"
+                                  />
+                                )}
                                 
                                 <div className="flex gap-2 flex-wrap">
+                                  {!galleryProtectedImages[image.id] ? (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => protectGalleryImage(image)}
+                                      disabled={galleryProcessing[image.id]}
+                                      data-testid={`button-protect-${image.id}`}
+                                    >
+                                      {galleryProcessing[image.id] ? (
+                                        <>
+                                          <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
+                                          Protecting...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Shield className="h-4 w-4 mr-1" />
+                                          Protect Image
+                                        </>
+                                      )}
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => downloadGalleryImage(image)}
+                                      data-testid={`button-download-protected-${image.id}`}
+                                    >
+                                      <Download className="h-4 w-4 mr-1" />
+                                      Download Protected
+                                    </Button>
+                                  )}
                                   <Button
                                     size="sm"
                                     variant="destructive"
