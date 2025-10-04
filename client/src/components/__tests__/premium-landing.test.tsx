@@ -11,6 +11,13 @@ vi.mock("@/hooks/use-metrics", () => ({
   useMetrics: () => mockUseMetrics(),
 }));
 
+// Mock ResizeObserver for test environment
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
 const mountedRoots: Array<{ root: Root; container: HTMLElement }> = [];
 
 function render(ui: React.ReactElement) {

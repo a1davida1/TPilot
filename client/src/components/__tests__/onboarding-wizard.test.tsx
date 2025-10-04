@@ -16,6 +16,13 @@ vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({ toast: toastMock }),
 }));
 
+// Mock ResizeObserver for test environment
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
 const mountedRoots: Array<{ root: Root; container: HTMLElement }> = [];
 
 function render(ui: React.ReactElement) {
