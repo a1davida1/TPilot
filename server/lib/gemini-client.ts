@@ -138,13 +138,56 @@ const createModelAdapter = (modelName: string): GeminiModel => ({
     const response = await client.models.generateContent(
       request as unknown as Parameters<typeof client.models.generateContent>[0]
     );
+    const candidates = Array.isArray((response as { candidates?: unknown }).candidates)
+      ? ((response as { candidates: unknown }).candidates as Array<Record<string, unknown>>)
+      : [];
+
+    if (candidates.length === 0) {
+      throw new Error("Gemini response did not include any candidates");
+    }
+
+    const textSegments: string[] = [];
+
+    for (const candidate of candidates) {
+      if (typeof candidate !== "object" || candidate === null) {
+        continue;
+      }
+
+      const content = "content" in candidate ? (candidate as { content?: unknown }).content : undefined;
+      if (typeof content !== "object" || content === null) {
+        continue;
+      }
+
+      const parts = Array.isArray((content as { parts?: unknown }).parts)
+        ? (((content as { parts?: unknown }).parts ?? []) as Array<Record<string, unknown>>)
+        : [];
+
+      for (const part of parts) {
+        if (typeof part !== "object" || part === null) {
+          continue;
+        }
+
+        const value = "text" in part ? (part as { text?: unknown }).text : undefined;
+        if (typeof value === "string" && value.length > 0) {
+          textSegments.push(value);
+        }
+      }
+    }
+
+    const joinedText = textSegments.join("");
+
+    if (joinedText.trim().length === 0) {
+      throw new Error("Gemini response candidates did not contain text content");
+    }
+
     const legacy: GeminiGenerateContentResponse = {
       ...response,
+      text: joinedText,
       response: {
         ...(typeof response === "object" && response && "response" in response
           ? (response as { response?: Record<string, unknown> }).response
           : undefined),
-        text: () => (response as { text?: string }).text ?? ""
+        text: () => joinedText
       }
     };
     return legacy;
