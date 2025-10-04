@@ -185,7 +185,7 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
           className="w-full md:w-auto bg-gradient-to-r from-emerald-500 to-teal-500 border-0 text-white"
           data-testid="referral-hub-cta"
         >
-          <Link href="/referral">Open referral hub</Link>
+          <Link to="/referral">Open referral hub</Link>
         </Button>
       </CardHeader>
       <CardContent className="text-sm text-emerald-100/80">
