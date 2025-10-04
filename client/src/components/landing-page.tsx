@@ -27,13 +27,16 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ showLoginModal = false, loginModalMode = 'login' }: LandingPageProps) {
-  // TODO: Implement parallax scroll effects
-  const [_scrollY, setScrollY] = useState(0);
+  const [scrollY, setScrollY] = useState(0);
   const [showAuthModal, setShowAuthModal] = useState(showLoginModal);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>(loginModalMode);
   const [, setLocation] = useLocation();
-  // TODO: Display live metrics on landing page
   const { data: metrics, isLoading, isError } = useMetrics();
+  
+  // Calculate parallax offset for hero section (slower scroll)
+  const heroParallaxY = scrollY * 0.5;
+  // Calculate floating effect for badges (oscillating offset)
+  const floatingBadgeOffset = Math.sin(scrollY * 0.01) * 10;
   
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -90,8 +93,12 @@ export function LandingPage({ showLoginModal = false, loginModalMode = 'login' }
 
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600 text-white pt-24 pb-16 px-6 overflow-hidden">
-        {/* Animated Background */}
-        <div className="absolute inset-0">
+        {/* Animated Background with Parallax */}
+        <div 
+          className="absolute inset-0"
+          style={{ transform: `translateY(${heroParallaxY}px)` }}
+          data-testid="hero-parallax-background"
+        >
           <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-yellow-400/10 opacity-60"></div>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.1),transparent_50%)]"></div>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(255,235,59,0.1),transparent_50%)]"></div>
@@ -143,15 +150,21 @@ export function LandingPage({ showLoginModal = false, loginModalMode = 'login' }
             </span>
           </p>
 
-          {/* Enhanced Social Proof */}
-          <div className="flex justify-center gap-6 mb-12 flex-wrap">
+          {/* Enhanced Social Proof with Floating Effect */}
+          <div 
+            className="flex justify-center gap-6 mb-12 flex-wrap"
+            style={{ transform: `translateY(${floatingBadgeOffset}px)` }}
+            data-testid="floating-badges"
+          >
             <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-3 flex items-center gap-3 shadow-xl hover:scale-105 transition-all duration-300">
               <div className="p-2 bg-yellow-400/20 rounded-lg">
                 <Users className="w-5 h-5 text-yellow-200" />
               </div>
               <div>
-                <div className="text-white font-bold text-lg">
-                  {isLoading ? "..." : isError || !metrics ? "—" : metrics.creators.toLocaleString()}
+                <div className="text-white font-bold text-lg" data-testid="metric-creators">
+                  {isLoading ? (
+                    <span className="inline-block w-12 h-5 bg-white/20 rounded animate-pulse" />
+                  ) : isError || !metrics ? "—" : metrics.creators.toLocaleString()}
                 </div>
                 <div className="text-yellow-200 text-sm font-medium">Creators</div>
               </div>
@@ -161,8 +174,10 @@ export function LandingPage({ showLoginModal = false, loginModalMode = 'login' }
                 <TrendingUp className="w-5 h-5 text-pink-200" />
               </div>
               <div>
-                <div className="text-white font-bold text-lg">
-                  {isLoading ? "..." : isError || !metrics ? "—" : metrics.posts.toLocaleString()}
+                <div className="text-white font-bold text-lg" data-testid="metric-posts">
+                  {isLoading ? (
+                    <span className="inline-block w-16 h-5 bg-white/20 rounded animate-pulse" />
+                  ) : isError || !metrics ? "—" : metrics.posts.toLocaleString()}
                 </div>
                 <div className="text-pink-200 text-sm font-medium">Posts Generated</div>
               </div>
@@ -172,8 +187,10 @@ export function LandingPage({ showLoginModal = false, loginModalMode = 'login' }
                 <TrendingUp className="w-5 h-5 text-green-200" />
               </div>
               <div>
-                <div className="text-white font-bold text-lg">
-                  {isLoading ? '...' : isError || !metrics ? '—' : `${metrics.engagement}%`}
+                <div className="text-white font-bold text-lg" data-testid="metric-engagement">
+                  {isLoading ? (
+                    <span className="inline-block w-12 h-5 bg-white/20 rounded animate-pulse" />
+                  ) : isError || !metrics ? '—' : `${metrics.engagement}%`}
                 </div>
                 <div className="text-green-200 text-sm font-medium">Avg Engagement</div>
               </div>
