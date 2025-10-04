@@ -317,6 +317,7 @@ describe('Gemini empty response guards', () => {
     } as unknown as Response);
 
     const { pipeline } = await import('../../../server/caption/geminiPipeline.ts');
+    const { sanitizeFinalVariant } = await import('../../../server/caption/rankGuards.ts');
 
     const result = await pipeline({
       imageUrl: 'https://example.com/image.png',
@@ -324,11 +325,13 @@ describe('Gemini empty response guards', () => {
     });
 
     const captions = result.variants?.map(variant => variant.caption) ?? [];
+    const sanitizedFinal = sanitizeFinalVariant(result.final, 'instagram');
+    const sanitizedVariantCaptions = result.variants?.map(variant => sanitizeFinalVariant(variant, 'instagram').caption) ?? [];
 
     expect(openAIFallback).not.toHaveBeenCalled();
     expect(captions).toEqual(candidateVariants.map(variant => variant.caption));
     expect(result.final).toBeDefined();
-    expect(result.final.caption).toBeTruthy();
+    expect(sanitizedVariantCaptions).toContainEqual(sanitizedFinal.caption);
 
     fetchMock.mockRestore();
   });
@@ -403,22 +406,21 @@ describe('Gemini model adapter resilience', () => {
     vi.resetModules();
   });
 
-  it.skip('resolves with empty text and retains candidates metadata when Gemini returns no candidates', async () => {
-    const generateContent = vi
-      .fn<[input: unknown], Promise<Record<string, unknown>>>()
-      .mockResolvedValue({});
-
+  it('resolves with empty text and retains candidates metadata when Gemini returns no candidates', async () => {
     process.env.GOOGLE_GENAI_API_KEY = 'test-key';
 
-    vi.doMock('@google/genai', () => ({
-      __esModule: true,
-      GoogleGenAI: class {
-        public models = {
-          generateContent,
-        };
-
-        constructor(_options: unknown) {}
+    const generateContent = vi.fn().mockResolvedValue({
+      text: '',
+      candidates: [],
+      response: {
+        text: () => '',
       },
+    });
+
+    const mockGetTextModel = vi.fn().mockReturnValue({ generateContent });
+
+    vi.doMock('../../../server/lib/gemini-client', () => ({
+      getTextModel: mockGetTextModel,
     }));
 
     vi.resetModules();
@@ -446,7 +448,9 @@ describe('Gemini model adapter resilience', () => {
     }
   });
 
-  it.skip('preserves API candidate payloads when provided', async () => {
+  it('preserves API candidate payloads when provided', async () => {
+    process.env.GOOGLE_GENAI_API_KEY = 'test-key';
+
     type GeminiCandidate = {
       content?: {
         parts?: Array<{ text?: string }>;
@@ -462,21 +466,15 @@ describe('Gemini model adapter resilience', () => {
       },
     ];
 
-    const generateContent = vi
-      .fn<[input: unknown], Promise<Record<string, unknown>>>()
-      .mockResolvedValue({ candidates: candidatePayload });
+    const generateContent = vi.fn().mockResolvedValue({
+      text: 'Primary content',
+      candidates: candidatePayload,
+    });
 
-    process.env.GOOGLE_GENAI_API_KEY = 'test-key';
+    const mockGetTextModel = vi.fn().mockReturnValue({ generateContent });
 
-    vi.doMock('@google/genai', () => ({
-      __esModule: true,
-      GoogleGenAI: class {
-        public models = {
-          generateContent,
-        };
-
-        constructor(_options: unknown) {}
-      },
+    vi.doMock('../../../server/lib/gemini-client', () => ({
+      getTextModel: mockGetTextModel,
     }));
 
     vi.resetModules();
