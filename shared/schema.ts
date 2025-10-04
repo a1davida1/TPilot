@@ -793,6 +793,7 @@ export const insertOnboardingStateSchema = z.object({
   completedSteps: z.array(z.string()).optional(),
   isMinimized: z.boolean().optional(),
   isDismissed: z.boolean().optional()
+});
 export const insertUserImageSchema = createInsertSchema(userImages);
 export const insertLeadSchema = createInsertSchema(leads);
 export const insertVerificationTokenSchema = createInsertSchema(verificationTokens);
