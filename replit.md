@@ -29,13 +29,20 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 - **Accessibility**: WCAG AA compliance enforced.
 - **Testing**: Vanilla Vitest pattern with react-dom/client and act() - NOT @testing-library/react. All components using react-query hooks must be wrapped with QueryClientProvider in tests.
 - **Landing Page**: Parallax scrollY effects with framer-motion, skeleton loading states for metrics, expandable Getting Started accordion with Radix UI Accordion components.
-- **Onboarding**: Accordion-based step expansion in Getting Started component with useOnboardingState hook for persistence via TanStack Query mutations.
+- **Onboarding**: Comprehensive onboarding system with multiple features:
+  - **UserOnboarding Component**: Interactive tutorial system with reset, skip, and complete handlers. Toast notifications for user feedback. LocalStorage persistence for progress tracking.
+  - **Onboarding Walkthrough**: User-specific progress persistence using localStorage with restart functionality. Accessible navigation with keyboard support and focus management.
+  - **Walkthrough Replay**: Available in header dropdown menu for authenticated users on dashboard and settings pages.
 
 ## Backend Architecture
 - **Server Framework**: Express.js with TypeScript on Node.js.
 - **API Design**: RESTful API.
 - **Data Storage**: PostgreSQL.
-- **Content Generation**: Advanced template-based content generator for social media platforms and subreddit rules.
+- **Content Generation**: Advanced template-based content generator with enhanced features:
+  - Timing-based optimization (morning, evening, late) with sessionStorage persistence
+  - Copy counter with feedback tracking
+  - Platform, style, and theme selection
+  - Subreddit promotion rule compliance
 - **Session Management**: Express sessions with PostgreSQL-backed storage.
 - **System Design Choices**: Smart 4090 architecture for batch processing (ImageShield preprocessing, Content Engine generation, Voice Clone library creation). Unified content creator with dual workflow (Text-First, Image-First) and tier-based access. Queue provider abstraction.
 
@@ -65,6 +72,17 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 - **Watermark System**: Tiered watermarking for free users.
 - **Comparison Slider**: Interactive before/after image comparison with draggable divider for visual quality verification.
 - **Components**: ComparisonSlider (reusable component), ImageShield, ImageProtector, and ImageShieldUnified with gallery view for Pro users.
+
+## Community Management
+- **Engagement Tracking**: Toggle-based engagement monitoring with 7-day metrics visualization
+- **Advanced Filtering**: Multi-dimensional filtering by sentiment (positive, neutral, negative) and priority (high, medium, low)
+- **Real-time Metrics**: Visual bar charts showing daily engagement trends
+- **Smart Responses**: Auto-reply system with sentiment analysis
+
+## Modern Dashboard Enhancements
+- **Mobile Detection**: Automatic layout adaptation based on viewport width (<768px)
+- **File Upload**: Secure image upload with validation (type checking, 10MB size limit, progress feedback)
+- **Responsive Design**: Optimized for both mobile and desktop experiences
 
 ## Pro Resources & Referral System
 - **Referral Code Generation**: Pro users can generate unique referral codes for each perk via POST /api/pro-resources/:id/referral-code.
