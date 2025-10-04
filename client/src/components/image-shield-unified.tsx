@@ -60,6 +60,7 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
   const [comparisonPosition, setComparisonPosition] = useState(50);
   const [dragActive, setDragActive] = useState(false);
   const [selectedImage, setSelectedImage] = useState<MediaAsset | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('protect');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -67,6 +68,12 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
 
   const isProUser = userTier === 'pro';
   const showGallery = isProUser;
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setShowComparison(false);
+    setComparisonPosition(50);
+  };
 
   // Authenticated API request helper
   const authenticatedRequest = async (url: string, method: string = 'GET', data?: unknown) => {
@@ -338,7 +345,7 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
       </Card>
 
       {/* Tab Layout */}
-      <Tabs defaultValue="protect" className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="protect">
             <Shield className="h-4 w-4 mr-2" />

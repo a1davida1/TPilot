@@ -59,6 +59,14 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 - **Client-Side Processing**: Browser-based manipulation using HTML5 Canvas.
 - **Preset Configurations**: Light, standard, and heavy protection levels.
 - **Watermark System**: Tiered watermarking for free users.
+- **Comparison Slider**: Interactive before/after image comparison with draggable divider for visual quality verification.
+- **Components**: ComparisonSlider (reusable component), ImageShield, ImageProtector, and ImageShieldUnified with gallery view for Pro users.
+
+## Pro Resources & Referral System
+- **Referral Code Generation**: Pro users can generate unique referral codes for each perk via POST /api/pro-resources/:id/referral-code.
+- **Per-Perk Caching**: Efficient code retrieval with TanStack Query cache invalidation.
+- **Copy-to-Clipboard**: One-click code copying with toast notifications.
+- **Authentication & Tier Validation**: Endpoint includes authentication middleware and tier checking.
 
 # External Dependencies
 

@@ -216,4 +216,18 @@ describe("ImageShieldUnified", () => {
     expect(protectInput).toBeTruthy();
     expect(galleryInput).toBeTruthy();
   });
+
+  it("has tab switching capability to reset state", () => {
+    act(() => {
+      root.render(<ImageShieldUnified userTier="pro" />);
+    });
+
+    const protectTab = container.querySelector('[data-tab-trigger="protect"]');
+    const galleryTab = container.querySelector('[data-tab-trigger="gallery"]');
+
+    expect(protectTab).toBeTruthy();
+    expect(galleryTab).toBeTruthy();
+    expect(container.textContent).toContain("Image Protection");
+    expect(container.textContent).toContain("Image Gallery");
+  });
 });
