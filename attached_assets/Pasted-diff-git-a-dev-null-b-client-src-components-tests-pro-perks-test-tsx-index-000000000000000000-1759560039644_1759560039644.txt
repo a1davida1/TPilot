@@ -1,0 +1,190 @@
+diff --git a//dev/null b/client/src/components/__tests__/pro-perks.test.tsx
+index 0000000000000000000000000000000000000000..7d62333adff78cbad51a03c7276235986024556f 100644
+--- a//dev/null
++++ b/client/src/components/__tests__/pro-perks.test.tsx
+@@ -0,0 +1,185 @@
++import React from "react";
++import { describe, it, beforeEach, afterEach, expect, vi } from "vitest";
++import { act } from "react-dom/test-utils";
++import { createRoot } from "react-dom/client";
++import type { Root } from "react-dom/client";
++
++import { ProPerks } from "../pro-perks";
++
++type ProPerkCategory = "affiliate" | "integration" | "tools" | "community" | "pro";
++type ProPerkStatus = "available" | "application-required" | "coming-soon";
++
++type ProPerk = {
++  id: string;
++  name: string;
++  category: ProPerkCategory;
++  tier: "starter" | "pro";
++  description: string;
++  commissionRate?: string;
++  requirements?: string[];
++  signupProcess: string;
++  estimatedEarnings: string;
++  status: ProPerkStatus;
++  officialLink?: string;
++  features: string[];
++};
++
++type UseQueryOptions = {
++  queryKey: unknown[];
++  queryFn: () => Promise<unknown>;
++};
++
++type UseQueryResult = {
++  data?: { perks: ProPerk[]; accessGranted: boolean };
++  isLoading: boolean;
++  isError: boolean;
++};
++
++const useQueryMock = vi.fn<[UseQueryOptions], UseQueryResult>();
++const toastMock = vi.fn();
++
++vi.mock("@tanstack/react-query", () => ({
++  useQuery: (options: UseQueryOptions) => useQueryMock(options),
++}));
++
++vi.mock("@/hooks/use-toast", () => ({
++  useToast: () => ({ toast: toastMock }),
++}));
++
++vi.mock("@/components/ui/card", () => ({
++  Card: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
++  CardContent: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
++  CardDescription: ({ children, ...props }: React.HTMLAttributes<HTMLParagraphElement>) => <p {...props}>{children}</p>,
++  CardHeader: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
++  CardTitle: ({ children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => <h2 {...props}>{children}</h2>,
++}));
++
++vi.mock("@/components/ui/button", () => ({
++  Button: ({ children, asChild: _asChild, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }) => (
++    <button type="button" {...props}>
++      {children}
++    </button>
++  ),
++}));
++
++vi.mock("@/components/ui/badge", () => ({
++  Badge: ({ children, ...props }: React.HTMLAttributes<HTMLSpanElement>) => <span {...props}>{children}</span>,
++}));
++
++vi.mock("@/components/ui/input", () => ({
++  Input: ({ value, onChange, ...props }: React.InputHTMLAttributes<HTMLInputElement>) => (
++    <input value={value} onChange={onChange} {...props} />
++  ),
++}));
++
++vi.mock("@/components/ui/dialog", () => ({
++  Dialog: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
++  DialogContent: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
++  DialogDescription: ({ children, ...props }: React.HTMLAttributes<HTMLParagraphElement>) => <p {...props}>{children}</p>,
++  DialogHeader: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
++  DialogTitle: ({ children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => <h3 {...props}>{children}</h3>,
++}));
++
++vi.mock("lucide-react", () => ({
++  Gift: () => <span />, 
++  Search: () => <span />, 
++  Sparkles: () => <span />, 
++  CheckCircle: () => <span />, 
++  Users: () => <span />, 
++  ExternalLink: () => <span />, 
++  Shield: () => <span />, 
++  Clock: () => <span />, 
++  Eye: () => <span />, 
++  Info: () => <span />, 
++  Loader2: () => <span />, 
++  Globe: () => <span />, 
++  BookOpen: () => <span />, 
++  Percent: () => <span />, 
++  Star: () => <span />, 
++  DollarSign: () => <span />,
++}));
++
++vi.mock("next/link", () => ({
++  default: ({ href, children }: { href: string; children: React.ReactNode }) => (
++    <a href={href}>{children}</a>
++  ),
++}));
++
++describe("ProPerks referral management", () => {
++  let container: HTMLDivElement;
++  let root: Root;
++  const fetchMock = vi.fn<[RequestInfo | URL, RequestInit?], Promise<Response>>();
++
++  const perk: ProPerk = {
++    id: "alpha",
++    name: "Alpha Affiliate",
++    category: "affiliate",
++    tier: "pro",
++    description: "Earn recurring revenue.",
++    commissionRate: "20% recurring",
++    requirements: ["Active subscriber list"],
++    signupProcess: "Apply online",
++    estimatedEarnings: "$500/mo",
++    status: "available",
++    officialLink: "https://example.com",
++    features: ["High conversion", "Dedicated support"],
++  };
++
++  beforeEach(() => {
++    container = document.createElement("div");
++    document.body.appendChild(container);
++    root = createRoot(container);
++
++    fetchMock.mockResolvedValue(
++      new Response(
++        JSON.stringify({
++          instructions: {
++            steps: ["Apply"],
++            requirements: ["Pro membership"],
++            timeline: "24 hours",
++            support: "support@example.com",
++          },
++        }),
++        {
++          status: 200,
++          headers: { "Content-Type": "application/json" },
++        },
++      ),
++    );
++    vi.stubGlobal("fetch", fetchMock);
++
++    useQueryMock.mockReturnValue({
++      data: { perks: [perk], accessGranted: true },
++      isLoading: false,
++      isError: false,
++    });
++  });
++
++  afterEach(() => {
++    act(() => {
++      root.unmount();
++    });
++    container.remove();
++    useQueryMock.mockReset();
++    fetchMock.mockReset();
++    vi.unstubAllGlobals();
++  });
++
++  it("renders a link to the referral dashboard inside the perk dialog", async () => {
++    await act(async () => {
++      root.render(<ProPerks userTier="pro" />);
++    });
++
++    const card = container.querySelector('[data-testid="perk-card-alpha"]');
++    expect(card).not.toBeNull();
++
++    await act(async () => {
++      card?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
++    });
++
++    const link = container.querySelector('a[href="/referral"]');
++
++    expect(link).not.toBeNull();
++    expect(link?.textContent).toContain("Manage your referral program");
++  });
++});
