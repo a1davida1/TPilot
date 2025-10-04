@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import {
   Camera,
@@ -73,7 +74,7 @@ export function IntegratedFineTuning() {
   });
 
   // Fetch user preferences from API
-  const { data: userPrefs } = useQuery<UserPreferences>({
+  const { data: userPrefs, isLoading: isLoadingPrefs } = useQuery<UserPreferences>({
     queryKey: ["/api/user-preferences"],
     retry: false,
   });
@@ -180,6 +181,28 @@ export function IntegratedFineTuning() {
     if (value < 66) return "Medium";
     return "High";
   };
+
+  if (isLoadingPrefs) {
+    return (
+      <Card className="w-full bg-gray-900/50 backdrop-blur-xl border-white/10">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-purple-400" />
+            Integrated Personalization Studio
+          </CardTitle>
+          <CardDescription className="text-gray-400">
+            Loading your preferences...
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-12 w-32" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full bg-gray-900/50 backdrop-blur-xl border-white/10">
