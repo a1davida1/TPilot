@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import { useState, useCallback, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -161,6 +162,36 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
   const perks = data?.perks ?? [];
   const hasAccess = data?.accessGranted ?? false;
 
+  const referralDescription = hasAccess
+    ? "Invite other creators to unlock Pro perks and earn recurring revenue from every upgrade."
+    : "Share ThottoPilot with your audience and earn payouts whenever someone you refer goes Pro.";
+
+  const referralCta = (
+    <Card className="bg-gradient-to-br from-emerald-900/20 to-teal-900/10 border-emerald-500/30">
+      <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-2">
+          <CardTitle className="flex items-center gap-2 text-emerald-300">
+            <Users className="h-5 w-5" />
+            Referral Hub
+          </CardTitle>
+          <CardDescription className="text-gray-300">
+            {referralDescription}
+          </CardDescription>
+        </div>
+        <Button
+          asChild
+          className="w-full md:w-auto bg-gradient-to-r from-emerald-500 to-teal-500 border-0 text-white"
+          data-testid="referral-hub-cta"
+        >
+          <Link href="/referral">Open referral hub</Link>
+        </Button>
+      </CardHeader>
+      <CardContent className="text-sm text-emerald-100/80">
+        <p>Track signups, campaign assets, and payouts in one dashboard designed for affiliates.</p>
+      </CardContent>
+    </Card>
+  );
+
   const categories = useMemo(() => {
     const uniqueCategories = new Set<ProPerk["category"]>(perks.map((perk) => perk.category));
     const baseCategory = {
@@ -269,41 +300,50 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
   // Show empty state when no resources available or no access
   if (!isLoading && (!hasAccess || perks.length === 0)) {
     return (
-      <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Gift className="h-5 w-5 text-purple-400" />
-            Pro Perks & Resources
-          </CardTitle>
-          <CardDescription>
-            {!hasAccess 
-              ? "Upgrade to Pro to access exclusive affiliate programs and monetization tools"
-              : "Exclusive resources and discounts for Pro users"
-            }
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <Gift className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-400">
-              {!hasAccess ? "Pro subscription required" : "Resources coming soon!"}
-            </p>
-            <p className="text-sm text-gray-500 mt-2">
-              {!hasAccess 
-                ? "Unlock access to high-value affiliate programs and monetization tools"
-                : "We're partnering with top platforms to bring you exclusive opportunities"
+      <div className="space-y-6">
+        {referralCta}
+        <Card className="bg-gray-900/50 backdrop-blur-xl border-white/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Gift className="h-5 w-5 text-purple-400" />
+              Pro Perks & Resources
+            </CardTitle>
+            <CardDescription>
+              {!hasAccess
+                ? "Upgrade to Pro to access exclusive affiliate programs and monetization tools"
+                : "Exclusive resources and discounts for Pro users"
               }
-            </p>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8">
+              <Gift className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-400">
+                {!hasAccess ? "Pro subscription required" : "Resources coming soon!"}
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                {!hasAccess
+                  ? "Unlock access to high-value affiliate programs and monetization tools"
+                  : "We're partnering with top platforms to bring you exclusive opportunities"
+                }
+              </p>
+              {!hasAccess && (
+                <Button className="mt-4 bg-gradient-to-r from-purple-500 to-pink-500">
+                  Upgrade to Pro
+                </Button>
+              )}
+            </div>
             {!hasAccess && (
-              <Button className="mt-4 bg-gradient-to-r from-purple-500 to-pink-500">
-                Upgrade to Pro
-              </Button>
+              <p className="text-sm text-gray-500 mt-6">
+                Prefer to stay on the free plan? Share ThottoPilot using the referral hub above and still earn payouts.
+              </p>
             )}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
+
 
   if (isLoading) {
     return (
@@ -343,6 +383,8 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
           </div>
         </CardHeader>
       </Card>
+
+      {referralCta}
 
       {/* Stats Cards */}
       <div className="grid md:grid-cols-3 gap-4">
