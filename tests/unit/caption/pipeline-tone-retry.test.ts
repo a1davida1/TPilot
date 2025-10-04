@@ -70,8 +70,32 @@ function extractVariantPromptEnvelopes(mockCalls: any[][]) {
       return '';
     })
     .filter(text => text && typeof text === 'string')
+    .filter(text => !text.includes('Rank the 5'))
     .map(text => {
       try {
+        let bracketDepth = 0;
+        let jsonStart = -1;
+        let jsonEnd = -1;
+        
+        for (let i = 0; i < text.length; i++) {
+          if (text[i] === '{') {
+            if (bracketDepth === 0) jsonStart = i;
+            bracketDepth++;
+          } else if (text[i] === '}') {
+            bracketDepth--;
+            if (bracketDepth === 0 && jsonStart !== -1) {
+              jsonEnd = i;
+              const jsonStr = text.substring(jsonStart, jsonEnd + 1);
+              if (jsonStr.includes('"platform"') || jsonStr.includes('"voice"')) {
+                const parsed = JSON.parse(jsonStr);
+                if (parsed.platform || parsed.voice) {
+                  return parsed;
+                }
+              }
+            }
+          }
+        }
+        
         const lines = text.split('\n');
         const envelope: Record<string, string> = {};
         let hasRequiredFields = false;
