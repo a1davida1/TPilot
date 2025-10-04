@@ -16,6 +16,7 @@ import { validate, loginValidationSchema, signupValidationSchema, passwordChange
 import { extractAuthToken } from './middleware/extract-token.js';
 import { API_PREFIX, prefixApiPath } from './lib/api-prefix.js';
 import { assertExists } from '../helpers/assert';
+import { getCookieConfig } from './utils/cookie-config.js';
 
 // Auth validation schemas removed - handled by middleware
 
@@ -764,8 +765,9 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
       // Hard delete for now (soft delete requires schema changes)
       await storage.deleteUser(userId);
 
-      // Clear auth cookie
-      res.clearCookie('authToken');
+      // Clear auth cookie using centralized config
+      const cfg = getCookieConfig();
+      cfg.clear(res, cfg.authName);
 
       res.json({ message: 'Account deleted successfully' });
     } catch (error) {
@@ -805,6 +807,37 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
     } catch (error) {
       safeLog('error', 'Admin metrics error:', { error: (error as Error).message });
       res.status(500).json({ error: 'Error fetching metrics' });
+    }
+  });
+
+  // Logout endpoint
+  app.post(route('/auth/logout'), async (req: Request, res: Response) => {
+    try {
+      const cfg = getCookieConfig();
+      
+      // Clear session cookie
+      cfg.clear(res, cfg.sessionName);
+      
+      // Clear auth token cookie
+      cfg.clear(res, cfg.authName);
+      
+      // Destroy session if exists
+      if (req.session) {
+        req.session.destroy((err) => {
+          if (err) {
+            logger.error('Session destroy error', { error: err });
+          }
+        });
+      }
+      
+      return res.status(204).end();
+    } catch (error) {
+      logger.error('Logout error', { error: error instanceof Error ? error.message : String(error) });
+      // Even on error, try to clear cookies
+      const cfg = getCookieConfig();
+      cfg.clear(res, cfg.sessionName);
+      cfg.clear(res, cfg.authName);
+      return res.status(204).end();
     }
   });
 

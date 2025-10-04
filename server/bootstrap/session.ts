@@ -7,6 +7,7 @@ import createMemoryStore from 'memorystore';
 import type { Store } from 'express-session';
 import type { Redis as RedisClient } from 'ioredis';
 import { logger } from './logger.js';
+import { getCookieConfig } from '../utils/cookie-config.js';
 
 const ONE_DAY_MS = 86_400_000;
 
@@ -75,15 +76,18 @@ export function createSessionMiddleware(): ReturnType<typeof session> {
   const redisUrl = process.env.REDIS_URL;
   const usePgQueue = parseBoolean(process.env.USE_PG_QUEUE);
 
-  const { name: sessionName, cookie } = getSessionCookieConfig();
+  const cfg = getCookieConfig();
 
   const sessionOptions: session.SessionOptions = {
-    name: sessionName,
+    name: cfg.sessionName,
     secret,
     resave: false,
     saveUninitialized: false,
     rolling: true,
-    cookie,
+    cookie: {
+      ...cfg.options,
+      maxAge: parseInteger(process.env.SESSION_MAX_AGE_MS, ONE_DAY_MS * 7),
+    },
   };
 
   if (redisUrl) {

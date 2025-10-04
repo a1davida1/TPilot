@@ -1,0 +1,84 @@
+You are editing a Node/Express repo. Implement a single source of truth for session cookies and fix logout.
+
+Goals
+1) Create a central cookie config so set/clear use identical attributes.
+2) Make all logout paths delete the actual session cookie.
+3) Do NOT include maxAge/expires when clearing. Keep sameSite=lax in prod.
+
+Changes
+A) Add file: server/utils/cookie-config.ts
+------------------------------------------
+import type { Response } from "express";
+import type { CookieOptions } from "express-serve-static-core";
+
+export const getCookieConfig = () => {
+  const isProd = process.env.NODE_ENV === "production";
+  const domain = process.env.SESSION_COOKIE_DOMAIN;
+  const sessionName = process.env.SESSION_COOKIE_NAME || "tpilot.sid";
+
+  const options: CookieOptions = {
+    path: "/",
+    httpOnly: true,
+    secure: isProd,
+    sameSite: "lax",
+    ...(domain ? { domain } : {}),
+  };
+
+  const clear = (res: Response, name = sessionName, opts: CookieOptions = options) => {
+    // do NOT include maxAge/expires when clearing
+    res.clearCookie(name, opts);
+  };
+
+  return { sessionName, authName: "authToken", options, clear };
+};
+
+B) Use it where the session middleware is created (e.g., server/session.ts or server/index.ts)
+---------------------------------------------------------------------------------------------
+- Import getCookieConfig.
+- Pass { name: cfg.sessionName, cookie: cfg.options } into session({ ... }).
+- Remove any hard-coded cookie name/domain/secure/sameSite here.
+
+C) Update server/routes/auth.ts logout handler
+----------------------------------------------
+- Import getCookieConfig and build cfg = getCookieConfig().
+- Replace any res.clearCookie("connect.sid"...), res.clearCookie("thottopilot.sid"...), or hard-coded names.
+- Do:
+  cfg.clear(res, cfg.sessionName);
+  cfg.clear(res, cfg.authName);
+  req.session?.destroy(() => {});
+  return res.status(204).end();
+
+D) Update server/social-auth.ts (or similar) logout/ failure handlers
+---------------------------------------------------------------------
+- Delete local clearSessionCookie helper.
+- Import getCookieConfig and use cfg.clear(res, cfg.sessionName) and cfg.clear(res, cfg.authName).
+
+E) Repo-wide cleanups
+---------------------
+- Grep for clearCookie( and replace with cfg.clear(...) where appropriate.
+- Grep for "connect.sid" or "thottopilot.sid" and replace with cfg.sessionName.
+
+F) Client
+---------
+- Ensure logout calls POST /api/auth/logout with credentials: "include", then hard-redirect to /login:
+  await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+  window.location.replace("/login");
+
+Env
+---
+- Optionally set:
+  SESSION_COOKIE_NAME=tpilot.sid
+  SESSION_COOKIE_DOMAIN=thottopilot.com
+- Do not switch sameSite to "strict" in prod.
+
+Acceptance checks
+-----------------
+1) In devtools → Application → Cookies, click Logout. Cookie named tpilot.sid disappears.
+2) Network shows 204 on POST /api/auth/logout.
+3) Browser lands on /login and /dashboard requires login again.
+
+Run
+---
+npm run typecheck
+npm run build
+npm start

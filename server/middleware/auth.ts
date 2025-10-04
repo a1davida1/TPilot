@@ -5,6 +5,7 @@ import { db } from '../db.js';
 import { users } from '@shared/schema';
 import { isTokenBlacklisted } from '../lib/tokenBlacklist';
 import { getAdminCredentials } from '../lib/admin-auth.js';
+import { getCookieConfig } from '../utils/cookie-config.js';
 
 import { eq } from 'drizzle-orm';
 
@@ -12,9 +13,8 @@ const EMAIL_NOT_VERIFIED_RESPONSE = (
   res: express.Response,
   email: string
 ) => {
-  if (typeof res.clearCookie === 'function') {
-    res.clearCookie('authToken');
-  }
+  const cfg = getCookieConfig();
+  cfg.clear(res, cfg.authName);
 
   return res.status(403).json({
     message: 'Email not verified. Please check your email or resend verification.',
@@ -24,9 +24,8 @@ const EMAIL_NOT_VERIFIED_RESPONSE = (
 };
 
 const clearAuthTokenCookie = (res: express.Response) => {
-  if (typeof res.clearCookie === 'function') {
-    res.clearCookie('authToken');
-  }
+  const cfg = getCookieConfig();
+  cfg.clear(res, cfg.authName);
 };
 
 const respondWithStatus = <Body extends Record<string, unknown>>(
@@ -194,7 +193,8 @@ const createAuthenticateTokenMiddleware = (required: boolean): AuthMiddleware =>
       }
 
       if (await isTokenBlacklisted(token)) {
-        res.clearCookie('authToken', cookieOpts);
+        const cfg = getCookieConfig();
+        cfg.clear(res, cfg.authName);
         if (required) {
           return res.status(401).json({ error: 'Token revoked' });
         }
@@ -206,7 +206,8 @@ const createAuthenticateTokenMiddleware = (required: boolean): AuthMiddleware =>
         const userId = decoded.userId || decoded.id;
 
         if (!userId) {
-          res.clearCookie('authToken', cookieOpts);
+          const cfg = getCookieConfig();
+          cfg.clear(res, cfg.authName);
           if (required) {
             return res.status(401).json({ error: 'Invalid token: missing user ID' });
           }
@@ -216,7 +217,8 @@ const createAuthenticateTokenMiddleware = (required: boolean): AuthMiddleware =>
         const [user] = await db.select().from(users).where(eq(users.id, userId));
 
         if (!user) {
-          res.clearCookie('authToken', cookieOpts);
+          const cfg = getCookieConfig();
+          cfg.clear(res, cfg.authName);
           if (required) {
             return res.status(401).json({ error: 'User not found' });
           }
@@ -236,7 +238,8 @@ const createAuthenticateTokenMiddleware = (required: boolean): AuthMiddleware =>
         return next();
       } catch (error) {
         logger.error('Auth error:', error);
-        res.clearCookie('authToken', cookieOpts);
+        const cfg = getCookieConfig();
+        cfg.clear(res, cfg.authName);
         if (required) {
           return res.status(401).json({ error: 'Invalid or expired token' });
         }

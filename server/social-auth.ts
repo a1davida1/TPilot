@@ -1,7 +1,7 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as FacebookStrategy } from 'passport-facebook';
-import { Strategy as RedditStrategy } from 'passport-reddit';
+import { createRequire } from 'module';
 import type { CookieOptions, Express, NextFunction, Request, Response } from 'express';
 import type { AuthenticateOptions } from 'passport';
 import type { User } from '@shared/schema';
@@ -11,8 +11,13 @@ import { blacklistToken } from './lib/tokenBlacklist';
 import { logger } from './bootstrap/logger';
 import { API_PREFIX, prefixApiPath } from './lib/api-prefix.js';
 import { createToken } from './middleware/auth.js';
-import { getSessionCookieConfig } from './bootstrap/session.js';
+import { getCookieConfig } from './utils/cookie-config.js';
 
+const require = createRequire(import.meta.url);
+const { Strategy: RedditStrategy } =
+  require('passport-reddit/lib/passport-reddit/index.js') as {
+    Strategy: typeof import('passport-reddit/lib/passport-reddit/index.js')['Strategy'];
+  };
 type RedditAuthenticateOptions = AuthenticateOptions & {
   state?: string;
   duration?: 'temporary' | 'permanent';
@@ -23,26 +28,17 @@ const redditCallbackOptions: RedditAuthenticateOptions = {
   // Note: No successRedirect - we handle cookie + redirect in the callback handler
 };
 
-  const clearSessionCookie = (res: Response): void => {
-  const { name, cookie } = getSessionCookieConfig();
-  const cookieOptions: CookieOptions = {
-    path: cookie.path ?? '/',
-    httpOnly: cookie.httpOnly ?? true,
-  };
-
-  if (typeof cookie.sameSite !== 'undefined') {
-    cookieOptions.sameSite = cookie.sameSite;
-  }
-
-  if (typeof cookie.secure !== 'undefined') {
-    cookieOptions.secure = cookie.secure;
-  }
-
-  if (cookie.domain) {
-    cookieOptions.domain = cookie.domain;
-  }
-
-  res.clearCookie(name, cookieOptions);
+// Helper function to set auth cookie (for OAuth callbacks)
+const setAuthCookie = (res: Response, token: string): void => {
+  const isProd = process.env.NODE_ENV === 'production';
+  // OAuth requires sameSite: 'none' for third-party redirects
+  res.cookie('authToken', token, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: 'none',
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    path: '/'
+  });
 };
 
 export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
@@ -283,108 +279,7 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
     }
   );
 
-  // Logout with comprehensive error handling
-  app.post(route('/auth/logout'), async (req: Request, res: Response) => {
-    const r = req as Request & {
-      session?: { destroy?: (cb: (err?: unknown) => void) => void };
-      logout?: (cb: (err?: unknown) => void) => void;
-    };
-    try {
-      // Check if session exists first
-      if (!r.session) {
-        // No session, just clear cookies and return success
-        clearSessionCookie(res);
-        res.clearCookie('authToken', getAuthCookieOptions());
-        const authHeader = req.headers['authorization'];
-        const token = authHeader?.split(' ')[1] || req.cookies?.authToken;
-        if (token) {
-          const decoded = jwt.decode(token) as { exp?: number } | null;
-          const ttl = decoded?.exp ? decoded.exp - Math.floor(Date.now() / 1000) : 86400;
-          await blacklistToken(token, ttl);
-        }
-        return res.json({ message: 'Logged out successfully' });
-      }
-
-      // If using Passport and session exists
-      if (r.logout) {
-        r.logout(async (err) => {
-          if (err) {
-            logger.error('Passport logout error', { error: err instanceof Error ? err.message : String(err) });
-            // Continue with logout anyway
-          }
-          
-          // Destroy session if it exists
-          if (r.session && r.session.destroy) {
-            r.session.destroy(async (destroyErr) => {
-              if (destroyErr) {
-                logger.error('Session destroy error', { error: destroyErr instanceof Error ? destroyErr.message : String(destroyErr) });
-              }
-              // Clear cookies regardless
-              clearSessionCookie(res);
-              res.clearCookie('authToken', getAuthCookieOptions());
-              const authHeader = req.headers['authorization'];
-              const token = authHeader?.split(' ')[1] || req.cookies?.authToken;
-              if (token) {
-                const decoded = jwt.decode(token) as { exp?: number } | null;
-                const ttl = decoded?.exp ? decoded.exp - Math.floor(Date.now() / 1000) : 86400;
-                await blacklistToken(token, ttl);
-              }
-              res.json({ message: 'Logged out successfully' });
-            });
-          } else {
-            // No session.destroy, just clear cookies
-            clearSessionCookie(res);
-            res.clearCookie('authToken', getAuthCookieOptions());
-            const authHeader = req.headers['authorization'];
-            const token = authHeader?.split(' ')[1] || req.cookies?.authToken;
-            if (token) {
-              const decoded = jwt.decode(token) as { exp?: number } | null;
-              const ttl = decoded?.exp ? decoded.exp - Math.floor(Date.now() / 1000) : 86400;
-              await blacklistToken(token, ttl);
-            }
-            res.json({ message: 'Logged out successfully' });
-          }
-        });
-      } else {
-        // No passport logout, destroy session directly
-        if (r.session && r.session.destroy) {
-          r.session.destroy(async (err) => {
-            if (err) {
-              logger.error('Session destroy error', { error: err instanceof Error ? err.message : String(err) });
-            }
-            clearSessionCookie(res);
-            res.clearCookie('authToken', getAuthCookieOptions());
-            const authHeader = req.headers['authorization'];
-            const token = authHeader?.split(' ')[1] || req.cookies?.authToken;
-            if (token) {
-              const decoded = jwt.decode(token) as { exp?: number } | null;
-              const ttl = decoded?.exp ? decoded.exp - Math.floor(Date.now() / 1000) : 86400;
-              await blacklistToken(token, ttl);
-            }
-            res.json({ message: 'Logged out successfully' });
-          });
-        } else {
-          // Just clear cookies
-          clearSessionCookie(res);
-          res.clearCookie('authToken', getAuthCookieOptions());
-          const authHeader = req.headers['authorization'];
-          const token = authHeader?.split(' ')[1] || req.cookies?.authToken;
-          if (token) {
-            const decoded = jwt.decode(token) as { exp?: number } | null;
-            const ttl = decoded?.exp ? decoded.exp - Math.floor(Date.now() / 1000) : 86400;
-            await blacklistToken(token, ttl);
-          }
-          res.json({ message: 'Logged out successfully' });
-        }
-      }
-    } catch (error) {
-      logger.error('Logout error', { error: error instanceof Error ? (error as Error).message : String(error) });
-      // Even on error, clear cookies to help user
-      clearSessionCookie(res);
-      res.clearCookie('authToken', getAuthCookieOptions());
-      res.json({ message: 'Logged out (with errors)' });
-    }
-  });
+  // Logout endpoint removed - now handled in server/auth.ts
 
   // Get current user - REMOVED: Duplicate endpoint
   // The main /api/auth/user endpoint is handled in server/auth.ts with JWT support
