@@ -138,14 +138,10 @@ const createModelAdapter = (modelName: string): GeminiModel => ({
     const response = await client.models.generateContent(
       request as unknown as Parameters<typeof client.models.generateContent>[0]
     );
-    const candidates = Array.isArray((response as { candidates?: unknown }).candidates)
-      ? ((response as { candidates: unknown }).candidates as Array<Record<string, unknown>>)
+    const rawCandidateMetadata = (response as { candidates?: unknown }).candidates;
+    const candidates = Array.isArray(rawCandidateMetadata)
+      ? (rawCandidateMetadata as Array<Record<string, unknown>>)
       : [];
-
-    if (candidates.length === 0) {
-      throw new Error("Gemini response did not include any candidates");
-    }
-
     const textSegments: string[] = [];
 
     for (const candidate of candidates) {
@@ -153,7 +149,19 @@ const createModelAdapter = (modelName: string): GeminiModel => ({
         continue;
       }
 
+      const directCandidateText =
+        "text" in candidate ? (candidate as { text?: unknown }).text : undefined;
+
+      if (typeof directCandidateText === "string" && directCandidateText.length > 0) {
+        textSegments.push(directCandidateText);
+      }
+
       const content = "content" in candidate ? (candidate as { content?: unknown }).content : undefined;
+      if (typeof content === "string" && content.length > 0) {
+        textSegments.push(content);
+        continue;
+      }
+
       if (typeof content !== "object" || content === null) {
         continue;
       }
@@ -175,19 +183,22 @@ const createModelAdapter = (modelName: string): GeminiModel => ({
     }
 
     const joinedText = textSegments.join("");
-
-    if (joinedText.trim().length === 0) {
-      throw new Error("Gemini response candidates did not contain text content");
-    }
+    const fallbackText =
+      typeof (response as { text?: unknown }).text === "string"
+        ? (response as { text: string }).text
+        : "";
+    const selectedText = joinedText.length > 0 ? joinedText : fallbackText;
+    const normalizedText = selectedText.trim().length > 0 ? selectedText : "";
 
     const legacy: GeminiGenerateContentResponse = {
       ...response,
-      text: joinedText,
+      candidates: rawCandidateMetadata ?? candidates,
+      text: normalizedText,
       response: {
         ...(typeof response === "object" && response && "response" in response
           ? (response as { response?: Record<string, unknown> }).response
           : undefined),
-        text: () => joinedText
+        text: () => normalizedText
       }
     };
     return legacy;

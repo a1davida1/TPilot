@@ -130,6 +130,35 @@ describe('Gemini empty response guards', () => {
     });
   });
 
+  it('returns safe fallback variants in text-only generation when Gemini returns an empty payload object', async () => {
+    const textModel: GeminiTextModelMock = {
+      generateContent: vi
+        .fn<[
+          input: unknown
+        ], Promise<MockResponse>>()
+        .mockResolvedValue({}),
+    };
+
+    mockGemini(textModel);
+
+    const { generateVariantsTextOnly } = await import('../../../server/caption/textOnlyPipeline.ts');
+
+    const variants = await generateVariantsTextOnly({
+      platform: 'instagram',
+      voice: 'persona_voice',
+      theme: 'test theme',
+      context: 'context',
+      nsfw: false,
+    });
+
+    expect(textModel.generateContent).toHaveBeenCalled();
+    expect(variants).toHaveLength(5);
+    variants.forEach(variant => {
+      expect(typeof variant.caption).toBe('string');
+      expect(variant.caption.length).toBeGreaterThan(0);
+    });
+  });
+
   it.each<[{ label: string; value: string | undefined }]>([
     [{ label: 'an empty string', value: '' }],
     [{ label: 'undefined', value: undefined }],
@@ -296,5 +325,117 @@ describe('Gemini empty response guards', () => {
     expect(visionModel.generateContent).not.toHaveBeenCalled();
 
     fetchMock.mockRestore();
+  });
+});
+
+
+describe('Gemini model adapter resilience', () => {
+  const originalGeminiKey = process.env.GEMINI_API_KEY;
+  const originalGoogleKey = process.env.GOOGLE_GENAI_API_KEY;
+
+  beforeEach(() => {
+    vi.resetModules();
+    process.env.NODE_ENV = 'test';
+    process.env.GEMINI_API_KEY = 'test-key';
+    if (originalGoogleKey === undefined) {
+      delete process.env.GOOGLE_GENAI_API_KEY;
+    } else {
+      process.env.GOOGLE_GENAI_API_KEY = originalGoogleKey;
+    }
+  });
+
+  afterEach(() => {
+    if (originalGeminiKey === undefined) {
+      delete process.env.GEMINI_API_KEY;
+    } else {
+      process.env.GEMINI_API_KEY = originalGeminiKey;
+    }
+    if (originalGoogleKey === undefined) {
+      delete process.env.GOOGLE_GENAI_API_KEY;
+    } else {
+      process.env.GOOGLE_GENAI_API_KEY = originalGoogleKey;
+    }
+    vi.doUnmock('@google/genai');
+    vi.clearAllMocks();
+    vi.restoreAllMocks();
+    vi.resetModules();
+  });
+
+  it('resolves with empty text and retains candidates metadata when Gemini returns no candidates', async () => {
+    const generateContent = vi
+      .fn<[input: unknown], Promise<Record<string, unknown>>>()
+      .mockResolvedValue({});
+
+    vi.doMock('@google/genai', () => ({
+      __esModule: true,
+      GoogleGenAI: class {
+        public models = {
+          generateContent,
+        };
+
+        constructor(_options: unknown) {}
+      },
+    }));
+
+    const { getTextModel } = await import('../../../server/lib/gemini-client');
+
+    const model = getTextModel();
+    const result = await model.generateContent([]);
+
+    expect(result.text).toBe('');
+
+    const candidateMetadata = (result as { candidates?: unknown }).candidates;
+    expect(Array.isArray(candidateMetadata)).toBe(true);
+    expect(Array.isArray(candidateMetadata) ? candidateMetadata.length : -1).toBe(0);
+
+    const responseContainer = (result as { response?: { text?: () => unknown } }).response;
+    expect(responseContainer && typeof responseContainer === 'object').toBe(true);
+
+    if (responseContainer && typeof responseContainer === 'object') {
+      const resolver = (responseContainer as { text?: () => unknown }).text;
+      expect(typeof resolver).toBe('function');
+      if (typeof resolver === 'function') {
+        expect(resolver()).toBe('');
+      }
+    }
+  });
+
+  it('preserves API candidate payloads when provided', async () => {
+    type GeminiCandidate = {
+      content?: {
+        parts?: Array<{ text?: string }>;
+      };
+      text?: string;
+    };
+
+    const candidatePayload: GeminiCandidate[] = [
+      {
+        content: {
+          parts: [{ text: 'Primary content' }],
+        },
+      },
+    ];
+
+    const generateContent = vi
+      .fn<[input: unknown], Promise<Record<string, unknown>>>()
+      .mockResolvedValue({ candidates: candidatePayload });
+
+    vi.doMock('@google/genai', () => ({
+      __esModule: true,
+      GoogleGenAI: class {
+        public models = {
+          generateContent,
+        };
+
+        constructor(_options: unknown) {}
+      },
+    }));
+
+    const { getTextModel } = await import('../../../server/lib/gemini-client');
+
+    const result = await getTextModel().generateContent([]);
+
+    expect((result as { text?: string }).text).toBe('Primary content');
+    expect((result as { candidates?: unknown }).candidates).toBe(candidatePayload);
   });
 });

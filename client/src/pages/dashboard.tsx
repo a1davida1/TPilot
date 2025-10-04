@@ -10,6 +10,53 @@ type DashboardUser = User & {
   reddit_username?: string | null; // For backwards compatibility
 };
 
+const ALLOWED_USER_TIERS = [
+  'guest',
+  'free',
+  'basic',
+  'starter',
+  'pro',
+  'premium',
+  'admin',
+] as const;
+
+type AllowedUserTier = (typeof ALLOWED_USER_TIERS)[number];
+
+const allowedUserTierSet: ReadonlySet<AllowedUserTier> = new Set(ALLOWED_USER_TIERS);
+
+const DEFAULT_AUTHENTICATED_TIER: AllowedUserTier = 'free';
+const DEFAULT_GUEST_TIER: AllowedUserTier = 'guest';
+
+function isAllowedTier(tier: unknown): tier is AllowedUserTier {
+  return typeof tier === 'string' && allowedUserTierSet.has(tier as AllowedUserTier);
+}
+
+function isAdminUser(user: Partial<User> | null | undefined): boolean {
+  return Boolean(
+    user &&
+      (user.id === 999 ||
+        user.username === 'admin' ||
+        user.isAdmin ||
+        user.email === 'thottopilot@thottopilot.com')
+  );
+}
+
+function resolveUserTier(user: Partial<User> | null | undefined): AllowedUserTier {
+  if (!user) {
+    return DEFAULT_GUEST_TIER;
+  }
+
+  if (isAdminUser(user)) {
+    return 'admin';
+  }
+
+  if (isAllowedTier(user.tier)) {
+    return user.tier;
+  }
+
+  return DEFAULT_AUTHENTICATED_TIER;
+}
+
 export default function Dashboard() {
   const [_isGuestMode, setIsGuestMode] = useState(false);
   const [location] = useLocation();
@@ -94,8 +141,8 @@ export default function Dashboard() {
   }
 
   // Determine admin status and user tier
-  const isAdmin = user && (user.id === 999 || user.username === 'admin' || user.isAdmin || user.email === 'thottopilot@thottopilot.com');
-  const userTier = isAdmin ? 'admin' : (user?.tier || 'free');
+  const isAdmin = isAdminUser(user);
+  const userTier = resolveUserTier(user);
   
   // Check Reddit connection status
   const typedUser = user as DashboardUser;

@@ -14,9 +14,7 @@ const defaultExcludes: string[] = [
   'tests/unit/expenses/**',
   'tests/e2e/**',
   // Keep core functionality tests only
-  '**/advanced-content-generator.*.test.ts',
-  '**/reddit-*.test.ts',
-  '**/app-bootstrap.*.test.ts'
+
 ];
 
 if (process.env.VITEST_INCLUDE_CAPTION === 'true') {
