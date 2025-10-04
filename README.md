@@ -146,6 +146,26 @@ For detailed deployment instructions, see `DEPLOYMENT.md` and `replit.md`.
 - User tier management (Guest, Free, Starter, Pro)
 - Pro resources with referral code generation system
 
+#### Pro Perks & Referral System
+
+ThottoPilot includes a two-part monetization feature for Pro users:
+
+**Pro Perks Page** (`/pro-perks`)
+- Displays exclusive perks and affiliate opportunities available to Pro tier users
+- Features per-perk referral code generation for commission tracking
+- Integrates with external affiliate platforms (ManyVids, Chaturbate, Fanvue, etc.)
+- Includes one-click code copying with clipboard integration
+- Separated from general referral dashboard to reduce clutter and improve UX
+- Uses Wouter routing for seamless navigation
+
+**Referral Dashboard** (`/referral`)
+- Manages general user referrals and invitation links
+- Tracks referral performance metrics and earnings
+- Separate interface to prevent confusion with Pro-specific perks
+- Provides analytics on referral conversions and payouts
+
+This separation ensures Pro users have a dedicated space for affiliate opportunities while keeping general referral management in a focused dashboard.
+
 ### Enterprise Features  
 - Batch posting campaigns
 - Advanced analytics and metrics collection
