@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';
-import type { Express } from 'express';
+import type { Express, Request, Response, NextFunction } from 'express';
 import { storage } from '../../server/storage.ts';
+import type { User } from '../../shared/schema.ts';
 
 type AuthRequest = import('../../server/middleware/auth.ts').AuthRequest;
 
@@ -65,7 +66,7 @@ const { getActualAuthModule } = vi.hoisted(() => {
 });
 
 // Mock the auth middleware to simulate real behavior
-const mockAuthMiddleware = vi.fn(async (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
+const mockAuthMiddleware = vi.fn(async (req: Request, res: Response, next: NextFunction) => {
   if (currentMockUser) {
     (req as AuthRequest).user = currentMockUser as AuthRequest['user'];
     return next();
@@ -517,6 +518,48 @@ describe('Pro Resources Integration', () => {
 
       getUserByIdSpy.mockRestore();
     });
+
+    it('should return 500 when referral code generation fails', async () => {
+      currentMockUser = {
+        id: 2,
+        subscriptionTier: 'pro',
+        username: 'prouser'
+      };
+
+      // Mock generateReferralCode to throw an error
+      const { generateReferralCode } = await import('../../server/pro-perks.ts');
+      const generateSpy = vi.mocked(generateReferralCode).mockRejectedValueOnce(new Error('ReferralManager unavailable'));
+
+      const response = await request(app)
+        .post('/api/pro-resources/onlyfans-referral/referral-code')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', 'Bearer mock-pro-token')
+        .expect(500);
+
+      expect(response.body).toMatchObject({
+        message: 'Failed to generate referral code'
+      });
+
+      expect(generateSpy).toHaveBeenCalledWith(2, 'onlyfans-referral');
+    });
+
+    it('should allow premium tier users to access pro-tier perks', async () => {
+      currentMockUser = {
+        id: 100,
+        subscriptionTier: 'premium',
+        username: 'premiumuser'
+      };
+
+      const response = await request(app)
+        .post('/api/pro-resources/onlyfans-referral/referral-code')
+        .set('Content-Type', 'application/json')
+        .set('Authorization', 'Bearer mock-premium-token')
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        referralCode: expect.stringMatching(/^TP100/)
+      });
+    });
   });
 
   describe('Data Validation', () => {
@@ -649,7 +692,7 @@ describe('Pro Resources Integration', () => {
         id: 789,
         username: 'outdateduser',
         tier: 'free', // Session shows old tier
-        subscriptionTier: null // Explicitly null
+        subscriptionTier: undefined // Not yet synced
       };
 
       // Storage shows updated tier
