@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -72,6 +72,20 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
 
   const isProUser = userTier === 'pro';
   const showGallery = isProUser;
+
+  // Cleanup object URLs on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      // Revoke main protect tab URLs
+      if (originalImageUrl) URL.revokeObjectURL(originalImageUrl);
+      if (protectedImageUrl) URL.revokeObjectURL(protectedImageUrl);
+      
+      // Revoke all gallery protected URLs
+      Object.values(galleryProtectedImages).forEach(url => {
+        URL.revokeObjectURL(url);
+      });
+    };
+  }, [originalImageUrl, protectedImageUrl, galleryProtectedImages]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -153,7 +167,35 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
     mutationFn: async (imageId: number) => {
       return authenticatedRequest(`/api/media/${imageId}`, 'DELETE');
     },
-    onSuccess: () => {
+    onSuccess: (_data, imageId) => {
+      // Revoke protected URL for deleted image
+      const protectedUrl = galleryProtectedImages[imageId];
+      if (protectedUrl) {
+        URL.revokeObjectURL(protectedUrl);
+      }
+      
+      // Clear gallery state for deleted image
+      setGalleryProtectedImages(prev => {
+        const updated = { ...prev };
+        delete updated[imageId];
+        return updated;
+      });
+      setGalleryProcessing(prev => {
+        const updated = { ...prev };
+        delete updated[imageId];
+        return updated;
+      });
+      setGalleryComparison(prev => {
+        const updated = { ...prev };
+        delete updated[imageId];
+        return updated;
+      });
+      setGalleryComparisonPosition(prev => {
+        const updated = { ...prev };
+        delete updated[imageId];
+        return updated;
+      });
+      
       queryClient.invalidateQueries({ queryKey: ['/api/media'] });
       toast({
         title: "Image deleted",
@@ -189,6 +231,10 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
 
   const processFile = (file: File) => {
     if (file.type.startsWith('image/')) {
+      // Revoke old URLs before creating new ones
+      if (originalImageUrl) URL.revokeObjectURL(originalImageUrl);
+      if (protectedImageUrl) URL.revokeObjectURL(protectedImageUrl);
+      
       setSelectedFile(file);
       const url = URL.createObjectURL(file);
       setOriginalImageUrl(url);
@@ -238,6 +284,11 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
       // Apply watermark for free users (Pro/Premium users get watermark-free)
       const shouldAddWatermark = !isProUser;
       const protectedBlob = await protectImage(selectedFile, settings, shouldAddWatermark);
+      
+      // Revoke old URL before creating new one to prevent memory leak
+      if (protectedImageUrl) {
+        URL.revokeObjectURL(protectedImageUrl);
+      }
       
       // Create preview URL
       const url = URL.createObjectURL(protectedBlob);
@@ -298,6 +349,10 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
   };
 
   const resetAll = () => {
+    // Revoke URLs before clearing state
+    if (originalImageUrl) URL.revokeObjectURL(originalImageUrl);
+    if (protectedImageUrl) URL.revokeObjectURL(protectedImageUrl);
+    
     setSelectedFile(null);
     setOriginalImageUrl(null);
     setProtectedImageUrl(null);
@@ -323,6 +378,12 @@ export function ImageShieldUnified({ userTier = 'guest' }: ImageShieldUnifiedPro
       
       const settings = protectionPresets[preset];
       const protectedBlob = await protectImage(file, settings, false); // No watermark for Pro users
+      
+      // Revoke old URL if it exists before creating new one
+      const oldUrl = galleryProtectedImages[image.id];
+      if (oldUrl) {
+        URL.revokeObjectURL(oldUrl);
+      }
       
       const url = URL.createObjectURL(protectedBlob);
       setGalleryProtectedImages(prev => ({ ...prev, [image.id]: url }));
