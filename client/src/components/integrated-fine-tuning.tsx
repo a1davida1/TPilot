@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,6 +30,26 @@ interface _TrainingData {
   };
 }
 
+interface UserPreferences {
+  userId: number;
+  fineTuningEnabled: boolean;
+  writingStyle: {
+    tone: number;
+    formality: number;
+    explicitness: number;
+  };
+  contentPreferences: {
+    themes: string;
+    avoid: string;
+  };
+  prohibitedWords: string[];
+  photoStyle: {
+    lighting: number;
+    mood: number;
+    composition: number;
+  };
+}
+
 export function IntegratedFineTuning() {
   const { toast } = useToast();
   
@@ -52,22 +72,74 @@ export function IntegratedFineTuning() {
     prohibitedWords: [] as string[]
   });
 
-  // TODO: Implement user preferences hydration
-  const { data: _userPrefs } = useQuery({
+  // Fetch user preferences from API
+  const { data: userPrefs } = useQuery<UserPreferences>({
     queryKey: ["/api/user-preferences"],
     retry: false,
   });
 
-  // Save integrated settings
+  // Hydrate state from API data, guarding against partial payloads
+  useEffect(() => {
+    if (userPrefs) {
+      if (userPrefs.writingStyle) {
+        setWritingStyle({
+          tone: userPrefs.writingStyle.tone ?? 50,
+          formality: userPrefs.writingStyle.formality ?? 50,
+          explicitness: userPrefs.writingStyle.explicitness ?? 50
+        });
+      }
+      
+      if (userPrefs.photoStyle) {
+        setPhotoStyle({
+          lighting: userPrefs.photoStyle.lighting ?? 50,
+          mood: userPrefs.photoStyle.mood ?? 50,
+          composition: userPrefs.photoStyle.composition ?? 50
+        });
+      }
+      
+      if (userPrefs.contentPreferences) {
+        setContentPreferences({
+          themes: userPrefs.contentPreferences.themes ?? "",
+          avoid: userPrefs.contentPreferences.avoid ?? "",
+          prohibitedWords: userPrefs.prohibitedWords ?? []
+        });
+      }
+    }
+  }, [userPrefs]);
+
+  // Save integrated settings - merge with existing preferences
   const saveMutation = useMutation({
-    mutationFn: async (data: unknown) => {
-      return await apiRequest("/api/integrated-personalization", "PUT", data);
+    mutationFn: async (data: {
+      writingStyle: typeof writingStyle;
+      photoStyle: typeof photoStyle;
+      contentPreferences: typeof contentPreferences;
+    }) => {
+      // Merge updates with existing preferences to preserve other fields
+      const mergedData = {
+        ...userPrefs,
+        writingStyle: data.writingStyle,
+        photoStyle: data.photoStyle,
+        contentPreferences: {
+          themes: data.contentPreferences.themes,
+          avoid: data.contentPreferences.avoid
+        },
+        prohibitedWords: data.contentPreferences.prohibitedWords
+      };
+      return await apiRequest("/api/user-preferences", "PUT", mergedData);
     },
     onSuccess: () => {
       toast({
         title: "Personalization Updated",
+        description: "Your fine-tuning preferences have been saved successfully"
       });
       queryClient.invalidateQueries({ queryKey: ["/api/user-preferences"] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save preferences. Please try again.",
+        variant: "destructive"
+      });
     }
   });
 

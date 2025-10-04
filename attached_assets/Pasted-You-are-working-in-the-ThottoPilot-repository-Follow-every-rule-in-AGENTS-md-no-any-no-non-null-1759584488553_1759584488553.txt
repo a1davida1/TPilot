@@ -1,0 +1,53 @@
+You are working in the ThottoPilot repository. Follow every rule in AGENTS.md (no `any`, no non-null assertions, strict typing, and keep tests green).​:codex-file-citation[codex-file-citation]{line_range_start=1 line_range_end=6 path=AGENTS.md git_url="https://github.com/a1davida1/TPilot/blob/main/AGENTS.md#L1-L6"}​
+
+General guidance:
+- Treat all creator data as sensitive: validate with existing Zod schemas, sanitize inputs, and log server errors with the shared logger.
+- Preserve accessibility (keyboard focus, aria labels) and provide loading/error states for every async UI change.
+- Reuse shared hooks/utilities (`useQuery`, `apiRequest`, storage clients) instead of duplicating logic, and add Vitest coverage for each new behavior.
+- When updating docs, explicitly reinforce that Pro Perks lives on `/pro-perks` while referral management is on `/referral` so contributors don’t conflate the surfaces.​:codex-file-citation[codex-file-citation]{line_range_start=182 line_range_end=204 path=README.md git_url="https://github.com/a1davida1/TPilot/blob/main/README.md#L182-L204"}​
+
+Tasks (complete all):
+1. **Integrated fine-tuning preferences**
+   - In `client/src/components/integrated-fine-tuning.tsx`, hydrate `writingStyle`, `photoStyle`, and `contentPreferences` from `/api/user-preferences`, guarding against partial payloads, and persist merged updates through the existing save mutation.​:codex-file-citation[codex-file-citation]{line_range_start=49 line_range_end=70 path=client/src/components/integrated-fine-tuning.tsx git_url="https://github.com/a1davida1/TPilot/blob/main/client/src/components/integrated-fine-tuning.tsx#L49-L70"}​
+   - Add `client/src/components/__tests__/integrated-fine-tuning.test.tsx` covering data prefill and save behavior (mock `useQuery`/`useMutation`).
+
+2. **Enhanced AI generator copy feedback**
+   - Replace `_copiedItem` with real UI feedback that highlights the copied field, clears after a timeout, and exposes screen-reader messaging in `client/src/components/enhanced-ai-generator.tsx`.​:codex-file-citation[codex-file-citation]{line_range_start=90 line_range_end=105 path=client/src/components/enhanced-ai-generator.tsx git_url="https://github.com/a1davida1/TPilot/blob/main/client/src/components/enhanced-ai-generator.tsx#L90-L105"}​
+   - Extend the corresponding test suite to mock `navigator.clipboard` and verify indicator timing.
+
+3. **Tier limits in Enhanced AI generator**
+   - Convert `_tierConfig` into a strongly typed map, enforce per-tier quotas before invoking mutations, and adjust styling/CTA messaging per tier in `client/src/components/enhanced-ai-generator.tsx`.​:codex-file-citation[codex-file-citation]{line_range_start=106 line_range_end=123 path=client/src/components/enhanced-ai-generator.tsx git_url="https://github.com/a1davida1/TPilot/blob/main/client/src/components/enhanced-ai-generator.tsx#L106-L123"}​
+   - Add tests for guest, free, and pro tiers to confirm disable/limit behavior and toast messaging on exhaustion.
+
+4. **Generation panel timing & feedback**
+   - Implement timing optimization (e.g., fetching `/api/analytics/best-times`), persist the selected window, and wire copy-feedback counters/toasts in `client/src/components/generation-panel.tsx`.​:codex-file-citation[codex-file-citation]{line_range_start=16 line_range_end=99 path=client/src/components/generation-panel.tsx git_url="https://github.com/a1davida1/TPilot/blob/main/client/src/components/generation-panel.tsx#L16-L99"}​
+   - Back the change with `client/src/components/__tests__/generation-panel.test.tsx`, stubbing analytics and clipboard APIs.
+
+5. **Modern dashboard mobile & uploads**
+   - Replace `_isMobile` and `_fileInputRef` placeholders with responsive layout detection and a fully validated upload flow in `client/src/components/modern-dashboard.tsx`. Ensure optimistic UI, error toasts, and cleanup on failure.​:codex-file-citation[codex-file-citation]{line_range_start=177 line_range_end=204 path=client/src/components/modern-dashboard.tsx git_url="https://github.com/a1davida1/TPilot/blob/main/client/src/components/modern-dashboard.tsx#L177-L204"}​
+   - Add `client/src/components/__tests__/modern-dashboard.test.tsx` covering matchMedia-driven layout swaps and mocked upload interactions.
+
+6. **Premium landing metrics loading**
+   - Implement skeleton/loading states and graceful error fallbacks around `useMetrics` inside `client/src/components/premium-landing.tsx`.​:codex-file-citation[codex-file-citation]{line_range_start=23 line_range_end=71 path=client/src/components/premium-landing.tsx git_url="https://github.com/a1davida1/TPilot/blob/main/client/src/components/premium-landing.tsx#L23-L71"}​
+   - Create `client/src/components/__tests__/premium-landing.test.tsx` to validate loading, success, and error UI branches.
+
+7. **Onboarding wizard completion tracking**
+   - Replace `_completedSteps` with persistent state keyed in localStorage, hydrate it on mount, and update progress/CTA logic accordingly in `client/src/components/onboarding-wizard.tsx`.​:codex-file-citation[codex-file-citation]{line_range_start=36 line_range_end=120 path=client/src/components/onboarding-wizard.tsx git_url="https://github.com/a1davida1/TPilot/blob/main/client/src/components/onboarding-wizard.tsx#L36-L120"}​
+   - Write `client/src/components/__tests__/onboarding-wizard.test.tsx` ensuring step completion survives reloads and resumes at the correct step.
+
+8. **Reddit admin routes**
+   - Implement the missing storage helpers and re-enable the Reddit admin routes in `server/routes.ts`, guarding them with `authenticateToken(true)` and `requireAdmin`, plus robust logging.​:codex-file-citation[codex-file-citation]{line_range_start=1498 line_range_end=1511 path=server/routes.ts git_url="https://github.com/a1davida1/TPilot/blob/main/server/routes.ts#L1498-L1511"}​
+   - Add `tests/integration/reddit-admin-routes.test.ts` (or similar) verifying success, permission, and failure paths using storage mocks.
+
+Documentation:
+- Update `README.md` (Pro Perks & Referral System section) or a relevant doc to reiterate that Pro Perks and the referral dashboard are separate surfaces, reflecting any new UI affordances delivered in this batch.​:codex-file-citation[codex-file-citation]{line_range_start=182 line_range_end=204 path=README.md git_url="https://github.com/a1davida1/TPilot/blob/main/README.md#L182-L204"}​
+
+Regression commands (run all, include output in your final report):
+- `npm run lint`
+- `npx vitest run client/src/components/__tests__/integrated-fine-tuning.test.tsx`
+- `npx vitest run client/src/components/__tests__/enhanced-ai-generator.test.tsx`
+- `npx vitest run client/src/components/__tests__/generation-panel.test.tsx`
+- `npx vitest run client/src/components/__tests__/modern-dashboard.test.tsx`
+- `npx vitest run client/src/components/__tests__/premium-landing.test.tsx`
+- `npx vitest run client/src/components/__tests__/onboarding-wizard.test.tsx`
+- `npx vitest run tests/integration/reddit-admin-routes.test.ts`

@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AuthModal } from "@/components/auth-modal";
 import { apiRequest, type ApiError } from "@/lib/queryClient";
 import type { ContentGeneration } from "@shared/schema";
-import { Sparkles, Brain, RefreshCw, Copy, Hash } from "lucide-react";
+import { Sparkles, Brain, RefreshCw, Copy, Hash, Check } from "lucide-react";
 import { assertExists } from "../../../helpers/assert";
 
 // Define types for mutation variables and response
@@ -98,8 +98,8 @@ export function EnhancedAIGenerator({
   const [tone, setTone] = useState<string>("confident");
   const [customPrompt, setCustomPrompt] = useState<string>("");
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
-  // TODO: Implement copy feedback state
-  const [_copiedItem, setCopiedItem] = useState<string | null>(null);
+  // Copy feedback state with timeout tracking
+  const [copiedItem, setCopiedItem] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<"login" | "signup">("signup");
 
@@ -334,6 +334,7 @@ export function EnhancedAIGenerator({
         title: `${type} copied!`,
         description: "Content copied to clipboard",
       });
+      // Clear copied state after 2 seconds
       setTimeout(() => setCopiedItem(null), 2000);
     } catch (_error) {
       toast({
@@ -464,51 +465,94 @@ export function EnhancedAIGenerator({
             {generatedContent.titles && Array.isArray(generatedContent.titles) && generatedContent.titles.length > 0 && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-orange-700">Titles:</Label>
-                {generatedContent.titles.map((title, index) => (
-                  <div key={`${title}-${index}`} className="relative p-3 bg-white rounded-lg border group">
-                    <p className="text-sm font-medium pr-8">{title}</p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => copyToClipboard(title, "Title")}
-                      className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-orange-600"
+                {generatedContent.titles.map((title, index) => {
+                  const isCopied = copiedItem === "Title";
+                  return (
+                    <div 
+                      key={`${title}-${index}`} 
+                      className={`relative p-3 bg-white rounded-lg border group transition-all duration-200 ${
+                        isCopied ? 'ring-2 ring-green-500 bg-green-50' : ''
+                      }`}
                     >
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
+                      <p className="text-sm font-medium pr-8">{title}</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyToClipboard(title, "Title")}
+                        className={`absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity ${
+                          isCopied ? 'text-green-600 opacity-100' : 'text-orange-600'
+                        }`}
+                        aria-label={isCopied ? "Title copied" : "Copy title"}
+                        data-testid="button-copy-title"
+                      >
+                        {isCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                      </Button>
+                      {isCopied && (
+                        <span className="sr-only" role="status" aria-live="polite">
+                          Title copied to clipboard
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
 
             {generatedContent.caption && generatedContent.caption !== generatedContent.content && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-amber-700">Caption:</Label>
-                <div className="relative p-3 bg-white rounded-lg border group">
+                <div 
+                  className={`relative p-3 bg-white rounded-lg border group transition-all duration-200 ${
+                    copiedItem === "Caption" ? 'ring-2 ring-green-500 bg-green-50' : ''
+                  }`}
+                >
                   <p className="text-sm whitespace-pre-wrap pr-8">{generatedContent.caption}</p>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => copyToClipboard(generatedContent.caption ?? "", "Caption")}
-                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-orange-600"
+                    className={`absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity ${
+                      copiedItem === "Caption" ? 'text-green-600 opacity-100' : 'text-orange-600'
+                    }`}
+                    aria-label={copiedItem === "Caption" ? "Caption copied" : "Copy caption"}
+                    data-testid="button-copy-caption"
                   >
-                    <Copy className="h-3 w-3" />
+                    {copiedItem === "Caption" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                   </Button>
+                  {copiedItem === "Caption" && (
+                    <span className="sr-only" role="status" aria-live="polite">
+                      Caption copied to clipboard
+                    </span>
+                  )}
                 </div>
               </div>
             )}
 
             <div className="space-y-2">
               <Label className="text-sm font-medium text-red-700">Content:</Label>
-              <div className="relative p-3 bg-white rounded-lg border group">
+              <div 
+                className={`relative p-3 bg-white rounded-lg border group transition-all duration-200 ${
+                  copiedItem === "Content" ? 'ring-2 ring-green-500 bg-green-50' : ''
+                }`}
+              >
                 <p className="text-sm whitespace-pre-wrap pr-8">{generatedContent.content}</p>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => copyToClipboard(generatedContent.content ?? "", "Content")}
-                  className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-orange-600"
+                  className={`absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity ${
+                    copiedItem === "Content" ? 'text-green-600 opacity-100' : 'text-orange-600'
+                  }`}
+                  aria-label={copiedItem === "Content" ? "Content copied" : "Copy content"}
+                  data-testid="button-copy-content"
                 >
-                  <Copy className="h-3 w-3" />
+                  {copiedItem === "Content" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                 </Button>
+                {copiedItem === "Content" && (
+                  <span className="sr-only" role="status" aria-live="polite">
+                    Content copied to clipboard
+                  </span>
+                )}
               </div>
             </div>
 
