@@ -1,0 +1,40 @@
+You are working inside the ThottoPilot repo. Follow every rule in AGENTS.md (strict TypeScript, no `any`, no non-null assertions) and keep the existing React + Wouter architecture intact.
+
+High-level goals:
+• Ship a consistent before/after comparison workflow across all ImageShield surfaces.
+• Clean up the Pro Perks module so it relies on the routing stack we actually use and clearly points creators to the separate referral hub.
+• Document that Pro Perks and the referral program live on different surfaces.
+
+Tasks (complete all):
+
+1. Pro Perks routing cleanup
+   • In `client/src/components/pro-perks.tsx`, drop the unused `next/link` import and rely on the Wouter `<Link>` already used elsewhere (rename the import if necessary to avoid shadowing).
+   • Ensure the CTA buttons still navigate to `/referral` and keep their `data-testid` hooks intact.
+   • Update `client/src/components/__tests__/pro-perks.test.tsx` so it no longer mocks Next.js routing; verify the tests continue to assert that the referral CTA is rendered for both Pro and non-Pro tiers.
+
+2. Shared comparison slider integration
+   • In `client/src/components/image-protector.tsx`, replace the `_showComparison` placeholder with the real `ComparisonSlider`. Show the slider whenever both `originalImageUrl` and `protectedImageUrl` are set, reset its position when the user uploads a new file, and wire its callbacks into existing state for analytics to hook later.
+   • Add accessible toggles so users can switch between the slider view and the single-image tabs if needed; keep current download/toast flows unchanged.
+
+3. Unified ImageShield parity
+   • In `client/src/components/image-shield-unified.tsx`, integrate the same `ComparisonSlider` in the protection tab and expose it inside the gallery modal so Pro users can preview originals vs. protected outputs inline. Remove the obsolete TODO comments and unused `_selectedImage` state while keeping the gallery dialog functional.
+   • Ensure comparison state resets when users pick a new gallery item, upload fresh media, or close the modal.
+
+4. Component test coverage
+   • Add `client/src/components/__tests__/image-protector.test.tsx` and extend (or add) coverage for `image-shield-unified` so the new slider UI is exercised (mock FileReader/canvas as done in the existing ImageShield test). Verify that moving the slider updates inline styles/props you control.
+   • Update mocks as needed so the new Wouter-based navigation and slider integration compile under Vitest.
+
+5. Documentation
+   • Update `README.md` (or create a short doc under `docs/`) to explain that “Pro Perks” surfaces curated partner programs while the referral dashboard lives at `/referral` for affiliate management. Mention the CTA location in the Pro Perks UI so the separation is obvious.
+
+6. Regression commands (run all and include the output in your final report)
+   • `npm run lint`
+   • `npx vitest run client/src/components/__tests__/image-shield.test.tsx`
+   • `npx vitest run client/src/components/__tests__/image-protector.test.tsx`
+   • `npx vitest run client/src/components/__tests__/image-shield-unified.test.tsx`
+   • `npx vitest run client/src/components/__tests__/pro-perks.test.tsx`
+
+Deliverables:
+• Concise summary of the work performed.
+• List of files touched.
+• Full output for each command above.

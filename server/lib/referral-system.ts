@@ -7,9 +7,81 @@ import { db } from '../db';
 import { users, referralRewards, referralCodes, eventLogs } from '@shared/schema';
 import { eq, sql } from 'drizzle-orm';
 import { customAlphabet } from 'nanoid';
-// TODO: implement real notification service
+import { emailService } from '../services/email-service.js';
+import { safeLog } from './logger-utils.js';
+
 const notificationService = {
-  sendReferralNotification: async () => ({ skipped: true })
+  sendReferralNotification: async (referrerId: number, referredId: number, rewardAmount: number) => {
+    if (!emailService.isEmailServiceConfigured) {
+      safeLog('info', 'Email not configured, skipping referral notification', {});
+      return { skipped: true };
+    }
+
+    try {
+      // Get referrer info
+      const [referrer] = await db
+        .select({ email: users.email, firstName: users.firstName, username: users.username })
+        .from(users)
+        .where(eq(users.id, referrerId))
+        .limit(1);
+
+      // Get referred user info
+      const [referred] = await db
+        .select({ email: users.email, firstName: users.firstName, username: users.username })
+        .from(users)
+        .where(eq(users.id, referredId))
+        .limit(1);
+
+      if (!referrer?.email || !referred?.email) {
+        safeLog('warn', 'Missing email addresses for referral notification', { referrerId, referredId });
+        return { skipped: true };
+      }
+
+      const referrerName = referrer.firstName || referrer.username || 'User';
+      const referredName = referred.firstName || referred.username || 'User';
+
+      // Notify referrer about their reward
+      await emailService.sendMail({
+        to: referrer.email,
+        from: process.env.FROM_EMAIL || '',
+        subject: 'You Earned a Referral Reward! 🎉',
+        text: `Hi ${referrerName}, great news! ${referredName} just subscribed using your referral link. You've earned $${rewardAmount} in commission!`,
+        html: `
+          <p>Hi ${referrerName},</p>
+          <p>Great news! <strong>${referredName}</strong> just subscribed using your referral link.</p>
+          <p>You've earned <strong>$${rewardAmount}</strong> in commission!</p>
+          <p>Keep sharing your referral link to earn more rewards.</p>
+        `
+      });
+
+      // Notify admins about the conversion
+      const adminEmail = process.env.ADMIN_EMAIL || process.env.FROM_EMAIL;
+      if (adminEmail) {
+        await emailService.sendMail({
+          to: adminEmail,
+          from: process.env.FROM_EMAIL || '',
+          subject: 'Referral Conversion',
+          text: `Referral conversion: ${referrerName} (ID: ${referrerId}) referred ${referredName} (ID: ${referredId}). Reward: $${rewardAmount}`,
+          html: `
+            <p><strong>Referral Conversion</strong></p>
+            <ul>
+              <li>Referrer: ${referrerName} (ID: ${referrerId})</li>
+              <li>Referred: ${referredName} (ID: ${referredId})</li>
+              <li>Reward: $${rewardAmount}</li>
+            </ul>
+          `
+        });
+      }
+
+      safeLog('info', 'Referral notifications sent', { referrerId, referredId, rewardAmount });
+      return { sent: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      safeLog('error', 'Failed to send referral notification', { error: errorMessage });
+      // Don't throw - notifications are non-critical
+      return { skipped: true, error: errorMessage };
+    }
+  }
 };
 
 // Generate user-friendly referral codes (no confusing characters)
@@ -346,15 +418,19 @@ export class ReferralManager {
       return null; // No referrer
     }
 
+    const rewardAmount = 5;
     await db.insert(referralRewards).values({
       referrerId: user.referredBy,
       referredId: subscribingUserId,
-      amount: 5,
+      amount: rewardAmount,
     });
-    await notificationService.sendReferralNotification();
+    
+    // Send notification emails
+    await notificationService.sendReferralNotification(user.referredBy, subscribingUserId, rewardAmount);
+    
     return {
       type: 'commission',
-      amount: 5,
+      amount: rewardAmount,
       description: 'Referral commission for successful subscription',
     };
   }

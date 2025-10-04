@@ -211,13 +211,67 @@ class VisitorAnalytics {
     };
   }
 
-  async recordPayment(customerId: string, _amount: number): Promise<void> {
-    if (!this.stripe) return;
+  async recordPayment(customerId: string, amount: number): Promise<void> {
+    if (!this.stripe) {
+      console.warn('Stripe not configured, skipping payment recording');
+      return;
+    }
+    
     try {
-      await this.stripe.customers.retrieve(customerId);
-      // TODO: persist payment with analytics stats
+      // Verify customer exists
+      const customer = await this.stripe.customers.retrieve(customerId);
+      
+      if (customer.deleted) {
+        throw new Error('Customer has been deleted');
+      }
+
+      // Get current date key for daily stats
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Get or initialize daily stats
+      let stats = this.dailyStats.get(today);
+      if (!stats) {
+        stats = {
+          totalVisitors: 0,
+          uniqueVisitors: 0,
+          pageViews: 0,
+          averageSessionDuration: 0,
+          bounceRate: 0,
+          topPages: [],
+          trafficSources: [],
+          hourlyTraffic: [],
+          conversionRate: 0
+        };
+        this.dailyStats.set(today, stats);
+      }
+
+      // Update conversion tracking
+      const currentConversions = (stats as { conversions?: number }).conversions ?? 0;
+      const currentRevenue = (stats as { totalRevenue?: number }).totalRevenue ?? 0;
+      
+      // Add conversion data
+      Object.assign(stats, {
+        conversions: currentConversions + 1,
+        totalRevenue: currentRevenue + amount
+      });
+
+      // Recalculate conversion rate (conversions / unique visitors)
+      if (stats.uniqueVisitors > 0) {
+        const conversions = (stats as { conversions?: number }).conversions ?? 0;
+        stats.conversionRate = (conversions / stats.uniqueVisitors) * 100;
+      }
+
+      console.log('Payment recorded:', {
+        customerId,
+        amount,
+        date: today,
+        totalConversions: (stats as { conversions?: number }).conversions,
+        conversionRate: stats.conversionRate
+      });
     } catch (error) {
-      console.error('Stripe recordPayment error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Stripe recordPayment error:', errorMessage);
+      throw error;
     }
   }
 
