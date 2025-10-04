@@ -105,6 +105,39 @@ Key test areas:
 - Image protection algorithms
 - Billing and subscription management
 - Rate limiting and safety systems
+- Upload persistence and media management
+- Referral notification system
+- Visitor analytics with conversion tracking
+
+## Recent Updates
+
+### Upload System Enhancements
+- **MediaManager Integration**: Upload route now properly persists files to S3 or local storage via MediaManager
+- **Enhanced Error Handling**: Improved Multer error handler middleware for file validation (size limits, file types)
+- **Authentication Flow**: Robust authentication checks with proper 401 responses for unauthenticated uploads
+- **Test Coverage**: Comprehensive test suite covering authenticated/unauthenticated flows, quota limits, and error scenarios
+
+### Referral Notification System
+- **Email Notifications**: Automatic email notifications when referral rewards are processed
+  - Referrers receive confirmation emails with reward amount ($5 commission)
+  - Admin notifications for conversion tracking and monitoring
+- **Graceful Error Handling**: Email failures don't block reward processing (notifications are non-critical)
+- **Missing Email Handling**: Skips notifications when user email addresses are unavailable
+- **Test Coverage**: Full test suite verifying email dispatch, error handling, and edge cases
+
+### Visitor Analytics
+- **Payment Tracking**: Enhanced `recordPayment()` method tracks Stripe payments and updates conversion metrics
+- **Conversion Metrics**: Automatically increments daily conversion counts and aggregates revenue
+- **Daily Stats**: New `getDailyStats()` helper for accessing conversion data and revenue totals
+- **Stripe Integration**: Validates Stripe customers before recording conversions
+- **Test Coverage**: Complete test suite for payment recording, conversion tracking, and error scenarios
+
+### TypeScript Strictness
+All new features maintain strict TypeScript compliance:
+- No `any` types used
+- No non-null assertions (`!`)
+- Explicit type definitions throughout
+- Proper interface mocking in tests
 
 ## Deployment
 
