@@ -35,10 +35,11 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // TODO: Implement walkthrough replay functionality
-  const _handleReplayWalkthrough = () => {
-    console.error("Replaying walkthrough...");
-    onReplayWalkthrough?.();
+  const handleReplayWalkthrough = () => {
+    if (onReplayWalkthrough) {
+      onReplayWalkthrough();
+      setMobileMenuOpen(false);
+    }
   };
   
   const handleLogout = () => {
@@ -48,8 +49,7 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
 
   const isAdmin = Boolean(user?.isAdmin || user?.role === 'admin');
 
-  // TODO: Implement walkthrough replay feature visibility
-  const _canReplayWalkthrough =
+  const canReplayWalkthrough =
     Boolean(onReplayWalkthrough) &&
     isAuthenticated &&
     (location === '/dashboard' || location === '/settings');
@@ -194,6 +194,19 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
                         Settings
                       </Link>
                     </DropdownMenuItem>
+                    {canReplayWalkthrough && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onSelect={handleReplayWalkthrough}
+                          className="flex items-center gap-2"
+                          data-testid="menu-replay-walkthrough"
+                        >
+                          <Sparkles className="h-4 w-4" />
+                          Replay Tutorial
+                        </DropdownMenuItem>
+                      </>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem 
                       onSelect={handleLogout}
