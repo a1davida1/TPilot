@@ -28,10 +28,10 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 - **UI/UX Decisions**: Bubblegum color scheme, ultra-polished interface with high-contrast text, glass morphism, dynamic gradients, premium CSS animations, and mobile-first design. Anti-hover visibility patterns. Three-tier portal views (Guest, Free, Starter, Pro) with upgrade prompts.
 - **Accessibility**: WCAG AA compliance enforced.
 - **Testing**: Vanilla Vitest pattern with react-dom/client and act() - NOT @testing-library/react. All components using react-query hooks must be wrapped with QueryClientProvider in tests.
-- **Landing Page**: Parallax scrollY effects with framer-motion, skeleton loading states for metrics, expandable Getting Started accordion with Radix UI Accordion components.
+- **Landing Page**: Parallax scrollY effects with framer-motion, skeleton loading states for metrics with Skeleton component UI, expandable Getting Started accordion with Radix UI Accordion components. Real-time metrics display with loading states for creators, posts, and engagement statistics via `/api/metrics` endpoint.
 - **Onboarding**: Comprehensive onboarding system with multiple features:
   - **UserOnboarding Component**: Interactive tutorial system with reset, skip, and complete handlers. Toast notifications for user feedback. LocalStorage persistence for progress tracking.
-  - **Onboarding Walkthrough**: User-specific progress persistence using localStorage with restart functionality. Accessible navigation with keyboard support and focus management.
+  - **Onboarding Walkthrough**: User-specific progress persistence using database-backed state via `useOnboardingState` hook and `/api/onboarding/state` endpoint. Automatic position restoration based on completed steps. Accessible navigation with keyboard support and focus management.
   - **Walkthrough Replay**: Available in header dropdown menu for authenticated users on dashboard and settings pages.
 
 ## Backend Architecture
@@ -63,6 +63,9 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 - **Platform Optimization**: Content tailored for social media requirements.
 - **Promotion Intelligence**: Smart content adaptation based on subreddit rules.
 - **Advanced Features**: Fine-tuning with sample library and personalization settings. One-click style presets. Tiered content system with varying generation capabilities. Dual AI providers (Gemini + OpenAI) with response caching.
+- **Fine-Tuning Preferences**: API-backed hydration from `/api/user-preferences` endpoint with automatic persistence on updates. Sample photos, personal details, and style notes stored per user.
+- **Copy Feedback System**: Visual confirmation with Check icon, 2-second highlight duration, and aria-live screen reader support for accessibility.
+- **Tier-Based Quota System**: Strongly typed TierConfig with per-tier daily limits (guest: 3, free: 10, pro: 100, premium: 1000). Real-time quota tracking via `/api/stats/daily-usage` endpoint with visual quota display on Generate button.
 
 ## Image Protection System
 - **Anti-Reverse Search**: Multi-layered image processing (Gaussian blur, subtle noise, intelligent resizing, metadata stripping).
@@ -89,6 +92,12 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 - **Per-Perk Caching**: Efficient code retrieval with TanStack Query cache invalidation.
 - **Copy-to-Clipboard**: One-click code copying with toast notifications.
 - **Authentication & Tier Validation**: Endpoint includes authentication middleware and tier checking.
+
+## Reddit Admin Routes
+- **Admin Communities Management**: Fully implemented admin routes at `/api/admin/communities` for managing Reddit communities.
+- **Available Operations**: GET (list all), POST (create), PUT (update), DELETE (remove) communities.
+- **Storage Layer**: Complete storage methods in `reddit-communities.ts`: listCommunities, createCommunity, updateCommunity, deleteCommunity, getCommunityInsights.
+- **Authentication**: Protected by admin authentication middleware with JWT and session support.
 
 # External Dependencies
 
