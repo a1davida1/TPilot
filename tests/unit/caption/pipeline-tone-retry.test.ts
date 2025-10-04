@@ -77,16 +77,19 @@ function extractVariantPromptEnvelopes(mockCalls: any[][]) {
         let hasRequiredFields = false;
         
         for (const line of lines) {
-          const colonIndex = line.indexOf(':');
-          if (colonIndex > 0) {
-            const key = line.substring(0, colonIndex).trim().toLowerCase();
-            const value = line.substring(colonIndex + 1).trim();
-            
-            if (key && value) {
-              envelope[key] = value;
-              if (key === 'platform' || key === 'voice') {
-                hasRequiredFields = true;
-              }
+          const trimmedLine = line.trim();
+          if (!trimmedLine) continue;
+          
+          const colonIndex = trimmedLine.indexOf(':');
+          if (colonIndex <= 0) continue;
+          
+          const key = trimmedLine.substring(0, colonIndex).trim();
+          const value = trimmedLine.substring(colonIndex + 1).trim();
+          
+          if (/^[A-Z_]+$/.test(key) && value) {
+            envelope[key.toLowerCase()] = value;
+            if (key === 'PLATFORM' || key === 'VOICE') {
+              hasRequiredFields = true;
             }
           }
         }
@@ -231,10 +234,19 @@ describe('Gemini pipelines keep persona tone on retry', () => {
     mockGeminiModules(textModel, visionModel);
 
     const fetchMock = vi.spyOn(global, 'fetch');
+    const chunk = new Uint8Array(Buffer.alloc(256, 1));
     fetchMock.mockResolvedValue({
       ok: true,
-      headers: new Headers({ 'content-type': 'image/jpeg' }),
-      arrayBuffer: async () => new Uint8Array(Buffer.alloc(256, 1)).buffer
+      headers: new Headers({ 
+        'content-type': 'image/jpeg',
+        'content-length': `${chunk.byteLength}`
+      }),
+      body: new ReadableStream({
+        start(controller) {
+          controller.enqueue(chunk);
+          controller.close();
+        }
+      })
     } as unknown as Response);
 
     visionModel.generateContent.mockResolvedValue(
