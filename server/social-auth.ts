@@ -2,7 +2,7 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as FacebookStrategy } from 'passport-facebook';
 import { Strategy as RedditStrategy } from 'passport-reddit';
-import type { Express, NextFunction, Request, Response } from 'express';
+import type { CookieOptions, Express, NextFunction, Request, Response } from 'express';
 import type { AuthenticateOptions } from 'passport';
 import type { User } from '@shared/schema';
 import { storage } from './storage';
@@ -20,6 +20,38 @@ type RedditAuthenticateOptions = AuthenticateOptions & {
 const redditCallbackOptions: RedditAuthenticateOptions = {
   failureRedirect: '/login?error=reddit_failed'
   // Note: No successRedirect - we handle cookie + redirect in the callback handler
+};
+
+type SessionCookieConfig = {
+  name: string;
+  options: CookieOptions;
+};
+
+const getSessionCookieConfig = (): SessionCookieConfig => {
+  const cookieName = process.env.SESSION_COOKIE_NAME ?? 'tpilot.sid';
+  const isProduction = process.env.NODE_ENV === 'production';
+  const cookieDomain = process.env.SESSION_COOKIE_DOMAIN?.trim();
+
+  const cookieOptions: CookieOptions = {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: isProduction,
+    path: '/',
+  };
+
+  if (cookieDomain) {
+    cookieOptions.domain = cookieDomain;
+  }
+
+  return {
+    name: cookieName,
+    options: cookieOptions,
+  };
+};
+
+const clearSessionCookie = (res: Response): void => {
+  const { name, options } = getSessionCookieConfig();
+  res.clearCookie(name, options);
 };
 
 export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
@@ -288,17 +320,8 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
       // Check if session exists first
       if (!r.session) {
         // No session, just clear cookies and return success
-        res.clearCookie('connect.sid', {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict'
-        });
+        clearSessionCookie(res);
         res.clearCookie('authToken', {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict'
-        });
-        res.clearCookie('thottopilot.sid', {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'strict'
@@ -328,17 +351,8 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
                 logger.error('Session destroy error', { error: destroyErr instanceof Error ? destroyErr.message : String(destroyErr) });
               }
               // Clear cookies regardless
-              res.clearCookie('connect.sid', {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict'
-              });
+              clearSessionCookie(res);
               res.clearCookie('authToken', {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict'
-              });
-              res.clearCookie('thottopilot.sid', {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'strict'
@@ -354,17 +368,8 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
             });
           } else {
             // No session.destroy, just clear cookies
-            res.clearCookie('connect.sid', {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === 'production',
-              sameSite: 'strict'
-            });
+            clearSessionCookie(res);
             res.clearCookie('authToken', {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === 'production',
-              sameSite: 'strict'
-            });
-            res.clearCookie('thottopilot.sid', {
               httpOnly: true,
               secure: process.env.NODE_ENV === 'production',
               sameSite: 'strict'
@@ -386,17 +391,8 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
             if (err) {
               logger.error('Session destroy error', { error: err instanceof Error ? err.message : String(err) });
             }
-            res.clearCookie('connect.sid', {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === 'production',
-              sameSite: 'strict'
-            });
+            clearSessionCookie(res);
             res.clearCookie('authToken', {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === 'production',
-              sameSite: 'strict'
-            });
-            res.clearCookie('thottopilot.sid', {
               httpOnly: true,
               secure: process.env.NODE_ENV === 'production',
               sameSite: 'strict'
@@ -412,17 +408,8 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
           });
         } else {
           // Just clear cookies
-          res.clearCookie('connect.sid', {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict'
-          });
+          clearSessionCookie(res);
           res.clearCookie('authToken', {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict'
-          });
-          res.clearCookie('thottopilot.sid', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict'
@@ -440,17 +427,8 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
     } catch (error) {
       logger.error('Logout error', { error: error instanceof Error ? (error as Error).message : String(error) });
       // Even on error, clear cookies to help user
-      res.clearCookie('connect.sid', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
-      });
+      clearSessionCookie(res);
       res.clearCookie('authToken', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
-      });
-      res.clearCookie('thottopilot.sid', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict'
