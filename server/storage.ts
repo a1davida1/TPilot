@@ -738,9 +738,7 @@ export class DatabaseStorage implements IStorage {
         userId,
         completedSteps: state.completedSteps ?? [],
         isMinimized: state.isMinimized ?? false,
-        isDismissed: state.isDismissed ?? false,
-        ...(state.createdAt ? { createdAt: state.createdAt } : {}),
-        ...(state.updatedAt ? { updatedAt: state.updatedAt } : {})
+        isDismissed: state.isDismissed ?? false
       };
 
       const [insertedState] = await db.insert(onboardingStates)

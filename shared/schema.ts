@@ -790,9 +790,9 @@ export const insertUserSampleSchema = createInsertSchema(userSamples);
 export const insertUserPreferenceSchema = createInsertSchema(userPreferences);
 export const insertOnboardingStateSchema = z.object({
   userId: z.number(),
-  completedSteps: z.array(z.string()).optional(),
-  isMinimized: z.boolean().optional(),
-  isDismissed: z.boolean().optional()
+  completedSteps: z.array(z.string()).default([]),
+  isMinimized: z.boolean().default(false),
+  isDismissed: z.boolean().default(false)
 });
 export const insertUserImageSchema = createInsertSchema(userImages);
 export const insertLeadSchema = createInsertSchema(leads);

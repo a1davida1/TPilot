@@ -1,0 +1,36 @@
+> tsc -p tsconfig.json --noEmit
+
+server/storage.ts:742:19 - error TS2339: Property 'createdAt' does not exist on type 'Partial<{ userId?: number; completedSteps?: string[]; isMinimized?: boolean; isDismissed?: boolean; }>'.
+
+742         ...(state.createdAt ? { createdAt: state.createdAt } : {}),
+                      ~~~~~~~~~
+
+server/storage.ts:742:50 - error TS2339: Property 'createdAt' does not exist on type 'Partial<{ userId?: number; completedSteps?: string[]; isMinimized?: boolean; isDismissed?: boolean; }>'.
+
+742         ...(state.createdAt ? { createdAt: state.createdAt } : {}),
+                                                     ~~~~~~~~~
+
+server/storage.ts:743:19 - error TS2339: Property 'updatedAt' does not exist on type 'Partial<{ userId?: number; completedSteps?: string[]; isMinimized?: boolean; isDismissed?: boolean; }>'.
+
+743         ...(state.updatedAt ? { updatedAt: state.updatedAt } : {})
+                      ~~~~~~~~~
+
+server/storage.ts:743:50 - error TS2339: Property 'updatedAt' does not exist on type 'Partial<{ userId?: number; completedSteps?: string[]; isMinimized?: boolean; isDismissed?: boolean; }>'.
+
+743         ...(state.updatedAt ? { updatedAt: state.updatedAt } : {})
+                                                     ~~~~~~~~~
+
+server/storage.ts:747:17 - error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { userId: number | SQL<unknown> | Placeholder<string, any>; id?: number | SQL<unknown> | Placeholder<string, any>; createdAt?: Date | SQL<unknown> | Placeholder<...>; updatedAt?: Date | ... 1 more ... | Placeholder<...>; completedSteps?: string[] | ... 1 more ... | Placeholder<...>; isMinimized?: boolean | ... 1 more ... | Placeholder<...>; isDismissed?: boolean | ... 1 more ... | Placeholder<...>; }): PgInsertBase<...>', gave the following error.
+    Argument of type '{ userId?: number; completedSteps?: string[]; isMinimized?: boolean; isDismissed?: boolean; }' is not assignable to parameter of type '{ userId: number | SQL<unknown> | Placeholder<string, any>; id?: number | SQL<unknown> | Placeholder<string, any>; createdAt?: Date | SQL<unknown> | Placeholder<...>; updatedAt?: Date | ... 1 more ... | Placeholder<...>; completedSteps?: string[] | ... 1 more ... | Placeholder<...>; isMinimized?: boolean | ... 1 mor...'.
+      Property 'userId' is optional in type '{ userId?: number; completedSteps?: string[]; isMinimized?: boolean; isDismissed?: boolean; }' but required in type '{ userId: number | SQL<unknown> | Placeholder<string, any>; id?: number | SQL<unknown> | Placeholder<string, any>; createdAt?: Date | SQL<unknown> | Placeholder<...>; updatedAt?: Date | ... 1 more ... | Placeholder<...>; completedSteps?: string[] | ... 1 more ... | Placeholder<...>; isMinimized?: boolean | ... 1 mor...'.
+  Overload 2 of 2, '(values: { userId: number | SQL<unknown> | Placeholder<string, any>; id?: number | SQL<unknown> | Placeholder<string, any>; createdAt?: Date | SQL<unknown> | Placeholder<...>; updatedAt?: Date | ... 1 more ... | Placeholder<...>; completedSteps?: string[] | ... 1 more ... | Placeholder<...>; isMinimized?: boolean | ... 1 more ... | Placeholder<...>; isDismissed?: boolean | ... 1 more ... | Placeholder<...>; }[]): PgInsertBase<...>', gave the following error.
+    Argument of type '{ userId?: number; completedSteps?: string[]; isMinimized?: boolean; isDismissed?: boolean; }' is not assignable to parameter of type '{ userId: number | SQL<unknown> | Placeholder<string, any>; id?: number | SQL<unknown> | Placeholder<string, any>; createdAt?: Date | SQL<unknown> | Placeholder<...>; updatedAt?: Date | ... 1 more ... | Placeholder<...>; completedSteps?: string[] | ... 1 more ... | Placeholder<...>; isMinimized?: boolean | ... 1 mor...'.
+      Type '{ userId?: number; completedSteps?: string[]; isMinimized?: boolean; isDismissed?: boolean; }' is missing the following properties from type '{ userId: number | SQL<unknown> | Placeholder<string, any>; id?: number | SQL<unknown> | Placeholder<string, any>; createdAt?: Date | SQL<unknown> | Placeholder<...>; updatedAt?: Date | ... 1 more ... | Placeholder<...>; completedSteps?: string[] | ... 1 more ... | Placeholder<...>; isMinimized?: boolean | ... 1 mor...': length, pop, push, concat, and 35 more.
+
+747         .values(insertPayload)
+                    ~~~~~~~~~~~~~
+
+
+
+Found 5 errors in the same file, starting at: server/storage.ts:742
