@@ -180,21 +180,39 @@ export class ReferralManager {
           };
         }
 
-        // Check if new user is trying to refer themselves
-        if (referrer.id === userId) {
+        const [applicantRecord] = await db
+          .select({ id: users.id, referredBy: users.referredBy })
+          .from(users)
+          .where(eq(users.id, userId))
+          .limit(1);
+
+        if (!applicantRecord) {
+          return {
+            success: false,
+            error: 'Applicant not found',
+          };
+        }
+
+        if (referrer.id === applicantRecord.id) {
           return {
             success: false,
             error: 'Cannot use your own referral code',
           };
         }
 
-        // Update new user with referrer information
+        if (applicantRecord.referredBy !== null && applicantRecord.referredBy !== undefined) {
+          return {
+            success: false,
+            error: 'Referral code already applied',
+          };
+        }
+
         await db
           .update(users)
           .set({
             referredBy: referrer.id,
           })
-          .where(eq(users.id, userId));
+          .where(eq(users.id, applicantRecord.id));
 
         return {
           success: true,
@@ -206,10 +224,10 @@ export class ReferralManager {
       const email = normalizedApplicant.email?.trim().toLowerCase();
       const temporaryUserId = normalizedApplicant.temporaryUserId?.trim();
 
-      if (!email && !temporaryUserId) {
+      if (!temporaryUserId) {
         return {
           success: false,
-          error: 'Applicant identifier is required',
+          error: 'Temporary user identifier is required for anonymous referral applications',
         };
       }
 
@@ -221,7 +239,10 @@ export class ReferralManager {
           .limit(1);
 
         if (existingUser) {
-          return await this.applyReferralCode(existingUser.id, sanitizedCode);
+          return {
+            success: false,
+            error: 'Please log in to apply a referral code for this account',
+          };
         }
       }
 

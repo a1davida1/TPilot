@@ -1,0 +1,105 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/server/caption/lib/images.ts b/server/caption/lib/images.ts
+index 641e1ee3a158869eb4df9d9848fd78de5ba1c067..9f180ded2785b4b921f6a27eb4b7f70f046a6902 100644
+--- a/server/caption/lib/images.ts
++++ b/server/caption/lib/images.ts
+@@ -1,53 +1,55 @@
+ /**
+  * Normalizes image input to a clean data URL or HTTPS URL for OpenAI API calls
+  * Fixes issues with truncated/space-containing data URLs that cause invalid_base64 errors
+  */
+ export function toOpenAIImageUrl(input: string, fallbackMime = 'image/jpeg'): string {
+   if (!input) return '';
+   
+   // If it's already an https URL, pass through
+   if (/^https?:\/\//i.test(input)) return input;
+ 
+   // If it's a data URL, strip whitespace from the base64 tail
+   if (input.startsWith('data:')) {
+     const commaIndex = input.indexOf(',');
+     if (commaIndex === -1) {
+       // Invalid data URL format
+       return '';
+     }
+     const head = input.substring(0, commaIndex);
+     const data = input.substring(commaIndex + 1);
+     // Remove all whitespace from the base64 portion
+     const clean = data.replace(/\s+/g, '');
+-    return `${head},${clean}`;
++    const normalized = clean.replace(/-/g, '+').replace(/_/g, '/');
++    return `${head},${normalized}`;
+   }
+ 
+   // If it's raw base64, wrap as a data URL
+-  if (/^[A-Za-z0-9+/=]+$/.test(input.replace(/\s+/g, ''))) {
++  if (/^[A-Za-z0-9+/=_-]+$/.test(input.replace(/\s+/g, ''))) {
+     const cleanBase64 = input.replace(/\s+/g, '');
+-    return `data:${fallbackMime};base64,${cleanBase64}`;
++    const normalizedBase64 = cleanBase64.replace(/-/g, '+').replace(/_/g, '/');
++    return `data:${fallbackMime};base64,${normalizedBase64}`;
+   }
+ 
+   // Anything else: return as-is (lets you spot bad inputs in logs)
+   return input;
+ }
+ 
+ /**
+  * Validates that a base64 string or data URL has sufficient length
+  * @param input The image URL or data URL to validate
+  * @param minLength Minimum length of base64 content (default 100 chars)
+  */
+ export function validateImageUrl(input: string, minLength = 100): boolean {
+   if (!input) return false;
+   
+   // HTTPS URLs are always valid
+   if (/^https?:\/\//i.test(input)) return true;
+   
+   // Extract base64 content from data URL
+   let base64Content = input;
+   if (input.startsWith('data:')) {
+     const commaIndex = input.indexOf(',');
+     if (commaIndex === -1) return false;
+     base64Content = input.substring(commaIndex + 1);
+   }
+   
+diff --git a/server/caption/lib/images.ts b/server/caption/lib/images.ts
+index 641e1ee3a158869eb4df9d9848fd78de5ba1c067..9f180ded2785b4b921f6a27eb4b7f70f046a6902 100644
+--- a/server/caption/lib/images.ts
++++ b/server/caption/lib/images.ts
+@@ -70,32 +72,32 @@ export function logImageInfo(imageUrl: string, requestId?: string): void {
+   }
+ 
+   if (/^https?:\/\//i.test(imageUrl)) {
+     const protocol = imageUrl.startsWith('https:') ? 'https' : 'http';
+     console.error(`${prefix}Using remote image URL (protocol: ${protocol}, length: ${imageUrl.length})`);
+     return;
+   }
+ 
+   if (imageUrl.startsWith('data:')) {
+     const commaIndex = imageUrl.indexOf(',');
+     if (commaIndex !== -1) {
+       const header = imageUrl.substring(0, commaIndex);
+       const mimeMatch = header.match(/^data:([^;]+)/i);
+       const mimeType = mimeMatch ? mimeMatch[1] : 'unknown';
+       const base64Length = imageUrl.length - (commaIndex + 1);
+       const approxBytes = Math.floor((base64Length * 3) / 4);
+       console.error(
+         `${prefix}Using data URL (mime: ${mimeType}, approxBytes: ${approxBytes})`
+       );
+     } else {
+       console.error(`${prefix}Malformed data URL header`);
+     }
+     return;
+   }
+ 
+-  if (/^[A-Za-z0-9+/=]+$/.test(imageUrl)) {
++  if (/^[A-Za-z0-9+/=_-]+$/.test(imageUrl)) {
+     console.error(`${prefix}Received raw base64 payload (length: ${imageUrl.length})`);
+     return;
+   }
+ 
+   console.error(`${prefix}Unrecognized image input (length: ${imageUrl.length})`);
+ }
+ 
+EOF
+)
