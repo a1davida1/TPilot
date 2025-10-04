@@ -13,8 +13,7 @@ const EMAIL_NOT_VERIFIED_RESPONSE = (
   res: express.Response,
   email: string
 ) => {
-  const cfg = getCookieConfig();
-  cfg.clear(res, cfg.authName);
+  clearAuthTokenCookie(res);
 
   return res.status(403).json({
     message: 'Email not verified. Please check your email or resend verification.',
@@ -25,7 +24,9 @@ const EMAIL_NOT_VERIFIED_RESPONSE = (
 
 const clearAuthTokenCookie = (res: express.Response) => {
   const cfg = getCookieConfig();
-  cfg.clear(res, cfg.authName);
+  // Clear with both sameSite values to handle both regular auth and OAuth cookies
+  cfg.clear(res, cfg.authName); // Default (sameSite: lax)
+  cfg.clear(res, cfg.authName, { ...cfg.options, sameSite: 'none' }); // OAuth (sameSite: none)
 };
 
 const respondWithStatus = <Body extends Record<string, unknown>>(
@@ -193,8 +194,7 @@ const createAuthenticateTokenMiddleware = (required: boolean): AuthMiddleware =>
       }
 
       if (await isTokenBlacklisted(token)) {
-        const cfg = getCookieConfig();
-        cfg.clear(res, cfg.authName);
+        clearAuthTokenCookie(res);
         if (required) {
           return res.status(401).json({ error: 'Token revoked' });
         }
@@ -206,8 +206,7 @@ const createAuthenticateTokenMiddleware = (required: boolean): AuthMiddleware =>
         const userId = decoded.userId || decoded.id;
 
         if (!userId) {
-          const cfg = getCookieConfig();
-          cfg.clear(res, cfg.authName);
+          clearAuthTokenCookie(res);
           if (required) {
             return res.status(401).json({ error: 'Invalid token: missing user ID' });
           }
@@ -217,8 +216,7 @@ const createAuthenticateTokenMiddleware = (required: boolean): AuthMiddleware =>
         const [user] = await db.select().from(users).where(eq(users.id, userId));
 
         if (!user) {
-          const cfg = getCookieConfig();
-          cfg.clear(res, cfg.authName);
+          clearAuthTokenCookie(res);
           if (required) {
             return res.status(401).json({ error: 'User not found' });
           }
@@ -238,8 +236,7 @@ const createAuthenticateTokenMiddleware = (required: boolean): AuthMiddleware =>
         return next();
       } catch (error) {
         logger.error('Auth error:', error);
-        const cfg = getCookieConfig();
-        cfg.clear(res, cfg.authName);
+        clearAuthTokenCookie(res);
         if (required) {
           return res.status(401).json({ error: 'Invalid or expired token' });
         }

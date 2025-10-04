@@ -1,0 +1,323 @@
+# APPLY WITH REJECTS
+(cd "$(git rev-parse --show-toplevel)" && git apply --3way --reject <<'EOF'
+diff --git a/server/app.ts b/server/app.ts
+--- a/server/app.ts
++++ b/server/app.ts
+@@
+   app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+-    const exemptPaths = [
++    const exemptPaths = [
++      `${API_PREFIX}/auth/logout`,
+       `${API_PREFIX}/auth/reddit/callback`,
+       `${API_PREFIX}/auth/google/callback`,
+       `${API_PREFIX}/auth/facebook/callback`,
+       `${API_PREFIX}/webhooks/`,
+       `${API_PREFIX}/health`
+     ];
+@@
+-  if (app.get('authRoutesConfigured') !== true) {
+-    setupAuth(app, API_PREFIX);
+-    await setupAuth(app, API_PREFIX);
+-    app.set('authRoutesConfigured', true);
+-  }
++  if (app.get('authRoutesConfigured') !== true) {
++    await setupAuth(app, API_PREFIX);
++    app.set('authRoutesConfigured', true);
++  }
+diff --git a/server/auth.ts b/server/auth.ts
+--- a/server/auth.ts
++++ b/server/auth.ts
+@@
+-import { assertExists } from '../helpers/assert';
++import { assertExists } from '../helpers/assert';
++import { ensureAdminAccount } from './lib/admin-auth.js';
+@@
+-export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
++export async function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
+   const route = (path: string) => prefixApiPath(path, apiPrefix);
+@@
+   logger.info('Setting up auth routes', {
+     apiPrefix,
+     signupRoute: route('/auth/signup'),
+     loginRoute: route('/auth/login')
+   });
++
++  await ensureAdminAccount();
+diff --git a/server/lib/admin-auth.ts b/server/lib/admin-auth.ts
+new file mode 100644
+--- /dev/null
++++ b/server/lib/admin-auth.ts
+@@ -0,0 +1,120 @@
++import bcrypt from 'bcrypt';
++import { eq } from 'drizzle-orm';
++import { db } from '../db.js';
++import { users } from '@shared/schema';
++
++export interface AdminCredentials {
++  email: string | null;
++  passwordHash: string | null;
++}
++
++export interface EnsureAdminAccountResult {
++  created: boolean;
++  email: string;
++}
++
++export const getAdminCredentials = (): AdminCredentials => {
++  return {
++    email: process.env.ADMIN_EMAIL ?? null,
++    passwordHash: process.env.ADMIN_PASSWORD_HASH ?? null,
++  };
++};
++
++const DEFAULT_ADMIN_EMAIL = 'admin@thottopilot.com';
++const DEFAULT_ADMIN_USERNAME = 'admin';
++
++async function resolveAdminPasswordHash(passwordHashFromEnv: string | null): Promise<string> {
++  if (passwordHashFromEnv) return passwordHashFromEnv;
++  const fallbackPassword = process.env.ADMIN_PASSWORD ?? null;
++  if (!fallbackPassword) {
++    throw new Error('ADMIN_PASSWORD_HASH (preferred) or ADMIN_PASSWORD must be set to bootstrap the admin account');
++  }
++  return bcrypt.hash(fallbackPassword, 10);
++}
++
++export const ensureAdminAccount = async (): Promise<EnsureAdminAccountResult> => {
++  const { email, passwordHash } = getAdminCredentials();
++  const resolvedEmail = email ?? DEFAULT_ADMIN_EMAIL;
++
++  const existing = await db
++    .select({ id: users.id })
++    .from(users)
++    .where(eq(users.email, resolvedEmail))
++    .limit(1);
++
++  if (existing.length > 0) {
++    return { created: false, email: resolvedEmail };
++  }
++
++  const username = process.env.ADMIN_USERNAME ?? DEFAULT_ADMIN_USERNAME;
++  const hashedPassword = await resolveAdminPasswordHash(passwordHash);
++
++  await db.insert(users).values({
++    email: resolvedEmail,
++    username,
++    password: hashedPassword,
++    isAdmin: true,
++    role: 'admin',
++    emailVerified: true,
++    tier: 'admin',
++  });
++
++  return { created: true, email: resolvedEmail };
++};
++
++export const verifyAdminCredentials = async (
++  identifier: string | undefined,
++  password: string | undefined
++): Promise<string | null> => {
++  const { email, passwordHash } = getAdminCredentials();
++  if (!email || !passwordHash || typeof identifier !== 'string' || typeof password !== 'string') {
++    return null;
++  }
++  if (identifier !== email) return null;
++  const matches = await bcrypt.compare(password, passwordHash);
++  return matches ? email : null;
++};
+diff --git a/server/routes.ts b/server/routes.ts
+--- a/server/routes.ts
++++ b/server/routes.ts
+@@
+-  if (app.get('authRoutesConfigured') !== true) {
+-    setupAuth(app, apiPrefix);
+-    await setupAuth(app, apiPrefix);
+-    app.set('authRoutesConfigured', true);
+-  }
++  if (app.get('authRoutesConfigured') !== true) {
++    await setupAuth(app, apiPrefix);
++    app.set('authRoutesConfigured', true);
++  }
+diff --git a/server/scripts/create-admin.ts b/server/scripts/create-admin.ts
+--- a/server/scripts/create-admin.ts
++++ b/server/scripts/create-admin.ts
+@@ -1,200 +1,32 @@
+-// existing bootstrap logic replaced
+-import bcrypt from 'bcrypt';
+-import { db } from '../db.js';
+-import { users } from '@shared/schema';
+-import { eq } from 'drizzle-orm';
+-import { ensureAdminAccount } from '../lib/admin-auth.js';
+-
+-async function createAdmin() {
+-  const email = process.env.ADMIN_EMAIL || 'admin@thottopilot.com';
+-  const username = process.env.ADMIN_USERNAME || 'admin';
+-  const passwordHashFromEnv = process.env.ADMIN_PASSWORD_HASH ?? null;
+-  const passwordForLocalBootstrap = process.env.ADMIN_PASSWORD ?? null;
+-  // ...
+-}
+-
+-createAdmin()
+-  .then(() => process.exit(0))
+-  .catch((err) => {
+-    console.error('Failed to create admin user:', err);
+-    process.exit(1);
+-  });
+-createAdmin();
++import { ensureAdminAccount } from '../lib/admin-auth.js';
++
++async function main() {
++  try {
++    const { created, email } = await ensureAdminAccount();
++    // eslint-disable-next-line no-console
++    console.error(
++      created
++        ? `✅ Admin user created with email ${email}`
++        : `✅ Admin user already exists with email ${email}`
++    );
++    process.exit(0);
++  } catch (err) {
++    // eslint-disable-next-line no-console
++    console.error('Failed to ensure admin user:', err);
++    process.exit(1);
++  }
++}
++
++main();
+diff --git a/tests/auth/signup.test.ts b/tests/auth/signup.test.ts
+--- a/tests/auth/signup.test.ts
++++ b/tests/auth/signup.test.ts
+@@
+-import { describe, it, expect, beforeEach, vi } from 'vitest';
++import { describe, it, expect, beforeEach, beforeAll, afterEach, vi } from 'vitest';
+@@
+-describe('Signup and email verification', () => {
+-  beforeEach(() => {
++describe('Signup and email verification', () => {
++  beforeEach(async () => {
+     users.length = 0;
+     tokens.length = 0;
+     vi.clearAllMocks();
+     process.env.ADMIN_EMAIL = adminEmail;
+     process.env.ADMIN_PASSWORD_HASH = adminPasswordHash;
++    delete process.env.ADMIN_PASSWORD;
+   });
+@@
+-    setupAuth(app);
+-    await setupAuth(app);
++    await setupAuth(app);
+@@
+-      expect(authCookie).toMatch(/SameSite=Strict/i);
++      expect(authCookie).toMatch(/SameSite=Lax/i);
+diff --git a/tests/integration/admin-login.test.ts b/tests/integration/admin-login.test.ts
+--- a/tests/integration/admin-login.test.ts
++++ b/tests/integration/admin-login.test.ts
+@@
+-import { setupAuth } from '../../server/auth.ts';
++import { setupAuth } from '../../server/auth';
+diff --git a/tests/integration/auth/last-login.test.ts b/tests/integration/auth/last-login.test.ts
+--- a/tests/integration/auth/last-login.test.ts
++++ b/tests/integration/auth/last-login.test.ts
+@@
+-import { describe, it, expect, beforeEach, vi } from 'vitest';
++import { describe, it, expect, beforeEach, beforeAll, afterAll, vi } from 'vitest';
+@@
+-  beforeEach(() => {
++  beforeEach(async () => {
+     vi.clearAllMocks();
+     users.clear();
+@@
+-    setupAuth(app, '/api');
+     await setupAuth(app, '/api');
+   });
+diff --git a/tests/unit/auth/email-verification-redirect.test.ts b/tests/unit/auth/email-verification-redirect.test.ts
+--- a/tests/unit/auth/email-verification-redirect.test.ts
++++ b/tests/unit/auth/email-verification-redirect.test.ts
+@@
+-import { describe, test, expect, vi, beforeEach } from 'vitest';
++import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+@@
+-  beforeEach(() => {
+-    vi.clearAllMocks();
+-    app = express();
+-    app.use(express.json());
+-    setupAuth(app);
+-    const adminHash = await bcrypt.hash('RedirectAdminPass!456', 10);
+-    process.env.ADMIN_EMAIL = 'redirect-admin@example.com';
+-    process.env.ADMIN_PASSWORD_HASH = adminHash;
+-    await setupAuth(app);
+-  });
++  beforeEach(async () => {
++    vi.clearAllMocks();
++    app = express();
++    app.use(express.json());
++    const adminHash = await bcrypt.hash('RedirectAdminPass!456', 10);
++    process.env.ADMIN_EMAIL = 'redirect-admin@example.com';
++    process.env.ADMIN_PASSWORD_HASH = adminHash;
++    await setupAuth(app);
++  });
++
++  afterEach(() => {
++    delete process.env.ADMIN_EMAIL;
++    delete process.env.ADMIN_PASSWORD_HASH;
++  });
+diff --git a/tests/unit/auth/email-verification.test.ts b/tests/unit/auth/email-verification.test.ts
+--- a/tests/unit/auth/email-verification.test.ts
++++ b/tests/unit/auth/email-verification.test.ts
+@@
+-import { describe, it, expect, vi, beforeEach } from 'vitest';
++import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+@@
+-  beforeEach(() => {
+-    // Clear all mocks and data
+-    vi.clearAllMocks();
+-    mockTokens.clear();
+-    mockUsers.clear();
+-    mockStorage.__setConsumeDelay(0);
+-    mockEmailService.sendVerificationEmail.mockResolvedValue(true);
+-    mockEmailService.sendWelcomeEmail.mockResolvedValue(true);
+-
+-    // Setup express app
+-    app = express();
+-    app.use(express.json());
+-    setupAuth(app);
+-    const adminHash = await bcrypt.hash('VerifyAdminPass!789', 10);
+-    process.env.ADMIN_EMAIL = 'verify-admin@example.com';
+-    process.env.ADMIN_PASSWORD_HASH = adminHash;
+-    await setupAuth(app);
+-  });
++  beforeEach(async () => {
++    vi.clearAllMocks();
++    mockTokens.clear();
++    mockUsers.clear();
++    mockStorage.__setConsumeDelay(0);
++    mockEmailService.sendVerificationEmail.mockResolvedValue(true);
++    mockEmailService.sendWelcomeEmail.mockResolvedValue(true);
++
++    app = express();
++    app.use(express.json());
++    const adminHash = await bcrypt.hash('VerifyAdminPass!789', 10);
++    process.env.ADMIN_EMAIL = 'verify-admin@example.com';
++    process.env.ADMIN_PASSWORD_HASH = adminHash;
++    await setupAuth(app);
++  });
++
++  afterEach(() => {
++    delete process.env.ADMIN_EMAIL;
++    delete process.env.ADMIN_PASSWORD_HASH;
++  });
+diff --git a/tests/unit/auth/login-identifier.test.ts b/tests/unit/auth/login-identifier.test.ts
+--- a/tests/unit/auth/login-identifier.test.ts
++++ b/tests/unit/auth/login-identifier.test.ts
+@@
+-import { setupAuth } from '../../../server/auth.ts';
++import { setupAuth } from '../../../server/auth';
+@@
+-    testUsername = testuser_${unique};
+-    testEmail = test+${unique}@example.com;
++    testUsername = `testuser_${unique}`;
++    testEmail = `test+${unique}@example.com`;
+@@
+-        expect(auth.cookie).toContain('SameSite=Strict');
++        expect(auth.cookie).toContain('SameSite=Lax');
+EOF
+)

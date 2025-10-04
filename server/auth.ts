@@ -809,8 +809,9 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
       // Clear session cookie
       cfg.clear(res, cfg.sessionName);
       
-      // Clear auth token cookie
-      cfg.clear(res, cfg.authName);
+      // Clear auth token cookie with both sameSite values to handle both regular auth and OAuth
+      cfg.clear(res, cfg.authName); // Default (sameSite: lax)
+      cfg.clear(res, cfg.authName, { ...cfg.options, sameSite: 'none' }); // OAuth (sameSite: none)
       
       // Destroy session if exists
       if (req.session) {
@@ -828,6 +829,7 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
       const cfg = getCookieConfig();
       cfg.clear(res, cfg.sessionName);
       cfg.clear(res, cfg.authName);
+      cfg.clear(res, cfg.authName, { ...cfg.options, sameSite: 'none' });
       return res.status(204).end();
     }
   });
