@@ -921,6 +921,20 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // csurf calls next(err).
   app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (err instanceof Error && (err as { code?: string }).code === 'EBADCSRFTOKEN') {
+      // Exempt login and logout routes from CSRF check since they don't modify sensitive data
+      // and need to work for first-time visitors who don't have CSRF tokens
+      const fullPath = req.path;
+      const exemptPaths = [
+        prefixApiPath('/auth/login', apiPrefix),
+        prefixApiPath('/auth/logout', apiPrefix),
+        prefixApiPath('/auth/signup', apiPrefix)
+      ];
+      
+      if (exemptPaths.some(path => fullPath === path || fullPath.startsWith(path + '/'))) {
+        // Pass the request through without CSRF validation for exempt routes
+        return next();
+      }
+      
       logger.warn('CSRF token validation failed', {
         ip: req.ip,
         userAgent: req.get('User-Agent'),
@@ -2024,7 +2038,13 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
 
   // Handle 404s for API routes specifically
   app.use('/api/*', (req, res) => {
-    res.status(404).json({ message: `API endpoint not found: ${req.path}` });
+    logger.warn('API 404', {
+      path: req.path,
+      originalUrl: req.originalUrl,
+      url: req.url,
+      method: req.method
+    });
+    res.status(404).json({ message: `API endpoint not found: ${req.originalUrl}` });
   });
 
   // Apply error handling middleware last

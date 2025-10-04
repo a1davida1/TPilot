@@ -29,6 +29,12 @@ const JWT_SECRET_VALIDATED: string = JWT_SECRET;
 export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
   const route = (path: string) => prefixApiPath(path, apiPrefix);
 
+  logger.info('Setting up auth routes', {
+    apiPrefix,
+    signupRoute: route('/auth/signup'),
+    loginRoute: route('/auth/login')
+  });
+
   // Regular signup
   app.post(route('/auth/signup'), signupLimiter, validate(signupValidationSchema), async (req, res) => {
     const startTime = Date.now();
