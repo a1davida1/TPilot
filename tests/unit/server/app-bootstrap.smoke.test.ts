@@ -62,12 +62,12 @@ describe('createExpressApp bootstrap fallback', () => {
     const { createExpressApp } = await import('../../../server/index.ts');
 
     await expect(
-      createExpressApp({ startQueue: undefined, configureStaticAssets: false, enableVite: false })
+      createExpressApp({ startQueue: false, configureStaticAssets: false, enableVite: false })
     ).resolves.toBeDefined();
 
     expect(mockStartQueue).not.toHaveBeenCalled();
     expect(mockLogger.info).toHaveBeenCalledWith(
-      'Queue startup skipped: provide REDIS_URL or DATABASE_URL environment variables to enable background workers.'
+      'Queue startup disabled for current execution context.'
     );
   });
 });
