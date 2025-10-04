@@ -2,8 +2,6 @@ import express from 'express';
 import request from 'supertest';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-let exchangeRedditCodeMock: ReturnType<typeof vi.fn>;
-
 vi.mock('../../server/db.ts', () => ({
   db: {
     insert: vi.fn(() => ({
@@ -23,11 +21,25 @@ vi.mock('../../server/db.ts', () => ({
 }));
 
 vi.mock('../../server/middleware/auth.ts', () => ({
-  authenticateToken: (req: express.Request, _res: express.Response, next: express.NextFunction) => {
-    const requestWithUser = req as express.Request & { user?: { id: number } };
+  authenticateToken: ((
+    reqOrRequired: boolean | express.Request,
+    res?: express.Response,
+    next?: express.NextFunction
+  ) => {
+    if (typeof reqOrRequired === 'boolean') {
+      // Factory pattern: return middleware
+      return (req: express.Request, _res: express.Response, next: express.NextFunction) => {
+        const requestWithUser = req as express.Request & { user?: { id: number } };
+        requestWithUser.user = { id: 42 };
+        next();
+      };
+    }
+    
+    // Direct middleware pattern
+    const requestWithUser = reqOrRequired as express.Request & { user?: { id: number } };
     requestWithUser.user = { id: 42 };
-    next();
-  }
+    if (next) next();
+  })
 }));
 
 vi.mock('../../server/lib/safety-systems.ts', () => ({
@@ -39,7 +51,7 @@ vi.mock('../../server/lib/safety-systems.ts', () => ({
 }));
 
 vi.mock('../../server/lib/reddit.ts', () => {
-  exchangeRedditCodeMock = vi.fn().mockImplementation(async () => {
+  const mockExchangeRedditCode = vi.fn().mockImplementation(async () => {
     throw new Error('token exchange disabled in tests');
   });
 
@@ -62,7 +74,7 @@ vi.mock('../../server/lib/reddit.ts', () => {
   return {
     RedditManager: MockRedditManager,
     getRedditAuthUrl: (state: string) => `https://example.com/oauth?state=${state}`,
-    exchangeRedditCode: exchangeRedditCodeMock,
+    exchangeRedditCode: mockExchangeRedditCode,
     getUserRedditCommunityEligibility: vi.fn(async () => ({ eligible: true }))
   };
 });
@@ -70,7 +82,9 @@ vi.mock('../../server/lib/reddit.ts', () => {
 import { registerRedditRoutes } from '../../server/reddit-routes.ts';
 import { stateStore } from '../../server/services/state-store.ts';
 import { logger } from '../../server/bootstrap/logger.ts';
+import { exchangeRedditCode } from '../../server/lib/reddit.ts';
 
+const exchangeRedditCodeMock = vi.mocked(exchangeRedditCode);
 const FORWARDED_IP = '203.0.113.10';
 
 function createTestApp() {
@@ -195,6 +209,7 @@ describe('Reddit OAuth IP normalization', () => {
     exchangeRedditCodeMock.mockResolvedValueOnce({
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
+      expiresIn: 3600,
     });
 
     const callbackResponse = await request(app)
@@ -226,6 +241,7 @@ describe('Reddit OAuth IP normalization', () => {
     exchangeRedditCodeMock.mockResolvedValueOnce({
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
+      expiresIn: 3600,
     });
 
     const callbackResponse = await request(app)
@@ -258,6 +274,7 @@ describe('Reddit OAuth IP normalization', () => {
     exchangeRedditCodeMock.mockResolvedValueOnce({
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
+      expiresIn: 3600,
     });
 
     const callbackResponse = await request(app)
