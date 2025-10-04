@@ -1,12 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { z } from "zod";
-import {
-  getVisionModel,
-  getTextModel,
-  isGeminiAvailable,
-  type GeminiModel,
-} from "../lib/gemini-client.js";
+import { visionModel, textModel, isGeminiAvailable, type GeminiModel } from "../lib/gemini.js";
 import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { BANNED_WORDS_HINT, variantContainsBannedWord } from "./bannedWords";
@@ -677,7 +672,7 @@ export async function variantsRewrite(
     load("rewrite.txt")
   ]);
 
-  const textModel = getTextModel();
+  const model = textModel;
   const voiceGuide = buildVoiceGuideBlock(params.voice);
   const sanitizedBaseHint = sanitizeHintForRetry(params.hint);
   const voiceContext = formatVoiceContext(params.voice);
@@ -727,6 +722,9 @@ export async function variantsRewrite(
 
     let res: unknown;
     try {
+      if (!textModel) {
+        throw new Error('Gemini text model is not available');
+      }
       res = await textModel.generateContent([
         { text: promptSections.join("\n") }
       ]);
@@ -925,7 +923,7 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
   try {
     console.error('Starting fact extraction for image:', imageUrl.substring(0, 100) + '...');
     const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("extract.txt");
-    const _vision = getVisionModel();
+    const _vision = visionModel;
 
     // Handle data URLs differently from regular URLs
     let imageData: string;
@@ -1039,7 +1037,10 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
     }
 
     try {
-      const model = getVisionModel();
+      const model = visionModel;
+      if (!model) {
+        throw new Error('Gemini vision model is not available');
+      }
       const res = await model.generateContent([{text: sys + "\n" + guard + "\n" + prompt}, img]);
       let rawText: string | undefined;
       try {
@@ -1103,7 +1104,7 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
     load("guard.txt"),
     load("variants.txt")
   ]);
-  const textModel = getTextModel();
+  const model = textModel;
   const voiceGuide = buildVoiceGuideBlock(params.voice);
 
   const sanitizeVariant = (item: Record<string, unknown>): z.infer<typeof CaptionItem> => {
@@ -1168,6 +1169,9 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
         promptSections.push(voiceGuide);
       }
 
+      if (!textModel) {
+        throw new Error('Gemini text model is not available');
+      }
       const res = await textModel.generateContent([
         { text: promptSections.join("\n") },
       ]);
@@ -1481,7 +1485,11 @@ export async function rankAndSelect(
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
   const promptBlock = `${sys}\n${guard}\n${prompt}`;
   const serializedVariants = JSON.stringify(variants);
-  const textModel = getTextModel();
+  const model = textModel;
+
+  if (!textModel) {
+    throw new Error('Gemini text model is not available');
+  }
 
   const first = await requestGeminiRanking(textModel, variants, serializedVariants, promptBlock, params?.platform, undefined, params?.facts);
   let parsed = RankResult.parse(first);
