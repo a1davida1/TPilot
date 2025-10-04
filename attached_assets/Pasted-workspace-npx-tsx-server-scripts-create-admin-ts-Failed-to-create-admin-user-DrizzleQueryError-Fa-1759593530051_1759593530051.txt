@@ -1,0 +1,41 @@
+workspace$ npx tsx server/scripts/create-admin.ts
+Failed to create admin user: DrizzleQueryError: Failed query: insert into "users" ("id", "username", "password", "email", "role", "is_admin", "email_verified", "first_name", "last_name", "tier", "must_change_password", "subscription_status", "trial_ends_at", "provider", "provider_id", "avatar", "bio", "referral_code_id", "referred_by", "reddit_username", "reddit_access_token", "reddit_refresh_token", "reddit_id", "stripe_customer_id", "stripe_subscription_id", "banned_at", "suspended_until", "ban_reason", "suspension_reason", "created_at", "updated_at", "last_login", "password_reset_at", "deleted_at", "is_deleted") values (default, $1, $2, $3, $4, $5, $6, default, default, $7, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default)
+params: admin,$2b$10$PF6g4RVp9pbLtB6F/YDaIuk7Z0Z6yqanwlwD0ZaFvufpRAhbZOq96,thottopilot@thottopilot.com,admin,true,true,admin
+    at NeonPreparedQuery.queryWithCache (/home/runner/workspace/node_modules/src/pg-core/session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonPreparedQuery.execute (/home/runner/workspace/node_modules/src/neon-serverless/session.ts:147:11)
+    at async createAdmin (/home/runner/workspace/server/scripts/create-admin.ts:34:3) {
+  query: 'insert into "users" ("id", "username", "password", "email", "role", "is_admin", "email_verified", "first_name", "last_name", "tier", "must_change_password", "subscription_status", "trial_ends_at", "provider", "provider_id", "avatar", "bio", "referral_code_id", "referred_by", "reddit_username", "reddit_access_token", "reddit_refresh_token", "reddit_id", "stripe_customer_id", "stripe_subscription_id", "banned_at", "suspended_until", "ban_reason", "suspension_reason", "created_at", "updated_at", "last_login", "password_reset_at", "deleted_at", "is_deleted") values (default, $1, $2, $3, $4, $5, $6, default, default, $7, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default)',
+  params: [
+    'admin',
+    '$2b$10$PF6g4RVp9pbLtB6F/YDaIuk7Z0Z6yqanwlwD0ZaFvufpRAhbZOq96',
+    'thottopilot@thottopilot.com',
+    'admin',
+    true,
+    true,
+    'admin'
+  ],
+  cause: error: duplicate key value violates unique constraint "users_username_unique"
+      at file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1345:74
+      at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at async <anonymous> (/home/runner/workspace/node_modules/src/neon-serverless/session.ts:148:12)
+      at async NeonPreparedQuery.queryWithCache (/home/runner/workspace/node_modules/src/pg-core/session.ts:71:12)
+      at async NeonPreparedQuery.execute (/home/runner/workspace/node_modules/src/neon-serverless/session.ts:147:11)
+      at async createAdmin (/home/runner/workspace/server/scripts/create-admin.ts:34:3) {
+    length: 212,
+    severity: 'ERROR',
+    code: '23505',
+    detail: 'Key (username)=(admin) already exists.',
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: 'public',
+    table: 'users',
+    column: undefined,
+    dataType: undefined,
+    constraint: 'users_username_unique',
+    file: 'nbtinsert.c',
+    line: '666',
+    routine: '_bt_check_unique'
