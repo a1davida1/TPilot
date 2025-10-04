@@ -1,6 +1,5 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import type { OnboardingState } from '@shared/schema';
 
 interface OnboardingStateData {
   completedSteps: string[];

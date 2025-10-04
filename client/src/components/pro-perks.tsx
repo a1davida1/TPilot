@@ -123,7 +123,7 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
   const [_instructionsLoading, setInstructionsLoading] = useState<string | null>(null);
   const [referralCodesByPerk, setReferralCodesByPerk] = useState<Record<string, string>>({});
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const _queryClient = useQueryClient();
 
   const sessionFetch = useCallback(
     async (input: RequestInfo | URL, init?: RequestInit) => {

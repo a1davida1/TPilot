@@ -261,7 +261,7 @@ class VisitorAnalytics {
         stats.conversionRate = (conversions / stats.uniqueVisitors) * 100;
       }
 
-      console.log('Payment recorded:', {
+      console.warn('Payment recorded:', {
         customerId,
         amount,
         date: today,

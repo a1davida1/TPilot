@@ -39,7 +39,7 @@ export function ComparisonSlider({
     isDragging.current = true;
   };
 
-  const handleMouseUp = () => {
+  const _handleMouseUp = () => {
     isDragging.current = false;
   };
 
