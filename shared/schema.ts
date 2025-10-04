@@ -120,6 +120,16 @@ export const userPreferences = pgTable("user_preferences", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const onboardingStates = pgTable("onboarding_states", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).unique().notNull(),
+  completedSteps: jsonb("completed_steps").$type<string[]>().notNull().default([]),
+  isMinimized: boolean("is_minimized").default(false).notNull(),
+  isDismissed: boolean("is_dismissed").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Lead model for waitlist functionality
 export const leads = pgTable("leads", {
   id: varchar("id", { length: 25 }).primaryKey(),
@@ -778,6 +788,7 @@ export const insertUserSchema = createInsertSchema(users);
 export const insertContentGenerationSchema = createInsertSchema(contentGenerations);
 export const insertUserSampleSchema = createInsertSchema(userSamples);
 export const insertUserPreferenceSchema = createInsertSchema(userPreferences);
+export const insertOnboardingStateSchema = createInsertSchema(onboardingStates).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertUserImageSchema = createInsertSchema(userImages);
 export const insertLeadSchema = createInsertSchema(leads);
 export const insertVerificationTokenSchema = createInsertSchema(verificationTokens);
@@ -804,6 +815,9 @@ export type InsertUserSample = z.infer<typeof insertUserSampleSchema>;
 
 export type UserPreference = typeof userPreferences.$inferSelect;
 export type InsertUserPreference = z.infer<typeof insertUserPreferenceSchema>;
+
+export type OnboardingState = typeof onboardingStates.$inferSelect;
+export type InsertOnboardingState = z.infer<typeof insertOnboardingStateSchema>;
 
 export type UserImage = typeof userImages.$inferSelect;
 export type InsertUserImage = z.infer<typeof insertUserImageSchema>;

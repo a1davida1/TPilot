@@ -5,6 +5,8 @@ import {
   type InsertContentGeneration,
   type UserPreference,
   type InsertUserPreference,
+  type OnboardingState,
+  type InsertOnboardingState,
   type UserImage,
   type InsertUserImage,
   type ExpenseCategory,
@@ -31,6 +33,7 @@ import {
   users,
   contentGenerations,
   userPreferences,
+  onboardingStates,
   userImages,
   expenseCategories,
   expenses,
@@ -120,6 +123,10 @@ export interface IStorage {
   // Preference operations
   getUserPreferences(userId: number): Promise<UserPreference | undefined>;
   updateUserPreferences(userId: number, preferences: InsertUserPreference): Promise<UserPreference>;
+
+  // Onboarding state operations
+  getOnboardingState(userId: number): Promise<OnboardingState | undefined>;
+  updateOnboardingState(userId: number, state: Partial<InsertOnboardingState>): Promise<OnboardingState>;
 
   // Image operations
   createUserImage(image: InsertUserImage): Promise<UserImage>;
@@ -699,6 +706,46 @@ export class DatabaseStorage implements IStorage {
       return insertedPreference;
     } catch (error) {
       safeLog('error', 'Storage operation failed - updating user preferences:', { error: (error as Error).message });
+      throw error;
+    }
+  }
+
+  // Onboarding state operations
+  async getOnboardingState(userId: number): Promise<OnboardingState | undefined> {
+    try {
+      const result = await db.select().from(onboardingStates).where(eq(onboardingStates.userId, userId)).limit(1);
+      return result[0];
+    } catch (error) {
+      safeLog('error', 'Storage operation failed - getting onboarding state:', { error: (error as Error).message });
+      return undefined;
+    }
+  }
+
+  async updateOnboardingState(userId: number, state: Partial<InsertOnboardingState>): Promise<OnboardingState> {
+    try {
+      // Try to update first
+      const updateResult = await db.update(onboardingStates)
+        .set({ ...state, updatedAt: new Date() })
+        .where(eq(onboardingStates.userId, userId))
+        .returning();
+
+      if (updateResult.length > 0) {
+        return updateResult[0];
+      }
+
+      // If no rows were updated, insert new state
+      const [insertedState] = await db.insert(onboardingStates)
+        .values({ 
+          ...state, 
+          userId,
+          completedSteps: state.completedSteps ?? [],
+          isMinimized: state.isMinimized ?? false,
+          isDismissed: state.isDismissed ?? false
+        } as InsertOnboardingState)
+        .returning();
+      return insertedState;
+    } catch (error) {
+      safeLog('error', 'Storage operation failed - updating onboarding state:', { error: (error as Error).message });
       throw error;
     }
   }

@@ -1778,6 +1778,43 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
     }
   });
 
+  // Onboarding state endpoints
+  app.get('/api/onboarding/state', authenticateToken(true), async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      const state = await storage.getOnboardingState(req.user.id);
+      res.json(state || {
+        completedSteps: [],
+        isMinimized: false,
+        isDismissed: false
+      });
+    } catch (error) {
+      logger.error('Failed to fetch onboarding state:', error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
+      res.status(500).json({ message: 'Failed to fetch onboarding state' });
+    }
+  });
+
+  app.patch('/api/onboarding/state', authenticateToken(true), async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      const updated = await storage.updateOnboardingState(req.user.id, req.body);
+      res.json({ success: true, state: updated });
+    } catch (error) {
+      logger.error('Failed to update onboarding state:', error);
+      if (options?.sentry) {
+        options.sentry.captureException(error);
+      }
+      res.status(500).json({ message: 'Failed to update onboarding state' });
+    }
+  });
+
   // Subscription status endpoint - REAL
   app.get('/api/subscription', authenticateToken(true), async (req: AuthenticatedRequest, res) => {
     try {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +26,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { useOnboardingState } from '@/hooks/use-onboarding-state';
 
 interface GettingStartedProps {
   userTier?: 'guest' | 'free' | 'pro' | 'premium';
@@ -35,9 +36,18 @@ interface GettingStartedProps {
 }
 
 export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom: _isAtBottom = false, onSetupLater }: GettingStartedProps) {
+  const { data: savedState, isLoading: isLoadingState, updateState } = useOnboardingState();
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
+
+  // Load saved state when available
+  useEffect(() => {
+    if (savedState && !isLoadingState) {
+      setCompletedSteps(new Set(savedState.completedSteps));
+      setIsMinimized(savedState.isMinimized);
+    }
+  }, [savedState, isLoadingState]);
 
   const steps = [
     {
@@ -154,6 +164,15 @@ export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom:
       newCompleted.add(stepId);
     }
     setCompletedSteps(newCompleted);
+    
+    // Persist to backend
+    updateState({ completedSteps: Array.from(newCompleted) });
+  };
+
+  const handleMinimize = (minimized: boolean) => {
+    setIsMinimized(minimized);
+    // Persist to backend
+    updateState({ isMinimized: minimized });
   };
 
   const handleStepAction = (step: { section?: string }) => {
@@ -208,8 +227,9 @@ export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom:
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsMinimized(false)}
+                onClick={() => handleMinimize(false)}
                 className="h-8 w-8 p-0 hover:bg-purple-100"
+                data-testid="button-expand-guide"
               >
                 <ChevronUp className="h-4 w-4" />
               </Button>
