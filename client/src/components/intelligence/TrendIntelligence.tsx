@@ -309,74 +309,61 @@ export function TrendIntelligence() {
         </TabsContent>
 
         <TabsContent value="suggestions" className="space-y-4">
-          <div className="grid gap-4">
-            {contentSuggestions.map((suggestion) => (
-              <Card key={suggestion.id} className="bg-gradient-to-r from-gray-900/50 to-gray-800/50 border-gray-700/50">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                  <div>
-                    <CardTitle className="text-lg text-white">{suggestion.title}</CardTitle>
-                    <p className="text-sm text-gray-400">{suggestion.reason}</p>
-                  </div>
-                  <Badge
-                    variant={suggestion.confidence === 'High' ? 'default' : 'secondary'}
-                    className={
-                      suggestion.confidence === 'High' 
-                        ? 'bg-green-500/20 text-green-400 border-green-500/20' 
-                        : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/20'
-                    }
-                  >
-                    {suggestion.confidence} Confidence
-                  </Badge>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Heart className="h-4 w-4 text-purple-400" />
-                      <span className="text-gray-400">Est. engagement:</span>
-                      <span className="font-medium text-white">{suggestion.estimatedEngagement}</span>
+          {forecastingSignals.length === 0 ? (
+            <Card className="bg-gradient-to-r from-gray-900/50 to-gray-800/50 border-gray-700/50">
+              <CardContent className="py-12 text-center">
+                <Zap className="h-12 w-12 mx-auto mb-4 text-gray-500" />
+                <p className="text-gray-400">No content suggestions available yet</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {forecastingSignals.slice(0, 5).map((signal, index) => (
+                <Card key={index} className="bg-gradient-to-r from-gray-900/50 to-gray-800/50 border-gray-700/50">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                    <div>
+                      <CardTitle className="text-lg text-white">Create content about: {signal.topic}</CardTitle>
+                      <p className="text-sm text-gray-400">Post to {signal.subreddit} • {signal.category}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-purple-400" />
-                      <span className="text-gray-400">Best time:</span>
-                      <span className="font-medium text-white">{suggestion.bestTime}</span>
+                    <Badge
+                      variant={signal.confidence >= 80 ? 'default' : 'secondary'}
+                      className={
+                        signal.confidence >= 80
+                          ? 'bg-green-500/20 text-green-400 border-green-500/20' 
+                          : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/20'
+                      }
+                    >
+                      {signal.confidence}% Confidence
+                    </Badge>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-purple-400" />
+                        <span className="text-gray-400">Growth:</span>
+                        <span className="font-medium text-white">{signal.growthVelocity.toFixed(1)}x</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-purple-400" />
+                        <span className="text-gray-400">Timeframe:</span>
+                        <span className="font-medium text-white">{signal.timeframe}</span>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center justify-between">
-                    <div className="flex space-x-1">
-                      {suggestion.platforms.map((platform) => (
-                        <Badge key={platform} variant="outline" className="text-xs border-gray-600">
-                          {platform}
+                    {signal.competitionLevel && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Users className="h-4 w-4 text-purple-400" />
+                        <span className="text-gray-400">Competition:</span>
+                        <Badge variant="outline" className="text-xs">
+                          {signal.competitionLevel}
                         </Badge>
-                      ))}
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="sm" data-testid={`save-suggestion-${suggestion.id}`}>
-                        Save Idea
-                      </Button>
-                      <Button size="sm" className="bg-purple-600 hover:bg-purple-700" data-testid={`use-suggestion-${suggestion.id}`}>
-                        <Zap className="h-4 w-4 mr-1" />
-                        Use This
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <Card className="bg-gradient-to-r from-gray-900/50 to-gray-800/50 border-gray-700/50">
-            <CardHeader>
-              <CardTitle className="text-white">Get More Suggestions</CardTitle>
-              <p className="text-sm text-gray-400">AI will analyze current trends and generate personalized content ideas</p>
-            </CardHeader>
-            <CardContent>
-              <Button className="w-full bg-purple-600 hover:bg-purple-700" data-testid="generate-suggestions">
-                <Zap className="h-4 w-4 mr-2" />
-                Generate New Suggestions
-              </Button>
-            </CardContent>
-          </Card>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="subreddits" className="space-y-4">

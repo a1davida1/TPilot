@@ -4,7 +4,7 @@ import { stateStore } from './state-store.js';
 import { logger } from '../lib/logger.js';
 import { db } from '../db.js';
 import { creatorAccounts, redditPostOutcomes } from '@shared/schema';
-import { eq, sql, and, desc } from 'drizzle-orm';
+import { eq, sql, and, desc, gte } from 'drizzle-orm';
 
 type CacheStore = typeof stateStore;
 
@@ -220,13 +220,16 @@ function isDataset(value: unknown): value is RedditIntelligenceDataset {
 export class RedditIntelligenceService {
   private cacheStore: CacheStore;
   private ttlSeconds: number;
+  private outcomeMetricsCache: Map<string, { successCount: number; totalPosts: number }> | null = null;
+  private outcomeMetricsCacheTime: number = 0;
+  private readonly OUTCOME_METRICS_CACHE_TTL = 300000; // 5 minutes
 
   constructor(options?: { cacheTtlSeconds?: number; store?: CacheStore }) {
     this.cacheStore = options?.store ?? stateStore;
     this.ttlSeconds = options?.cacheTtlSeconds ?? DEFAULT_CACHE_TTL_SECONDS;
   }
 
-  async invalidateCache(userId?: string): Promise<void> {
+  async invalidateCache(userId?: number): Promise<void> {
     const cacheKey = this.buildCacheKey(userId);
     try {
       await this.cacheStore.delete(cacheKey);
@@ -291,7 +294,7 @@ export class RedditIntelligenceService {
 
     const client = await this.getClient();
     const trendingTopics = await this.fetchTrendingTopics(client, communityMap, userCommunities);
-    const subredditHealth = this.computeSubredditHealth(communities, trendingTopics, userCommunities);
+    const subredditHealth = await this.computeSubredditHealth(communities, trendingTopics, userCommunities);
     const forecastingSignals = this.buildForecastingSignals(trendingTopics, communityMap, userCommunities);
 
     return {
@@ -498,16 +501,18 @@ export class RedditIntelligenceService {
     };
   }
 
-  private async getUserCommunities(userId: string): Promise<string[]> {
+  private async getUserCommunities(userId: number): Promise<string[]> {
     try {
+      const userIdNum = userId;
+
       // Get user's linked Reddit account and their engaged communities
       const linkedAccounts = await db
         .select({ 
-          username: creatorAccounts.username,
+          handle: creatorAccounts.handle,
         })
         .from(creatorAccounts)
         .where(and(
-          eq(creatorAccounts.userId, userId),
+          eq(creatorAccounts.userId, userIdNum),
           eq(creatorAccounts.platform, 'reddit')
         ))
         .limit(1);
@@ -523,8 +528,8 @@ export class RedditIntelligenceService {
         })
         .from(redditPostOutcomes)  
         .where(and(
-          eq(redditPostOutcomes.userId, userId),
-          eq(redditPostOutcomes.outcome, 'success')
+          eq(redditPostOutcomes.userId, userIdNum),
+          eq(redditPostOutcomes.status, 'approved')
         ))
         .groupBy(redditPostOutcomes.subreddit)
         .orderBy(desc(sql`count(*)`))
@@ -532,43 +537,97 @@ export class RedditIntelligenceService {
 
       const communities = outcomes.map(o => o.subreddit).filter(Boolean);
       
-      // Also get their eligible communities
-      const eligible = await getEligibleCommunitiesForUser(userId);
-      const allCommunities = [...new Set([...communities, ...eligible.map(c => c.name)])];
-      
-      return allCommunities.slice(0, 10); // Limit to top 10
+      // Return top communities the user has successfully posted to
+      return communities.slice(0, 10); // Limit to top 10
     } catch (error) {
       logger.warn('Failed to get user communities', { userId, error });
       return [];
     }
   }
 
-  private computeSubredditHealth(
+  private async computeSubredditHealth(
     communities: NormalizedRedditCommunity[],
     trendingTopics: RedditTrendingTopic[],
     userCommunities: string[] = []
-  ): SubredditHealthMetric[] {
+  ): Promise<SubredditHealthMetric[]> {
     const trendingSet = new Set<string>(
       trendingTopics.map(topic => normalizeSubredditName(topic.subreddit)),
     );
 
+    // Fetch post outcomes to adjust health scoring
+    const outcomeMetrics = await this.getOutcomeMetrics();
+
     return communities
       .slice(0, MAX_HEALTH_COMMUNITIES)
-      .map(community => this.evaluateCommunityHealth(community, trendingSet))
+      .map(community => this.evaluateCommunityHealth(community, trendingSet, outcomeMetrics))
       .filter((metric): metric is SubredditHealthMetric => metric !== null);
+  }
+
+  private async getOutcomeMetrics(): Promise<Map<string, { successCount: number; totalPosts: number }>> {
+    // Check cache first
+    const now = Date.now();
+    if (this.outcomeMetricsCache && (now - this.outcomeMetricsCacheTime) < this.OUTCOME_METRICS_CACHE_TTL) {
+      return this.outcomeMetricsCache;
+    }
+
+    const metricsMap = new Map<string, { successCount: number; totalPosts: number }>();
+
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const outcomes = await db
+        .select({
+          subreddit: redditPostOutcomes.subreddit,
+          status: redditPostOutcomes.status,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(redditPostOutcomes)
+        .where(gte(redditPostOutcomes.occurredAt, thirtyDaysAgo))
+        .groupBy(redditPostOutcomes.subreddit, redditPostOutcomes.status);
+
+      for (const row of outcomes) {
+        const normalizedSubreddit = normalizeSubredditName(row.subreddit);
+        const existing = metricsMap.get(normalizedSubreddit) || { successCount: 0, totalPosts: 0 };
+        
+        existing.totalPosts += row.count;
+        // Consider 'approved' as success
+        if (row.status === 'approved') {
+          existing.successCount += row.count;
+        }
+        
+        metricsMap.set(normalizedSubreddit, existing);
+      }
+
+      // Cache the results
+      this.outcomeMetricsCache = metricsMap;
+      this.outcomeMetricsCacheTime = now;
+    } catch (error) {
+      logger.warn('Failed to get post outcome metrics (table may not exist yet)', { error });
+    }
+
+    return metricsMap;
   }
 
   private evaluateCommunityHealth(
     community: NormalizedRedditCommunity,
     trendingSet: Set<string>,
+    outcomeMetrics: Map<string, { successCount: number; totalPosts: number }>,
   ): SubredditHealthMetric | null {
     const normalizedName = normalizeSubredditName(community.name);
     if (!normalizedName) {
       return null;
     }
 
-    const engagementRate = community.engagementRate ?? 0;
+    let engagementRate = community.engagementRate ?? 0;
     const successProbability = community.successProbability ?? 60;
+
+    // Adjust engagement based on post outcomes
+    const outcomeData = outcomeMetrics.get(normalizedName);
+    if (outcomeData && outcomeData.totalPosts > 0) {
+      const successRate = outcomeData.successCount / outcomeData.totalPosts;
+      engagementRate = engagementRate * (0.6 + successRate * 0.4); // Weight success rate at 40%
+    }
     const averageUpvotes = community.averageUpvotes ?? 0;
     const growthTrend = community.growthTrend ?? null;
     const modActivity = community.modActivity ?? null;
