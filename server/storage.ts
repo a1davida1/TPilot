@@ -734,7 +734,7 @@ export class DatabaseStorage implements IStorage {
       }
 
       // If no rows were updated, insert new state
-      const insertPayload: InsertOnboardingState = {
+      const insertPayload = {
         userId,
         completedSteps: state.completedSteps ?? [],
         isMinimized: state.isMinimized ?? false,
@@ -742,7 +742,7 @@ export class DatabaseStorage implements IStorage {
       };
 
       const [insertedState] = await db.insert(onboardingStates)
-        .values(insertPayload)
+        .values(insertPayload as typeof onboardingStates.$inferInsert)
         .returning();
       return insertedState;
     } catch (error) {
