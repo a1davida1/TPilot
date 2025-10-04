@@ -6,7 +6,7 @@ import {
   getTextModel,
   isGeminiAvailable,
   type GeminiModel,
-} from "../lib/gemini.js";
+} from "../lib/gemini-client.js";
 import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { BANNED_WORDS_HINT, variantContainsBannedWord } from "./bannedWords";

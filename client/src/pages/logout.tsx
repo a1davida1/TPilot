@@ -5,7 +5,22 @@ export default function LogoutPage() {
   const { logout } = useAuth();
 
   useEffect(() => {
-    logout().finally(() => window.location.href = '/');
+    let isActive = true;
+    void logout()
+      .then(() => {
+        if (isActive) {
+          window.location.assign('/login');
+        }
+      })
+      .catch((error) => {
+        console.error('Logout failed', error);
+        if (isActive) {
+          window.location.assign('/login?logoutError=1');
+        }
+      });
+    return () => {
+      isActive = false;
+    };
   }, [logout]);
 
   return <p>Logging out...</p>;
