@@ -1,0 +1,87 @@
+@@
+-// existing imports...
++// existing imports...
++
++// Debug helper
++const dbg = (...a: unknown[]) =>
++  process.env.CAPTION_DEBUG ? console.error("[gemini]", ...a) : undefined;
++
++// Flatten @google/genai candidates → single text
++export const extractTextFromCandidates = (resp: any): string | undefined => {
++  if (!resp || !Array.isArray(resp.candidates)) return;
++  const out: string[] = [];
++  for (const c of resp.candidates) {
++    const parts = c?.content?.parts;
++    if (!Array.isArray(parts)) continue;
++    for (const p of parts) {
++      if (typeof p === "string") out.push(p);
++      else if (p && typeof p.text === "string") out.push(p.text);
++    }
++  }
++  const s = out.join("\n").trim();
++  return s.length ? s : undefined;
++};
++
++// Resolve text from multiple possible Gemini shapes
++export async function resolveResponseText(payload: unknown): Promise<string | undefined> {
++  const clean = (s?: string) => (s && s.trim() ? s.trim() : undefined);
++  if (typeof payload === "string") return clean(payload);
++  if (!payload || typeof payload !== "object") return undefined;
++  const obj: any = payload;
++
++  // 1) top-level text
++  const top = clean(obj.text);
++  if (top) return top;
++
++  // 2) nested response.text() or .text
++  const r = obj.response;
++  if (r) {
++    if (typeof r.text === "function") {
++      try {
++        const t = await Promise.resolve(r.text());
++        const ct = clean(t);
++        if (ct) return ct;
++      } catch {}
++    }
++    if (typeof r.text === "string") {
++      const ct = clean(r.text);
++      if (ct) return ct;
++    }
++  }
++
++  // 3) candidates[].content.parts[].text
++  const cand = extractTextFromCandidates(obj);
++  if (cand) return cand;
++
++  return undefined;
++}
+@@
+-export async function generateContent(...) {
+-  const response = await client.models.generateContent(...);
+-  // previously: relied on response.text() or response.text
+-  return {
+-    ...response,
+-    response: {
+-      ...response.response,
+-      text: () => (response as any).text,
+-    },
+-  };
+-}
++export async function generateContent(/* existing args */) {
++  const response = await client.models.generateContent(/* existing args */);
++  dbg("resp.keys", response && typeof response === "object" ? Object.keys(response) : typeof response);
++  dbg("candidates.len", (response as any)?.candidates?.length);
++  const normalizedText = (await resolveResponseText(response)) ?? "";
++  dbg("normalized.len", normalizedText.length, normalizedText.slice(0, 160));
++
++  // expose both top-level .text and response.text() for legacy call sites
++  const legacy = {
++    ...response,
++    text: normalizedText,
++    response: {
++      ...(typeof (response as any)?.response === "object" ? (response as any).response : {}),
++      text: () => normalizedText,
++    },
++  };
++  return legacy as typeof response & { text: string; response: { text: () => string } };
++}

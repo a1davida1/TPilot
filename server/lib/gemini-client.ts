@@ -1,6 +1,60 @@
 import { GoogleGenAI, type GoogleGenAIOptions } from "@google/genai";
 import { env } from "./config.js";
 
+// Debug helper
+const dbg = (...a: unknown[]) =>
+  process.env.CAPTION_DEBUG ? console.error("[gemini]", ...a) : undefined;
+
+// Flatten @google/genai candidates → single text
+export const extractTextFromCandidates = (resp: any): string | undefined => {
+  if (!resp || !Array.isArray(resp.candidates)) return;
+  const out: string[] = [];
+  for (const c of resp.candidates) {
+    const parts = c?.content?.parts;
+    if (!Array.isArray(parts)) continue;
+    for (const p of parts) {
+      if (typeof p === "string") out.push(p);
+      else if (p && typeof p.text === "string") out.push(p.text);
+    }
+  }
+  const s = out.join("\n").trim();
+  return s.length ? s : undefined;
+};
+
+// Resolve text from multiple possible Gemini shapes
+export async function resolveResponseText(payload: unknown): Promise<string | undefined> {
+  const clean = (s?: string) => (s && s.trim() ? s.trim() : undefined);
+  if (typeof payload === "string") return clean(payload);
+  if (!payload || typeof payload !== "object") return undefined;
+  const obj: any = payload;
+
+  // 1) top-level text
+  const top = clean(obj.text);
+  if (top) return top;
+
+  // 2) nested response.text() or .text
+  const r = obj.response;
+  if (r) {
+    if (typeof r.text === "function") {
+      try {
+        const t = await Promise.resolve(r.text());
+        const ct = clean(t);
+        if (ct) return ct;
+      } catch {}
+    }
+    if (typeof r.text === "string") {
+      const ct = clean(r.text);
+      if (ct) return ct;
+    }
+  }
+
+  // 3) candidates[].content.parts[].text
+  const cand = extractTextFromCandidates(obj);
+  if (cand) return cand;
+
+  return undefined;
+}
+
 const apiKey =
   process.env.GOOGLE_GENAI_API_KEY ||
   process.env.GEMINI_API_KEY ||
@@ -138,68 +192,19 @@ const createModelAdapter = (modelName: string): GeminiModel => ({
     const response = await client.models.generateContent(
       request as unknown as Parameters<typeof client.models.generateContent>[0]
     );
-    const rawCandidateMetadata = (response as { candidates?: unknown }).candidates;
-    const candidates = Array.isArray(rawCandidateMetadata)
-      ? (rawCandidateMetadata as Array<Record<string, unknown>>)
-      : [];
-    const textSegments: string[] = [];
+    dbg("resp.keys", response && typeof response === "object" ? Object.keys(response) : typeof response);
+    dbg("candidates.len", (response as any)?.candidates?.length);
+    const normalizedText = (await resolveResponseText(response)) ?? "";
+    dbg("normalized.len", normalizedText.length, normalizedText.slice(0, 160));
 
-    for (const candidate of candidates) {
-      if (typeof candidate !== "object" || candidate === null) {
-        continue;
-      }
-
-      const directCandidateText =
-        "text" in candidate ? (candidate as { text?: unknown }).text : undefined;
-
-      if (typeof directCandidateText === "string" && directCandidateText.length > 0) {
-        textSegments.push(directCandidateText);
-      }
-
-      const content = "content" in candidate ? (candidate as { content?: unknown }).content : undefined;
-      if (typeof content === "string" && content.length > 0) {
-        textSegments.push(content);
-        continue;
-      }
-
-      if (typeof content !== "object" || content === null) {
-        continue;
-      }
-
-      const parts = Array.isArray((content as { parts?: unknown }).parts)
-        ? (((content as { parts?: unknown }).parts ?? []) as Array<Record<string, unknown>>)
-        : [];
-
-      for (const part of parts) {
-        if (typeof part !== "object" || part === null) {
-          continue;
-        }
-
-        const value = "text" in part ? (part as { text?: unknown }).text : undefined;
-        if (typeof value === "string" && value.length > 0) {
-          textSegments.push(value);
-        }
-      }
-    }
-
-    const joinedText = textSegments.join("");
-    const fallbackText =
-      typeof (response as { text?: unknown }).text === "string"
-        ? (response as { text: string }).text
-        : "";
-    const selectedText = joinedText.length > 0 ? joinedText : fallbackText;
-    const normalizedText = selectedText.trim().length > 0 ? selectedText : "";
-
+    // expose both top-level .text and response.text() for legacy call sites
     const legacy: GeminiGenerateContentResponse = {
       ...response,
-      candidates: rawCandidateMetadata ?? candidates,
       text: normalizedText,
       response: {
-        ...(typeof response === "object" && response && "response" in response
-          ? (response as { response?: Record<string, unknown> }).response
-          : undefined),
-        text: () => normalizedText
-      }
+        ...(typeof (response as any)?.response === "object" ? (response as any).response : {}),
+        text: () => normalizedText,
+      },
     };
     return legacy;
   }
