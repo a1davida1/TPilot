@@ -48,18 +48,20 @@ describe('POST /api/saved-content', () => {
     getSocialMediaPostMock.mockReset();
     authenticateTokenMock.mockReset();
     loggerErrorMock.mockReset();
-    vi.resetModules();
-    ({ registerSavedContentRoutes } = await import('../../server/routes.ts'));
-
-    app = express();
-    app.use(express.json());
-
+    
+    // Configure mock BEFORE importing routes
     authenticateTokenMock.mockReturnValue(
       (req: express.Request, _res: express.Response, next: express.NextFunction) => {
         (req as express.Request & { user?: { id: number } }).user = { id: 1 };
         next();
       }
     );
+    
+    vi.resetModules();
+    ({ registerSavedContentRoutes } = await import('../../server/routes.ts'));
+
+    app = express();
+    app.use(express.json());
 
     registerSavedContentRoutes(app);
   });
