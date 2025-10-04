@@ -127,6 +127,8 @@ export default function ReferralPage() {
     const totalCommission = referralSummary?.totalCommission ?? 0;
     const conversionRate = referralSummary?.conversionRate ?? 0;
     const pendingEarnings = Math.max(totalReferrals - activeReferrals, 0) * 5;
+    const normalizedConversionRate = Number.isFinite(conversionRate) ? conversionRate : 0;
+    const formattedConversionRate = `${(normalizedConversionRate * 100).toFixed(0)}%`;
 
     return {
       totalReferrals,
@@ -134,6 +136,7 @@ export default function ReferralPage() {
       totalCommission,
       pendingEarnings,
       conversionRate,
+      formattedConversionRate,
     };
   }, [referralSummary]);
 
@@ -389,7 +392,7 @@ export default function ReferralPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                <span data-testid="stat-conversion-rate">{stats.conversionRate}%</span>
+                <span data-testid="stat-conversion-rate">{stats.formattedConversionRate}</span>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 conversion rate

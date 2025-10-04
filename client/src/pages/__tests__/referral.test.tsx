@@ -148,7 +148,8 @@ describe('ReferralPage', () => {
     expect(urlInput?.value).toBe('https://example.com/signup?ref=TP123456');
     expect(totalReferrals?.textContent).toContain('12');
     expect(totalCommission?.textContent).toContain('$35.00');
-    expect(conversionRate?.textContent).toContain('58%');
+    expect(conversionRate).not.toBeNull();
+    expect(conversionRate?.textContent).toBe('58%');
   });
 
   it('copies and shares referral information using live API payloads', async () => {
