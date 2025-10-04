@@ -72,44 +72,7 @@ export function TrendIntelligence() {
     queryKey: ['/api/reddit/intelligence'],
   });
 
-  // Derive trending topics with metadata
-  const trendingTopics = intelligence?.trendingTopics || [];
-  const subredditHealth = intelligence?.subredditHealth || [];
-  const forecastingSignals = intelligence?.forecastingSignals || [];
-  const topForecastingSignal = forecastingSignals[0];
-  const topForecastingSignalDetails = topForecastingSignal
-    ? {
-        title: resolveSignalTitle(topForecastingSignal.signal),
-        subreddit: resolveSubredditLabel(topForecastingSignal.subreddit),
-        rationale: resolveRationale(topForecastingSignal.rationale),
-        projectedEngagement: formatProjectedEngagement(topForecastingSignal.projectedEngagement),
-        confidence: topForecastingSignal.confidence,
-      }
-    : null;
-
-  // Filter trending topics
-  const filteredTopics = trendingTopics.filter(topic => {
-    const matchesSearch = topic.topic.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         topic.category.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
-  }).slice(0, 20);
-
-  const getTrendIcon = (trend: string) => {
-    switch (trend) {
-      case 'rising': return <TrendingUp className="h-4 w-4 text-green-400" />;
-      case 'declining': return <TrendingDown className="h-4 w-4 text-red-400" />;
-      default: return <div className="h-4 w-4 rounded-full bg-yellow-400" />;
-    }
-  };
-
-  const getTrendColor = (trend: string) => {
-    switch (trend) {
-      case 'rising': return 'text-green-400';
-      case 'declining': return 'text-red-400';
-      default: return 'text-yellow-400';
-    }
-  };
-
+  // Helper functions
   const formatProjectedEngagement = (value: number | null | undefined) => {
     if (typeof value !== 'number' || !Number.isFinite(value)) {
       return 'N/A';
@@ -140,6 +103,44 @@ export function TrendIntelligence() {
     const trimmed = value.trim();
     return trimmed.length > 0 ? trimmed : null;
   };
+
+  const getTrendIcon = (trend: string) => {
+    switch (trend) {
+      case 'rising': return <TrendingUp className="h-4 w-4 text-green-400" />;
+      case 'declining': return <TrendingDown className="h-4 w-4 text-red-400" />;
+      default: return <div className="h-4 w-4 rounded-full bg-yellow-400" />;
+    }
+  };
+
+  const getTrendColor = (trend: string) => {
+    switch (trend) {
+      case 'rising': return 'text-green-400';
+      case 'declining': return 'text-red-400';
+      default: return 'text-yellow-400';
+    }
+  };
+
+  // Derive trending topics with metadata
+  const trendingTopics = intelligence?.trendingTopics || [];
+  const subredditHealth = intelligence?.subredditHealth || [];
+  const forecastingSignals = intelligence?.forecastingSignals || [];
+  const topForecastingSignal = forecastingSignals[0];
+  const topForecastingSignalDetails = topForecastingSignal
+    ? {
+        title: resolveSignalTitle(topForecastingSignal.signal),
+        subreddit: resolveSubredditLabel(topForecastingSignal.subreddit),
+        rationale: resolveRationale(topForecastingSignal.rationale),
+        projectedEngagement: formatProjectedEngagement(topForecastingSignal.projectedEngagement),
+        confidence: topForecastingSignal.confidence,
+      }
+    : null;
+
+  // Filter trending topics
+  const filteredTopics = trendingTopics.filter(topic => {
+    const matchesSearch = topic.topic.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         topic.category.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
+  }).slice(0, 20);
 
   // Loading state
   if (isLoading) {
