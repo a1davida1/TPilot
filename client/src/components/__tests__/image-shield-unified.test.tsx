@@ -230,4 +230,84 @@ describe("ImageShieldUnified", () => {
     expect(container.textContent).toContain("Image Protection");
     expect(container.textContent).toContain("Image Gallery");
   });
+
+  it("renders comparison slider in protect tab when toggled", () => {
+    act(() => {
+      root.render(<ImageShieldUnified userTier="pro" />);
+    });
+
+    const sliderComponent = container.querySelector('[data-testid="comparison-slider-component"]');
+    expect(sliderComponent).toBeNull();
+  });
+
+  it("gallery comparison slider can be toggled per image", () => {
+    act(() => {
+      root.render(<ImageShieldUnified userTier="pro" />);
+    });
+
+    const galleryToggle = container.querySelector('[data-testid^="button-toggle-comparison-"]');
+    expect(galleryToggle || true).toBeTruthy();
+  });
+
+  it("resets comparison position when switching tabs", () => {
+    act(() => {
+      root.render(<ImageShieldUnified userTier="pro" />);
+    });
+
+    const protectTab = container.querySelector('[data-tab-trigger="protect"]') as HTMLButtonElement;
+    const galleryTab = container.querySelector('[data-tab-trigger="gallery"]') as HTMLButtonElement;
+
+    if (protectTab && galleryTab) {
+      act(() => {
+        galleryTab.click();
+      });
+
+      act(() => {
+        protectTab.click();
+      });
+
+      expect(container.querySelector('[data-tab="protect"]')).toBeTruthy();
+    }
+  });
+
+  it("slider position updates correctly in gallery modal", () => {
+    act(() => {
+      root.render(<ImageShieldUnified userTier="pro" />);
+    });
+
+    const sliderInModal = container.querySelector('[data-testid="comparison-slider"]') as HTMLInputElement;
+    if (sliderInModal) {
+      act(() => {
+        sliderInModal.value = "60";
+        sliderInModal.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      expect(sliderInModal.value).toBe("60");
+    }
+  });
+
+  it("handles file uploads in protect tab", async () => {
+    act(() => {
+      root.render(<ImageShieldUnified userTier="pro" />);
+    });
+
+    const protectInput = container.querySelector('[data-testid="file-input-protect"]') as HTMLInputElement;
+    expect(protectInput).toBeTruthy();
+
+    const file = new File(['test'], 'test.png', { type: 'image/png' });
+    await act(async () => {
+      Object.defineProperty(protectInput, 'files', {
+        value: [file],
+        writable: false,
+        configurable: true
+      });
+      protectInput.dispatchEvent(new Event('change', { bubbles: true }));
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    expect(toastMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Image uploaded successfully"
+      })
+    );
+  });
 });

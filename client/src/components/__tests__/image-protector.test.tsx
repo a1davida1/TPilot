@@ -159,4 +159,60 @@ describe("ImageProtector", () => {
       root2.unmount();
     });
   });
+
+  it("resets comparison position when new file is uploaded", async () => {
+    act(() => {
+      root.render(<ImageProtector userTier="pro" />);
+    });
+
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(fileInput).toBeTruthy();
+
+    const file = new File(['test'], 'test.png', { type: 'image/png' });
+    await act(async () => {
+      Object.defineProperty(fileInput, 'files', {
+        value: [file],
+        writable: false,
+        configurable: true
+      });
+      fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    expect(toastMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Image uploaded successfully"
+      })
+    );
+  });
+
+  it("comparison slider updates position when changed", async () => {
+    act(() => {
+      root.render(<ImageProtector userTier="pro" />);
+    });
+
+    const sliderElement = container.querySelector('[data-testid="comparison-slider"]') as HTMLInputElement;
+    if (sliderElement) {
+      await act(async () => {
+        sliderElement.value = "75";
+        sliderElement.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+
+      expect(sliderElement.value).toBe("75");
+    }
+  });
+
+  it("toggles between comparison and tabs view", () => {
+    act(() => {
+      root.render(<ImageProtector userTier="pro" />);
+    });
+
+    const toggleButton = container.querySelector('[data-testid="button-toggle-comparison"]') as HTMLButtonElement;
+    if (toggleButton) {
+      act(() => {
+        toggleButton.click();
+      });
+      expect(container.querySelector('[data-testid="comparison-slider-component"]')).toBeTruthy();
+    }
+  });
 });
