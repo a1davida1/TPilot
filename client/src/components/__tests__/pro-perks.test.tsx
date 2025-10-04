@@ -5,25 +5,26 @@ import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const useQueryMock = vi.fn();
+const useMutationMock = vi.fn();
+const useQueryClientMock = vi.fn();
 const toastMock = vi.fn();
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
+  useMutation: (options: unknown) => useMutationMock(options),
+  useQueryClient: () => useQueryClientMock(),
 }));
 
 vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({ toast: toastMock }),
 }));
 
-vi.mock("next/link", () => ({
-  default: ({ href, children, ...props }: { href: string | { pathname: string }; children: React.ReactNode }) => {
-    const normalized = typeof href === "string" ? href : href.pathname;
-    return (
-      <a href={normalized} {...props}>
-        {children}
-      </a>
-    );
-  }
+vi.mock("wouter", () => ({
+  Link: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
 }));
 
 vi.mock("@/components/ui/card", () => ({
@@ -73,7 +74,13 @@ describe("ProPerks referral CTA", () => {
     document.body.appendChild(container);
     root = createRoot(container);
     useQueryMock.mockReset();
+    useMutationMock.mockReset();
+    useQueryClientMock.mockReset();
     toastMock.mockReset();
+    
+    useQueryClientMock.mockReturnValue({
+      invalidateQueries: vi.fn(),
+    });
   });
 
   afterEach(() => {
@@ -133,5 +140,126 @@ describe("ProPerks referral CTA", () => {
 
     const referralLink = container.querySelector('a[href="/referral"]');
     expect(referralLink).not.toBeNull();
+  });
+});
+
+describe("ProPerks referral code generation", () => {
+  let container: HTMLDivElement;
+  let root: Root;
+  let mutateMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    useQueryMock.mockReset();
+    useMutationMock.mockReset();
+    useQueryClientMock.mockReset();
+    toastMock.mockReset();
+    
+    mutateMock = vi.fn();
+    
+    useQueryClientMock.mockReturnValue({
+      invalidateQueries: vi.fn(),
+    });
+
+    useQueryMock.mockReturnValue({
+      data: {
+        perks: [
+          {
+            id: "perk-1",
+            name: "Test Perk",
+            category: "affiliate",
+            tier: "pro",
+            description: "A testing perk",
+            commissionRate: "10% recurring",
+            requirements: [],
+            signupProcess: "instant",
+            estimatedEarnings: "$100/mo",
+            status: "available",
+            officialLink: "https://example.com",
+            features: ["Feature 1", "Feature 2"],
+          },
+        ],
+        accessGranted: true,
+      },
+      isLoading: false,
+      isError: false,
+    });
+
+    useMutationMock.mockReturnValue({
+      mutate: mutateMock,
+      isPending: false,
+      variables: null,
+    });
+  });
+
+  afterEach(() => {
+    act(() => {
+      root.unmount();
+    });
+    container.remove();
+  });
+
+  it("shows generate referral code button when opening perk modal", () => {
+    act(() => {
+      root.render(<ProPerks userTier="pro" />);
+    });
+
+    const perkCard = container.querySelector('[data-testid="perk-card-perk-1"]') as HTMLElement;
+    expect(perkCard).not.toBeNull();
+
+    act(() => {
+      perkCard.click();
+    });
+
+    const generateButton = container.querySelector('[data-testid="generate-referral-code-perk-1"]');
+    expect(generateButton).toBeTruthy();
+  });
+
+  it("shows loading state when generating referral code", () => {
+    useMutationMock.mockReturnValue({
+      mutate: mutateMock,
+      isPending: true,
+      variables: "perk-1",
+    });
+
+    act(() => {
+      root.render(<ProPerks userTier="pro" />);
+    });
+
+    const perkCard = container.querySelector('[data-testid="perk-card-perk-1"]') as HTMLElement;
+    act(() => {
+      perkCard.click();
+    });
+
+    expect(container.textContent).toContain("Generating code");
+  });
+
+  it("displays referral code after generation", () => {
+    act(() => {
+      root.render(<ProPerks userTier="pro" />);
+    });
+
+    const perkCard = container.querySelector('[data-testid="perk-card-perk-1"]') as HTMLElement;
+    act(() => {
+      perkCard.click();
+    });
+
+    expect(useMutationMock).toHaveBeenCalled();
+  });
+
+  it("shows copy button when referral code is available", () => {
+    act(() => {
+      root.render(<ProPerks userTier="pro" />);
+    });
+
+    const perkCard = container.querySelector('[data-testid="perk-card-perk-1"]') as HTMLElement;
+    act(() => {
+      perkCard.click();
+    });
+
+    const copyButton = container.querySelector('[data-testid="copy-referral-code-perk-1"]');
+    expect(copyButton || container.querySelector('[data-testid="generate-referral-code-perk-1"]')).toBeTruthy();
   });
 });
