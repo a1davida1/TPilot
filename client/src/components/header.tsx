@@ -46,7 +46,7 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
     window.location.href = '/logout';
   };
 
-  const isAdmin = user && (user.id === 999 || user.username === 'admin');
+  const isAdmin = Boolean(user?.isAdmin || user?.role === 'admin');
 
   // TODO: Implement walkthrough replay feature visibility
   const _canReplayWalkthrough =

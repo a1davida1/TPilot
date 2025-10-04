@@ -1,20 +1,10 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { User as DbUser } from '@shared/schema';
 
-interface User {
-  id: number;
-  email: string;
-  username?: string;
-  displayName?: string;
-  tier?: 'free' | 'starter' | 'pro';
-  subscription?: string;
-  isAdmin?: boolean;
-  subscription_status?: string;
-  role?: string;
-  emailVerified?: boolean;
-  bannedAt?: string | null;
-  suspendedUntil?: string | null;
-}
+export type AuthUser = Omit<DbUser, 'password'> & {
+  reddit_username?: string | null;
+};
 
 export function useAuth() {
   const queryClient = useQueryClient();
@@ -31,16 +21,16 @@ export function useAuth() {
     return publicPaths.includes(path);
   };
 
-  const { data: user, isLoading, error: _error, refetch } = useQuery<User | null>({
+  const { data: user, isLoading, error: _error, refetch } = useQuery<AuthUser | null>({
     queryKey: ['/api/auth/user'],
-    queryFn: async () => {
+    queryFn: async (): Promise<AuthUser | null> => {
       // Use cookie-based authentication only
       const response = await fetch('/api/auth/user', {
         credentials: 'include' // Include cookies for session-based auth
       });
-      
+
       if (response.ok) {
-        const userData = await response.json();
+        const userData: AuthUser | null = await response.json();
         return userData ?? null;
       }
 
@@ -64,7 +54,7 @@ export function useAuth() {
     queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
     
     // Ensure UI updates instantly
-    queryClient.setQueryData(['/api/auth/user'], null);
+    queryClient.setQueryData<AuthUser | null>(['/api/auth/user'], null);
     
     // Logout from session (clears HTTP-only cookie)
     try {
