@@ -1,0 +1,132 @@
+diff --git a//dev/null b/tests/unit/intelligence/trend-intelligence.test.tsx
+index 0000000000000000000000000000000000000000..f0384fec1eddb96eaaa31b073931c35ed6d25437 100644
+--- a//dev/null
++++ b/tests/unit/intelligence/trend-intelligence.test.tsx
+@@ -0,0 +1,127 @@
++import React from 'react';
++import { describe, it, expect, beforeEach, vi } from 'vitest';
++import { renderToStaticMarkup } from 'react-dom/server';
++import { TrendIntelligence } from '../../../client/src/components/intelligence/TrendIntelligence';
++
++type RedditIntelligenceDataset = {
++  fetchedAt: string;
++  trendingTopics: Array<{
++    topic: string;
++    subreddit: string;
++    score: number;
++    comments: number;
++    category: string;
++    url: string;
++    flair?: string;
++    nsfw: boolean;
++    postedAt: string;
++    complianceWarnings?: string[];
++    verificationRequired?: boolean;
++    promotionAllowed?: string;
++    cooldownHours?: number | null;
++  }>;
++  subredditHealth: Array<{
++    subreddit: string;
++    members: number;
++    posts24h: number;
++    avgEngagement: number;
++    growthTrend: string;
++    modActivity: string;
++    trendingActivity: boolean;
++    competitionLevel: string | null;
++  }>;
++  forecastingSignals: Array<{
++    subreddit: string;
++    signal: string;
++    confidence: number;
++    rationale: string;
++    projectedEngagement: number;
++  }>;
++};
++
++const mockUseQuery = vi.fn();
++
++vi.mock('@tanstack/react-query', () => ({
++  useQuery: (...args: unknown[]) => mockUseQuery(...args),
++}));
++
++const buildDataset = (
++  forecastingSignals: RedditIntelligenceDataset['forecastingSignals']
++): RedditIntelligenceDataset => ({
++  fetchedAt: '2024-01-01T00:00:00.000Z',
++  trendingTopics: [
++    {
++      topic: 'AI automation strategies',
++      subreddit: 'FutureTech',
++      score: 5120,
++      comments: 342,
++      category: 'Technology',
++      url: 'https://reddit.com/r/FutureTech',
++      flair: 'Discussion',
++      nsfw: false,
++      postedAt: '2024-01-01T00:00:00.000Z',
++      complianceWarnings: [],
++      verificationRequired: false,
++      promotionAllowed: 'Allowed',
++      cooldownHours: null,
++    },
++  ],
++  subredditHealth: [
++    {
++      subreddit: 'FutureTech',
++      members: 250000,
++      posts24h: 120,
++      avgEngagement: 7.4,
++      growthTrend: 'up',
++      modActivity: 'high',
++      trendingActivity: true,
++      competitionLevel: 'medium',
++    },
++  ],
++  forecastingSignals,
++});
++
++describe('TrendIntelligence forecasting signals', () => {
++  beforeEach(() => {
++    mockUseQuery.mockReset();
++  });
++
++  it('renders highlight and suggestion content when forecasting data is present', () => {
++    const dataset = buildDataset([
++      {
++        subreddit: 'SampleSubreddit',
++        signal: 'Weekend product discussion spike',
++        confidence: 88,
++        rationale: 'Focus on weekend discussions about product updates.',
++        projectedEngagement: 15000,
++      },
++      {
++        subreddit: 'SecondarySub',
++        signal: 'Evening AMA momentum',
++        confidence: 72,
++        rationale: '',
++        projectedEngagement: 8200,
++      },
++    ]);
++
++    mockUseQuery.mockReturnValue({ data: dataset, isLoading: false, error: null });
++
++    const markup = renderToStaticMarkup(<TrendIntelligence />);
++
++    expect(markup).toContain('Top Forecasting Signal');
++    expect(markup).toContain('Post to r/SampleSubreddit');
++    expect(markup).toContain('Projected engagement: 15K');
++    expect(markup).toContain('Confidence: 88%');
++  });
++
++  it('renders empty state messaging when forecasting data is unavailable', () => {
++    const dataset = buildDataset([]);
++
++    mockUseQuery.mockReturnValue({ data: dataset, isLoading: false, error: null });
++
++    const markup = renderToStaticMarkup(<TrendIntelligence />);
++
++    expect(markup).toContain('No content suggestions available yet');
++    expect(markup).not.toContain('Top Forecasting Signal');
++  });
++});

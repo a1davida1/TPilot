@@ -12,8 +12,6 @@ import {
   TrendingDown, 
   Eye, 
   MessageCircle, 
-  Heart, 
-  Clock, 
   Users, 
   Zap,
   Search,
@@ -52,13 +50,11 @@ interface SubredditHealthMetric {
 }
 
 interface RedditForecastingSignal {
-  category: string;
-  topic: string;
   subreddit: string;
-  growthVelocity: number;
+  signal: string;
   confidence: number;
-  timeframe: string;
-  competitionLevel: string | null;
+  rationale: string;
+  projectedEngagement: number;
 }
 
 interface RedditIntelligenceDataset {
@@ -80,6 +76,16 @@ export function TrendIntelligence() {
   const trendingTopics = intelligence?.trendingTopics || [];
   const subredditHealth = intelligence?.subredditHealth || [];
   const forecastingSignals = intelligence?.forecastingSignals || [];
+  const topForecastingSignal = forecastingSignals[0];
+  const topForecastingSignalDetails = topForecastingSignal
+    ? {
+        title: resolveSignalTitle(topForecastingSignal.signal),
+        subreddit: resolveSubredditLabel(topForecastingSignal.subreddit),
+        rationale: resolveRationale(topForecastingSignal.rationale),
+        projectedEngagement: formatProjectedEngagement(topForecastingSignal.projectedEngagement),
+        confidence: topForecastingSignal.confidence,
+      }
+    : null;
 
   // Filter trending topics
   const filteredTopics = trendingTopics.filter(topic => {
@@ -102,6 +108,37 @@ export function TrendIntelligence() {
       case 'declining': return 'text-red-400';
       default: return 'text-yellow-400';
     }
+  };
+
+  const formatProjectedEngagement = (value: number | null | undefined) => {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      return 'N/A';
+    }
+
+    if (value >= 1_000_000) {
+      return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+    }
+
+    if (value >= 1_000) {
+      return `${(value / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
+    }
+
+    return value.toLocaleString();
+  };
+
+  const resolveSignalTitle = (value: string) => {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : 'Forecasted opportunity';
+  };
+
+  const resolveSubredditLabel = (value: string) => {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : 'Unknown subreddit';
+  };
+
+  const resolveRationale = (value: string) => {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
   };
 
   // Loading state
@@ -318,50 +355,42 @@ export function TrendIntelligence() {
             </Card>
           ) : (
             <div className="grid gap-4">
-              {forecastingSignals.slice(0, 5).map((signal, index) => (
-                <Card key={index} className="bg-gradient-to-r from-gray-900/50 to-gray-800/50 border-gray-700/50">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                    <div>
-                      <CardTitle className="text-lg text-white">Create content about: {signal.topic}</CardTitle>
-                      <p className="text-sm text-gray-400">Post to {signal.subreddit} • {signal.category}</p>
-                    </div>
-                    <Badge
-                      variant={signal.confidence >= 80 ? 'default' : 'secondary'}
-                      className={
-                        signal.confidence >= 80
-                          ? 'bg-green-500/20 text-green-400 border-green-500/20' 
-                          : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/20'
-                      }
-                    >
-                      {signal.confidence}% Confidence
-                    </Badge>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-purple-400" />
-                        <span className="text-gray-400">Growth:</span>
-                        <span className="font-medium text-white">{signal.growthVelocity.toFixed(1)}x</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-purple-400" />
-                        <span className="text-gray-400">Timeframe:</span>
-                        <span className="font-medium text-white">{signal.timeframe}</span>
-                      </div>
-                    </div>
+              {forecastingSignals.slice(0, 5).map((signal, index) => {
+                const title = resolveSignalTitle(signal.signal);
+                const subredditLabel = resolveSubredditLabel(signal.subreddit);
+                const rationale = resolveRationale(signal.rationale) ?? 'No rationale provided yet.';
+                const projection = formatProjectedEngagement(signal.projectedEngagement);
+                const projectionLabel = projection === 'N/A' ? 'Unavailable' : projection;
 
-                    {signal.competitionLevel && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Users className="h-4 w-4 text-purple-400" />
-                        <span className="text-gray-400">Competition:</span>
-                        <Badge variant="outline" className="text-xs">
-                          {signal.competitionLevel}
-                        </Badge>
+                return (
+                  <Card key={index} className="bg-gradient-to-r from-gray-900/50 to-gray-800/50 border-gray-700/50">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                      <div>
+                        <CardTitle className="text-lg text-white">{title}</CardTitle>
+                        <p className="text-sm text-gray-400">Post to r/{subredditLabel}</p>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+                      <Badge
+                        variant={signal.confidence >= 80 ? 'default' : 'secondary'}
+                        className={
+                          signal.confidence >= 80
+                            ? 'bg-green-500/20 text-green-400 border-green-500/20'
+                            : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/20'
+                        }
+                      >
+                        {signal.confidence}% Confidence
+                      </Badge>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <p className="text-sm text-gray-300">{rationale}</p>
+                      <div className="flex items-center gap-2 text-sm">
+                        <TrendingUp className="h-4 w-4 text-purple-400" />
+                        <span className="text-gray-400">Projected engagement:</span>
+                        <span className="font-medium text-white">{projectionLabel}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </TabsContent>
@@ -435,7 +464,7 @@ export function TrendIntelligence() {
 
         <TabsContent value="insights" className="space-y-4">
           <div className="grid gap-4">
-            {forecastingSignals.length > 0 && (
+            {topForecastingSignalDetails && (
               <Card className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 border-purple-500/20">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-white">
@@ -443,12 +472,22 @@ export function TrendIntelligence() {
                     Top Forecasting Signal
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-2">
                   <p className="text-gray-300">
-                    <span className="font-semibold text-purple-400">{forecastingSignals[0].topic}</span> in{' '}
-                    <span className="font-semibold text-purple-400">{forecastingSignals[0].subreddit}</span> is showing{' '}
-                    strong growth velocity ({forecastingSignals[0].growthVelocity.toFixed(1)}x) with{' '}
-                    {forecastingSignals[0].confidence}% confidence over the next {forecastingSignals[0].timeframe}.
+                    <span className="font-semibold text-purple-400">{topForecastingSignalDetails.title}</span>{' '}
+                    for{' '}
+                    <span className="font-semibold text-purple-400">r/{topForecastingSignalDetails.subreddit}</span>.
+                  </p>
+                  {topForecastingSignalDetails.rationale && (
+                    <p className="text-sm text-gray-400">
+                      {topForecastingSignalDetails.rationale}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-400">
+                    Confidence: {topForecastingSignalDetails.confidence}% • Projected engagement:{' '}
+                    {topForecastingSignalDetails.projectedEngagement === 'N/A'
+                      ? 'Unavailable'
+                      : topForecastingSignalDetails.projectedEngagement}
                   </p>
                 </CardContent>
               </Card>
@@ -469,29 +508,24 @@ export function TrendIntelligence() {
                   <div className="space-y-3">
                     {forecastingSignals.slice(0, 5).map((signal, index) => {
                       const confidenceColor = signal.confidence >= 80 ? 'green' : signal.confidence >= 60 ? 'yellow' : 'blue';
+                      const title = resolveSignalTitle(signal.signal);
+                      const rationale = resolveRationale(signal.rationale) ?? 'No rationale provided yet.';
+                      const projectedEngagement = formatProjectedEngagement(signal.projectedEngagement);
+                      const projectionLabel = projectedEngagement === 'N/A' ? 'Projection unavailable' : `Projected ${projectedEngagement}`;
+                      const subredditLabel = resolveSubredditLabel(signal.subreddit);
                       return (
                         <div
                           key={index}
                           className={`flex items-start space-x-3 p-3 rounded-lg bg-${confidenceColor}-500/10 border border-${confidenceColor}-500/20`}
                         >
                           <TrendingUp className={`h-5 w-5 text-${confidenceColor}-400 mt-0.5`} />
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <h4 className={`font-medium text-${confidenceColor}-400`}>
-                                {signal.category} • {signal.confidence}% confidence
-                              </h4>
-                              <Badge variant="outline" className="text-xs">
-                                {signal.timeframe}
-                              </Badge>
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <h4 className={`font-medium text-${confidenceColor}-400`}>{title}</h4>
+                              <Badge variant="outline" className="text-xs">{projectionLabel}</Badge>
                             </div>
-                            <p className="text-sm text-gray-300 mt-1">
-                              {signal.topic} in {signal.subreddit} ({signal.growthVelocity.toFixed(1)}x velocity)
-                            </p>
-                            {signal.competitionLevel && (
-                              <p className="text-xs text-gray-400 mt-1">
-                                Competition: {signal.competitionLevel}
-                              </p>
-                            )}
+                            <p className="text-sm text-gray-300">{rationale}</p>
+                            <p className="text-xs text-gray-400">Subreddit: r/{subredditLabel} • Confidence: {signal.confidence}%</p>
                           </div>
                         </div>
                       );

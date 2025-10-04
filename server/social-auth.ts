@@ -23,6 +23,29 @@ const redditCallbackOptions: RedditAuthenticateOptions = {
   // Note: No successRedirect - we handle cookie + redirect in the callback handler
 };
 
+const getAuthCookieOptions = (): CookieOptions => {
+  const cookieOptions: CookieOptions = {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+    path: '/',
+  };
+
+  const cookieDomain = process.env.SESSION_COOKIE_DOMAIN?.trim();
+  if (cookieDomain) {
+    cookieOptions.domain = cookieDomain;
+  }
+
+  return cookieOptions;
+};
+
+const setAuthCookie = (res: Response, token: string): void => {
+  res.cookie('authToken', token, {
+    ...getAuthCookieOptions(),
+    maxAge: 86400_000,
+  });
+};
+
 const clearSessionCookie = (res: Response): void => {
   const { name, cookie } = getSessionCookieConfig();
   
@@ -231,13 +254,7 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
       // Set auth token cookie with SameSite=None for third-party OAuth redirect
       if (req.user) {
         const token = createToken(req.user as User);
-        res.cookie('authToken', token, {
-          httpOnly: true,
-          secure: true,
-          sameSite: 'none',
-          maxAge: 86400_000,
-          path: '/',
-        });
+        setAuthCookie(res, token);
       }
       res.redirect('/dashboard');
     }
@@ -254,13 +271,7 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
       // Set auth token cookie with SameSite=None for third-party OAuth redirect
       if (req.user) {
         const token = createToken(req.user as User);
-        res.cookie('authToken', token, {
-          httpOnly: true,
-          secure: true,
-          sameSite: 'none',
-          maxAge: 86400_000,
-          path: '/',
-        });
+        setAuthCookie(res, token);
       }
       res.redirect('/dashboard');
     }
@@ -280,13 +291,7 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
       // Set auth token cookie with SameSite=None for third-party OAuth redirect
       if (req.user) {
         const token = createToken(req.user as User);
-        res.cookie('authToken', token, {
-          httpOnly: true,
-          secure: true, // Must be true for SameSite=None
-          sameSite: 'none', // Required for third-party redirect
-          maxAge: 86400_000,
-          path: '/',
-        });
+        setAuthCookie(res, token);
       }
       res.redirect('/dashboard?connected=reddit');
     }
@@ -303,11 +308,7 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
       if (!r.session) {
         // No session, just clear cookies and return success
         clearSessionCookie(res);
-        res.clearCookie('authToken', {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict'
-        });
+        res.clearCookie('authToken', getAuthCookieOptions());
         const authHeader = req.headers['authorization'];
         const token = authHeader?.split(' ')[1] || req.cookies?.authToken;
         if (token) {
@@ -334,11 +335,7 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
               }
               // Clear cookies regardless
               clearSessionCookie(res);
-              res.clearCookie('authToken', {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict'
-              });
+              res.clearCookie('authToken', getAuthCookieOptions());
               const authHeader = req.headers['authorization'];
               const token = authHeader?.split(' ')[1] || req.cookies?.authToken;
               if (token) {
@@ -351,11 +348,7 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
           } else {
             // No session.destroy, just clear cookies
             clearSessionCookie(res);
-            res.clearCookie('authToken', {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === 'production',
-              sameSite: 'strict'
-            });
+            res.clearCookie('authToken', getAuthCookieOptions());
             const authHeader = req.headers['authorization'];
             const token = authHeader?.split(' ')[1] || req.cookies?.authToken;
             if (token) {
@@ -374,11 +367,7 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
               logger.error('Session destroy error', { error: err instanceof Error ? err.message : String(err) });
             }
             clearSessionCookie(res);
-            res.clearCookie('authToken', {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === 'production',
-              sameSite: 'strict'
-            });
+            res.clearCookie('authToken', getAuthCookieOptions());
             const authHeader = req.headers['authorization'];
             const token = authHeader?.split(' ')[1] || req.cookies?.authToken;
             if (token) {
@@ -391,11 +380,7 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
         } else {
           // Just clear cookies
           clearSessionCookie(res);
-          res.clearCookie('authToken', {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict'
-          });
+          res.clearCookie('authToken', getAuthCookieOptions());
           const authHeader = req.headers['authorization'];
           const token = authHeader?.split(' ')[1] || req.cookies?.authToken;
           if (token) {
@@ -410,11 +395,7 @@ function setupAuthRoutes(app: Express, apiPrefix: string) {
       logger.error('Logout error', { error: error instanceof Error ? (error as Error).message : String(error) });
       // Even on error, clear cookies to help user
       clearSessionCookie(res);
-      res.clearCookie('authToken', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
-      });
+      res.clearCookie('authToken', getAuthCookieOptions());
       res.json({ message: 'Logged out (with errors)' });
     }
   });
