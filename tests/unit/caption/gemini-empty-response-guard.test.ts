@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 interface MockResponse {
-  text: string | undefined;
-  response: { text: () => string | undefined };
+  text?: string | (() => string | undefined);
+  response?: unknown;
+  candidates?: unknown;
 }
 
 const createMockResponse = (value: string | undefined): MockResponse => ({
@@ -10,6 +11,41 @@ const createMockResponse = (value: string | undefined): MockResponse => ({
   response: {
     text: () => value,
   },
+});
+
+interface CandidateVariantMock {
+  caption: string;
+  alt: string;
+  hashtags: string[];
+  cta: string;
+  mood: string;
+  style: string;
+  safety_level: string;
+  nsfw: boolean;
+}
+
+const buildCandidateVariants = (): CandidateVariantMock[] =>
+  Array.from({ length: 5 }, (_, index) => ({
+    caption: `Candidate caption ${index + 1} delivering value ${index}`,
+    alt: `Detailed alternate description for candidate ${index + 1} covering the scene with engaging language and clarity.`,
+    hashtags: ['#unique', '#crafted', `#story${index + 1}`],
+    cta: 'Share your thoughts below!',
+    mood: 'engaging',
+    style: 'authentic',
+    safety_level: 'normal',
+    nsfw: false,
+  }));
+
+const createCandidateResponse = (variants: CandidateVariantMock[]): MockResponse => ({
+  candidates: [
+    {
+      content: {
+        parts: [
+          { text: JSON.stringify(variants) },
+        ],
+      },
+    },
+  ],
 });
 
 type GenerateContentMock = ReturnType<typeof vi.fn<[
@@ -141,6 +177,87 @@ describe('Gemini empty response guards', () => {
     expect(result.final.alt).toBeTruthy();
     expect(Array.isArray(result.final.hashtags)).toBe(true);
     expect(result.titles?.length).toBeGreaterThan(0);
+
+    fetchMock.mockRestore();
+  });
+
+  it('returns Gemini variants when candidate payload is provided in text-only pipeline', async () => {
+    const candidateVariants = buildCandidateVariants();
+    const candidateResponse = createCandidateResponse(candidateVariants);
+
+    const textModel: GeminiTextModelMock = {
+      generateContent: vi
+        .fn<[
+          input: unknown
+        ], Promise<MockResponse>>()
+        .mockResolvedValue(candidateResponse),
+    };
+
+    mockGemini(textModel);
+
+    const { generateVariantsTextOnly } = await import('../../../server/caption/textOnlyPipeline.ts');
+
+    const variants = await generateVariantsTextOnly({
+      platform: 'instagram',
+      voice: 'persona_voice',
+      theme: 'test theme',
+      context: 'context',
+      nsfw: false,
+    });
+
+    const captions = variants.map(variant => variant.caption);
+
+    expect(captions).toEqual(candidateVariants.map(variant => variant.caption));
+    expect(captions.some(caption => caption.includes('fallback'))).toBe(false);
+  });
+
+  it('uses Gemini candidate payload during multimodal pipeline generation', async () => {
+    const candidateVariants = buildCandidateVariants();
+    const candidateResponse = createCandidateResponse(candidateVariants);
+
+    const textModel: GeminiTextModelMock = {
+      generateContent: vi
+        .fn<[
+          input: unknown
+        ], Promise<MockResponse>>()
+        .mockResolvedValue(candidateResponse),
+    };
+    const visionPayload = JSON.stringify({ objects: ['subject'], setting: 'studio', mood: 'focused' });
+    const visionModel: GeminiVisionModelMock = {
+      generateContent: vi
+        .fn<[
+          input: unknown
+        ], Promise<MockResponse>>()
+        .mockResolvedValue(createMockResponse(visionPayload)),
+    };
+
+    mockGemini(textModel, visionModel);
+
+    const openAIFallback = vi.fn();
+    vi.doMock('../../../server/caption/openaiFallback.ts', () => ({
+      openAICaptionFallback: openAIFallback,
+    }));
+
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+    const chunk = new Uint8Array(64).fill(1);
+    fetchMock.mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'content-type': 'image/png', 'content-length': `${chunk.byteLength}` }),
+      body: streamFromChunks([chunk]),
+    } as unknown as Response);
+
+    const { pipeline } = await import('../../../server/caption/geminiPipeline.ts');
+
+    const result = await pipeline({
+      imageUrl: 'https://example.com/image.png',
+      platform: 'instagram',
+    });
+
+    const captions = result.variants?.map(variant => variant.caption) ?? [];
+
+    expect(openAIFallback).not.toHaveBeenCalled();
+    expect(captions).toEqual(candidateVariants.map(variant => variant.caption));
+    expect(captions).toContain(result.final.caption);
 
     fetchMock.mockRestore();
   });

@@ -22,6 +22,26 @@ const upload = multer({
 // Auth request type
 type AuthRequest = express.Request & { user?: { id: number; tier?: string } };
 
+function parseWatermarkOverride(value: unknown): boolean | null {
+  if (Array.isArray(value)) {
+    return parseWatermarkOverride(value[0]);
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') {
+      return true;
+    }
+    if (normalized === 'false') {
+      return false;
+    }
+    return null;
+  }
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  return null;
+}
+
 // GET /api/media - Get user's media assets
 router.get('/', authenticateToken, async (req: AuthRequest, res) => {
   try {
@@ -55,9 +75,14 @@ router.post('/upload', uploadLimiter, authenticateToken, upload.single('file'), 
     const fs = await import('fs/promises');
     const buffer = await fs.readFile(req.file.path);
 
-    // Determine if watermark should be applied based on user tier
-    const userTier = req.user.tier || 'free';
-    const applyWatermark = ['free', 'guest'].includes(userTier);
+    const requestBody = req.body as unknown;
+    const watermarkValue = typeof requestBody === 'object' && requestBody !== null
+      ? (requestBody as { watermark?: unknown }).watermark
+      : null;
+    const watermarkOverride = parseWatermarkOverride(watermarkValue);
+    const userTier = req.user.tier ?? 'free';
+    const defaultWatermark = ['free', 'guest'].includes(userTier);
+    const applyWatermark = watermarkOverride ?? defaultWatermark;
 
     // Upload file using MediaManager
     const asset = await MediaManager.uploadFile(buffer, {

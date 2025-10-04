@@ -12,7 +12,6 @@ import { addJob, QUEUE_NAMES } from "./lib/queue/index.js";
 import { getErrorMessage } from "./utils/error.js";
 import { postJobs, users } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
-import multer from "multer";
 import type { Request, NextFunction } from 'express';
 import { authenticateToken, type AuthRequest } from './middleware/auth.js';
 import { z, ZodError } from "zod";
@@ -73,15 +72,6 @@ declare module 'express-serve-static-core' {
     user?: UserType;
   }
 }
-
-
-// Multer configuration for file uploads
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB limit
-  },
-});
 
 export function registerApiRoutes(app: Express, apiPrefix: string = API_PREFIX) {
 
@@ -156,80 +146,6 @@ export function registerApiRoutes(app: Express, apiPrefix: string = API_PREFIX) 
         return res.status(400).json({ errors: error.errors });
       }
       next(error instanceof AppError ? error : new AppError('Enhanced AI generation failed', 500));
-    }
-  });
-
-  // Media Upload
-  app.post('/api/media/upload', authenticateToken, upload.single('file'), async (req: Request, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ error: 'No file provided' });
-      }
-
-      if (!req.user?.id) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
-
-      const userId = req.user.id;
-      const applyWatermark = req.body.watermark === 'true';
-
-      const result = await MediaManager.uploadFile(req.file.buffer, {
-        userId,
-        filename: req.file.originalname,
-        visibility: 'private',
-        applyWatermark,
-      });
-
-      res.json(result);
-    } catch (error: unknown) {
-      console.error('Media upload failed:', error);
-      const message = error instanceof Error ? (error as Error).message : 'Unknown error';
-      res.status(500).json({ error: message });
-    }
-  });
-
-  // Get User Media
-  app.get('/api/media', authenticateToken, async (req: Request, res) => {
-    try {
-      const user = req.user;
-
-      if (!user?.id) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
-
-      const userId = user.id;
-      const limit = parseInt(req.query.limit as string) || 20;
-
-      const assets = await MediaManager.getUserAssets(userId, limit);
-      res.json(assets);
-    } catch (error: unknown) {
-      console.error('Failed to get media:', error);
-      res.status(500).json({ error: getErrorMessage(error) });
-    }
-  });
-
-  // Delete Media
-  app.delete('/api/media/:id', authenticateToken, async (req: Request, res) => {
-    try {
-      const user = req.user;
-
-      if (!user?.id) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
-
-      const userId = user.id;
-      const mediaId = parseInt(req.params.id);
-
-      const success = await MediaManager.deleteAsset(mediaId, userId);
-
-      if (success) {
-        res.json({ success: true });
-      } else {
-        res.status(404).json({ error: 'Media not found' });
-      }
-    } catch (error: unknown) {
-      console.error('Failed to delete media:', error);
-      res.status(500).json({ error: getErrorMessage(error) });
     }
   });
 

@@ -1,0 +1,148 @@
+diff --git a//dev/null b/tests/routes/api-registration.test.ts
+index 0000000000000000000000000000000000000000..798ec885fea8db1d1ef747cf6921c8ef8c2ebfe1 100644
+--- a//dev/null
++++ b/tests/routes/api-registration.test.ts
+@@ -0,0 +1,143 @@
++import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
++import express, { type Express } from 'express';
++import type { Server } from 'http';
++
++type EnvSnapshot = Record<string, string | undefined>;
++
++type RouteLayer = { route?: { path?: string } };
++type RouterHandle = { stack?: unknown[] };
++type RouterLayer = { name?: string; regexp?: RegExp; handle?: RouterHandle | (() => unknown) };
++
++type Layer = RouteLayer & RouterLayer;
++
++function snapshotEnvironment(): EnvSnapshot {
++  return { ...process.env };
++}
++
++function restoreEnvironment(snapshot: EnvSnapshot): void {
++  const currentKeys = Object.keys(process.env);
++  for (const key of currentKeys) {
++    if (!(key in snapshot)) {
++      delete process.env[key];
++    }
++  }
++
++  for (const [key, value] of Object.entries(snapshot)) {
++    if (typeof value === 'string') {
++      process.env[key] = value;
++    } else {
++      delete process.env[key];
++    }
++  }
++}
++
++function getRouterStack(app: Express): unknown[] {
++  const routerContainer = (app as unknown as { _router?: { stack?: unknown[] } })._router;
++  if (!routerContainer || !Array.isArray(routerContainer.stack)) {
++    return [];
++  }
++  return routerContainer.stack;
++}
++
++function hasRouteWithPrefix(layer: unknown, prefix: string): boolean {
++  if (typeof layer !== 'object' || layer === null) {
++    return false;
++  }
++  const candidate = layer as Layer;
++  const routeDefinition = candidate.route;
++  if (!routeDefinition || typeof routeDefinition.path !== 'string') {
++    return false;
++  }
++  return routeDefinition.path.startsWith(prefix);
++}
++
++function isRouterLayerWithPrefix(layer: unknown, prefix: string): boolean {
++  if (typeof layer !== 'object' || layer === null) {
++    return false;
++  }
++  const candidate = layer as Layer;
++  if (candidate.name !== 'router' || !(candidate.regexp instanceof RegExp)) {
++    return false;
++  }
++  const matcher = new RegExp(candidate.regexp);
++  if (!matcher.test(prefix)) {
++    return false;
++  }
++  const handler = candidate.handle;
++  if (typeof handler === 'function') {
++    return true;
++  }
++  if (!handler || !Array.isArray(handler.stack)) {
++    return false;
++  }
++  return true;
++}
++
++async function closeServer(server: Server | undefined): Promise<void> {
++  if (!server) {
++    return;
++  }
++  await new Promise<void>((resolve, reject) => {
++    server.close(error => {
++      if (!error) {
++        resolve();
++        return;
++      }
++      const code = (error as { code?: string }).code;
++      if (code === 'ERR_SERVER_NOT_RUNNING') {
++        resolve();
++        return;
++      }
++      reject(error);
++    });
++  });
++}
++
++describe('route registration', () => {
++  let app: Express;
++  let server: Server | undefined;
++  let envSnapshot: EnvSnapshot;
++
++  beforeEach(() => {
++    app = express();
++    app.use(express.json());
++    server = undefined;
++    envSnapshot = snapshotEnvironment();
++  });
++
++  afterEach(async () => {
++    await closeServer(server);
++    restoreEnvironment(envSnapshot);
++    vi.resetModules();
++  });
++
++  it('does not register standalone /api/media routes in registerApiRoutes', async () => {
++    const { registerApiRoutes } = await import('../../server/api-routes.ts');
++    registerApiRoutes(app);
++
++    const stack = getRouterStack(app);
++    const directMediaHandlers = stack.filter(layer => hasRouteWithPrefix(layer, '/api/media'));
++
++    expect(directMediaHandlers).toHaveLength(0);
++  });
++
++  it('mounts a single /api/media router chain via registerRoutes', async () => {
++    process.env.NODE_ENV = 'test';
++    process.env.DATABASE_URL = process.env.DATABASE_URL ?? 'postgresql://user:password@localhost:5432/tpilot';
++    process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'test-secret-should-be-at-least-32-chars!!';
++    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? 'session-secret-should-be-at-least-32!!';
++    process.env.SENDGRID_API_KEY = process.env.SENDGRID_API_KEY ?? 'SG.test-key';
++    process.env.USE_PG_QUEUE = 'true';
++    delete process.env.REDIS_URL;
++
++    const { registerRoutes } = await import('../../server/routes.ts');
++    server = await registerRoutes(app);
++
++    const stack = getRouterStack(app);
++    const directMediaHandlers = stack.filter(layer => hasRouteWithPrefix(layer, '/api/media'));
++    const mediaRouterLayers = stack.filter(layer => isRouterLayerWithPrefix(layer, '/api/media'));
++
++    expect(directMediaHandlers).toHaveLength(0);
++    expect(mediaRouterLayers).toHaveLength(1);
++  });
++});
