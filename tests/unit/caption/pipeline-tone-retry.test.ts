@@ -73,17 +73,25 @@ function extractVariantPromptEnvelopes(mockCalls: any[][]) {
     .map(text => {
       try {
         const lines = text.split('\n');
+        const envelope: Record<string, string> = {};
+        let hasRequiredFields = false;
+        
         for (const line of lines) {
-          try {
-            const parsed = JSON.parse(line);
-            if (parsed && typeof parsed === 'object' && 'platform' in parsed && 'voice' in parsed) {
-              return parsed;
+          const colonIndex = line.indexOf(':');
+          if (colonIndex > 0) {
+            const key = line.substring(0, colonIndex).trim().toLowerCase();
+            const value = line.substring(colonIndex + 1).trim();
+            
+            if (key && value) {
+              envelope[key] = value;
+              if (key === 'platform' || key === 'voice') {
+                hasRequiredFields = true;
+              }
             }
-          } catch {
-            continue;
           }
         }
-        return null;
+        
+        return hasRequiredFields ? envelope : null;
       } catch {
         return null;
       }
