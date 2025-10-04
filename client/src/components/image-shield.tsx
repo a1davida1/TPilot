@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { ComparisonSlider } from "@/components/ui/comparison-slider";
 import {
   Shield,
   Upload,
@@ -27,8 +28,8 @@ export function ImageShield({ isGuestMode: _isGuestMode = false, userTier = "fre
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [protectedImage, setProtectedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  // TODO: Implement before/after comparison slider
   const [showComparison, setShowComparison] = useState(false);
+  const [comparisonPosition, setComparisonPosition] = useState(50);
   
   // Protection settings
   const [protectionLevel, setProtectionLevel] = useState<"light" | "standard" | "heavy">("standard");
@@ -219,13 +220,33 @@ export function ImageShield({ isGuestMode: _isGuestMode = false, userTier = "fre
                   {protectedImage && (
                     <Button
                       variant="outline"
-                      onClick={() => setShowComparison(!showComparison)}
+                      onClick={() => {
+                        const newState = !showComparison;
+                        setShowComparison(newState);
+                        if (newState) {
+                          setComparisonPosition(50);
+                        }
+                      }}
+                      data-testid="button-toggle-comparison"
                     >
                       {showComparison ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
                       {showComparison ? "Hide" : "Compare"}
                     </Button>
                   )}
                 </div>
+
+                {/* Comparison Slider */}
+                {showComparison && protectedImage && originalImage && (
+                  <div className="mt-4">
+                    <h3 className="font-medium mb-2 text-center">Before & After Comparison</h3>
+                    <ComparisonSlider
+                      originalImage={originalImage}
+                      protectedImage={protectedImage}
+                      initialPosition={comparisonPosition}
+                      onPositionChange={setComparisonPosition}
+                    />
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-center">
