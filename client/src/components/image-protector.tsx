@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ComparisonSlider } from '@/components/ui/comparison-slider';
 import { 
   Upload, 
   Download, 
@@ -18,7 +19,8 @@ import {
   Eye,
   RefreshCw,
   Sparkles,
-  Lock
+  Lock,
+  ArrowLeftRight
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { protectImage, downloadProtectedImage, protectionPresets, type ImageProcessingOptions } from '@/lib/image-protection';
@@ -35,8 +37,8 @@ export function ImageProtector({ userTier = 'guest' }: ImageProtectorProps) {
   const [preset, setPreset] = useState<'light' | 'standard' | 'heavy'>('standard');
   const [customSettings, setCustomSettings] = useState<ImageProcessingOptions>(protectionPresets.standard);
   const [useCustom, setUseCustom] = useState(false);
-  // TODO: Implement before/after comparison view
-  const [_showComparison, setShowComparison] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
+  const [comparisonPosition, setComparisonPosition] = useState(50);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -55,6 +57,7 @@ export function ImageProtector({ userTier = 'guest' }: ImageProtectorProps) {
       setOriginalImageUrl(url);
       setProtectedImageUrl(null);
       setShowComparison(false);
+      setComparisonPosition(50);
       
       toast({
         title: "Image uploaded successfully",
@@ -162,9 +165,15 @@ export function ImageProtector({ userTier = 'guest' }: ImageProtectorProps) {
     setOriginalImageUrl(null);
     setProtectedImageUrl(null);
     setShowComparison(false);
+    setComparisonPosition(50);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const toggleComparison = () => {
+    setShowComparison(prev => !prev);
+    setComparisonPosition(50);
   };
 
   return (
@@ -429,40 +438,62 @@ export function ImageProtector({ userTier = 'guest' }: ImageProtectorProps) {
           {originalImageUrl && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">
+                <CardTitle className="text-lg flex items-center justify-between">
                   {protectedImageUrl ? 'Image Comparison' : 'Original Image'}
+                  {protectedImageUrl && originalImageUrl && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={toggleComparison}
+                      data-testid="button-toggle-comparison"
+                    >
+                      <ArrowLeftRight className="h-4 w-4 mr-2" />
+                      {showComparison ? 'Hide' : 'Compare'}
+                    </Button>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {protectedImageUrl ? (
-                  <Tabs defaultValue="protected" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="original">
-                        <Eye className="h-4 w-4 mr-2" />
-                        Original
-                      </TabsTrigger>
-                      <TabsTrigger value="protected">
-                        <Shield className="h-4 w-4 mr-2" />
-                        Protected
-                      </TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="original" className="mt-4">
-                      <img
-                        src={originalImageUrl}
-                        alt="Original"
-                        className="w-full h-auto rounded-lg border"
-                        style={{ maxHeight: '400px', objectFit: 'contain' }}
+                  showComparison ? (
+                    <div className="space-y-4">
+                      <ComparisonSlider
+                        originalImage={originalImageUrl}
+                        protectedImage={protectedImageUrl}
+                        initialPosition={comparisonPosition}
+                        onPositionChange={setComparisonPosition}
                       />
-                    </TabsContent>
-                    <TabsContent value="protected" className="mt-4">
-                      <img
-                        src={protectedImageUrl}
-                        alt="Protected"
-                        className="w-full h-auto rounded-lg border"
-                        style={{ maxHeight: '400px', objectFit: 'contain' }}
-                      />
-                    </TabsContent>
-                  </Tabs>
+                    </div>
+                  ) : (
+                    <Tabs defaultValue="protected" className="w-full">
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="original">
+                          <Eye className="h-4 w-4 mr-2" />
+                          Original
+                        </TabsTrigger>
+                        <TabsTrigger value="protected">
+                          <Shield className="h-4 w-4 mr-2" />
+                          Protected
+                        </TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="original" className="mt-4">
+                        <img
+                          src={originalImageUrl}
+                          alt="Original"
+                          className="w-full h-auto rounded-lg border"
+                          style={{ maxHeight: '400px', objectFit: 'contain' }}
+                        />
+                      </TabsContent>
+                      <TabsContent value="protected" className="mt-4">
+                        <img
+                          src={protectedImageUrl}
+                          alt="Protected"
+                          className="w-full h-auto rounded-lg border"
+                          style={{ maxHeight: '400px', objectFit: 'contain' }}
+                        />
+                      </TabsContent>
+                    </Tabs>
+                  )
                 ) : (
                   <img
                     src={originalImageUrl}

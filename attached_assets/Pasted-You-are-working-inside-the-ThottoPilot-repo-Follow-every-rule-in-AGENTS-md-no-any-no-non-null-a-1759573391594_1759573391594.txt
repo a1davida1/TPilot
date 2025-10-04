@@ -1,0 +1,89 @@
+You are working inside the ThottoPilot repo. Follow every rule in AGENTS.md (no `any`, no non-null assertions, keep strict TypeScript), and respect the security, privacy, and performance requirements documented in the repository instructions.
+
+General guidelines:
+• Keep all new TypeScript strictly typed (prefer explicit interfaces, never widen to `any` or `unknown` without narrowing).
+• Surface actionable errors to the UI while logging the underlying issue server-side with existing loggers.
+• Reuse shared utilities instead of duplicating logic; update or extend them when necessary.
+• Maintain accessibility: keyboard/tabbable controls, ARIA labels, and contrast-friendly styling.
+• When touching React components, include loading and error states consistent with existing patterns.
+
+Objectives (complete all):
+
+1. Pro Resources referral-code endpoint
+   • In `server/routes.ts`, extend `registerProResourcesRoutes` by inserting a `POST /api/pro-resources/:id/referral-code` handler immediately after the existing GET routes.
+   • Guard the route with `authenticateToken(true)` and reuse the `getUserTier` helper so unauthorized tiers hit the same 401/403 paths as the GET endpoints.
+   • Validate the perk ID against `getAvailablePerks(...)`, honoring the premium fallback logic; respond with 404 when the perk is inaccessible or missing.
+   • Call a new helper (see Objective 2) to generate the referral code, await it, and respond with `{ referralCode }`.
+   • Wrap logic in try/catch, logging with `logger.error('Referral code generation error', error);`, and reply with a 500 JSON payload that mirrors the repository’s error response style.
+
+2. Pro Perks helper integration
+   • In `server/pro-perks.ts`, export `async function generateReferralCode(userId: number, perkId: string): Promise<string>` that delegates to `ReferralManager.getUserReferralCode(userId)`.
+   • Import `ReferralManager` from `./lib/referral-system.js`, ensure the new helper is exported alongside the existing utilities, and avoid unused parameter lint issues (use the `perkId` for optional debug logging if needed).
+   • Update `server/routes.ts` to import the new helper from `./pro-perks.js` and call it within the POST handler.
+   • Add unit coverage if necessary (e.g., vi spy ensuring the helper forwards to `ReferralManager`).
+
+3. Harden pro resources integration tests
+   • Extend `tests/integration/pro-resources.test.ts` with new cases covering referral-manager failures (mock throwing an error to assert a 500) and premium-tier override scenarios.
+   • Ensure mocks reset between tests; keep strict typings for mocked modules (no `as unknown as` shortcuts).
+   • Update any existing expectations to match the final JSON response shape returned by the new endpoint.
+
+4. Storage deletion capability
+   • Introduce `deleteContentGeneration(userId: number, generationId: number): Promise<void>` to the `IStorage` interface.
+   • Implement the method in `server/storage.ts` by verifying ownership (`WHERE contentGenerations.id = ? AND userId = ?`) before deletion; return without throwing when the row is absent.
+   • Add targeted unit coverage (e.g., vi spy against drizzle) to prove the query filters on both user and generation IDs and that errors propagate.
+
+5. Content generation delete route
+   • Replace the stubbed body of the DELETE `/api/content-generations/:id` route in `server/routes.ts`:
+     – Validate the ID, call the new storage method, and return `{ success: true }` only when the record existed for the user.
+     – When the record does not belong to the user, respond with 404 and a helpful message.
+     – Keep the existing logging pattern, and bubble unexpected errors as 500s.
+   • Update or create integration tests under `tests/integration` to verify success, unauthorized, non-existent, and ownership-violation paths.
+
+6. ImageShield comparison slider
+   • Implement the TODO in `client/src/components/image-shield.tsx` by introducing state for a comparison percentage (0–100) that resets when toggling comparison on.
+   • Render an overlay that clips the original/protected images based on slider position, ensuring it remains responsive and keyboard accessible.
+   • Use an `<input type="range">` (or the shared slider component) with `aria-label="Reveal original image"` and `data-testid="comparison-slider"`, and ensure `Compare` toggling re-focuses the slider for accessibility.
+   • Add graceful fallbacks (e.g., hide the slider if only one image is available).
+
+7. Shared comparison utilities
+   • Create a reusable component (e.g., `ComparisonSlider`) in `client/src/components` or `client/src/components/shared` that encapsulates the overlay/slider logic, accepts original/protected URLs, and exposes controlled state.
+   • Write TypeScript props with explicit generics; surface `onPositionChange`, `initialPosition`, and optional `className`.
+   • Reuse Tailwind utility classes consistent with existing design tokens.
+
+8. ImageProtector & ImageShieldUnified parity
+   • Replace the TODOs in `client/src/components/image-protector.tsx` and `client/src/components/image-shield-unified.tsx` by integrating the new shared comparison component.
+   • In `ImageShieldUnified`, also implement the gallery view for pro users:
+     – Render fetched media with lazy-loaded thumbnails, per-image comparison launchers, and deletion controls calling the existing mutations.
+     – Provide empty, loading, and error states aligned with the rest of the UI.
+     – Ensure file inputs remain accessible and support drag-and-drop without breaking existing functionality.
+   • Confirm state resets (e.g., clearing slider position when the user uploads a new image or deletes from the gallery).
+
+9. ProPerks referral integration
+   • Enhance `client/src/components/pro-perks.tsx` so that opening a perk dialog triggers a `useMutation` call to `POST /api/pro-resources/:id/referral-code` (using the new backend).
+   • Show the generated referral code inline with copy/share buttons, optimistic loading indicators, and retry affordances; handle 401/403 with the toast messaging already in place.
+   • Cache codes per-perk to avoid repeated requests, but allow manual refresh for updated codes.
+   • Ensure the modal’s action area still links to the official site while prominently featuring the generated referral code.
+   • Update `client/src/components/__tests__/pro-perks.test.tsx` (and add new cases) to assert the mutation path, loading skeletons, error handling, and copy-to-clipboard flow.
+
+10. Component test coverage
+   • Add `client/src/components/__tests__/image-shield.test.tsx` verifying the slider UI: render with stubbed images, toggle comparison, adjust the slider, and assert style updates.
+   • Add `client/src/components/__tests__/image-protector.test.tsx` and `client/src/components/__tests__/image-shield-unified.test.tsx` to cover the shared component reuse and gallery functionality (mock fetch/mutation calls with deterministic results).
+   • For each new test, follow the existing `createRoot + act` conventions and mock browser APIs (FileReader, canvas, clipboard) as needed.
+
+11. Documentation & DX
+   • Update `README.md` (or a relevant doc under `docs/`) summarizing the new referral-code endpoint, front-end comparison workflow, and any environment variables or permissions needed.
+   • If you create reusable UI primitives, add short usage notes in the component documentation (or inline JSDoc) so future contributors understand their contract.
+   • Ensure storybook or design system references stay consistent if applicable.
+
+12. Regression tests
+   • After implementing the above, run:
+     – `npm run lint`
+     – `npx vitest run tests/integration/pro-resources.test.ts`
+     – `npx vitest run tests/integration/content-generations.test.ts` (create if it doesn’t exist yet to cover Objective 5)
+     – `npx vitest run client/src/components/__tests__/image-shield.test.tsx`
+     – `npx vitest run client/src/components/__tests__/image-protector.test.tsx`
+     – `npx vitest run client/src/components/__tests__/image-shield-unified.test.tsx`
+     – `npx vitest run client/src/components/__tests__/pro-perks.test.tsx`
+   • Paste the command outputs in your final report and confirm all suites pass.
+
+When you finish, provide a concise summary of the work, enumerate all modified files, and include the test results.
