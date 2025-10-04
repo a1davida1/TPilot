@@ -943,6 +943,7 @@ export function registerRedditRoutes(app: Express) {
     if (!req.user?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
     try {
       const community = await createCommunity(req.body);
+      await redditIntelligenceService.invalidateCache();
       res.json(community);
     } catch (_e) {
       res.status(400).json({ error: 'Invalid community data' });
@@ -953,6 +954,7 @@ export function registerRedditRoutes(app: Express) {
     if (!req.user?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
     try {
       const community = await updateCommunity(req.params.id, req.body);
+      await redditIntelligenceService.invalidateCache();
       res.json(community);
     } catch (_e) {
       res.status(400).json({ error: 'Invalid community data' });
@@ -963,6 +965,7 @@ export function registerRedditRoutes(app: Express) {
     if (!req.user?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
     try {
       await deleteCommunity(req.params.id);
+      await redditIntelligenceService.invalidateCache();
       res.json({ success: true });
     } catch (_e) {
       res.status(500).json({ error: 'Failed to delete community' });

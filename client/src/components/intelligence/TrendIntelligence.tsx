@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -18,139 +20,73 @@ import {
   Filter,
   ArrowUp,
   ArrowDown,
-  Star
+  Star,
+  AlertCircle
 } from 'lucide-react';
+
+interface RedditTrendingTopic {
+  topic: string;
+  subreddit: string;
+  score: number;
+  comments: number;
+  category: string;
+  url: string;
+  flair?: string;
+  nsfw: boolean;
+  postedAt: string;
+  complianceWarnings?: string[];
+  verificationRequired?: boolean;
+  promotionAllowed?: string;
+  cooldownHours?: number | null;
+}
+
+interface SubredditHealthMetric {
+  subreddit: string;
+  members: number;
+  posts24h: number;
+  avgEngagement: number;
+  growthTrend: string;
+  modActivity: string;
+  trendingActivity: boolean;
+  competitionLevel: string | null;
+}
+
+interface RedditForecastingSignal {
+  category: string;
+  topic: string;
+  subreddit: string;
+  growthVelocity: number;
+  confidence: number;
+  timeframe: string;
+  competitionLevel: string | null;
+}
+
+interface RedditIntelligenceDataset {
+  fetchedAt: string;
+  trendingTopics: RedditTrendingTopic[];
+  subredditHealth: SubredditHealthMetric[];
+  forecastingSignals: RedditForecastingSignal[];
+}
 
 export function TrendIntelligence() {
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const trendingTopics = [
-    {
-      id: 1,
-      topic: 'Mirror Selfies',
-      category: 'Photography',
-      trend: 'rising',
-      score: 94,
-      engagement: '+127%',
-      posts: '2.3K',
-      platforms: ['reddit', 'instagram'],
-      timeframe: '24h',
-      suggestedTags: ['#mirrorselfie', '#bathroom', '#outfit', '#selfie']
-    },
-    {
-      id: 2,
-      topic: 'Workout Content',
-      category: 'Fitness',
-      trend: 'rising',
-      score: 89,
-      engagement: '+89%',
-      posts: '1.8K',
-      platforms: ['reddit', 'tiktok'],
-      timeframe: '12h',
-      suggestedTags: ['#workout', '#fitness', '#gym', '#motivation']
-    },
-    {
-      id: 3,
-      topic: 'Cozy Vibes',
-      category: 'Lifestyle',
-      trend: 'stable',
-      score: 76,
-      engagement: '+12%',
-      posts: '956',
-      platforms: ['instagram', 'twitter'],
-      timeframe: '7d',
-      suggestedTags: ['#cozy', '#comfy', '#relaxed', '#weekend']
-    },
-    {
-      id: 4,
-      topic: 'Beach Content',
-      category: 'Travel',
-      trend: 'declining',
-      score: 42,
-      engagement: '-23%',
-      posts: '634',
-      platforms: ['instagram'],
-      timeframe: '7d',
-      suggestedTags: ['#beach', '#summer', '#vacation', '#ocean']
-    }
-  ];
+  const { data: intelligence, isLoading, error } = useQuery<RedditIntelligenceDataset>({
+    queryKey: ['/api/reddit/intelligence'],
+  });
 
-  const contentSuggestions = [
-    {
-      id: 1,
-      title: 'Mirror selfie with new outfit',
-      confidence: 'High',
-      estimatedEngagement: '4.2K likes',
-      bestTime: '8:30 PM',
-      platforms: ['reddit', 'instagram'],
-      reason: 'Mirror selfies trending +127% in last 24h'
-    },
-    {
-      id: 2,
-      title: 'Post-workout glow photo',
-      confidence: 'Medium',
-      estimatedEngagement: '3.1K likes',
-      bestTime: '6:45 AM',
-      platforms: ['reddit', 'tiktok'],
-      reason: 'Fitness content performing well in morning hours'
-    },
-    {
-      id: 3,
-      title: 'Cozy evening setup',
-      confidence: 'Medium',
-      estimatedEngagement: '2.8K likes',
-      bestTime: '9:15 PM',
-      platforms: ['instagram'],
-      reason: 'Cozy lifestyle content consistently engaging'
-    }
-  ];
+  // Derive trending topics with metadata
+  const trendingTopics = intelligence?.trendingTopics || [];
+  const subredditHealth = intelligence?.subredditHealth || [];
+  const forecastingSignals = intelligence?.forecastingSignals || [];
 
-  const subredditTrends = [
-    {
-      name: 'r/selfie',
-      activity: 'very_high',
-      engagement: 4.2,
-      posts: '847/day',
-      trend: 'up',
-      change: '+15%',
-      bestTimes: ['8PM-10PM', '11AM-1PM']
-    },
-    {
-      name: 'r/FreeCompliments',
-      activity: 'high',
-      engagement: 3.8,
-      posts: '623/day',
-      trend: 'up',
-      change: '+8%',
-      bestTimes: ['7PM-9PM', '12PM-2PM']
-    },
-    {
-      name: 'r/amihot',
-      activity: 'medium',
-      engagement: 3.1,
-      posts: '412/day',
-      trend: 'stable',
-      change: '+2%',
-      bestTimes: ['9PM-11PM', '1PM-3PM']
-    },
-    {
-      name: 'r/Rateme',
-      activity: 'medium',
-      engagement: 2.9,
-      posts: '298/day',
-      trend: 'down',
-      change: '-5%',
-      bestTimes: ['8PM-10PM', '2PM-4PM']
-    }
-  ];
-
+  // Filter trending topics
   const filteredTopics = trendingTopics.filter(topic => {
-    const matchesFilter = activeFilter === 'all' || topic.trend === activeFilter;
     const matchesSearch = topic.topic.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          topic.category.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
+    return matchesSearch;
+  }).slice(0, 20);
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
@@ -168,6 +104,63 @@ export function TrendIntelligence() {
     }
   };
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              Trend Intelligence
+            </h2>
+            <p className="text-muted-foreground mt-1">Loading intelligence data...</p>
+          </div>
+        </div>
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i} className="bg-gradient-to-r from-gray-900/50 to-gray-800/50 border-gray-700/50">
+              <CardHeader>
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-1/2 mt-2" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-20 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              Trend Intelligence
+            </h2>
+          </div>
+        </div>
+        <Card className="bg-gradient-to-r from-red-900/20 to-red-800/20 border-red-500/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-white">
+              <AlertCircle className="h-5 w-5 text-red-400" />
+              Failed to Load Intelligence Data
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-300">
+              {error instanceof Error ? error.message : 'An unknown error occurred'}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -179,9 +172,14 @@ export function TrendIntelligence() {
           <p className="text-muted-foreground mt-1">
             AI-powered trend analysis and content optimization insights
           </p>
+          {intelligence && (
+            <p className="text-xs text-gray-500 mt-1">
+              Last updated: {new Date(intelligence.fetchedAt).toLocaleString()}
+            </p>
+          )}
         </div>
         <Badge variant="secondary" className="bg-purple-500/10 text-purple-400 border-purple-500/20">
-          Phase 4 • Intelligence
+          Live Data
         </Badge>
       </div>
 
@@ -227,70 +225,86 @@ export function TrendIntelligence() {
 
           {/* Trending Topics */}
           <div className="grid gap-4">
-            {filteredTopics.map((topic) => (
-              <Card key={topic.id} className="bg-gradient-to-r from-gray-900/50 to-gray-800/50 border-gray-700/50">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                  <div className="flex items-center space-x-3">
-                    {getTrendIcon(topic.trend)}
-                    <div>
-                      <CardTitle className="text-lg text-white">{topic.topic}</CardTitle>
-                      <p className="text-sm text-gray-400">{topic.category}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-white">{topic.score}</div>
-                    <p className="text-xs text-gray-400">Trend Score</p>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Progress Bar */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">Trending Strength</span>
-                      <span className={getTrendColor(topic.trend)}>{topic.engagement}</span>
-                    </div>
-                    <Progress value={topic.score} className="h-2" />
-                  </div>
-
-                  {/* Stats */}
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center gap-1">
-                        <MessageCircle className="h-4 w-4 text-purple-400" />
-                        <span className="text-gray-400">{topic.posts} posts</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4 text-purple-400" />
-                        <span className="text-gray-400">{topic.timeframe}</span>
-                      </div>
-                    </div>
-                    <div className="flex space-x-1">
-                      {topic.platforms.map((platform) => (
-                        <Badge key={platform} variant="outline" className="text-xs border-gray-600">
-                          {platform}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Suggested Tags */}
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-400">Suggested tags:</p>
-                    <div className="flex flex-wrap gap-1">
-                      {topic.suggestedTags.map((tag, index) => (
-                        <Badge
-                          key={index}
-                          variant="secondary"
-                          className="text-xs bg-purple-500/20 text-purple-300 border-purple-500/30"
-                        >
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
+            {filteredTopics.length === 0 ? (
+              <Card className="bg-gradient-to-r from-gray-900/50 to-gray-800/50 border-gray-700/50">
+                <CardContent className="py-12 text-center">
+                  <Search className="h-12 w-12 mx-auto mb-4 text-gray-500" />
+                  <p className="text-gray-400">No trending topics found</p>
                 </CardContent>
               </Card>
-            ))}
+            ) : (
+              filteredTopics.map((topic, index) => (
+                <Card key={index} className="bg-gradient-to-r from-gray-900/50 to-gray-800/50 border-gray-700/50">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                    <div className="flex items-center space-x-3">
+                      <TrendingUp className="h-4 w-4 text-green-400" />
+                      <div>
+                        <CardTitle className="text-lg text-white">{topic.topic}</CardTitle>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-gray-400">{topic.subreddit}</p>
+                          {topic.nsfw && (
+                            <Badge variant="destructive" className="text-xs">NSFW</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-white">{Math.round(topic.score / 10)}</div>
+                      <p className="text-xs text-gray-400">Score</p>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Compliance Warnings */}
+                    {topic.complianceWarnings && topic.complianceWarnings.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {topic.complianceWarnings.map((warning, wIndex) => (
+                          <Badge
+                            key={wIndex}
+                            variant="outline"
+                            className="text-xs border-yellow-500/50 text-yellow-400"
+                          >
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            {warning}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Stats */}
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center gap-1">
+                          <MessageCircle className="h-4 w-4 text-purple-400" />
+                          <span className="text-gray-400">{topic.comments} comments</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Eye className="h-4 w-4 text-purple-400" />
+                          <span className="text-gray-400">{topic.category}</span>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(topic.url, '_blank')}
+                        data-testid={`view-topic-${index}`}
+                      >
+                        View Post
+                      </Button>
+                    </div>
+
+                    {/* Flair if available */}
+                    {topic.flair && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-400">Flair:</span>
+                        <Badge variant="secondary" className="text-xs">
+                          {topic.flair}
+                        </Badge>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </TabsContent>
 
@@ -367,132 +381,169 @@ export function TrendIntelligence() {
 
         <TabsContent value="subreddits" className="space-y-4">
           <div className="grid gap-4">
-            {subredditTrends.map((subreddit, index) => (
-              <Card key={index} className="bg-gradient-to-r from-gray-900/50 to-gray-800/50 border-gray-700/50">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                  <div>
-                    <CardTitle className="text-lg text-white">{subreddit.name}</CardTitle>
-                    <div className="flex items-center space-x-4 text-sm text-gray-400">
-                      <span>{subreddit.posts}</span>
-                      <span>•</span>
-                      <span>{subreddit.engagement}% avg engagement</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {subreddit.trend === 'up' && <ArrowUp className="h-4 w-4 text-green-400" />}
-                    {subreddit.trend === 'down' && <ArrowDown className="h-4 w-4 text-red-400" />}
-                    <span className={`text-sm font-medium ${
-                      subreddit.trend === 'up' ? 'text-green-400' : 
-                      subreddit.trend === 'down' ? 'text-red-400' : 'text-gray-400'
-                    }`}>
-                      {subreddit.change}
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-400">Activity:</span>
-                      <Badge
-                        variant="outline"
-                        className={`text-xs ${
-                          subreddit.activity === 'very_high' ? 'border-green-500 text-green-400' :
-                          subreddit.activity === 'high' ? 'border-yellow-500 text-yellow-400' :
-                          'border-gray-600 text-gray-400'
-                        }`}
-                      >
-                        {subreddit.activity.replace('_', ' ')}
-                      </Badge>
-                    </div>
-                    <Button variant="outline" size="sm" data-testid={`analyze-${subreddit.name.slice(2)}`}>
-                      Deep Analysis
-                    </Button>
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-sm text-gray-400">Best posting times:</p>
-                    <div className="flex space-x-2">
-                      {subreddit.bestTimes.map((time, timeIndex) => (
-                        <Badge key={timeIndex} variant="secondary" className="text-xs bg-purple-500/20 text-purple-300">
-                          {time}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
+            {subredditHealth.length === 0 ? (
+              <Card className="bg-gradient-to-r from-gray-900/50 to-gray-800/50 border-gray-700/50">
+                <CardContent className="py-12 text-center">
+                  <Users className="h-12 w-12 mx-auto mb-4 text-gray-500" />
+                  <p className="text-gray-400">No subreddit health metrics available</p>
                 </CardContent>
               </Card>
-            ))}
+            ) : (
+              subredditHealth.slice(0, 15).map((subreddit, index) => (
+                <Card key={index} className="bg-gradient-to-r from-gray-900/50 to-gray-800/50 border-gray-700/50">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                    <div>
+                      <CardTitle className="text-lg text-white">{subreddit.subreddit}</CardTitle>
+                      <div className="flex items-center space-x-4 text-sm text-gray-400">
+                        <span>{subreddit.posts24h}/day</span>
+                        <span>•</span>
+                        <span>{subreddit.avgEngagement.toFixed(1)}% avg engagement</span>
+                        <span>•</span>
+                        <span>{(subreddit.members / 1000).toFixed(0)}K members</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {subreddit.growthTrend === 'up' && <ArrowUp className="h-4 w-4 text-green-400" />}
+                      {subreddit.growthTrend === 'down' && <ArrowDown className="h-4 w-4 text-red-400" />}
+                      {subreddit.growthTrend === 'stable' && <div className="h-4 w-4 rounded-full bg-yellow-400" />}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-400">Mod Activity:</span>
+                        <Badge
+                          variant="outline"
+                          className={`text-xs ${
+                            subreddit.modActivity === 'high' ? 'border-green-500 text-green-400' :
+                            subreddit.modActivity === 'medium' ? 'border-yellow-500 text-yellow-400' :
+                            'border-gray-600 text-gray-400'
+                          }`}
+                        >
+                          {subreddit.modActivity}
+                        </Badge>
+                        {subreddit.trendingActivity && (
+                          <Badge variant="secondary" className="text-xs bg-purple-500/20 text-purple-300">
+                            <TrendingUp className="h-3 w-3 mr-1" />
+                            Trending
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    {subreddit.competitionLevel && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-400">Competition:</span>
+                        <Badge variant="outline" className="text-xs">
+                          {subreddit.competitionLevel}
+                        </Badge>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </TabsContent>
 
         <TabsContent value="insights" className="space-y-4">
           <div className="grid gap-4">
-            <Card className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 border-purple-500/20">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                  <Star className="h-5 w-5 text-yellow-400" />
-                  AI Insight of the Day
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-300">
-                  Mirror selfies are experiencing a 127% engagement boost in the last 24 hours. 
-                  Consider posting between 8-10 PM for maximum visibility on Reddit communities.
-                </p>
-              </CardContent>
-            </Card>
+            {forecastingSignals.length > 0 && (
+              <Card className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 border-purple-500/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <Star className="h-5 w-5 text-yellow-400" />
+                    Top Forecasting Signal
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-300">
+                    <span className="font-semibold text-purple-400">{forecastingSignals[0].topic}</span> in{' '}
+                    <span className="font-semibold text-purple-400">{forecastingSignals[0].subreddit}</span> is showing{' '}
+                    strong growth velocity ({forecastingSignals[0].growthVelocity.toFixed(1)}x) with{' '}
+                    {forecastingSignals[0].confidence}% confidence over the next {forecastingSignals[0].timeframe}.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             <Card className="bg-gradient-to-r from-gray-900/50 to-gray-800/50 border-gray-700/50">
               <CardHeader>
-                <CardTitle className="text-white">Optimization Recommendations</CardTitle>
+                <CardTitle className="text-white">Forecasting Signals</CardTitle>
+                <p className="text-sm text-gray-400">AI-powered growth predictions</p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-start space-x-3 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                    <TrendingUp className="h-5 w-5 text-green-400 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium text-green-400">High Impact</h4>
-                      <p className="text-sm text-gray-300">
-                        Increase mirror selfie content by 40% to capitalize on current trend
-                      </p>
-                    </div>
+                {forecastingSignals.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <TrendingUp className="h-12 w-12 mx-auto mb-4 text-purple-400" />
+                    <p>No forecasting signals available yet</p>
                   </div>
-
-                  <div className="flex items-start space-x-3 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-                    <Eye className="h-5 w-5 text-yellow-400 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium text-yellow-400">Medium Impact</h4>
-                      <p className="text-sm text-gray-300">
-                        Adjust posting schedule to focus on 8-10 PM window for better engagement
-                      </p>
-                    </div>
+                ) : (
+                  <div className="space-y-3">
+                    {forecastingSignals.slice(0, 5).map((signal, index) => {
+                      const confidenceColor = signal.confidence >= 80 ? 'green' : signal.confidence >= 60 ? 'yellow' : 'blue';
+                      return (
+                        <div
+                          key={index}
+                          className={`flex items-start space-x-3 p-3 rounded-lg bg-${confidenceColor}-500/10 border border-${confidenceColor}-500/20`}
+                        >
+                          <TrendingUp className={`h-5 w-5 text-${confidenceColor}-400 mt-0.5`} />
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <h4 className={`font-medium text-${confidenceColor}-400`}>
+                                {signal.category} • {signal.confidence}% confidence
+                              </h4>
+                              <Badge variant="outline" className="text-xs">
+                                {signal.timeframe}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-gray-300 mt-1">
+                              {signal.topic} in {signal.subreddit} ({signal.growthVelocity.toFixed(1)}x velocity)
+                            </p>
+                            {signal.competitionLevel && (
+                              <p className="text-xs text-gray-400 mt-1">
+                                Competition: {signal.competitionLevel}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-
-                  <div className="flex items-start space-x-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                    <Users className="h-5 w-5 text-blue-400 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium text-blue-400">Low Impact</h4>
-                      <p className="text-sm text-gray-300">
-                        Experiment with cozy lifestyle content for consistent engagement
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
             <Card className="bg-gradient-to-r from-gray-900/50 to-gray-800/50 border-gray-700/50">
               <CardHeader>
-                <CardTitle className="text-white">Trend Predictions</CardTitle>
-                <p className="text-sm text-gray-400">AI-powered forecasts for the next 7 days</p>
+                <CardTitle className="text-white">Category Distribution</CardTitle>
+                <p className="text-sm text-gray-400">Content categories currently trending</p>
               </CardHeader>
               <CardContent>
-                <div className="h-64 flex items-center justify-center text-gray-500">
-                  <div className="text-center">
-                    <TrendingUp className="h-12 w-12 mx-auto mb-4 text-purple-400" />
-                    <p>Advanced trend prediction engine coming soon</p>
+                {trendingTopics.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Eye className="h-12 w-12 mx-auto mb-4 text-purple-400" />
+                    <p>No category data available</p>
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-2">
+                    {Array.from(new Set(trendingTopics.map(t => t.category)))
+                      .slice(0, 5)
+                      .map((category, index) => {
+                        const count = trendingTopics.filter(t => t.category === category).length;
+                        const percentage = (count / trendingTopics.length) * 100;
+                        return (
+                          <div key={index} className="space-y-1">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-gray-400">{category}</span>
+                              <span className="text-white font-medium">{count} topics ({percentage.toFixed(0)}%)</span>
+                            </div>
+                            <Progress value={percentage} className="h-2" />
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

@@ -3,8 +3,8 @@ import { listCommunities, type NormalizedRedditCommunity, getEligibleCommunities
 import { stateStore } from './state-store.js';
 import { logger } from '../lib/logger.js';
 import { db } from '../db.js';
-import { users, creatorAccounts, redditPostOutcomes } from '@shared/schema';
-import { eq, sql, and, desc, gte } from 'drizzle-orm';
+import { creatorAccounts, redditPostOutcomes } from '@shared/schema';
+import { eq, sql, and, desc } from 'drizzle-orm';
 
 type CacheStore = typeof stateStore;
 

@@ -1,0 +1,63 @@
+eplit Agent In-Depth Prompt
+
+You are the Replit agent responsible for elevating our Reddit Intelligence stack. Work within Next.js + TypeScript + Drizzle conventions, keep security/privacy paramount, and avoid shortcuts. Execute the following initiatives comprehensively:
+
+    Personalize reddit intelligence snapshots
+
+        Modify server/services/reddit-intelligence.ts so buildDataset ingests the requester’s userId, fetches their linked Reddit account, and biases trendingTopics, subredditHealth, and forecastingSignals toward communities they actively post in or follow.
+
+        Rework caching: derive scoped keys per user, add an opt-in flag for global vs personalized responses in /api/reddit/intelligence, and align tests to cover deterministic personalization flows.
+
+    Broaden Reddit trend collection sources
+
+        Extend fetchTrendingTopics to gather hot, rising, and time-bound top listings (day/week) for both /r/popular and /r/all, merging them with deduplication plus tunable limits/telemetry.
+
+        Update unit tests to confirm every listing type is queried and merged correctly.
+
+    Annotate trends with subreddit compliance signals
+
+        Enrich transformTrendingEntry and related types so each trend includes rule-derived warnings (verification, selling policies, cooldowns, NSFW bans, etc.).
+
+        Propagate the new metadata through the API and UI, ensuring the frontend renders compliance cues with regression coverage.
+
+    Invalidate intelligence cache after community sync
+
+        Introduce a cache invalidate() helper inside RedditIntelligenceService and invoke it after each successful community/subreddit sync so fresh data reaches /api/reddit/intelligence immediately.
+
+        Add targeted tests to guarantee eviction occurs.
+
+    Wire Trend Intelligence UI to real API data
+
+        Refactor the TrendIntelligence page to fetch /api/reddit/intelligence via useQuery, implement loading/error states, and replace placeholder arrays with live payloads, including compliance warnings.
+
+        Adjust component/unit tests to cover loading, error, and populated scenarios.
+
+    Derive growth and moderation activity during sync
+
+        Enhance syncRedditCommunities to compare current vs prior subreddit snapshots, derive growthTrend buckets, estimate moderator activity, and persist both values.
+
+        Extend tests (or add new ones) simulating prior rows to verify calculations.
+
+    Compute best posting windows from recent subreddit activity
+
+        Upgrade calculateEngagementMetrics to bucket recent posts by day/hour, identify high-engagement windows, and persist them to bestPostingTimes.
+
+    Update UIs/tests so new scheduling hints display and handle null-safe rendering.
+
+    Incorporate post outcomes into health scoring
+
+        Integrate aggregated reddit_post_outcomes metrics into subredditHealth, tuning weights to reward communities where creators succeed and surfacing takedown reasons.
+
+        Build integration tests confirming health scores shift with seeded outcome data.
+
+    Filter or flag non-postable trending topics
+
+        When assembling trendingTopics, inspect rule metadata (promotionAllowed, verification needs, etc.) and either exclude or clearly flag communities that creators cannot post in; intersect with getEligibleCommunitiesForUser when personalizing.
+
+        Expand tests to cover both filtered and flagged states.
+
+    Persist reddit intelligence snapshots for history
+
+        Add a Drizzle migration for reddit_intelligence_snapshots, save each built dataset (respecting retention and user scope), and expose a historical endpoint for analytics with pagination.
+
+        Ensure tests verify persistence, redaction of sensitive fields, and endpoint behavior.
