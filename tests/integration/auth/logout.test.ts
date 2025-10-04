@@ -88,7 +88,7 @@ describe('POST /api/auth/logout', () => {
 
     const clearedSessionCookie = setCookieHeader?.find((cookie) => cookie.startsWith(`${sessionCookieName}=`));
     expect(clearedSessionCookie).toBeDefined();
-    expect(clearedSessionCookie).toMatch(/Expires=Thu, 01 Jan 1970 00:00:00 GMT/);
+    expect(clearedSessionCookie).toMatch(/Max-Age=0/);
     expect(clearedSessionCookie).toMatch(/Path=\//);
     expect(clearedSessionCookie).toMatch(/SameSite=Lax/);
 

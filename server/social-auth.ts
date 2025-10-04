@@ -25,18 +25,15 @@ const redditCallbackOptions: RedditAuthenticateOptions = {
 
 const clearSessionCookie = (res: Response): void => {
   const { name, cookie } = getSessionCookieConfig();
-  const options: CookieOptions = {
+  
+  res.cookie(name, '', {
+    maxAge: 0,
     httpOnly: cookie.httpOnly ?? true,
     sameSite: cookie.sameSite,
     secure: Boolean(cookie.secure),
     path: cookie.path ?? '/',
-  };
-
-  if (cookie.domain) {
-    options.domain = cookie.domain;
-  }
-
-  res.clearCookie(name, options);
+    domain: cookie.domain,
+  });
 };
 
 export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
