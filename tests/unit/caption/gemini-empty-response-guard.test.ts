@@ -200,6 +200,46 @@ describe('Gemini empty response guards', () => {
     });
   });
 
+  it('returns safe fallback facts when Gemini returns an empty fact payload', async () => {
+    const textModel: GeminiTextModelMock = {
+      generateContent: vi
+        .fn<[
+          input: unknown
+        ], Promise<MockResponse>>()
+        .mockResolvedValue(createMockResponse('fallback response')),
+    };
+    const visionModel: GeminiVisionModelMock = {
+      generateContent: vi
+        .fn<[
+          input: unknown
+        ], Promise<MockResponse>>()
+        .mockResolvedValue(createMockResponse('')),
+    };
+
+    mockGemini(textModel, visionModel);
+
+    const { extractFacts } = await import('../../../server/caption/geminiPipeline.ts');
+
+    const transparentPixel = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
+
+    const facts = await extractFacts(transparentPixel);
+
+    expect(visionModel.generateContent).toHaveBeenCalledTimes(1);
+    expect(facts).toEqual({
+      categories: [],
+      objects: [],
+      keywords: [],
+      summary: '',
+      colors: [],
+      vibe: '',
+      setting: '',
+      wardrobe: [],
+      angles: [],
+      mood: '',
+      style: '',
+    });
+  });
+
   it.each<[{ label: string; value: string | undefined }]>([
     [{ label: 'an empty string', value: '' }],
     [{ label: 'undefined', value: undefined }],

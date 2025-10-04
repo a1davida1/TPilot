@@ -12,7 +12,13 @@ import { serializePromptField } from "./promptUtils";
 import { formatVoiceContext } from "./voiceTraits";
 import { ensureFactCoverage } from "./ensureFactCoverage";
 import { inferFallbackFromFacts, ensureFallbackCompliance } from "./inferFallbackFromFacts";
-import { detectRankingViolations, formatViolations } from "./rankingGuards";
+import {
+  detectRankingViolations,
+  formatViolations,
+  safeFallbackCaption,
+  safeFallbackCta,
+  safeFallbackHashtags
+} from "./rankingGuards";
 
 // CaptionResult interface for type safety
 interface CaptionResult {
@@ -256,7 +262,14 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
     if (typeof raw !== "string") {
       throw new Error('Gemini text model returned a non-string payload while generating rewrite variants');
     }
-    const parsed = stripToJSON(raw);
+    let parsed: unknown;
+    try {
+      parsed = stripToJSON(raw);
+    } catch (error) {
+      console.error("Gemini rewrite variants parsing failed:", { raw, error });
+      parsed = [];
+      currentHint = baseHint;
+    }
     let hasBannedWords = false;
 
     if (Array.isArray(parsed)) {
@@ -403,16 +416,66 @@ async function requestRewriteRanking(
   if (typeof raw !== "string") {
     throw new Error('Gemini text model returned a non-string payload during rewrite ranking');
   }
-  let json = stripToJSON(raw) as unknown;
 
-  if(Array.isArray(json)) {
-    const winner = json[0] as Record<string, unknown> | undefined;
-    json = {
+  const defaultScores = [5, 4, 3, 2, 1] as const;
+  const buildFallbackRanking = () => {
+    const candidate = variantsInput[0];
+    const parsedCandidate = CaptionItem.safeParse(candidate);
+    if (parsedCandidate.success) {
+      return {
+        winner_index: 0,
+        scores: [...defaultScores],
+        reason: "Using fallback ranking due to unparseable Gemini response",
+        final: parsedCandidate.data
+      };
+    }
+
+    const fallbackVariant = CaptionItem.parse({
+      caption: safeFallbackCaption,
+      alt: "Engaging description that highlights the visual story.",
+      hashtags: [...safeFallbackHashtags],
+      cta: safeFallbackCta,
+      mood: "engaging",
+      style: "authentic",
+      safety_level: "normal",
+      nsfw: false
+    });
+
+    return {
       winner_index: 0,
-      scores: [5, 4, 3, 2, 1],
-      reason: "Selected based on engagement potential",
-      final: winner ?? variantsInput[0]
+      scores: [...defaultScores],
+      reason: "Using fallback ranking due to unparseable Gemini response",
+      final: fallbackVariant
     };
+  };
+
+  let json: unknown;
+  try {
+    json = stripToJSON(raw) as unknown;
+  } catch (error) {
+    console.error("Gemini rewrite ranking parsing failed:", { raw, error });
+    return buildFallbackRanking();
+  }
+
+  if (Array.isArray(json)) {
+    const winner = json[0];
+    const safeWinner = CaptionItem.safeParse(winner);
+    if (safeWinner.success) {
+      return {
+        winner_index: 0,
+        scores: [...defaultScores],
+        reason: "Selected based on engagement potential",
+        final: safeWinner.data
+      };
+    }
+
+    console.error("Gemini rewrite ranking returned array without valid winner:", { raw });
+    return buildFallbackRanking();
+  }
+
+  if (!json || typeof json !== "object") {
+    console.error("Gemini rewrite ranking returned non-object payload:", { raw, json });
+    return buildFallbackRanking();
   }
 
   return json;

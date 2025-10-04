@@ -187,6 +187,13 @@ const safeFactDefaults: Record<string, unknown> = {
   objects: [],
   keywords: [],
   summary: "",
+  colors: [],
+  vibe: "",
+  setting: "",
+  wardrobe: [],
+  angles: [],
+  mood: "",
+  style: "",
 };
 
 function buildVariantFallbackBatch(params: {
@@ -1038,12 +1045,12 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
       try {
         rawText = await resolveResponseText(res);
       } catch (error) {
-        console.error('Gemini: empty response received during fact extraction');
-        throw error;
+        console.error('Gemini: failed to resolve response text during fact extraction', error);
+        return { ...safeFactDefaults };
       }
-      if (!rawText) {
+      if (!rawText || rawText.trim().length === 0) {
         console.error('Gemini: empty response received during fact extraction');
-        throw new Error("Gemini: empty response");
+        return { ...safeFactDefaults };
       }
       try {
         const result = stripToJSON(rawText) as Record<string, unknown>;

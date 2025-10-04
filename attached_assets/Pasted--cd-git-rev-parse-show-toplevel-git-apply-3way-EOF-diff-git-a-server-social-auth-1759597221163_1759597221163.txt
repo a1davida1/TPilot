@@ -1,0 +1,100 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/server/social-auth.ts b/server/social-auth.ts
+index 71bf58381523ef9b08af793f9154bdfebc12c421..dcee2018913eeb5dd4f5cb977b450cbe0b8e09fe 100644
+--- a/server/social-auth.ts
++++ b/server/social-auth.ts
+@@ -1,79 +1,67 @@
+ import passport from 'passport';
+ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+ import { Strategy as FacebookStrategy } from 'passport-facebook';
+ import { Strategy as RedditStrategy } from 'passport-reddit';
+ import type { CookieOptions, Express, NextFunction, Request, Response } from 'express';
+ import type { AuthenticateOptions } from 'passport';
+ import type { User } from '@shared/schema';
+ import { storage } from './storage';
+ import jwt from 'jsonwebtoken';
+ import { blacklistToken } from './lib/tokenBlacklist';
+ import { logger } from './bootstrap/logger';
+ import { API_PREFIX, prefixApiPath } from './lib/api-prefix.js';
+ import { createToken } from './middleware/auth.js';
+ import { getSessionCookieConfig } from './bootstrap/session.js';
+ 
+ type RedditAuthenticateOptions = AuthenticateOptions & {
+   state?: string;
+   duration?: 'temporary' | 'permanent';
+ };
+ 
+ const redditCallbackOptions: RedditAuthenticateOptions = {
+   failureRedirect: '/login?error=reddit_failed'
+   // Note: No successRedirect - we handle cookie + redirect in the callback handler
+ };
+ 
+-type SessionCookieConfig = {
+-  name: string;
+-  options: CookieOptions;
+-};
+-
+-const getSessionCookieConfig = (): SessionCookieConfig => {
+-  const cookieName = process.env.SESSION_COOKIE_NAME ?? 'tpilot.sid';
+-  const isProduction = process.env.NODE_ENV === 'production';
+-  const cookieDomain = process.env.SESSION_COOKIE_DOMAIN?.trim();
+-
+-  const cookieOptions: CookieOptions = {
+-    httpOnly: true,
+-    sameSite: 'lax',
+-    secure: isProduction,
+-    path: '/',
++const clearSessionCookie = (res: Response): void => {
++  const { name, cookie } = getSessionCookieConfig();
++  const options: CookieOptions = {
++    httpOnly: cookie.httpOnly ?? true,
++    sameSite: cookie.sameSite,
++    secure: Boolean(cookie.secure),
++    path: cookie.path ?? '/',
+   };
+ 
+-  if (cookieDomain) {
+-    cookieOptions.domain = cookieDomain;
++  if (cookie.domain) {
++    options.domain = cookie.domain;
+   }
+ 
+-  return {
+-    name: cookieName,
+-    options: cookieOptions,
+-  };
+-};
++  if (typeof cookie.maxAge === 'number') {
++    options.maxAge = cookie.maxAge;
++  }
+ 
+-const clearSessionCookie = (res: Response): void => {
+-  const { name, options } = getSessionCookieConfig();
+   res.clearCookie(name, options);
+ };
+ 
+ export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
+   // Note: passport.initialize() and passport.session() are now called from routes.ts
+   // after session middleware is initialized
+   // Serialization/deserialization is also handled in routes.ts
+ 
+   // Google OAuth Strategy
+   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+     passport.use(new GoogleStrategy({
+       clientID: process.env.GOOGLE_CLIENT_ID,
+       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+       callbackURL: prefixApiPath('/auth/google/callback', apiPrefix)
+     }, async (accessToken, refreshToken, profile, done) => {
+       try {
+         const email = profile.emails?.[0]?.value || '';
+         const username = profile.displayName || email || '';
+         const avatar = profile.photos?.[0]?.value;
+         
+         // First, check by provider ID (most reliable for OAuth)
+         let user = await storage.getUserByProviderId('google', profile.id);
+         
+         if (user) {
+           // Update avatar and username if changed
+ 
+EOF
+)

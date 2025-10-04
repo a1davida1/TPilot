@@ -392,6 +392,70 @@ describe('Gemini pipelines keep persona tone on retry', () => {
     expect(retryPrompt.mood).toBe('Upbeat');
   });
 
+
+  it('provides fallback rewrite variants when Gemini emits plain text', async () => {
+    const textModel = createTextModelMock();
+
+    mockGeminiModules(textModel);
+
+    textModel.generateContent.mockImplementation(() =>
+      Promise.resolve(createMockResponse('Plain text without JSON'))
+    );
+
+    const { variantsRewrite } = await import('../../../server/caption/rewritePipeline.ts');
+
+    const variants = await variantsRewrite({
+      platform: 'instagram',
+      voice: 'Persona Voice',
+      existingCaption: 'Original caption ready for rewrite',
+      facts: { subject: 'Studio portrait' },
+      style: 'Bold Persona',
+      mood: 'Upbeat',
+      nsfw: false
+    });
+
+    expect(variants).toHaveLength(5);
+    for (const variant of variants) {
+      expect(variant.caption.length).toBeGreaterThan(0);
+      expect(variant.alt.length).toBeGreaterThan(20);
+    }
+    expect(textModel.generateContent).toHaveBeenCalledTimes(3);
+  });
+
+  it('synthesizes fallback rewrite ranking when Gemini emits plain text', async () => {
+    const textModel = createTextModelMock();
+
+    mockGeminiModules(textModel);
+
+    const rewriteModule = await import('../../../server/caption/rewritePipeline.ts');
+
+    const variantSet = createVariantSet('Rewrite fallback caption', ['#studio', '#portrait']);
+
+    let rankingCalls = 0;
+    textModel.generateContent.mockImplementation((input: unknown) => {
+      const parts = input as Array<{ text: string }>;
+      const prompt = parts?.[0]?.text ?? '';
+      if (prompt.includes('Rank the 5')) {
+        rankingCalls += 1;
+        return Promise.resolve(createMockResponse('Variant one is strongest.'));
+      }
+      return Promise.resolve(createMockResponse(variantSet.payload));
+    });
+
+    const result = await rewriteModule.pipelineRewrite({
+      platform: 'instagram',
+      voice: 'Persona Voice',
+      style: 'Bold Persona',
+      mood: 'Upbeat',
+      existingCaption: 'Original caption ready for rewrite',
+      nsfw: false
+    });
+
+    expect(result.ranked.reason).toBe('Using fallback ranking due to unparseable Gemini response');
+    expect(result.final.caption).toBe(variantSet.variants[0].caption);
+    expect(rankingCalls).toBe(1);
+  });
+
   it('forwards tone fields on text-only pipeline retry', async () => {
     const textModel = createTextModelMock();
 

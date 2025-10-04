@@ -23,36 +23,9 @@ const redditCallbackOptions: RedditAuthenticateOptions = {
   // Note: No successRedirect - we handle cookie + redirect in the callback handler
 };
 
-type SessionCookieConfig = {
-  name: string;
-  options: CookieOptions;
-};
-
-const getSessionCookieConfig = (): SessionCookieConfig => {
-  const cookieName = process.env.SESSION_COOKIE_NAME ?? 'tpilot.sid';
-  const isProduction = process.env.NODE_ENV === 'production';
-  const cookieDomain = process.env.SESSION_COOKIE_DOMAIN?.trim();
-
-  const cookieOptions: CookieOptions = {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: isProduction,
-    path: '/',
-  };
-
-  if (cookieDomain) {
-    cookieOptions.domain = cookieDomain;
-  }
-
-  return {
-    name: cookieName,
-    options: cookieOptions,
-  };
-};
-
 const clearSessionCookie = (res: Response): void => {
-  const { name, options } = getSessionCookieConfig();
-  res.clearCookie(name, options);
+  const { name, cookie } = getSessionCookieConfig();
+  res.clearCookie(name, cookie);
 };
 
 export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
