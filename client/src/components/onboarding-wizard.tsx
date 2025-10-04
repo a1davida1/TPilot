@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 // import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronRight, 
@@ -19,6 +19,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
+import { useOnboardingState } from '@/hooks/use-onboarding-state';
 
 interface OnboardingStep {
   id: string;
@@ -56,9 +57,11 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
     aiTone: 'friendly',
     protectionLevel: 'standard'
   });
-  // TODO: Implement step completion tracking
-  const [_completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const { data: onboardingState, updateState } = useOnboardingState();
   const { toast } = useToast();
+
+  // Track completed steps as a Set for local state
+  const completedSteps = new Set(onboardingState?.completedSteps || []);
 
   const steps: OnboardingStep[] = [
     {
@@ -95,9 +98,22 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
     }
   ];
 
+  // Restore wizard position based on completed steps
+  useEffect(() => {
+    if (onboardingState?.completedSteps && onboardingState.completedSteps.length > 0) {
+      // Find the first incomplete step
+      const firstIncompleteIndex = steps.findIndex(step => !completedSteps.has(step.id));
+      if (firstIncompleteIndex !== -1 && firstIncompleteIndex !== currentStep) {
+        setCurrentStep(firstIncompleteIndex);
+      }
+    }
+  }, [onboardingState?.completedSteps]);
+
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
-      setCompletedSteps(prev => new Set([...prev, currentStep]));
+      // Add current step to completed steps and persist
+      const newCompletedSteps = [...completedSteps, steps[currentStep].id];
+      updateState({ completedSteps: newCompletedSteps });
       setCurrentStep(currentStep + 1);
     } else {
       handleComplete();
@@ -111,6 +127,10 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
   };
 
   const handleComplete = () => {
+    // Mark all steps as completed
+    const allStepIds = steps.map(step => step.id);
+    updateState({ completedSteps: allStepIds });
+    
     toast({
       title: "Setup Complete! 🎉",
       description: "You're all set to start creating amazing content",
