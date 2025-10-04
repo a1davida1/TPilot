@@ -1,10 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import express, { type Express, type Request, type Response, type NextFunction } from 'express';
+import { db } from '../../server/db.ts';
+import { userSessions } from '../../shared/schema.ts';
 
 interface MockUser { id: number }
 
 type AuthenticatedRequest = Request & { user?: MockUser };
+
+type SessionRecord = typeof userSessions.$inferSelect;
 
 let authImpl: (req: AuthenticatedRequest, res: Response, next: NextFunction) => void = (_req, _res, next) => next();
 
@@ -149,5 +153,73 @@ describe('Analytics route authentication', () => {
 
     expect(storageSpy).toHaveBeenCalledWith(7);
     expect(analyticsSpy).toHaveBeenCalledWith(7, expect.any(Date), expect.any(Date));
+  });
+
+  it('rejects unauthenticated session analytics requests', async () => {
+    const selectSpy = vi.spyOn(db, 'select');
+    const app = createApp();
+
+    const response = await request(app).get('/api/analytics/sessions?limit=25');
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({ error: 'Authentication required' });
+    expect(selectSpy).not.toHaveBeenCalled();
+  });
+
+  it('returns session analytics for authenticated users', async () => {
+    authImpl = (req, _res, next) => {
+      req.user = { id: 123 };
+      next();
+    };
+
+    const mockSessions: SessionRecord[] = [
+      {
+        id: 1,
+        sessionId: 'sess-1',
+        userId: 123,
+        ipAddress: '127.0.0.1',
+        userAgent: 'Mozilla/5.0',
+        referrer: null,
+        utmSource: 'newsletter',
+        utmMedium: 'email',
+        utmCampaign: 'spring-launch',
+        deviceType: 'desktop',
+        browser: 'Chrome',
+        os: 'macOS',
+        country: 'USA',
+        city: 'New York',
+        startedAt: new Date('2024-01-01T00:00:00.000Z'),
+        endedAt: null,
+        duration: 180,
+        pageCount: 5,
+        revokedAt: null,
+        createdAt: new Date('2024-01-01T00:10:00.000Z'),
+      },
+    ];
+
+    const selectSpy = vi.spyOn(db, 'select').mockReturnValue({
+      from: (table: unknown) => {
+        expect(table).toBe(userSessions);
+        return {
+          where: () => ({
+            orderBy: () => ({
+              limit: async (limitValue: number) => {
+                expect(limitValue).toBe(25);
+                return mockSessions;
+              },
+            }),
+          }),
+        };
+      },
+    } as unknown as ReturnType<typeof db.select>);
+
+    const expectedSessions = JSON.parse(JSON.stringify(mockSessions));
+
+    const app = createApp();
+    const response = await request(app).get('/api/analytics/sessions?limit=25');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(expectedSessions);
+    expect(selectSpy).toHaveBeenCalledTimes(1);
   });
 });

@@ -283,14 +283,25 @@ export function registerAnalyticsRoutes(app: Express) {
   });
 
   // GET /api/analytics/sessions - Get user session analytics
-  app.get('/api/analytics/sessions', async (req: Request, res: Response) => {
+  app.get('/api/analytics/sessions', authenticateToken, async (req: AuthRequest, res: Response) => {
     try {
       const userId = getUserIdFromRequest(req);
-      const limit = parseInt(req.query.limit as string) || 50;
 
       if (!userId) {
         return res.status(401).json({ error: 'Authentication required' });
       }
+
+      const rawLimit = req.query.limit;
+      let parsedLimit = Number.NaN;
+      if (typeof rawLimit === 'string') {
+        parsedLimit = Number.parseInt(rawLimit, 10);
+      } else if (Array.isArray(rawLimit) && typeof rawLimit[0] === 'string') {
+        parsedLimit = Number.parseInt(rawLimit[0], 10);
+      }
+
+      const limit = Number.isFinite(parsedLimit) && parsedLimit > 0
+        ? Math.min(parsedLimit, 200)
+        : 50;
 
       const sessions = await db
         .select()
@@ -598,10 +609,27 @@ export async function getContentAnalytics(contentId: number, userId: number) {
 }
 
 // Utility functions
-function getUserIdFromRequest(req: Request): number | null {
-  const user = (req as { user?: { id?: number; userId?: number } }).user;
-  const id = user?.userId ?? user?.id;
-  return id !== undefined ? id : null;
+function getUserIdFromRequest(req: AuthRequest): number | null {
+  const { user } = req;
+
+  if (user && typeof user.id === 'number') {
+    return user.id;
+  }
+
+  if (hasNumericUserId(user)) {
+    return user.userId;
+  }
+
+  return null;
+}
+
+function hasNumericUserId(value: unknown): value is { userId: number } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'userId' in value &&
+    typeof (value as { userId?: unknown }).userId === 'number'
+  );
 }
 
 function getDateRange(period: string): { startDate: Date; endDate: Date } {
