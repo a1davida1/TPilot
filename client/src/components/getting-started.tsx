@@ -16,10 +16,16 @@ import {
   Crown,
   FileText,
   ChevronUp,
+  ChevronDown,
   EyeOff
 } from 'lucide-react';
 import { ThottoPilotLogo } from '@/components/thottopilot-logo';
-// import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 
 interface GettingStartedProps {
   userTier?: 'guest' | 'free' | 'pro' | 'premium';
@@ -30,8 +36,7 @@ interface GettingStartedProps {
 
 export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom: _isAtBottom = false, onSetupLater }: GettingStartedProps) {
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
-  // TODO: Implement step expansion/details view
-  const [_activeStep, _setActiveStep] = useState<string | null>(null);
+  const [expandedStep, setExpandedStep] = useState<string | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
 
   const steps = [
@@ -287,75 +292,117 @@ export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom:
               <span>Setup Checklist</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {steps.map((step, _index) => {
-              const IconComponent = step.icon;
-              const isCompleted = completedSteps.has(step.id);
-              const isDisabled = step.proOnly && (userTier === 'guest' || userTier === 'free');
-              
-              return (
-                <div
-                  key={step.id}
-                  className={`p-4 rounded-xl border-2 transition-all duration-300 ${
-                    isCompleted 
-                      ? 'bg-green-50 border-green-200' 
-                      : isDisabled 
-                        ? 'bg-gray-50 border-gray-200 opacity-60' 
-                        : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <button
-                        onClick={() => toggleStep(step.id)}
-                        className="flex-shrink-0"
-                        disabled={isDisabled}
-                      >
-                        {isCompleted ? (
-                          <CheckCircle className="h-6 w-6 text-green-500" />
-                        ) : (
-                          <Circle className="h-6 w-6 text-gray-300" />
-                        )}
-                      </button>
-                      
-                      <div className="p-2 bg-purple-100 rounded-lg">
-                        <IconComponent className="h-5 w-5 text-purple-600" />
+          <CardContent className="space-y-2">
+            <Accordion 
+              type="single" 
+              collapsible 
+              value={expandedStep || undefined}
+              onValueChange={(value) => setExpandedStep(value || null)}
+              data-testid="getting-started-accordion"
+            >
+              {steps.map((step, _index) => {
+                const IconComponent = step.icon;
+                const isCompleted = completedSteps.has(step.id);
+                const isDisabled = step.proOnly && (userTier === 'guest' || userTier === 'free');
+                const isExpanded = expandedStep === step.id;
+                
+                return (
+                  <AccordionItem
+                    key={step.id}
+                    value={step.id}
+                    className={`rounded-xl border-2 transition-all duration-300 mb-2 ${
+                      isCompleted 
+                        ? 'bg-green-50 border-green-200' 
+                        : isDisabled 
+                          ? 'bg-gray-50 border-gray-200 opacity-60' 
+                          : 'bg-white border-gray-200 hover:border-purple-300'
+                    }`}
+                    data-testid={`step-${step.id}`}
+                  >
+                    <div className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4 flex-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleStep(step.id);
+                            }}
+                            className="flex-shrink-0"
+                            disabled={isDisabled}
+                            data-testid={`checkbox-${step.id}`}
+                          >
+                            {isCompleted ? (
+                              <CheckCircle className="h-6 w-6 text-green-500" />
+                            ) : (
+                              <Circle className="h-6 w-6 text-gray-300" />
+                            )}
+                          </button>
+                          
+                          <div className="p-2 bg-purple-100 rounded-lg">
+                            <IconComponent className="h-5 w-5 text-purple-600" />
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <h3 className="font-semibold text-gray-900">{step.title}</h3>
+                              {step.proOnly && (
+                                <Badge className="bg-yellow-100 text-yellow-700 text-xs">Pro Feature</Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600">{step.description}</p>
+                            <div className="flex items-center space-x-2 mt-2">
+                              <Badge variant="outline" className="text-xs">
+                                {step.difficulty}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {step.time}
+                              </Badge>
+                            </div>
+                          </div>
+                          
+                          <AccordionTrigger 
+                            className="hover:no-underline p-2"
+                            data-testid={`expand-${step.id}`}
+                          >
+                            {isExpanded ? (
+                              <ChevronUp className="h-5 w-5 text-purple-500" />
+                            ) : (
+                              <ChevronDown className="h-5 w-5 text-gray-400" />
+                            )}
+                          </AccordionTrigger>
+                        </div>
+                        
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStepAction(step);
+                          }}
+                          disabled={isDisabled}
+                          className={isCompleted ? 'bg-green-500 hover:bg-green-600' : 'bg-purple-500 hover:bg-purple-600'}
+                          data-testid={`action-${step.id}`}
+                        >
+                          {isCompleted ? 'Completed' : step.action}
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
                       </div>
                       
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2">
-                          <h3 className="font-semibold text-gray-900">{step.title}</h3>
-                          {step.proOnly && (
-                            <Badge className="bg-yellow-100 text-yellow-700 text-xs">Pro Feature</Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600 mb-2">{step.description}</p>
+                      <AccordionContent>
                         {(step as typeof step & { details?: string }).details && (
-                          <p className="text-xs text-gray-500 mb-2 italic">{(step as typeof step & { details?: string }).details}</p>
+                          <div 
+                            className="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-100"
+                            data-testid={`details-${step.id}`}
+                          >
+                            <p className="text-sm text-gray-700 leading-relaxed">
+                              {(step as typeof step & { details?: string }).details}
+                            </p>
+                          </div>
                         )}
-                        <div className="flex items-center space-x-2 mt-1">
-                          <Badge variant="outline" className="text-xs">
-                            {step.difficulty}
-                          </Badge>
-                          <Badge variant="outline" className="text-xs">
-                            {step.time}
-                          </Badge>
-                        </div>
-                      </div>
+                      </AccordionContent>
                     </div>
-                    
-                    <Button
-                      onClick={() => handleStepAction(step)}
-                      disabled={isDisabled}
-                      className={isCompleted ? 'bg-green-500 hover:bg-green-600' : 'bg-purple-500 hover:bg-purple-600'}
-                    >
-                      {isCompleted ? 'Completed' : step.action}
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
+                  </AccordionItem>
+                );
+              })}
+            </Accordion>
           </CardContent>
         </Card>
       </div>
