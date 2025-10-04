@@ -17,6 +17,7 @@ import { extractAuthToken } from './middleware/extract-token.js';
 import { API_PREFIX, prefixApiPath } from './lib/api-prefix.js';
 import { assertExists } from '../helpers/assert';
 import { getCookieConfig } from './utils/cookie-config.js';
+import { ensureAdminAccount } from './lib/admin-auth.js';
 
 // Auth validation schemas removed - handled by middleware
 
@@ -27,7 +28,7 @@ if (!JWT_SECRET || /changeme|placeholder/i.test(JWT_SECRET)) {
 // Type assertion after validation
 const JWT_SECRET_VALIDATED: string = JWT_SECRET;
 
-export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
+export async function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
   const route = (path: string) => prefixApiPath(path, apiPrefix);
 
   logger.info('Setting up auth routes', {
@@ -35,6 +36,14 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
     signupRoute: route('/auth/signup'),
     loginRoute: route('/auth/login')
   });
+
+  // Ensure the bootstrap admin account exists before routes become live.
+  // Uses ADMIN_EMAIL and ADMIN_PASSWORD_HASH (or ADMIN_PASSWORD) env vars.
+  try {
+    await ensureAdminAccount();
+  } catch (err) {
+    logger.error('Failed to ensure admin account exists', { err });
+  }
 
   // Regular signup
   app.post(route('/auth/signup'), signupLimiter, validate(signupValidationSchema), async (req, res) => {

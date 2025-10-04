@@ -288,7 +288,7 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   app.use(passport.session());
 
   if (app.get('authRoutesConfigured') !== true) {
-    setupAuth(app, API_PREFIX);
+    await setupAuth(app, API_PREFIX);
     app.set('authRoutesConfigured', true);
   }
 

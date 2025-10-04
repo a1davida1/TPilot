@@ -960,7 +960,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
 
   // Setup authentication
   if (app.get('authRoutesConfigured') !== true) {
-    setupAuth(app, apiPrefix);
+    await setupAuth(app, apiPrefix);
     app.set('authRoutesConfigured', true);
   }
   setupAdminRoutes(app);
