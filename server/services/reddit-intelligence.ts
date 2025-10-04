@@ -226,6 +226,16 @@ export class RedditIntelligenceService {
     this.ttlSeconds = options?.cacheTtlSeconds ?? DEFAULT_CACHE_TTL_SECONDS;
   }
 
+  async invalidateCache(userId?: string): Promise<void> {
+    const cacheKey = this.buildCacheKey(userId);
+    try {
+      await this.cacheStore.delete(cacheKey);
+      logger.info('Reddit intelligence cache invalidated', { cacheKey });
+    } catch (error) {
+      logger.warn('Failed to invalidate Reddit intelligence cache', { cacheKey, error });
+    }
+  }
+
   async getIntelligence(options?: IntelligenceOptions): Promise<RedditIntelligenceDataset> {
     const cacheKey = this.buildCacheKey(options?.userId);
     const optInPersonalized = options?.userId !== undefined;
@@ -488,9 +498,55 @@ export class RedditIntelligenceService {
     };
   }
 
+  private async getUserCommunities(userId: string): Promise<string[]> {
+    try {
+      // Get user's linked Reddit account and their engaged communities
+      const linkedAccounts = await db
+        .select({ 
+          username: creatorAccounts.username,
+        })
+        .from(creatorAccounts)
+        .where(and(
+          eq(creatorAccounts.userId, userId),
+          eq(creatorAccounts.platform, 'reddit')
+        ))
+        .limit(1);
+
+      if (linkedAccounts.length === 0) {
+        return [];
+      }
+
+      // Get communities the user has posted to successfully
+      const outcomes = await db
+        .select({
+          subreddit: redditPostOutcomes.subreddit,
+        })
+        .from(redditPostOutcomes)  
+        .where(and(
+          eq(redditPostOutcomes.userId, userId),
+          eq(redditPostOutcomes.outcome, 'success')
+        ))
+        .groupBy(redditPostOutcomes.subreddit)
+        .orderBy(desc(sql`count(*)`))
+        .limit(20);
+
+      const communities = outcomes.map(o => o.subreddit).filter(Boolean);
+      
+      // Also get their eligible communities
+      const eligible = await getEligibleCommunitiesForUser(userId);
+      const allCommunities = [...new Set([...communities, ...eligible.map(c => c.name)])];
+      
+      return allCommunities.slice(0, 10); // Limit to top 10
+    } catch (error) {
+      logger.warn('Failed to get user communities', { userId, error });
+      return [];
+    }
+  }
+
   private computeSubredditHealth(
     communities: NormalizedRedditCommunity[],
     trendingTopics: RedditTrendingTopic[],
+    userCommunities: string[] = []
   ): SubredditHealthMetric[] {
     const trendingSet = new Set<string>(
       trendingTopics.map(topic => normalizeSubredditName(topic.subreddit)),
@@ -559,6 +615,7 @@ export class RedditIntelligenceService {
   private buildForecastingSignals(
     trendingTopics: RedditTrendingTopic[],
     communityMap: Map<string, NormalizedRedditCommunity>,
+    userCommunities: string[] = []
   ): RedditForecastingSignal[] {
     const signals: RedditForecastingSignal[] = [];
 
