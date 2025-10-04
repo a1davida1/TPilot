@@ -1,8 +1,11 @@
 import { Router as createRouter } from 'express';
 import { z } from 'zod';
-import { ReferralManager } from '../lib/referral-system.js';
+import { eq } from 'drizzle-orm';
+import { ReferralManager, type ReferralApplicant } from '../lib/referral-system.js';
 import { authenticateToken, type AuthRequest } from '../middleware/auth.js';
 import { logger } from '../bootstrap/logger.js';
+import { db } from '../db.js';
+import { users } from '@shared/schema';
 
 export const referralRouter = createRouter();
 
@@ -40,24 +43,24 @@ referralRouter.get('/code', authenticateToken, async (req: AuthRequest, res) => 
     }
 
     logger.info('Fetching referral code', { userId });
-    
+
     const referralCode = await ReferralManager.getUserReferralCode(userId);
-    
+
     logger.info('Referral code retrieved successfully', { userId, codeLength: referralCode.length });
-    
+
     res.json({
       referralCode,
       referralUrl: `${req.protocol}://${req.get('host')}/signup?ref=${referralCode}`
     });
 
   } catch (error) {
-    logger.error('Failed to get referral code', { 
+    logger.error('Failed to get referral code', {
       error: error instanceof Error ? error.message : String(error),
-      userId: req.user?.id 
+      userId: req.user?.id
     });
-    
-    res.status(500).json({ 
-      error: 'Failed to retrieve referral code' 
+
+    res.status(500).json({
+      error: 'Failed to retrieve referral code'
     });
   }
 });
@@ -71,31 +74,31 @@ referralRouter.get('/summary', authenticateToken, async (req: AuthRequest, res) 
     }
 
     logger.info('Fetching referral summary', { userId });
-    
+
     const referralInfo = await ReferralManager.getReferralInfo(userId);
-    
-    logger.info('Referral summary retrieved successfully', { 
-      userId, 
+
+    logger.info('Referral summary retrieved successfully', {
+      userId,
       totalReferrals: referralInfo.totalReferrals,
-      totalCommission: referralInfo.totalCommission 
+      totalCommission: referralInfo.totalCommission
     });
-    
+
     res.json(referralInfo);
 
   } catch (error) {
-    logger.error('Failed to get referral summary', { 
+    logger.error('Failed to get referral summary', {
       error: error instanceof Error ? error.message : String(error),
-      userId: req.user?.id 
+      userId: req.user?.id
     });
-    
-    res.status(500).json({ 
-      error: 'Failed to retrieve referral summary' 
+
+    res.status(500).json({
+      error: 'Failed to retrieve referral summary'
     });
   }
 });
 
 // POST /api/referral/apply - Apply a referral code (for new user signups)
-referralRouter.post('/apply', async (req, res) => {
+referralRouter.post('/apply', authenticateToken(false), async (req: AuthRequest, res) => {
   try {
     const parseResult = applyReferralSchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -113,20 +116,59 @@ referralRouter.post('/apply', async (req, res) => {
 
     const { referralCode, applicant } = parseResult.data;
     const normalizedCode = referralCode.toUpperCase();
-    const sanitizedApplicant = {
+    const normalizedTemporaryUserId = applicant.temporaryUserId?.trim();
+    const sanitizedApplicant: ReferralApplicant = {
       email: applicant.email,
-      ...(applicant.temporaryUserId ? { temporaryUserId: applicant.temporaryUserId } : {}),
+      ...(normalizedTemporaryUserId ? { temporaryUserId: normalizedTemporaryUserId } : {}),
     };
+    const sessionUserId = typeof req.user?.id === 'number' ? req.user.id : null;
 
     logger.info('Applying referral code', {
       referralCode: normalizedCode,
       applicant: {
         email: sanitizedApplicant.email,
         hasTemporaryId: Boolean(sanitizedApplicant.temporaryUserId),
+        authenticated: Boolean(sessionUserId),
       },
     });
 
-    const result = await ReferralManager.applyReferralCode(sanitizedApplicant, normalizedCode);
+    if (!sessionUserId) {
+      if (!sanitizedApplicant.temporaryUserId) {
+        logger.warn('Anonymous referral application missing temporary identifier', {
+          referralCode: normalizedCode,
+          applicantEmail: sanitizedApplicant.email,
+        });
+
+        return res.status(401).json({
+          success: false,
+          error: 'Temporary user identifier required for anonymous referral code applications.',
+        });
+      }
+
+      const [emailOwner] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, sanitizedApplicant.email))
+        .limit(1);
+
+      if (emailOwner) {
+        logger.warn('Anonymous referral attempt for existing account', {
+          referralCode: normalizedCode,
+          applicantEmail: sanitizedApplicant.email,
+        });
+
+        return res.status(401).json({
+          success: false,
+          error: 'Please log in to apply a referral code for this account.',
+        });
+      }
+    }
+
+    const managerApplicant: ReferralApplicant = sessionUserId
+      ? { userId: sessionUserId }
+      : sanitizedApplicant;
+
+    const result = await ReferralManager.applyReferralCode(managerApplicant, normalizedCode);
 
     if (result.success) {
       const status = result.pending ? 'recorded' : 'linked';
@@ -161,7 +203,7 @@ referralRouter.post('/apply', async (req, res) => {
 
     res.status(500).json({
       success: false,
-      error: 'Internal server error while applying referral code' 
+      error: 'Internal server error while applying referral code'
     });
   }
 });

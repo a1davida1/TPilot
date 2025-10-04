@@ -63,25 +63,48 @@ const apiKey =
   "";
 
 const DEFAULT_TEXT_MODEL = "gemini-1.5-flash";
+const MODEL_PREFIX = "models/";
+const VERSION_SUFFIX_PATTERN = /-(?:latest|\d[\w]*)$/i;
 
-const normalizeModelName = (name: string): string => {
-  const trimmed = name.trim();
-  const withoutPrefix = trimmed.startsWith("models/")
-    ? trimmed.slice("models/".length)
-    : trimmed;
-  const baseName = withoutPrefix.length > 0 ? withoutPrefix : DEFAULT_TEXT_MODEL;
-  const hasVersionSuffix = /-(?:latest|\d[\w]*)$/i.test(baseName);
-  const candidate = hasVersionSuffix ? baseName : `${baseName}-latest`;
-  return `models/${candidate}`;
-};
+const rawApiVersion =
+  process.env.GEMINI_API_VERSION ??
+  env.GEMINI_API_VERSION ??
+  "";
+const normalizedApiVersion = rawApiVersion.trim();
+const apiVersion = normalizedApiVersion.length > 0 ? normalizedApiVersion : "v1beta";
+const shouldAppendLatestSuffix = apiVersion.trim().toLowerCase() !== "v1";
 
-const apiVersion = process.env.GEMINI_API_VERSION || env.GEMINI_API_VERSION || undefined;
-const textModelNameSource =
-  process.env.GEMINI_TEXT_MODEL || env.GEMINI_TEXT_MODEL || DEFAULT_TEXT_MODEL;
-const textModelName = normalizeModelName(textModelNameSource);
-const visionModelNameSource =
-  process.env.GEMINI_VISION_MODEL || env.GEMINI_VISION_MODEL || textModelNameSource;
-const visionModelName = normalizeModelName(visionModelNameSource);
+const textModelRaw =
+  process.env.GEMINI_TEXT_MODEL ??
+  env.GEMINI_TEXT_MODEL ??
+  DEFAULT_TEXT_MODEL;
+const textModelTrimmed = textModelRaw.trim();
+const textModelBaseCandidate = textModelTrimmed.startsWith(MODEL_PREFIX)
+  ? textModelTrimmed.slice(MODEL_PREFIX.length)
+  : textModelTrimmed;
+const textModelBase =
+  textModelBaseCandidate.length > 0 ? textModelBaseCandidate : DEFAULT_TEXT_MODEL;
+const textModelResolvedBase =
+  shouldAppendLatestSuffix && !VERSION_SUFFIX_PATTERN.test(textModelBase)
+    ? `${textModelBase}-latest`
+    : textModelBase;
+const textModelName = `${MODEL_PREFIX}${textModelResolvedBase}`;
+
+const visionModelRaw =
+  process.env.GEMINI_VISION_MODEL ??
+  env.GEMINI_VISION_MODEL ??
+  textModelBase;
+const visionModelTrimmed = visionModelRaw.trim();
+const visionModelBaseCandidate = visionModelTrimmed.startsWith(MODEL_PREFIX)
+  ? visionModelTrimmed.slice(MODEL_PREFIX.length)
+  : visionModelTrimmed;
+const visionModelBase =
+  visionModelBaseCandidate.length > 0 ? visionModelBaseCandidate : textModelBase;
+const visionModelResolvedBase =
+  shouldAppendLatestSuffix && !VERSION_SUFFIX_PATTERN.test(visionModelBase)
+    ? `${visionModelBase}-latest`
+    : visionModelBase;
+const visionModelName = `${MODEL_PREFIX}${visionModelResolvedBase}`;
 
 type GeminiContentPart = Record<string, unknown> | string | number | boolean | null;
 

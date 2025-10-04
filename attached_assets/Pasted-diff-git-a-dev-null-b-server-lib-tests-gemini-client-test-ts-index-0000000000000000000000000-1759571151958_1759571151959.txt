@@ -1,0 +1,143 @@
+diff --git a//dev/null b/server/lib/__tests__/gemini-client.test.ts
+index 0000000000000000000000000000000000000000..d9f061b8a2fd9445fe402c22061202d68e4984c4 100644
+--- a//dev/null
++++ b/server/lib/__tests__/gemini-client.test.ts
+@@ -0,0 +1,138 @@
++import { afterEach, describe, expect, it, vi } from "vitest";
++import type { GoogleGenAIOptions } from "@google/genai";
++
++type MockGenerateContentRequest = Record<string, unknown> & { model?: string };
++
++interface MockGenerateContentResponse {
++  text: string;
++  response: { text: () => string };
++}
++
++const constructorOptions: GoogleGenAIOptions[] = [];
++
++const generateContentSpy = vi.fn<
++  [MockGenerateContentRequest],
++  Promise<MockGenerateContentResponse>
++>(async (request) => ({
++  text: "",
++  response: { text: () => "" }
++}));
++
++vi.mock("@google/genai", () => ({
++  GoogleGenAI: class {
++    public models = {
++      generateContent: (request: MockGenerateContentRequest) => generateContentSpy(request)
++    };
++
++    constructor(options: GoogleGenAIOptions) {
++      constructorOptions.push(options);
++    }
++  }
++}));
++
++type MockEnv = {
++  GEMINI_TEXT_MODEL?: string;
++  GEMINI_VISION_MODEL?: string;
++  GEMINI_API_VERSION?: string;
++  GOOGLE_GENAI_API_KEY?: string;
++  GEMINI_API_KEY?: string;
++};
++
++type LoadOptions = {
++  processEnv?: Record<string, string | undefined>;
++  configEnv?: MockEnv;
++};
++
++const ORIGINAL_ENV = { ...process.env } as NodeJS.ProcessEnv;
++
++async function loadGeminiClient({ processEnv, configEnv }: LoadOptions = {}) {
++  vi.resetModules();
++  constructorOptions.length = 0;
++  generateContentSpy.mockClear();
++
++  const nextEnv: NodeJS.ProcessEnv = { ...ORIGINAL_ENV };
++  nextEnv.GEMINI_API_KEY = "test-key";
++  nextEnv.GOOGLE_GENAI_API_KEY = "";
++
++  if (processEnv) {
++    for (const [key, value] of Object.entries(processEnv)) {
++      if (typeof value === "undefined") {
++        delete nextEnv[key];
++      } else {
++        nextEnv[key] = value;
++      }
++    }
++  }
++
++  process.env = nextEnv;
++
++  const mockEnv: MockEnv = {
++    GEMINI_TEXT_MODEL: "models/gemini-1.5-flash-latest",
++    GEMINI_VISION_MODEL: "models/gemini-1.5-flash-latest",
++    GEMINI_API_VERSION: "v1",
++    GOOGLE_GENAI_API_KEY: "",
++    GEMINI_API_KEY: "",
++    ...(configEnv ?? {})
++  };
++
++  vi.doMock("../config.js", () => ({ env: mockEnv }));
++
++  return import("../gemini-client.ts");
++}
++
++afterEach(() => {
++  process.env = { ...ORIGINAL_ENV } as NodeJS.ProcessEnv;
++  constructorOptions.length = 0;
++  generateContentSpy.mockClear();
++  vi.resetModules();
++});
++
++describe("gemini client model selection", () => {
++  it("defaults to v1beta and appends -latest when no version provided", async () => {
++    const module = await loadGeminiClient({
++      processEnv: { GEMINI_API_VERSION: undefined },
++      configEnv: { GEMINI_API_VERSION: undefined, GEMINI_TEXT_MODEL: undefined, GEMINI_VISION_MODEL: undefined }
++    });
++
++    await module.getTextModel().generateContent(["hello"]);
++
++    expect(constructorOptions[0]?.apiVersion).toBe("v1beta");
++    const [request] = generateContentSpy.mock.calls[0] ?? [];
++    expect(request?.model).toBe("models/gemini-1.5-flash-latest");
++  });
++
++  it("keeps flash model without -latest for v1 API", async () => {
++    const module = await loadGeminiClient({
++      processEnv: { GEMINI_API_VERSION: "v1" },
++      configEnv: { GEMINI_TEXT_MODEL: undefined, GEMINI_VISION_MODEL: undefined }
++    });
++
++    await module.getTextModel().generateContent(["hello"]);
++    await module.getVisionModel().generateContent(["hello"]);
++
++    expect(constructorOptions[0]?.apiVersion).toBe("v1");
++    const textRequest = generateContentSpy.mock.calls[0]?.[0];
++    const visionRequest = generateContentSpy.mock.calls[1]?.[0];
++    expect(textRequest?.model).toBe("models/gemini-1.5-flash");
++    expect(visionRequest?.model).toBe("models/gemini-1.5-flash");
++  });
++
++  it("applies suffix logic consistently for overrides", async () => {
++    const module = await loadGeminiClient({
++      processEnv: {
++        GEMINI_API_VERSION: "v1beta",
++        GEMINI_TEXT_MODEL: "gemini-1.5-pro",
++        GEMINI_VISION_MODEL: "models/gemini-1.5-flash-latest"
++      }
++    });
++
++    await module.getTextModel().generateContent(["hello"]);
++    await module.getVisionModel().generateContent(["hello"]);
++
++    expect(constructorOptions[0]?.apiVersion).toBe("v1beta");
++    const textRequest = generateContentSpy.mock.calls[0]?.[0];
++    const visionRequest = generateContentSpy.mock.calls[1]?.[0];
++    expect(textRequest?.model).toBe("models/gemini-1.5-pro-latest");
++    expect(visionRequest?.model).toBe("models/gemini-1.5-flash-latest");
++  });
++});
