@@ -116,13 +116,20 @@ export function normalizeRules(rawRules: unknown, promotionAllowed?: string, cat
     
     // Handle legacy array-based rules (backward compatibility)
     if (Array.isArray(rawRules)) {
-      const defaults = createDefaultRules();
+      const defaults = createDefaultRules() as RedditCommunityRuleSet;
+      const defaultContent = defaults.content;
       return {
         ...defaults,
         content: {
-          ...defaults.content,
+          titleGuidelines: defaultContent.titleGuidelines,
           contentGuidelines: rawRules.filter(rule => typeof rule === 'string'),
-          sellingPolicy: inferSellingPolicy(promotionAllowed || 'no', category || 'general')
+          linkRestrictions: defaultContent.linkRestrictions,
+          bannedContent: defaultContent.bannedContent,
+          formattingRequirements: defaultContent.formattingRequirements,
+          sellingPolicy: inferSellingPolicy(promotionAllowed || 'no', category || 'general'),
+          watermarksAllowed: defaultContent.watermarksAllowed,
+          promotionalLinks: defaultContent.promotionalLinks,
+          nsfwRequired: defaultContent.nsfwRequired
         }
       };
     }
@@ -139,10 +146,18 @@ export function normalizeRules(rawRules: unknown, promotionAllowed?: string, cat
             if (parsed.content) {
               parsed.content.sellingPolicy = inferredPolicy;
             } else {
-              const defaults = createDefaultRules();
+              const defaults = createDefaultRules() as RedditCommunityRuleSet;
+              const defaultContent = defaults.content;
               parsed.content = {
-                ...defaults.content,
-                sellingPolicy: inferredPolicy
+                titleGuidelines: defaultContent.titleGuidelines,
+                contentGuidelines: defaultContent.contentGuidelines,
+                linkRestrictions: defaultContent.linkRestrictions,
+                bannedContent: defaultContent.bannedContent,
+                formattingRequirements: defaultContent.formattingRequirements,
+                sellingPolicy: inferredPolicy,
+                watermarksAllowed: defaultContent.watermarksAllowed,
+                promotionalLinks: defaultContent.promotionalLinks,
+                nsfwRequired: defaultContent.nsfwRequired
               };
             }
           }

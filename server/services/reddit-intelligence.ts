@@ -1,7 +1,10 @@
 import { getRedditServiceClient, registerDefaultRedditClients, REDDIT_SERVICE_CLIENT_KEYS } from '../lib/reddit.js';
-import { listCommunities, type NormalizedRedditCommunity } from '../reddit-communities.js';
+import { listCommunities, type NormalizedRedditCommunity, getEligibleCommunitiesForUser } from '../reddit-communities.js';
 import { stateStore } from './state-store.js';
 import { logger } from '../lib/logger.js';
+import { db } from '../db.js';
+import { users, creatorAccounts, redditPostOutcomes } from '@shared/schema';
+import { eq, sql, and, desc, gte } from 'drizzle-orm';
 
 type CacheStore = typeof stateStore;
 
@@ -40,6 +43,10 @@ export interface RedditTrendingTopic {
   flair?: string;
   nsfw: boolean;
   postedAt: string;
+  complianceWarnings?: string[];
+  verificationRequired?: boolean;
+  promotionAllowed?: string;
+  cooldownHours?: number | null;
 }
 
 export interface SubredditHealthMetric {
@@ -221,6 +228,8 @@ export class RedditIntelligenceService {
 
   async getIntelligence(options?: IntelligenceOptions): Promise<RedditIntelligenceDataset> {
     const cacheKey = this.buildCacheKey(options?.userId);
+    const optInPersonalized = options?.userId !== undefined;
+    
     try {
       const cached = await this.cacheStore.get(cacheKey);
       if (isDataset(cached)) {
@@ -230,7 +239,7 @@ export class RedditIntelligenceService {
       logger.warn('Failed to read cached Reddit intelligence snapshot', { error });
     }
 
-    const dataset = await this.buildDataset();
+    const dataset = await this.buildDataset(options);
 
     try {
       await this.cacheStore.set(cacheKey, dataset, this.ttlSeconds);
@@ -256,7 +265,7 @@ export class RedditIntelligenceService {
     return `${CACHE_NAMESPACE}:global`;
   }
 
-  private async buildDataset(): Promise<RedditIntelligenceDataset> {
+  private async buildDataset(options?: IntelligenceOptions): Promise<RedditIntelligenceDataset> {
     const communities = await listCommunities();
     const communityMap = new Map<string, NormalizedRedditCommunity>();
     communities.forEach(community => {
@@ -264,10 +273,16 @@ export class RedditIntelligenceService {
       communityMap.set(normalizedName, community);
     });
 
+    // Fetch user's linked Reddit account and preferences
+    let userCommunities: string[] = [];
+    if (options?.userId) {
+      userCommunities = await this.getUserCommunities(options.userId);
+    }
+
     const client = await this.getClient();
-    const trendingTopics = await this.fetchTrendingTopics(client, communityMap);
-    const subredditHealth = this.computeSubredditHealth(communities, trendingTopics);
-    const forecastingSignals = this.buildForecastingSignals(trendingTopics, communityMap);
+    const trendingTopics = await this.fetchTrendingTopics(client, communityMap, userCommunities);
+    const subredditHealth = this.computeSubredditHealth(communities, trendingTopics, userCommunities);
+    const forecastingSignals = this.buildForecastingSignals(trendingTopics, communityMap, userCommunities);
 
     return {
       fetchedAt: new Date().toISOString(),
@@ -296,7 +311,11 @@ export class RedditIntelligenceService {
     }
   }
 
-  private async fetchTrendingTopics(client: SnoowrapClient | null, communityMap: Map<string, NormalizedRedditCommunity>): Promise<RedditTrendingTopic[]> {
+  private async fetchTrendingTopics(
+    client: SnoowrapClient | null, 
+    communityMap: Map<string, NormalizedRedditCommunity>,
+    userCommunities: string[] = []
+  ): Promise<RedditTrendingTopic[]> {
     if (!client) {
       logger.warn('Reddit service client unavailable; falling back to cached community insights only');
       return [];
@@ -304,15 +323,29 @@ export class RedditIntelligenceService {
 
     const listings: SnoowrapSubmissionLike[] = [];
 
+    // Broaden collection sources: hot, rising, and time-bound top listings
     const fetchers: Array<Promise<void>> = [
-      this.collectListings(client, 'popular', TRENDING_LIMIT, listings),
-      this.collectListings(client, 'all', Math.floor(TRENDING_LIMIT / 2), listings),
+      this.collectListings(client, 'popular', 'hot', TRENDING_LIMIT, listings),
+      this.collectListings(client, 'popular', 'rising', Math.floor(TRENDING_LIMIT / 2), listings),
+      this.collectListings(client, 'popular', 'top', Math.floor(TRENDING_LIMIT / 2), listings, 'day'),
+      this.collectListings(client, 'all', 'hot', Math.floor(TRENDING_LIMIT / 2), listings),
+      this.collectListings(client, 'all', 'top', Math.floor(TRENDING_LIMIT / 3), listings, 'week'),
     ];
+
+    // Add user-specific communities if personalized
+    if (userCommunities.length > 0) {
+      for (const community of userCommunities.slice(0, 5)) {
+        fetchers.push(this.collectListings(client, community, 'hot', 5, listings));
+      }
+    }
 
     await Promise.all(fetchers);
 
     const seenTopics = new Set<string>();
 
+    // Bias results toward user communities if personalized
+    const userCommunitiesSet = new Set(userCommunities.map(c => normalizeSubredditName(c)));
+    
     return listings
       .map(entry => this.transformTrendingEntry(entry, communityMap))
       .filter((trend): trend is RedditTrendingTopic => {
@@ -325,17 +358,55 @@ export class RedditIntelligenceService {
         seenTopics.add(trend.topic.toLowerCase());
         return true;
       })
+      .sort((a, b) => {
+        // Prioritize user communities if personalized
+        const aInUser = userCommunitiesSet.has(normalizeSubredditName(a.subreddit));
+        const bInUser = userCommunitiesSet.has(normalizeSubredditName(b.subreddit));
+        if (aInUser && !bInUser) return -1;
+        if (!aInUser && bInUser) return 1;
+        return b.score - a.score;
+      })
       .slice(0, TRENDING_LIMIT);
   }
 
-  private async collectListings(client: SnoowrapClient, subreddit: string, limit: number, sink: SnoowrapSubmissionLike[]): Promise<void> {
+  private async collectListings(
+    client: SnoowrapClient, 
+    subreddit: string, 
+    type: 'hot' | 'rising' | 'top',
+    limit: number, 
+    sink: SnoowrapSubmissionLike[],
+    time?: 'day' | 'week' | 'month' | 'year' | 'all'
+  ): Promise<void> {
     try {
       const subredditHandle = client.getSubreddit(subreddit);
-      const listing = await subredditHandle.getHot({ limit });
+      let listing;
+      
+      switch (type) {
+        case 'hot':
+          listing = await subredditHandle.getHot({ limit });
+          break;
+        case 'rising':
+          if (subredditHandle.getRising) {
+            listing = await subredditHandle.getRising({ limit });
+          } else {
+            listing = await subredditHandle.getHot({ limit });
+          }
+          break;
+        case 'top':
+          if (subredditHandle.getTop) {
+            listing = await subredditHandle.getTop({ limit, time: time || 'day' });
+          } else {
+            listing = await subredditHandle.getHot({ limit });
+          }
+          break;
+        default:
+          listing = await subredditHandle.getHot({ limit });
+      }
+      
       const normalized = this.normalizeListing(listing);
       sink.push(...normalized);
     } catch (error) {
-      logger.warn('Failed to collect Reddit listings', { subreddit, error });
+      logger.warn('Failed to collect Reddit listings', { subreddit, type, error });
     }
   }
 
@@ -380,6 +451,26 @@ export class RedditIntelligenceService {
 
     const subredditLabel = community?.displayName ?? `r/${normalizedSubreddit}`;
 
+    // Annotate with compliance signals
+    const complianceWarnings: string[] = [];
+    if (community?.verificationRequired) {
+      complianceWarnings.push('Verification required');
+    }
+    if (community?.promotionAllowed === 'no') {
+      complianceWarnings.push('Promotion not allowed');
+    } else if (community?.promotionAllowed === 'limited') {
+      complianceWarnings.push('Limited promotion allowed');
+    }
+    if (community?.rules?.posting?.cooldownHours && community.rules.posting.cooldownHours >= 24) {
+      complianceWarnings.push(`${community.rules.posting.cooldownHours}h cooldown`);
+    }
+    if (entry.over_18 === true) {
+      complianceWarnings.push('NSFW content');
+    }
+    if (community?.rules?.content?.nsfwRequired) {
+      complianceWarnings.push('NSFW required');
+    }
+
     return {
       topic: entry.title,
       subreddit: subredditLabel,
@@ -390,6 +481,10 @@ export class RedditIntelligenceService {
       flair: typeof entry.link_flair_text === 'string' ? entry.link_flair_text : undefined,
       nsfw: entry.over_18 === true,
       postedAt: entry.created_utc ? new Date(entry.created_utc * 1000).toISOString() : new Date().toISOString(),
+      complianceWarnings: complianceWarnings.length > 0 ? complianceWarnings : undefined,
+      verificationRequired: community?.verificationRequired,
+      promotionAllowed: community?.promotionAllowed,
+      cooldownHours: community?.rules?.posting?.cooldownHours,
     };
   }
 
