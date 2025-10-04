@@ -1,0 +1,38 @@
+You are working inside the ThottoPilot repo. Follow the TypeScript standards in AGENTS.md (no `any`, no non-null assertions, keep strict typing).
+
+Objectives (complete all):
+
+1. Pro Resources referral-code endpoint
+   • In server/routes.ts, extend registerProResourcesRoutes by adding a POST handler for `/api/pro-resources/:id/referral-code` right after the existing GET routes. It must:
+     – Require authentication via `authenticateToken(true)`.
+     – Use the existing `getUserTier` helper so free/starter tiers receive 403 and missing auth yields 401/403 just like the GET endpoints.
+     – Validate the perk ID against `getAvailablePerks(...)`, with the same premium override logic, returning 404 when inaccessible.
+     – Call a new `generateReferralCode(userId, perkId)` helper (see next task) and respond `{ referralCode }`.
+     – Wrap logic in try/catch and log failures with `logger.error('Referral code generation error', error);` while returning a 500 JSON error payload.
+   • Update the import list at the top of server/routes.ts accordingly.​:codex-file-citation[codex-file-citation]{line_range_start=272 line_range_end=340 path=server/routes.ts git_url="https://github.com/a1davida1/TPilot/blob/main/server/routes.ts#L272-L340"}​
+
+2. Pro Perks helper
+   • In server/pro-perks.ts, export an async function `generateReferralCode(userId: number, perkId: string): Promise<string>` that delegates to `ReferralManager.getUserReferralCode(userId)` and returns the resulting code. (You can log the perk ID if helpful, but avoid unused-variable lint issues.)
+   • Import `ReferralManager` from `./lib/referral-system.js` for this helper.
+   • Ensure server/routes.ts imports the new helper from `./pro-perks.js` and awaits it.
+
+3. ImageShield comparison slider
+   • In client/src/components/image-shield.tsx, replace the TODO by implementing a proper before/after slider:
+     – Introduce `comparisonPosition` state (0–100) that defaults to 50 and resets when toggling comparison on.
+     – Render a comparison container when `protectedImage && showComparison` that overlays the original image on top of the protected one, clipping via inline width tied to `comparisonPosition`.
+     – Add an accessible `<input type="range">` (or a headless slider component) with `aria-label="Reveal original image"` that updates the state and exposes a `data-testid="comparison-slider"`.
+     – Keep existing buttons functional, and ensure layout remains responsive and Tailwind-friendly.​:codex-file-citation[codex-file-citation]{line_range_start=30 line_range_end=31 path=client/src/components/image-shield.tsx git_url="https://github.com/a1davida1/TPilot/blob/main/client/src/components/image-shield.tsx#L30-L31"}​​:codex-file-citation[codex-file-citation]{line_range_start=200 line_range_end=228 path=client/src/components/image-shield.tsx git_url="https://github.com/a1davida1/TPilot/blob/main/client/src/components/image-shield.tsx#L200-L228"}​
+
+4. Component test coverage
+   • Add `client/src/components/__tests__/image-shield.test.tsx` exercising the new slider UI. Follow existing component test conventions (createRoot + act). The test should:
+     – Render the component with preset original/protected image data (you can stub state by mocking FileReader and canvas to avoid real processing).
+     – Toggle the Compare button, verify the slider appears, simulate changing its value, and assert that the overlay width/style updates accordingly (e.g., inline style reflects the new percentage).
+   • If needed, export a small helper component (e.g., `ImageComparisonSlider`) to make testing easier, but keep public API stable.
+
+5. Regression tests
+   • Run Vitest against the touched areas:
+     – `npx vitest run tests/integration/pro-resources.test.ts`
+     – `npx vitest run client/src/components/__tests__/image-shield.test.tsx`
+   • Ensure both commands pass before committing; fix any issues they surface.
+
+When done, provide a concise summary, list of files changed, and paste the test output.

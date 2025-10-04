@@ -1,6 +1,8 @@
 // Real Pro Perks System - Actual Affiliate Programs & Benefits
 // Updated based on 2024-2025 research of real monetization opportunities
 
+import { ReferralManager } from './lib/referral-system.js';
+
 export interface ProPerk {
   id: string;
   name: string;
@@ -583,6 +585,12 @@ export const perkSuccessMetrics = {
     topPerformers: 'Multi-six-figure annual affiliate income'
   }
 };
+
+// Generate referral code for a user and perk
+export async function generateReferralCode(userId: number, perkId: string): Promise<string> {
+  const referralCode = await ReferralManager.getUserReferralCode(userId);
+  return referralCode;
+}
 
 export default {
   realProPerks,
