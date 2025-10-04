@@ -1,0 +1,53 @@
+server/social-auth.ts:43:5 - error TS2322: Type 'string | boolean' is not assignable to type 'boolean'.
+  Type 'string' is not assignable to type 'boolean'.
+
+43     cookieOptions.secure = cookie.secure;
+       ~~~~~~~~~~~~~~~~~~~~
+
+server/social-auth.ts:248:9 - error TS2304: Cannot find name 'setAuthCookie'.
+
+248         setAuthCookie(res, token);
+            ~~~~~~~~~~~~~
+
+server/social-auth.ts:265:9 - error TS2304: Cannot find name 'setAuthCookie'.
+
+265         setAuthCookie(res, token);
+            ~~~~~~~~~~~~~
+
+server/social-auth.ts:285:9 - error TS2304: Cannot find name 'setAuthCookie'.
+
+285         setAuthCookie(res, token);
+            ~~~~~~~~~~~~~
+
+server/social-auth.ts:302:38 - error TS2304: Cannot find name 'getAuthCookieOptions'.
+
+302         res.clearCookie('authToken', getAuthCookieOptions());
+                                         ~~~~~~~~~~~~~~~~~~~~
+
+server/social-auth.ts:329:44 - error TS2304: Cannot find name 'getAuthCookieOptions'.
+
+329               res.clearCookie('authToken', getAuthCookieOptions());
+                                               ~~~~~~~~~~~~~~~~~~~~
+
+server/social-auth.ts:342:42 - error TS2304: Cannot find name 'getAuthCookieOptions'.
+
+342             res.clearCookie('authToken', getAuthCookieOptions());
+                                             ~~~~~~~~~~~~~~~~~~~~
+
+server/social-auth.ts:361:42 - error TS2304: Cannot find name 'getAuthCookieOptions'.
+
+361             res.clearCookie('authToken', getAuthCookieOptions());
+                                             ~~~~~~~~~~~~~~~~~~~~
+
+server/social-auth.ts:374:40 - error TS2304: Cannot find name 'getAuthCookieOptions'.
+
+374           res.clearCookie('authToken', getAuthCookieOptions());
+                                           ~~~~~~~~~~~~~~~~~~~~
+
+server/social-auth.ts:389:36 - error TS2304: Cannot find name 'getAuthCookieOptions'.
+
+389       res.clearCookie('authToken', getAuthCookieOptions());
+                                       ~~~~~~~~~~~~~~~~~~~~
+
+
+Found 10 errors in the same file, starting at: server/social-auth.ts:43

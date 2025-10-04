@@ -69,13 +69,10 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
       // For production, require email verification
       const isDevelopment = process.env.NODE_ENV === 'development';
 
-      const isProd = process.env.NODE_ENV === 'production';
+      const cfg = getCookieConfig();
       const cookieOptions = {
-        httpOnly: true,
-        secure: isProd,
-        sameSite: (isProd ? 'strict' : 'lax') as 'strict' | 'lax',
+        ...cfg.options,
         maxAge: 24 * 60 * 60 * 1000, // 24 hours (86400000 ms)
-        path: '/' // Explicitly set path to root
       };
 
       if (isDevelopment) {
@@ -96,7 +93,7 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
         );
 
         // Set JWT in HttpOnly cookie
-        res.cookie('authToken', token, cookieOptions);
+        res.cookie(cfg.authName, token, cookieOptions);
 
         res.status(201).json({
           message: 'User created successfully',
@@ -137,7 +134,7 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
         );
 
         // Align production signup response with development by setting auth cookie immediately
-        res.cookie('authToken', token, cookieOptions);
+        res.cookie(cfg.authName, token, cookieOptions);
 
         res.status(201).json({
           message: 'User created successfully. Verification email sent.',
@@ -229,13 +226,10 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
       );
 
       // Set JWT in HttpOnly cookie
-      const isProd = process.env.NODE_ENV === 'production';
-      res.cookie('authToken', token, {
-        httpOnly: true,
-        secure: isProd,
-        sameSite: (isProd ? 'strict' : 'lax') as 'strict' | 'lax',
+      const cfg = getCookieConfig();
+      res.cookie(cfg.authName, token, {
+        ...cfg.options,
         maxAge: 24 * 60 * 60 * 1000, // 24 hours (86400000 ms)
-        path: '/' // Explicitly set path to root
       });
       res.json({
         token,
@@ -469,13 +463,10 @@ export function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
         { expiresIn: '24h' }
       );
 
-      const isProd = process.env.NODE_ENV === 'production';
-      res.cookie('authToken', token, {
-        httpOnly: true,
-        secure: isProd,
-        sameSite: (isProd ? 'strict' : 'lax') as 'strict' | 'lax',
+      const cfg = getCookieConfig();
+      res.cookie(cfg.authName, token, {
+        ...cfg.options,
         maxAge: 24 * 60 * 60 * 1000, // 24 hours (86400000 ms)
-        path: '/' // Explicitly set path to root
       });
 
       res.json({

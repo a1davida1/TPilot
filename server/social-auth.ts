@@ -30,14 +30,12 @@ const redditCallbackOptions: RedditAuthenticateOptions = {
 
 // Helper function to set auth cookie (for OAuth callbacks)
 const setAuthCookie = (res: Response, token: string): void => {
-  const isProd = process.env.NODE_ENV === 'production';
+  const cfg = getCookieConfig();
   // OAuth requires sameSite: 'none' for third-party redirects
-  res.cookie('authToken', token, {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: 'none',
+  res.cookie(cfg.authName, token, {
+    ...cfg.options,
+    sameSite: 'none', // Override for OAuth third-party redirects
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    path: '/'
   });
 };
 
