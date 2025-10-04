@@ -275,6 +275,12 @@ class VisitorAnalytics {
     }
   }
 
+  // Get daily stats for testing
+  getDailyStats(date?: string): { conversions?: number; totalRevenue?: number; uniqueVisitors: number; conversionRate: number } | undefined {
+    const today = date || new Date().toISOString().split('T')[0];
+    return this.dailyStats.get(today) as { conversions?: number; totalRevenue?: number; uniqueVisitors: number; conversionRate: number } | undefined;
+  }
+
   // Get system completeness status
   getSystemCompleteness(): {
     category: string;

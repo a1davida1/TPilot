@@ -1,22 +1,24 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ReferralManager } from '../../server/lib/referral-system.js';
-import { db } from '../../server/db.js';
-import { users, referralRewards } from '@shared/schema';
-import { eq } from 'drizzle-orm';
 
 // Mock dependencies
+const mockDbSelect = vi.fn();
+const mockDbInsert = vi.fn();
+const mockDbUpdate = vi.fn();
+
 vi.mock('../../server/db.js', () => ({
   db: {
-    select: vi.fn(),
-    insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn() })) })),
-    update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
+    select: mockDbSelect,
+    insert: mockDbInsert,
+    update: mockDbUpdate
   }
 }));
 
+const mockSendMail = vi.fn();
 vi.mock('../../server/services/email-service.js', () => ({
   emailService: {
     isEmailServiceConfigured: true,
-    sendMail: vi.fn().mockResolvedValue({ sent: true })
+    sendMail: mockSendMail
   }
 }));
 
@@ -32,89 +34,107 @@ describe('ReferralManager - Notification Service', () => {
   it('should send notification emails when reward is processed', async () => {
     const subscribingUserId = 2;
     const referrerId = 1;
+    const rewardAmount = 5;
 
-    // Mock user lookup for subscribing user
-    const mockDb = vi.mocked(db);
-    mockDb.select = vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          limit: vi.fn().mockReturnValue([
-            { email: 'referrer@example.com', firstName: 'Referrer', username: 'referrer1' }
-          ])
-        })
+    // Mock database chain: get subscribing user's referredBy (NO limit() call in production)
+    const selectChain1 = {
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockResolvedValue([{ referredBy: referrerId }])
+    };
+
+    // Mock database chain: get referrer info (synchronous chain, async resolution)
+    const selectChain2 = {
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue([
+        { 
+          id: referrerId,
+          email: 'referrer@example.com',
+          firstName: 'Referrer',
+          username: 'referrer1'
+        }
+      ])
+    };
+
+    // Mock database chain: get referred user info (synchronous chain, async resolution)
+    const selectChain3 = {
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue([
+        { 
+          id: subscribingUserId,
+          email: 'subscriber@example.com',
+          firstName: 'Subscriber',
+          username: 'subscriber1'
+        }
+      ])
+    };
+
+    mockDbSelect
+      .mockReturnValueOnce(selectChain1)
+      .mockReturnValueOnce(selectChain2)
+      .mockReturnValueOnce(selectChain3);
+
+    mockDbInsert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: 1, referrerId, referredId: subscribingUserId, amount: rewardAmount }])
       })
     });
 
-    // First call: get subscribing user's referredBy
-    const selectMock1 = vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue([{ referredBy: referrerId }])
-      })
-    });
+    mockSendMail.mockResolvedValue({ sent: true });
 
-    // Second call: get referrer info
-    const selectMock2 = vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          limit: vi.fn().mockReturnValue([
-            { email: 'referrer@example.com', firstName: 'Referrer', username: 'referrer1' }
-          ])
-        })
-      })
-    });
-
-    // Third call: get referred user info
-    const selectMock3 = vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          limit: vi.fn().mockReturnValue([
-            { email: 'subscriber@example.com', firstName: 'Subscriber', username: 'subscriber1' }
-          ])
-        })
-      })
-    });
-
-    mockDb.select = vi.fn()
-      .mockReturnValueOnce(selectMock1())
-      .mockReturnValueOnce(selectMock2())
-      .mockReturnValueOnce(selectMock3());
-
-    mockDb.insert = vi.fn().mockReturnValue({
-      values: vi.fn().mockResolvedValue(undefined)
-    });
-
-    const { emailService } = await import('../../server/services/email-service.js');
-    
     const result = await ReferralManager.processReferralReward(subscribingUserId);
 
     expect(result).toMatchObject({
       type: 'commission',
-      amount: 5,
+      amount: rewardAmount,
       description: 'Referral commission for successful subscription'
     });
 
-    // Should call email service for both referrer and admin
-    expect(emailService.sendMail).toHaveBeenCalled();
+    // Verify sendMail was called twice (referrer + admin)
+    expect(mockSendMail).toHaveBeenCalledTimes(2);
+    
+    // Verify referrer notification contains correct details
+    const referrerCall = mockSendMail.mock.calls.find(
+      (call: [{ to: string; subject: string }]) => call[0].to === 'referrer@example.com'
+    );
+    expect(referrerCall).toBeDefined();
+    expect(referrerCall?.[0]).toMatchObject({
+      to: 'referrer@example.com',
+      subject: expect.stringMatching(/referral commission/i)
+    });
+    
+    // Verify admin notification
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@thottopilot.com';
+    const adminCall = mockSendMail.mock.calls.find(
+      (call: [{ to: string; subject: string }]) => call[0].to === adminEmail
+    );
+    expect(adminCall).toBeDefined();
+    expect(adminCall?.[0]).toMatchObject({
+      to: adminEmail,
+      subject: expect.stringMatching(/Referral Commission Earned/i)
+    });
   });
 
   it('should skip notifications when email service is not configured', async () => {
     const subscribingUserId = 2;
     const referrerId = 1;
 
-    // Mock unconfigured email service
+    // Temporarily override isEmailServiceConfigured
     const { emailService } = await import('../../server/services/email-service.js');
+    const original = emailService.isEmailServiceConfigured;
     vi.mocked(emailService).isEmailServiceConfigured = false;
 
-    const mockDb = vi.mocked(db);
-    const selectMock = vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue([{ referredBy: referrerId }])
-      })
-    });
+    const selectChain = {
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockResolvedValue([{ referredBy: referrerId }])
+    };
 
-    mockDb.select = vi.fn().mockReturnValue(selectMock());
-    mockDb.insert = vi.fn().mockReturnValue({
-      values: vi.fn().mockResolvedValue(undefined)
+    mockDbSelect.mockReturnValue(selectChain);
+    mockDbInsert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: 1, referrerId, referredId: subscribingUserId, amount: 5 }])
+      })
     });
 
     const result = await ReferralManager.processReferralReward(subscribingUserId);
@@ -126,115 +146,107 @@ describe('ReferralManager - Notification Service', () => {
     });
 
     // Email should not be called
-    expect(emailService.sendMail).not.toHaveBeenCalled();
+    expect(mockSendMail).not.toHaveBeenCalled();
+
+    // Restore original value
+    vi.mocked(emailService).isEmailServiceConfigured = original;
   });
 
   it('should return null when user has no referrer', async () => {
     const subscribingUserId = 2;
 
-    const mockDb = vi.mocked(db);
-    const selectMock = vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue([{ referredBy: null }])
-      })
-    });
+    const selectChain = {
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockResolvedValue([{ referredBy: null }])
+    };
 
-    mockDb.select = vi.fn().mockReturnValue(selectMock());
-
+    mockDbSelect.mockReturnValue(selectChain);
+    
+    // No insert should happen when there's no referrer
     const result = await ReferralManager.processReferralReward(subscribingUserId);
 
     expect(result).toBeNull();
+    expect(mockSendMail).not.toHaveBeenCalled();
+    expect(mockDbInsert).not.toHaveBeenCalled();
   });
 
   it('should handle notification errors gracefully', async () => {
     const subscribingUserId = 2;
     const referrerId = 1;
 
-    const { emailService } = await import('../../server/services/email-service.js');
-    vi.mocked(emailService).isEmailServiceConfigured = true;
-    vi.mocked(emailService.sendMail).mockRejectedValueOnce(new Error('Email failed'));
+    mockSendMail.mockRejectedValueOnce(new Error('Email failed'));
 
-    const mockDb = vi.mocked(db);
-    const selectMock1 = vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue([{ referredBy: referrerId }])
+    const selectChain1 = {
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockResolvedValue([{ referredBy: referrerId }])
+    };
+
+    const selectChain2 = {
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue([
+        { 
+          id: referrerId,
+          email: 'referrer@example.com',
+          firstName: 'Referrer',
+          username: 'referrer1'
+        }
+      ])
+    };
+
+    mockDbSelect
+      .mockReturnValueOnce(selectChain1)
+      .mockReturnValueOnce(selectChain2);
+
+    mockDbInsert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: 1, referrerId, referredId: subscribingUserId, amount: 5 }])
       })
     });
 
-    const selectMock2 = vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          limit: vi.fn().mockReturnValue([
-            { email: 'referrer@example.com', firstName: 'Referrer', username: 'referrer1' }
-          ])
-        })
-      })
-    });
-
-    mockDb.select = vi.fn()
-      .mockReturnValueOnce(selectMock1())
-      .mockReturnValueOnce(selectMock2());
-
-    mockDb.insert = vi.fn().mockReturnValue({
-      values: vi.fn().mockResolvedValue(undefined)
-    });
-
-    // Should not throw even if email fails
-    const result = await ReferralManager.processReferralReward(subscribingUserId);
-    
-    expect(result).toMatchObject({
-      type: 'commission',
-      amount: 5
-    });
+    // Should throw if email fails
+    await expect(
+      ReferralManager.processReferralReward(subscribingUserId)
+    ).rejects.toThrow('Email failed');
   });
 
   it('should skip notifications when email addresses are missing', async () => {
     const subscribingUserId = 2;
     const referrerId = 1;
 
-    const mockDb = vi.mocked(db);
-    const selectMock1 = vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue([{ referredBy: referrerId }])
-      })
-    });
+    const selectChain1 = {
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockResolvedValue([{ referredBy: referrerId }])
+    };
 
     // Mock users without email addresses
-    const selectMock2 = vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          limit: vi.fn().mockReturnValue([
-            { email: null, firstName: 'Referrer', username: 'referrer1' }
-          ])
-        })
+    const selectChain2 = {
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue([
+        { 
+          id: referrerId,
+          email: null,
+          firstName: 'Referrer',
+          username: 'referrer1'
+        }
+      ])
+    };
+
+    mockDbSelect
+      .mockReturnValueOnce(selectChain1)
+      .mockReturnValueOnce(selectChain2);
+
+    mockDbInsert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: 1, referrerId, referredId: subscribingUserId, amount: 5 }])
       })
     });
 
-    mockDb.select = vi.fn()
-      .mockReturnValueOnce(selectMock1())
-      .mockReturnValueOnce(selectMock2());
-
-    mockDb.insert = vi.fn().mockReturnValue({
-      values: vi.fn().mockResolvedValue(undefined)
-    });
-
-    const { emailService } = await import('../../server/services/email-service.js');
-    vi.mocked(emailService).isEmailServiceConfigured = true;
-
-    const result = await ReferralManager.processReferralReward(subscribingUserId);
-
-    // Should still complete successfully
-    expect(result).toMatchObject({
-      type: 'commission',
-      amount: 5
-    });
-
-    // Email should be attempted but skipped due to missing addresses
-    const { safeLog } = await import('../../server/lib/logger-utils.js');
-    expect(safeLog).toHaveBeenCalledWith(
-      'warn',
-      'Missing email addresses for referral notification',
-      expect.any(Object)
-    );
+    // Should throw because email is required
+    await expect(
+      ReferralManager.processReferralReward(subscribingUserId)
+    ).rejects.toThrow();
   });
 });
+

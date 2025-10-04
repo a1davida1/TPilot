@@ -1,0 +1,67 @@
+You are working inside the ThottoPilot repository. Follow every rule in AGENTS.md (strict TypeScript: no `any`, no non-null assertions) and honor the security/privacy guardrails in the repo docs.
+
+General guidance:
+• Treat all creator data as sensitive—validate with existing Zod schemas where available, sanitize user input, and log server errors through the shared logger utilities.
+• Keep React components accessible (keyboard focus, ARIA labels) and provide loading/error states for async flows.
+• Prefer existing hooks/utilities (React Query, toast helpers, storage clients) over duplicating logic, and add Vitest coverage for every new behavior.
+
+Objectives (complete all):
+
+1. User onboarding actions
+   • In `client/src/components/onboarding/UserOnboarding.tsx`, replace the placeholder handlers for resetting onboarding, completing a tutorial step, skipping, and launching the content tutorial so the UI controls actually drive state, persist to localStorage, and surface user feedback.
+   • Expose these handlers to the buttons that currently lack wiring (e.g., reset/replay controls) and ensure analytics hooks (if any) remain future-compatible.
+   • Add tests under `client/src/components/__tests__/user-onboarding.test.tsx` that exercise reset/complete/skip flows, verifying both UI updates and localStorage persistence (mock it via `vi.spyOn(window, 'localStorage', ...)`).
+
+2. Onboarding walkthrough persistence
+   • Implement user-specific tutorial state in `client/src/components/onboarding-walkthrough.tsx` by hydrating progress from storage keyed to `user.id`, marking steps complete, and providing a restart option.
+   • Ensure highlighted targets still scroll into view and restore focus when the walkthrough closes.
+   • Extend/create `client/src/components/__tests__/onboarding-walkthrough.test.tsx` to cover persistence across sessions, restart behavior, and focus management (mock DOM APIs as needed).
+
+3. Community engagement tracking
+   • Finish the engagement tracking feature in `client/src/components/community/CommunityManager.tsx` by adding state for tracking toggles, charting recent engagements, and exposing callbacks/hooks for analytics.
+   • Provide filters for sentiment/priority and make sure auto-reply toggles interact cleanly with the new tracking state.
+   • Add Vitest coverage in `client/src/components/__tests__/community-manager.test.tsx` validating toggle behavior, filter application, and emitted analytics events.
+
+4. Getting Started step expansion
+   • Implement the accordion/detail view described by the TODO in `client/src/components/getting-started.tsx`, allowing steps to expand for details, mark completion, and deep link via `onSectionSelect`.
+   • Support minimized mode transitions without losing progress, and update the progress bar/percentage accordingly.
+   • Create `client/src/components/__tests__/getting-started.test.tsx` to exercise expansion toggles, completion tracking, and navigation callbacks.
+
+5. Generation panel optimization & feedback
+   • In `client/src/components/generation-panel.tsx`, wire timing-based optimization into the generation payload/UI and implement the copy-feedback system (including toast messaging and copy counters).
+   • Persist timing preferences per session and expose hooks for analytics.
+   • Add tests in `client/src/components/__tests__/generation-panel.test.tsx` that mock `navigator.clipboard`, assert timing values sent to the mutation, and confirm feedback indicators respond to copy events.
+
+6. Modern dashboard responsiveness & uploads
+   • Complete the mobile layout logic and file-upload affordance noted in `client/src/components/modern-dashboard.tsx`, ensuring responsive breakpoints, drawer/accordion navigation, and a secure upload flow using the shared storage/media helpers.
+   • Validate file types/size client-side before hitting APIs and maintain optimistic UI updates.
+   • Add coverage under `client/src/components/__tests__/modern-dashboard.test.tsx` for mobile toggles (mock `matchMedia`), upload interactions (mock fetch/MediaManager), and error handling.
+
+7. Landing page metrics & parallax
+   • Implement the parallax scroll effects and live metrics display in `client/src/components/landing-page.tsx`, using the `_scrollY` state to drive transforms while keeping accessibility intact.
+   • Provide skeleton/loading/error states around `useMetrics` data and ensure navigation buttons remain keyboard friendly.
+   • Write `client/src/components/__tests__/landing-page.test.tsx` to verify parallax calculations (mock `window.scrollY`) and the various metrics states.
+
+8. Header walkthrough replay control
+   • In `client/src/components/header.tsx`, replace the placeholder replay logic with a fully wired control that appears only when the walkthrough can be replayed (respecting location, auth state, and prop availability).
+   • Surface the action in both desktop and mobile menus, dispatch callbacks, and add analytics hooks if present.
+   • Add `client/src/components/__tests__/header.test.tsx` validating visibility rules and ensuring the replay handler fires on click.
+
+Documentation:
+• Update `README.md` (or an appropriate doc under `docs/`) to clarify that the Referral dashboard lives on its own `/referral` page separate from Pro Perks, and document where the Header and onboarding components expose entry points into each surface.
+
+Regression commands (run all and include the output in your final report):
+• `npm run lint`
+• `npx vitest run client/src/components/__tests__/user-onboarding.test.tsx`
+• `npx vitest run client/src/components/__tests__/onboarding-walkthrough.test.tsx`
+• `npx vitest run client/src/components/__tests__/community-manager.test.tsx`
+• `npx vitest run client/src/components/__tests__/getting-started.test.tsx`
+• `npx vitest run client/src/components/__tests__/generation-panel.test.tsx`
+• `npx vitest run client/src/components/__tests__/modern-dashboard.test.tsx`
+• `npx vitest run client/src/components/__tests__/landing-page.test.tsx`
+• `npx vitest run client/src/components/__tests__/header.test.tsx`
+
+Deliverables:
+• Concise summary of completed work.
+• List of modified files.
+• Full output for every command above.

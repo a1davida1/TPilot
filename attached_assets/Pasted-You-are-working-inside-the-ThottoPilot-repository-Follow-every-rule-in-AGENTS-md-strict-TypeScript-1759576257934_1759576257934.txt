@@ -1,0 +1,61 @@
+You are working inside the ThottoPilot repository. Follow every rule in AGENTS.md (strict TypeScript—no `any`, no non-null assertions) and respect the project’s security/privacy requirements.
+
+General guidelines:
+• Treat all uploads and referral data as sensitive. Reuse existing validation (Zod schemas, multer safeguards) and log server errors with the shared logger.
+• Prefer shared helpers (`MediaManager`, `storage`, `emailService`, etc.) over bespoke implementations.
+• Keep React code accessible: keyboard support, ARIA labels, sensible loading/error states.
+• Update or create Vitest suites whenever you add logic; mock browser/Node APIs instead of hitting real services.
+
+Objectives (complete all):
+
+1. Upload persistence and metadata
+   • In `server/routes/uploads.ts`, replace the placeholder logic by piping authenticated uploads through `MediaManager.uploadFile(...)`, capturing the `req.user.id`, filename, MIME, and byte size. Persist the response via `storage.createUserImage` and return the structured asset (including signed/download URLs).
+   • Require authentication (`authenticateToken(true)`), guard against missing files, and on failure clean up temporary buffers while responding with the same JSON error shape other upload routes use.
+   • Add integration coverage under `tests/routes/uploads.test.ts` that mocks `MediaManager`/`storage` to assert success, unsupported files, oversized payloads, and authentication failures.
+
+2. Referral notification service
+   • In `server/lib/referral-system.ts`, replace the stubbed `notificationService` with a module that uses `emailService` (or another configured notifier) to email both the referrer and internal admins when `processReferralReward` runs. Make sure it no-ops cleanly when email isn’t configured.
+   • Add targeted unit tests (e.g., `tests/unit/referral-system-notifications.test.ts`) verifying that the notifier fires when rewards are generated and is skipped gracefully otherwise.
+
+3. Visitor analytics payment recording
+   • Enhance `VisitorAnalytics.recordPayment` so it records conversions and aggregates into `dailyStats` (update totals, conversion rate, and any per-day revenue counters).
+   • Extend or add tests under `tests/unit/visitor-analytics.test.ts` covering successful persistence, missing Stripe customers, and error propagation.
+
+4. Landing page hero polish
+   • In `client/src/components/landing-page.tsx`, use the existing `_scrollY` state to drive subtle parallax transforms (hero background, floating badges) and render real metrics from `useMetrics` with loading/skeleton and error fallbacks.
+   • Create `client/src/components/__tests__/landing-page.test.tsx` to exercise the parallax hook (mocking `window.scrollY`) and the metrics loading/success/error states.
+
+5. Getting Started step expansion
+   • Implement the step detail accordion hinted at in `client/src/components/getting-started.tsx`, allowing users to expand/collapse steps, mark them complete, and navigate to linked sections.
+   • Write tests (`client/src/components/__tests__/getting-started.test.tsx`) that confirm expanded content toggles, completion progress updates, and callbacks fire.
+
+6. Onboarding walkthrough state
+   • Update `client/src/components/onboarding-walkthrough.tsx` so tutorial progress persists per user (hydrate via `useAuth`, store progress in localStorage keyed by `user.id`, and expose a “restart tutorial” control).
+   • Add tests (`client/src/components/__tests__/onboarding-walkthrough.test.tsx`) covering persistence, restart behavior, and focus management for highlighted elements (mock DOM APIs as needed).
+
+7. Community engagement tracking
+   • Finish the engagement tracking feature inside `client/src/components/community/CommunityManager.tsx`: surface toggles for tracking, chart recent engagements, and feed data into any downstream analytics callbacks.
+   • Provide Vitest coverage (`client/src/components/__tests__/community-manager.test.tsx`) verifying the new toggles, filters, and analytics hooks.
+
+8. Generation timing & copy feedback
+   • Enhance `client/src/components/generation-panel.tsx` so creators can pick recommended posting windows (tie into `timing` state) and receive copy-feedback toasts/modal based on clipboard actions. Track copy counts per session to surface improvements.
+   • Add tests (`client/src/components/__tests__/generation-panel.test.tsx`) that mock clipboard access, verify timing options adjust the request payload, and ensure the feedback UI updates.
+
+Documentation:
+• Update any relevant user-facing docs (e.g., README “Uploads” and “Community Management” sections) to describe the new upload persistence, referral notifications, and engagement analytics.
+
+Regression commands (run all and include the output in your final report):
+• `npm run lint`
+• `npx vitest run tests/routes/uploads.test.ts`
+• `npx vitest run tests/unit/referral-system-notifications.test.ts`
+• `npx vitest run tests/unit/visitor-analytics.test.ts`
+• `npx vitest run client/src/components/__tests__/landing-page.test.tsx`
+• `npx vitest run client/src/components/__tests__/getting-started.test.tsx`
+• `npx vitest run client/src/components/__tests__/onboarding-walkthrough.test.tsx`
+• `npx vitest run client/src/components/__tests__/community-manager.test.tsx`
+• `npx vitest run client/src/components/__tests__/generation-panel.test.tsx`
+
+Deliverables:
+• Concise summary of changes.
+• List of modified files.
+• Full output from every command above.
