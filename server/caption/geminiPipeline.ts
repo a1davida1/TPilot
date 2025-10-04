@@ -182,6 +182,12 @@ const safeFallbackCaption = "Check out this amazing content!";
 const safeFallbackAlt = "Detailed alt text describing the scene.";
 const safeFallbackHashtags = ["#content", "#creative", "#amazing"];
 const safeFallbackCta = "Check it out";
+const safeFactDefaults: Record<string, unknown> = {
+  categories: [],
+  objects: [],
+  keywords: [],
+  summary: "",
+};
 
 function buildVariantFallbackBatch(params: {
   style?: string;
@@ -1039,9 +1045,14 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
         console.error('Gemini: empty response received during fact extraction');
         throw new Error("Gemini: empty response");
       }
-      const result = stripToJSON(rawText) as Record<string, unknown>;
-      console.error('Fact extraction completed successfully');
-      return result;
+      try {
+        const result = stripToJSON(rawText) as Record<string, unknown>;
+        console.error('Fact extraction completed successfully');
+        return result;
+      } catch (parseError) {
+        console.error('Failed to parse Gemini facts response, returning safe defaults', parseError);
+        return { ...safeFactDefaults };
+      }
     } catch (error) {
       console.error('Gemini vision model generateContent failed:', error);
 
@@ -1166,7 +1177,13 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
         return candidates;
       }
 
-      const parsed = stripToJSON(rawText) as unknown;
+      let parsed: unknown;
+      try {
+        parsed = stripToJSON(rawText) as unknown;
+      } catch (parseError) {
+        console.error("Gemini variant parsing failed:", parseError);
+        return fallbackBatch;
+      }
       if (Array.isArray(parsed)) {
         return parsed;
       }

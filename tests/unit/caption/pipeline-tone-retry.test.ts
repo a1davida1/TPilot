@@ -307,6 +307,59 @@ describe('Gemini pipelines keep persona tone on retry', () => {
     fetchMock.mockRestore();
   });
 
+  it('returns fallback variants when Gemini emits non-JSON payloads', async () => {
+    const textModel = createTextModelMock();
+    const visionModel: GeminiModelMock = { generateContent: vi.fn<(input: unknown) => Promise<MockGeminiResponse>>() };
+
+    mockGeminiModules(textModel, visionModel);
+
+    const fetchMock = vi.spyOn(global, 'fetch');
+    const chunk = new Uint8Array(Buffer.alloc(256, 1));
+    fetchMock.mockResolvedValue({
+      ok: true,
+      headers: new Headers({
+        'content-type': 'image/jpeg',
+        'content-length': `${chunk.byteLength}`
+      }),
+      body: new ReadableStream({
+        start(controller) {
+          controller.enqueue(chunk);
+          controller.close();
+        }
+      })
+    } as unknown as Response);
+
+    visionModel.generateContent.mockResolvedValue(
+      createMockResponse(
+        JSON.stringify({ objects: ['subject'], setting: 'studio', mood: 'focused' })
+      )
+    );
+
+    textModel.generateContent.mockResolvedValue(
+      createMockResponse('Gemini variants payload: not JSON at all')
+    );
+
+    const geminiModule = await import('../../../server/caption/geminiPipeline.ts');
+
+    const result = await geminiModule.pipeline({
+      imageUrl: 'https://example.com/image.png',
+      platform: 'x',
+      voice: 'Persona Voice',
+      style: 'Bold Persona',
+      mood: 'Upbeat',
+      nsfw: false
+    });
+
+    expect(result.provider).toBe('gemini');
+    expect(result.variants).toBeDefined();
+    expect(result.variants?.length).toBe(5);
+    expect(result.final.caption).toContain('Check out this amazing content');
+    expect(result.ranked?.reason).toContain('fallback variants');
+    expect(textModel.generateContent).toHaveBeenCalledTimes(1);
+
+    fetchMock.mockRestore();
+  });
+
   it('forwards tone fields on rewrite pipeline retry', async () => {
     const textModel = createTextModelMock();
     const visionModel: GeminiModelMock = { generateContent: vi.fn<(input: unknown) => Promise<MockGeminiResponse>>() };

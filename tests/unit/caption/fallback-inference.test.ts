@@ -283,3 +283,32 @@ describe('pipeline fallbacks', () => {
     });
   });
 });
+
+describe('fact extraction resilience', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockTextModel.generateContent.mockReset();
+    mockVisionModel.generateContent.mockReset();
+    mockIsGeminiAvailable.mockReset();
+    mockIsGeminiAvailable.mockReturnValue(true);
+  });
+
+  it('returns safe defaults when Gemini responds with plain text facts', async () => {
+    mockVisionModel.generateContent.mockResolvedValueOnce(
+      createGeminiResponse('A vivid sunset with silhouettes, described plainly without JSON structure.')
+    );
+
+    const { extractFacts } = await import('../../../server/caption/geminiPipeline.ts');
+
+    const tinyPng = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAnwB9ngHKZkAAAAASUVORK5CYII=';
+    const facts = await extractFacts(`data:image/png;base64,${tinyPng}`);
+
+    expect(facts).toEqual({
+      categories: [],
+      objects: [],
+      keywords: [],
+      summary: '',
+    });
+    expect(mockVisionModel.generateContent).toHaveBeenCalledTimes(1);
+  });
+});
