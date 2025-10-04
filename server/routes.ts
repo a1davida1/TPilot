@@ -1469,9 +1469,17 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
         return res.status(400).json({ message: "Invalid generation ID" });
       }
 
-      // Here you would typically verify the generation belongs to the user
-      // and then delete it from the database
-      // For now, just return success as the storage interface doesn't have delete method
+      // Verify generation exists and belongs to the user before attempting deletion
+      const generations = await storage.getGenerationsByUserId(req.user.id);
+      const generationExists = generations.some(gen => gen.id === generationId);
+
+      if (!generationExists) {
+        return res.status(404).json({ message: "Content generation not found or access denied" });
+      }
+
+      // Delete the content generation (ownership already verified)
+      await storage.deleteContentGeneration(req.user.id, generationId);
+      
       res.json({ success: true });
     } catch (error: unknown) {
       logger.error("Failed to delete content generation:", error);
