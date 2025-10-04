@@ -1349,7 +1349,7 @@ const platformProfiles: Record<string, PlatformProfile> = {
     maxSentenceLength: [90, 100, 110],
     paragraphCounts: [3, 4, 5],
     emojiDensity: [2, 3, 4],
-    callToActions: ['Link in bio!', 'DM for details!', 'Tap the bio link for the full drop 🔗'],
+    callToActions: ['Tap the bio link for the full drop 🔗', 'Link in bio!', 'DM for details!'],
     paragraphSeparator: '\n\n',
     sentenceSeparator: ' ',
     postProcessTitle: (title, context) => {
@@ -1382,7 +1382,7 @@ const platformProfiles: Record<string, PlatformProfile> = {
     maxSentenceLength: [80, 90, 100],
     paragraphCounts: [1, 2],
     emojiDensity: [0, 1, 2],
-    callToActions: ['Check it out!', "RT if you're ready for more 🔁", 'Link below 👇'],
+    callToActions: ["RT if you're ready for more 🔁", 'Check it out!', 'Link below 👇'],
     paragraphSeparator: '\n',
     sentenceSeparator: ' ',
     postProcessTitle: (title, context) => {
@@ -1515,15 +1515,65 @@ const platformProfiles: Record<string, PlatformProfile> = {
   }
 };
 
+// Apply platform-specific formatting to titles and content
+function applyPlatformFormatting(
+  titles: string[],
+  content: string,
+  params: ContentParameters
+): { titles: string[]; content: string } {
+  const profile = platformProfiles[params.platform] ?? platformProfiles.default;
+  const callToAction = pickRandom(profile.callToActions);
+  
+  // Apply platform-specific CTA to first title
+  let formattedTitles = [...titles];
+  if (formattedTitles.length > 0) {
+    formattedTitles[0] = `${formattedTitles[0]} ${callToAction}`.trim();
+  }
+  
+  // Apply platform-specific CTA to content (for certain platforms)
+  let formattedContent = content;
+  if (params.platform === 'instagram' || params.platform === 'fansly') {
+    formattedContent = `${formattedContent} ${callToAction}`;
+  }
+  
+  // Apply platform-specific hashtag formatting
+  if (params.selectedHashtags && params.selectedHashtags.length > 0) {
+    const hashtags = params.selectedHashtags.join(' ');
+    
+    if (params.platform === 'tiktok') {
+      formattedContent = `${formattedContent}\n.\n.\n.\n${hashtags}`;
+    } else if (params.platform === 'instagram') {
+      formattedContent = `${formattedContent}\n\n${hashtags}`;
+    } else {
+      formattedContent = `${formattedContent} ${hashtags}`;
+    }
+  }
+  
+  // Add emoji cluster at the end for Fansly
+  if (params.platform === 'fansly') {
+    formattedContent = `${formattedContent}\n💕💖💗`;
+  }
+  
+  return { titles: formattedTitles, content: formattedContent };
+}
+
 // Generate content based on all parameters
 export function generateAdvancedContent(params: ContentParameters): GeneratedContent {
   // Check if this is a preset request and use preset variations
   const presetVariation = getRandomPresetVariation(params.style);
   if (presetVariation) {
     console.error(`🎯 Using preset variation for: ${params.style}`);
+    
+    // Apply platform-specific formatting to preset content
+    const formatted = applyPlatformFormatting(
+      presetVariation.titles,
+      presetVariation.content,
+      params
+    );
+    
     return {
-      titles: presetVariation.titles,
-      content: presetVariation.content,
+      titles: formatted.titles,
+      content: formatted.content,
       photoInstructions: {
         lighting: presetVariation.photoInstructions.lighting,
         angles: presetVariation.photoInstructions.angles || "natural angles",
@@ -1578,14 +1628,12 @@ export function generateAdvancedContent(params: ContentParameters): GeneratedCon
     finalContent = `${finalContent} ${wrappedPrompt}`;
   }
 
-  // Append selected hashtags
-  if (params.selectedHashtags && params.selectedHashtags.length > 0) {
-    finalContent = `${finalContent} ${params.selectedHashtags.join(' ')}`;
-  }
+  // Apply platform-specific formatting to titles and content
+  const formatted = applyPlatformFormatting(titles, finalContent, params);
 
   return {
-    titles,
-    content: finalContent,
+    titles: formatted.titles,
+    content: formatted.content,
     photoInstructions,
     tags,
     diagnostics: {
@@ -2111,10 +2159,6 @@ function generateTitles(
   }
 
   const titles = shuffleArray(Array.from(generatedTitles));
-
-  if (titles.length > 0) {
-    titles[0] = `${titles[0]} ${callToAction}`.trim();
-  }
 
   const processedTitles = titles
     .map(title => applyEmojiDensity(title, emojis, emojiCount))
