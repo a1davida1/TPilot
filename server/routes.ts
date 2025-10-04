@@ -1498,8 +1498,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // Compliance dashboard endpoint
   app.use('/api/admin/compliance', complianceStatusRouter);
 
-  // Reddit Communities Admin Routes (temporarily disabled for compilation)
-  // TODO: Implement storage methods and re-enable routes
+  // Reddit Communities Admin Routes - Enabled at line 985
+  // Routes: GET/POST /api/admin/communities, PUT/DELETE /api/admin/communities/:id
+  // Storage methods: listCommunities, createCommunity, updateCommunity, deleteCommunity
 
   // Debug endpoint for Reddit OAuth session (non-production diagnostics only)
   if (!IS_PRODUCTION) {
