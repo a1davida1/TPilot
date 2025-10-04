@@ -1,61 +1,41 @@
 import React from "react";
-import { describe, it, beforeEach, afterEach, expect, vi } from "vitest";
 import { act } from "react-dom/test-utils";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-
-import { ProPerks } from "../pro-perks";
-
-type ProPerkCategory = "affiliate" | "integration" | "tools" | "community" | "pro";
-type ProPerkStatus = "available" | "application-required" | "coming-soon";
-
-type ProPerk = {
-  id: string;
-  name: string;
-  category: ProPerkCategory;
-  tier: "starter" | "pro";
-  description: string;
-  commissionRate?: string;
-  requirements?: string[];
-  signupProcess: string;
-  estimatedEarnings: string;
-  status: ProPerkStatus;
-  officialLink?: string;
-  features: string[];
-};
-
-type UseQueryOptions = {
-  queryKey: unknown[];
-  queryFn: () => Promise<unknown>;
-};
-
-type UseQueryResult = {
-  data?: { perks: ProPerk[]; accessGranted: boolean };
-  isLoading: boolean;
-  isError: boolean;
-};
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const useQueryMock = vi.fn();
 const toastMock = vi.fn();
 
 vi.mock("@tanstack/react-query", () => ({
-  useQuery: (options: UseQueryOptions) => useQueryMock(options),
+  useQuery: (options: unknown) => useQueryMock(options),
 }));
 
 vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({ toast: toastMock }),
 }));
 
+vi.mock("next/link", () => ({
+  default: ({ href, children, ...props }: { href: string | { pathname: string }; children: React.ReactNode }) => {
+    const normalized = typeof href === "string" ? href : href.pathname;
+    return (
+      <a href={normalized} {...props}>
+        {children}
+      </a>
+    );
+  }
+}));
+
 vi.mock("@/components/ui/card", () => ({
   Card: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
-  CardContent: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
-  CardDescription: ({ children, ...props }: React.HTMLAttributes<HTMLParagraphElement>) => <p {...props}>{children}</p>,
   CardHeader: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
+  CardContent: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
   CardTitle: ({ children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => <h2 {...props}>{children}</h2>,
+  CardDescription: ({ children, ...props }: React.HTMLAttributes<HTMLParagraphElement>) => <p {...props}>{children}</p>,
 }));
 
 vi.mock("@/components/ui/button", () => ({
-  Button: ({ children, asChild: _asChild, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }) => (
+  Button: ({ children, asChild: _asChild, ...props }: React.PropsWithChildren<{ asChild?: boolean } & React.ButtonHTMLAttributes<HTMLButtonElement>>) => (
     <button type="button" {...props}>
       {children}
     </button>
@@ -67,9 +47,7 @@ vi.mock("@/components/ui/badge", () => ({
 }));
 
 vi.mock("@/components/ui/input", () => ({
-  Input: ({ value, onChange, ...props }: React.InputHTMLAttributes<HTMLInputElement>) => (
-    <input value={value} onChange={onChange} {...props} />
-  ),
+  Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
 }));
 
 vi.mock("@/components/ui/dialog", () => ({
@@ -80,80 +58,22 @@ vi.mock("@/components/ui/dialog", () => ({
   DialogTitle: ({ children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => <h3 {...props}>{children}</h3>,
 }));
 
-vi.mock("lucide-react", () => ({
-  Gift: () => <span />, 
-  Search: () => <span />, 
-  Sparkles: () => <span />, 
-  CheckCircle: () => <span />, 
-  Users: () => <span />, 
-  ExternalLink: () => <span />, 
-  Shield: () => <span />, 
-  Copy: () => <span />,
-  Clock: () => <span />, 
-  Eye: () => <span />, 
-  Info: () => <span />, 
-  Loader2: () => <span />, 
-  Globe: () => <span />, 
-  BookOpen: () => <span />, 
-  Percent: () => <span />, 
-  Star: () => <span />, 
-  DollarSign: () => <span />,
+vi.mock("lucide-react", () => new Proxy({}, {
+  get: () => () => null,
 }));
 
-vi.mock("wouter", () => ({
-  Link: ({ href, children }: { href: string; children: React.ReactNode }) => (
-    <a href={href}>{children}</a>
-  ),
-}));
+import { ProPerks } from "../pro-perks";
 
-describe("ProPerks referral management", () => {
+describe("ProPerks referral CTA", () => {
   let container: HTMLDivElement;
   let root: Root;
-  const fetchMock = vi.fn();
-
-  const perk: ProPerk = {
-    id: "alpha",
-    name: "Alpha Affiliate",
-    category: "affiliate",
-    tier: "pro",
-    description: "Earn recurring revenue.",
-    commissionRate: "20% recurring",
-    requirements: ["Active subscriber list"],
-    signupProcess: "Apply online",
-    estimatedEarnings: "$500/mo",
-    status: "available",
-    officialLink: "https://example.com",
-    features: ["High conversion", "Dedicated support"],
-  };
 
   beforeEach(() => {
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
-
-    fetchMock.mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          instructions: {
-            steps: ["Apply"],
-            requirements: ["Pro membership"],
-            timeline: "24 hours",
-            support: "support@example.com",
-          },
-        }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        },
-      ),
-    );
-    vi.stubGlobal("fetch", fetchMock);
-
-    useQueryMock.mockReturnValue({
-      data: { perks: [perk], accessGranted: true },
-      isLoading: false,
-      isError: false,
-    });
+    useQueryMock.mockReset();
+    toastMock.mockReset();
   });
 
   afterEach(() => {
@@ -161,26 +81,57 @@ describe("ProPerks referral management", () => {
       root.unmount();
     });
     container.remove();
-    useQueryMock.mockReset();
-    fetchMock.mockReset();
-    vi.unstubAllGlobals();
   });
 
-  it("renders a link to the referral dashboard inside the perk dialog", async () => {
-    await act(async () => {
+  it("renders the referral CTA for Pro members", () => {
+    useQueryMock.mockReturnValue({
+      data: {
+        perks: [
+          {
+            id: "perk-1",
+            name: "Test Perk",
+            category: "affiliate",
+            tier: "pro",
+            description: "A testing perk",
+            commissionRate: "10% recurring",
+            requirements: [],
+            signupProcess: "instant",
+            estimatedEarnings: "$100/mo",
+            status: "available",
+            officialLink: "https://example.com",
+            features: ["Feature"],
+          },
+        ],
+        accessGranted: true,
+      },
+      isLoading: false,
+      isError: false,
+    });
+
+    act(() => {
       root.render(<ProPerks userTier="pro" />);
     });
 
-    const card = container.querySelector('[data-testid="perk-card-alpha"]');
-    expect(card).not.toBeNull();
+    const referralLink = container.querySelector('a[href="/referral"]');
+    expect(referralLink).not.toBeNull();
+    expect(referralLink?.textContent).toContain("Open referral hub");
+  });
 
-    await act(async () => {
-      card?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  it("keeps the referral CTA visible for non-Pro users", () => {
+    useQueryMock.mockReturnValue({
+      data: {
+        perks: [],
+        accessGranted: false,
+      },
+      isLoading: false,
+      isError: false,
     });
 
-    const link = container.querySelector('a[href="/referral"]');
+    act(() => {
+      root.render(<ProPerks userTier="free" />);
+    });
 
-    expect(link).not.toBeNull();
-    expect(link?.textContent).toContain("Manage your referral program");
+    const referralLink = container.querySelector('a[href="/referral"]');
+    expect(referralLink).not.toBeNull();
   });
 });
