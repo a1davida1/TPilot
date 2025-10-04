@@ -111,6 +111,7 @@ export interface IStorage {
   getContentGenerationCount(): Promise<number>;
   getContentGenerationStats(userId: number): Promise<{ total: number; thisWeek: number; thisMonth: number; totalGenerations?: number }>;
   getLastGenerated(userId: number): Promise<ContentGeneration | undefined>;
+  deleteContentGeneration(userId: number, generationId: number): Promise<void>;
 
   // Revenue operations
   getRevenue(): Promise<number>;
@@ -592,6 +593,21 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       safeLog('error', 'Storage operation failed - getting last generated:', { error: (error as Error).message });
       return undefined;
+    }
+  }
+
+  async deleteContentGeneration(userId: number, generationId: number): Promise<void> {
+    try {
+      await db.delete(contentGenerations)
+        .where(
+          and(
+            eq(contentGenerations.id, generationId),
+            eq(contentGenerations.userId, userId)
+          )
+        );
+    } catch (error) {
+      safeLog('error', 'Storage operation failed - deleting content generation:', { error: (error as Error).message, userId, generationId });
+      throw error;
     }
   }
 
