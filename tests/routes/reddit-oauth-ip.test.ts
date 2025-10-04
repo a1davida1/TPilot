@@ -2,9 +2,7 @@ import express from 'express';
 import request from 'supertest';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-const exchangeRedditCodeMock = vi.fn().mockImplementation(async () => {
-  throw new Error('token exchange disabled in tests');
-});
+let exchangeRedditCodeMock: ReturnType<typeof vi.fn>;
 
 vi.mock('../../server/db.ts', () => ({
   db: {
@@ -41,6 +39,10 @@ vi.mock('../../server/lib/safety-systems.ts', () => ({
 }));
 
 vi.mock('../../server/lib/reddit.ts', () => {
+  exchangeRedditCodeMock = vi.fn().mockImplementation(async () => {
+    throw new Error('token exchange disabled in tests');
+  });
+
   class MockRedditManager {
     constructor(_accessToken: string, _refreshToken: string, _userId: number) {}
 
