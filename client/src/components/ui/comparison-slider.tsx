@@ -91,16 +91,22 @@ export function ComparisonSlider({
 
         {/* Original image (top layer with clipping) */}
         <div
-          className="absolute inset-0 overflow-hidden select-none"
+          className="absolute inset-0 overflow-hidden select-none pointer-events-none"
           style={{ width: `${position}%` }}
         >
-          <img
-            src={originalImage}
-            alt="Original"
-            className="absolute inset-0 w-full h-full object-contain select-none"
-            style={{ width: containerRef.current ? `${(containerRef.current.offsetWidth / position) * 100}%` : '100%' }}
-            draggable={false}
-          />
+          <div
+            className="relative w-full h-full"
+            style={{ 
+              width: containerRef.current ? `${containerRef.current.offsetWidth}px` : '100%'
+            }}
+          >
+            <img
+              src={originalImage}
+              alt="Original"
+              className="absolute inset-0 w-full h-full object-contain select-none"
+              draggable={false}
+            />
+          </div>
         </div>
 
         {/* Divider line */}
