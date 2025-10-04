@@ -42,16 +42,39 @@ export const ensureAdminAccount = async (): Promise<EnsureAdminAccountResult> =>
   const username = process.env.ADMIN_USERNAME ?? DEFAULT_ADMIN_USERNAME;
 
   const existing = await db
-    .select({ id: users.id })
+    .select()
     .from(users)
     .where(or(eq(users.email, resolvedEmail), eq(users.username, username)))
     .limit(1);
 
+  const hashedPassword = await resolveAdminPasswordHash(passwordHash);
+
   if (existing.length > 0) {
+    const admin = existing[0];
+    
+    // Update admin if email or password hash changed
+    const needsUpdate = 
+      admin.email !== resolvedEmail || 
+      admin.username !== username ||
+      admin.password !== hashedPassword;
+
+    if (needsUpdate) {
+      await db
+        .update(users)
+        .set({
+          email: resolvedEmail,
+          username,
+          password: hashedPassword,
+          isAdmin: true,
+          role: 'admin',
+          emailVerified: true,
+          tier: 'admin',
+        })
+        .where(eq(users.id, admin.id));
+    }
+
     return { created: false, email: resolvedEmail };
   }
-
-  const hashedPassword = await resolveAdminPasswordHash(passwordHash);
 
   await db.insert(users).values({
     email: resolvedEmail,

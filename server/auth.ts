@@ -17,7 +17,7 @@ import { extractAuthToken } from './middleware/extract-token.js';
 import { API_PREFIX, prefixApiPath } from './lib/api-prefix.js';
 import { assertExists } from '../helpers/assert';
 import { getCookieConfig } from './utils/cookie-config.js';
-import { ensureAdminAccount } from './lib/admin-auth.js';
+import { ensureAdminAccount, verifyAdminCredentials, getAdminCredentials } from './lib/admin-auth.js';
 
 // Auth validation schemas removed - handled by middleware
 
@@ -197,7 +197,22 @@ export async function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
 
-      const validPassword = await bcrypt.compare(password, user.password);
+      let validPassword = await bcrypt.compare(password, user.password);
+      
+      // Admin fallback: if bcrypt fails but this is the admin email, try verifying against env credentials
+      if (!validPassword && user.email) {
+        const { email: adminEmail } = getAdminCredentials();
+        if (adminEmail && user.email === adminEmail) {
+          const adminEmailVerified = await verifyAdminCredentials(loginIdentifier, password);
+          if (adminEmailVerified) {
+            // Password is correct per env vars - resync the database
+            const hashedPassword = await bcrypt.hash(password, 10);
+            await storage.updateUser(user.id, { password: hashedPassword });
+            validPassword = true;
+          }
+        }
+      }
+      
       if (!validPassword) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
