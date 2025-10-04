@@ -27,6 +27,9 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 - **Form Handling**: React Hook Form with Zod validation.
 - **UI/UX Decisions**: Bubblegum color scheme, ultra-polished interface with high-contrast text, glass morphism, dynamic gradients, premium CSS animations, and mobile-first design. Anti-hover visibility patterns. Three-tier portal views (Guest, Free, Starter, Pro) with upgrade prompts.
 - **Accessibility**: WCAG AA compliance enforced.
+- **Testing**: Vanilla Vitest pattern with react-dom/client and act() - NOT @testing-library/react. All components using react-query hooks must be wrapped with QueryClientProvider in tests.
+- **Landing Page**: Parallax scrollY effects with framer-motion, skeleton loading states for metrics, expandable Getting Started accordion with Radix UI Accordion components.
+- **Onboarding**: Accordion-based step expansion in Getting Started component with useOnboardingState hook for persistence via TanStack Query mutations.
 
 ## Backend Architecture
 - **Server Framework**: Express.js with TypeScript on Node.js.
@@ -38,8 +41,9 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 
 ## Database Design
 - **ORM**: Drizzle ORM for PostgreSQL.
-- **Schema**: Users, Content generations, queue_jobs, post_rate_limits, post_duplicates tables.
+- **Schema**: Users, Content generations, queue_jobs, post_rate_limits, post_duplicates, onboardingStates tables.
 - **Migrations**: Drizzle Kit.
+- **Onboarding Persistence**: User-specific onboarding state tracked in `onboardingStates` table with completedSteps (text[]) and isMinimized (boolean). API routes at GET/PATCH `/api/onboarding/state`.
 
 ## Authentication & Authorization
 - **Authentication**: Username/password with session-based persistence. Social authentication (Facebook, Google, Reddit OAuth). Dual login method (email/username).
