@@ -1,8 +1,6 @@
-import React from "react";
-import Link from "next/link";
-import { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +22,9 @@ import {
   BookOpen,
   Percent,
   Star,
-  DollarSign
+  DollarSign,
+  Copy,
+  RefreshCw
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { LucideIcon } from "lucide-react";
@@ -121,7 +121,9 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
   const [selectedPerk, setSelectedPerk] = useState<ProPerk | null>(null);
   const [instructionsByPerk, setInstructionsByPerk] = useState<Record<string, SignupInstructions>>({});
   const [_instructionsLoading, setInstructionsLoading] = useState<string | null>(null);
+  const [referralCodesByPerk, setReferralCodesByPerk] = useState<Record<string, string>>({});
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const sessionFetch = useCallback(
     async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -292,10 +294,77 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
     }
   }, [instructionsByPerk, sessionFetch, toast]);
 
+  const generateReferralMutation = useMutation({
+    mutationFn: async (perkId: string) => {
+      const response = await sessionFetch(`/api/pro-resources/${perkId}/referral-code`, {
+        method: 'POST'
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error("Authentication required");
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage;
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.error || errorText;
+        } catch {
+          errorMessage = errorText || response.statusText;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json() as { referralCode: string };
+      return data.referralCode;
+    },
+    onSuccess: (referralCode, perkId) => {
+      setReferralCodesByPerk((prev) => ({
+        ...prev,
+        [perkId]: referralCode
+      }));
+      toast({
+        title: "Referral code generated",
+        description: "Your referral code is ready to share!"
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to generate referral code",
+        description: error.message || "Unable to generate referral code. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleGenerateReferralCode = useCallback((perkId: string) => {
+    if (!referralCodesByPerk[perkId]) {
+      generateReferralMutation.mutate(perkId);
+    }
+  }, [referralCodesByPerk, generateReferralMutation]);
+
+  const handleCopyReferralCode = useCallback(async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      toast({
+        title: "Copied to clipboard",
+        description: "Referral code copied successfully!"
+      });
+    } catch {
+      toast({
+        title: "Copy failed",
+        description: "Unable to copy to clipboard. Please copy manually.",
+        variant: "destructive"
+      });
+    }
+  }, [toast]);
+
   const handleOpenPerk = useCallback((perk: ProPerk) => {
     setSelectedPerk(perk);
     void ensureInstructions(perk);
-  }, [ensureInstructions]);
+    handleGenerateReferralCode(perk.id);
+  }, [ensureInstructions, handleGenerateReferralCode]);
 
   // Show empty state when no resources available or no access
   if (!isLoading && (!hasAccess || perks.length === 0)) {
@@ -638,6 +707,50 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
                       </div>
                     </div>
                   )}
+
+                  {/* Referral Code Section */}
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-lg flex items-center gap-2">
+                      <Users className="h-5 w-5 text-emerald-400" />
+                      Your Referral Code
+                    </h3>
+                    {generateReferralMutation.isPending && generateReferralMutation.variables === selectedPerk.id ? (
+                      <div className="p-4 bg-gray-800 border border-gray-700 rounded-lg flex items-center justify-center">
+                        <Loader2 className="h-5 w-5 animate-spin text-purple-400 mr-2" />
+                        <span className="text-sm text-gray-400">Generating code...</span>
+                      </div>
+                    ) : referralCodesByPerk[selectedPerk.id] ? (
+                      <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg space-y-3">
+                        <div className="flex items-center justify-between">
+                          <code className="text-emerald-400 font-mono text-lg">
+                            {referralCodesByPerk[selectedPerk.id]}
+                          </code>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleCopyReferralCode(referralCodesByPerk[selectedPerk.id])}
+                            className="border-emerald-500/50 hover:bg-emerald-500/10"
+                            data-testid={`copy-referral-code-${selectedPerk.id}`}
+                          >
+                            <Copy className="h-4 w-4 mr-1" />
+                            Copy
+                          </Button>
+                        </div>
+                        <p className="text-xs text-gray-400">
+                          Share this code with your audience to earn commissions from referrals.
+                        </p>
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => handleGenerateReferralCode(selectedPerk.id)}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700"
+                        data-testid={`generate-referral-code-${selectedPerk.id}`}
+                      >
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Generate Referral Code
+                      </Button>
+                    )}
+                  </div>
 
                   {/* Action Buttons */}
                   <div className="space-y-3">
