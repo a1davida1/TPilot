@@ -140,10 +140,11 @@ For detailed deployment instructions, see `DEPLOYMENT.md` and `replit.md`.
 
 ### Core Features
 - AI-powered content generation (text + image analysis)
-- Advanced image protection and watermarking
+- Advanced image protection and watermarking with before/after comparison slider
 - Multi-platform posting (Reddit, Twitter, Instagram, OnlyFans)
 - Smart subreddit promotion rules and rate limiting
 - User tier management (Guest, Free, Starter, Pro)
+- Pro resources with referral code generation system
 
 ### Enterprise Features  
 - Batch posting campaigns
@@ -381,6 +382,21 @@ ThottoPilot uses environment variables for secure configuration of external serv
 
 ### Image Protection & Watermarking
 
+ThottoPilot includes a multi-layered image protection system with interactive before/after comparison:
+
+**Protection Features**:
+- **Comparison Slider**: Interactive slider to compare original and protected images side-by-side
+- **Multi-tier Protection**: Light, Standard, and Heavy preset configurations
+- **Anti-Reverse Search**: Gaussian blur, noise injection, intelligent resizing, and metadata stripping
+- **Gallery Management**: Pro users can save and manage protected images
+- **Client-Side Processing**: Browser-based image manipulation using HTML5 Canvas
+
+**Components**:
+- `ComparisonSlider`: Reusable component for side-by-side image comparison with draggable divider
+- `ImageShield`: Basic image protection with comparison toggle
+- `ImageProtector`: Advanced protection settings with tier-based features
+- `ImageShieldUnified`: Unified interface with gallery view for Pro users
+
 **IMAGE_SHIELD_API_KEY** - External ImageShield service API key
 - **Required**: Optional (enables advanced anti-reverse-search protection)
 - **Obtain**: ImageShield service provider dashboard
@@ -402,6 +418,15 @@ ThottoPilot uses environment variables for secure configuration of external serv
 **WATERMARK_OPACITY** - Watermark transparency level
 - **Default**: `0.18` (18% opacity)
 - **Range**: `0.0` to `1.0`
+
+### Pro Resources & Referrals
+
+**Referral Code Generation**:
+- Pro users can generate unique referral codes for each perk/resource
+- Codes are automatically generated via POST `/api/pro-resources/:id/referral-code`
+- Per-perk caching ensures efficient code retrieval
+- Copy-to-clipboard functionality with toast notifications
+- API endpoint includes authentication and tier validation
 
 ### Admin Configuration
 
