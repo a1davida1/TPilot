@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,22 +16,34 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
   const [platform, setPlatform] = useState("reddit");
   const [style, setStyle] = useState("playful");
   const [theme, setTheme] = useState("tease");
-  // TODO: Implement timing-based content optimization
   const [timing, setTiming] = useState("evening");
   const [allowsPromotion, setAllowsPromotion] = useState(false);
-  // TODO: Implement copy feedback
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
+  const [copyCount, setCopyCount] = useState(0);
   const [generatedContent, setGeneratedContent] = useState<ContentGeneration | null>(null);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Persist timing preferences
+  useEffect(() => {
+    const savedTiming = sessionStorage.getItem('content_timing');
+    if (savedTiming) {
+      setTiming(savedTiming);
+    }
+  }, []);
+
+  useEffect(() => {
+    sessionStorage.setItem('content_timing', timing);
+  }, [timing]);
+
   const generateMutation = useMutation({
-    mutationFn: async (data: { platform: string; style: string; theme: string }) => {
+    mutationFn: async (data: { platform: string; style: string; theme: string; timing: string }) => {
       const response = await apiRequest("POST", "/api/ai/generate", {
         platforms: [data.platform],
-        prompt: `Generate ${data.style} ${data.theme} content for ${data.platform}`,
+        prompt: `Generate ${data.style} ${data.theme} content for ${data.platform} optimized for ${data.timing} posting`,
         styleHints: [data.style, data.theme],
+        timing: data.timing,
         variants: 1
       });
       return response.json();
@@ -79,17 +91,18 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
   });
 
   const handleGenerate = () => {
-    generateMutation.mutate({ platform, style, theme });
+    generateMutation.mutate({ platform, style, theme, timing });
   };
 
   const copyToClipboard = async (text: string, type: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedItem(type);
-      setTimeout(() => setCopiedItem(null), 1000);
+      setCopyCount(prev => prev + 1);
+      setTimeout(() => setCopiedItem(null), 2000);
       toast({
         title: "Copied!",
-        description: `${type} copied to clipboard`,
+        description: `${type} copied to clipboard (Copy #${copyCount + 1})`,
       });
     } catch {
       toast({
@@ -160,7 +173,9 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Post Timing</label>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Post Timing <span className="text-xs text-muted-foreground">(optimizes engagement)</span>
+            </label>
             <div className="grid grid-cols-3 gap-2">
               {["morning", "evening", "late"].map((timingOption) => (
                 <Button
@@ -169,6 +184,7 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
                   size="sm"
                   onClick={() => setTiming(timingOption)}
                   className={timing === timingOption ? "bg-accent text-white" : "bg-muted text-foreground hover:bg-muted/80"}
+                  data-testid={`timing-${timingOption}`}
                 >
                   {timingOption.charAt(0).toUpperCase() + timingOption.slice(1)}
                 </Button>
@@ -195,11 +211,17 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
         </div>
 
         {/* Generate Button */}
-        <div className="text-center">
+        <div className="text-center space-y-2">
+          {copyCount > 0 && (
+            <div className="text-sm text-muted-foreground" data-testid="copy-counter">
+              Content copied {copyCount} time{copyCount !== 1 ? 's' : ''}
+            </div>
+          )}
           <Button
             onClick={handleGenerate}
             disabled={generateMutation.isPending}
             className="bg-gradient-to-r from-primary to-secondary text-white px-8 py-4 text-lg font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
+            data-testid="button-generate"
           >
             {generateMutation.isPending ? (
               <>

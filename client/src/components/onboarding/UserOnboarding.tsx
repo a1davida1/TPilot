@@ -5,9 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useToast } from '@/hooks/use-toast';
 import {
   Play, CheckCircle, ArrowRight, ArrowLeft, Star, Trophy, Target,
-  Sparkles, Brain, Clock, Shield, Heart, Zap, BookOpen, Users
+  Sparkles, Brain, Clock, Shield, Heart, Zap, BookOpen, Users, RotateCcw, X
 } from 'lucide-react';
 
 interface OnboardingStep {
@@ -267,6 +268,7 @@ export default function UserOnboarding() {
   const [currentStep, setCurrentStep] = useState(0);
   const [showTutorial, setShowTutorial] = useState<string | null>(null);
   const [completedTutorials, setCompletedTutorials] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
   
   // Hybrid approach: Performance + Robustness
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(() => {
@@ -300,12 +302,16 @@ export default function UserOnboarding() {
   }, [currentStep]);
   
   // Reset onboarding function (useful for testing/resetting)
-  // TODO: Wire up reset onboarding button in UI
-  const _resetOnboarding = () => {
+  const resetOnboarding = () => {
     setCompletedSteps(new Set());
     setCurrentStep(0);
+    setCompletedTutorials(new Set());
     localStorage.removeItem('onboarding_completed');
     localStorage.removeItem('onboarding_current_step');
+    toast({
+      title: "Onboarding Reset",
+      description: "Your progress has been reset. Start fresh!",
+    });
   };
 
   const startMainTutorial = () => {
@@ -314,6 +320,38 @@ export default function UserOnboarding() {
     setCompletedSteps(prev => new Set([...prev, currentStepId]));
     // In a real implementation, this would navigate to the content creator
     // or open a guided tutorial overlay
+  };
+
+  // Complete current tutorial step
+  const handleComplete = () => {
+    const currentStepId = onboardingSteps[currentStep].id;
+    setCompletedSteps(prev => new Set([...prev, currentStepId]));
+    toast({
+      title: "Step Completed!",
+      description: `Great job! You've completed ${onboardingSteps[currentStep].title}`,
+    });
+  };
+  
+  // Skip current tutorial step
+  const handleSkip = () => {
+    if (currentStep < onboardingSteps.length - 1) {
+      setCurrentStep(currentStep + 1);
+      toast({
+        title: "Step Skipped",
+        description: "You can always come back to this step later.",
+      });
+    }
+  };
+  
+  // Launch content tutorial
+  const startContentTutorial = () => {
+    const currentStepId = onboardingSteps[currentStep].id;
+    setCompletedSteps(prev => new Set([...prev, currentStepId]));
+    setShowTutorial('first-content');
+    toast({
+      title: "Tutorial Started!",
+      description: "Let's create your first piece of content together.",
+    });
   };
 
   const tutorials: Tutorial[] = [
@@ -404,7 +442,8 @@ export default function UserOnboarding() {
               <Button 
                 size="sm"
                 className="bg-gradient-to-r from-purple-500 to-pink-500"
-                onClick={startMainTutorial}
+                onClick={startContentTutorial}
+                data-testid="button-start-content-tutorial"
               >
                 Start Tutorial
               </Button>
@@ -611,30 +650,6 @@ export default function UserOnboarding() {
       setCurrentStep(currentStep + 1);
     }
   };
-  
-  // TODO: Wire up complete button in tutorial UI
-  const _handleComplete = () => {
-    // Mark current step as completed
-    const currentStepId = onboardingSteps[currentStep].id;
-    setCompletedSteps(prev => new Set([...prev, currentStepId]));
-  };
-  
-  // TODO: Wire up skip button in tutorial UI
-  const _handleSkip = () => {
-    if (currentStep < onboardingSteps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-  
-  // TODO: Implement content tutorial start handler
-  const _startContentTutorial = () => {
-    // Mark step as completed and provide user feedback
-    const currentStepId = onboardingSteps[currentStep].id;
-    setCompletedSteps(prev => new Set([...prev, currentStepId]));
-    // In a real implementation, this would navigate to the content creator
-    // or open a guided tutorial overlay
-  };
-  
 
   const handlePrevious = () => {
     if (currentStep > 0) {
@@ -659,7 +674,19 @@ export default function UserOnboarding() {
           <h2 className="text-2xl font-bold text-white">Getting Started</h2>
           <p className="text-gray-400">Welcome to ThottoPilot - let's get you set up for success</p>
         </div>
-        <Badge className="bg-gradient-to-r from-purple-500 to-pink-500">Phase 3</Badge>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={resetOnboarding}
+            className="border-purple-500/20 text-purple-400 hover:bg-purple-500/10"
+            data-testid="button-reset-onboarding"
+          >
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Reset Progress
+          </Button>
+          <Badge className="bg-gradient-to-r from-purple-500 to-pink-500">Phase 3</Badge>
+        </div>
       </div>
 
       {/* Progress Overview */}
@@ -718,23 +745,52 @@ export default function UserOnboarding() {
           {onboardingSteps[currentStep].component}
           
           <div className="flex justify-between">
-            <Button
-              variant="outline"
-              onClick={handlePrevious}
-              disabled={currentStep === 0}
-              className="border-purple-500/20"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Previous
-            </Button>
-            <Button
-              onClick={handleNext}
-              disabled={currentStep === onboardingSteps.length - 1}
-              className="bg-gradient-to-r from-purple-500 to-pink-500"
-            >
-              {currentStep === onboardingSteps.length - 1 ? 'Complete' : 'Next'}
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handlePrevious}
+                disabled={currentStep === 0}
+                className="border-purple-500/20"
+                data-testid="button-previous-step"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Previous
+              </Button>
+              {!onboardingSteps[currentStep].completed && (
+                <Button
+                  variant="outline"
+                  onClick={handleSkip}
+                  disabled={currentStep === onboardingSteps.length - 1}
+                  className="border-yellow-500/20 text-yellow-400 hover:bg-yellow-500/10"
+                  data-testid="button-skip-step"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Skip
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              {!onboardingSteps[currentStep].completed && (
+                <Button
+                  variant="outline"
+                  onClick={handleComplete}
+                  className="border-green-500/20 text-green-400 hover:bg-green-500/10"
+                  data-testid="button-complete-step"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Mark Complete
+                </Button>
+              )}
+              <Button
+                onClick={handleNext}
+                disabled={currentStep === onboardingSteps.length - 1}
+                className="bg-gradient-to-r from-purple-500 to-pink-500"
+                data-testid="button-next-step"
+              >
+                {currentStep === onboardingSteps.length - 1 ? 'Finish' : 'Next'}
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

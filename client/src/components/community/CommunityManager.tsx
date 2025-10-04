@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,9 +23,11 @@ import {
 
 export function CommunityManager() {
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
-  // TODO: Implement engagement tracking feature
-  // const [engagementTracking, setEngagementTracking] = useState(true);
+  const [engagementTracking, setEngagementTracking] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [sentimentFilter, setSentimentFilter] = useState<string | null>(null);
+  const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
+  const [recentEngagements, setRecentEngagements] = useState<Array<{date: string; count: number}>>([]);
 
   const communities = [
     {
@@ -197,6 +199,29 @@ export function CommunityManager() {
     }
   };
 
+  // Track engagements over time
+  useEffect(() => {
+    if (engagementTracking) {
+      const last7Days = Array.from({ length: 7 }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        return {
+          date: date.toISOString().split('T')[0],
+          count: Math.floor(Math.random() * 20) + 5 // Mock data
+        };
+      }).reverse();
+      setRecentEngagements(last7Days);
+    }
+  }, [engagementTracking]);
+
+  // Filter engagements based on sentiment and priority
+  const filteredEngagements = engagements.filter(engagement => {
+    if (selectedFilter !== 'all' && engagement.type !== selectedFilter) return false;
+    if (sentimentFilter && engagement.sentiment !== sentimentFilter) return false;
+    if (priorityFilter && engagement.priority !== priorityFilter) return false;
+    return true;
+  });
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -357,6 +382,43 @@ export function CommunityManager() {
         </TabsContent>
 
         <TabsContent value="engagement" className="space-y-4">
+          {/* Engagement Tracking Toggle */}
+          <Card className="bg-gradient-to-r from-gray-900/50 to-gray-800/50 border-gray-700/50">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <TrendingUp className="h-5 w-5 text-purple-400" />
+                  <div>
+                    <h4 className="font-medium text-white">Engagement Tracking</h4>
+                    <p className="text-sm text-gray-400">Monitor and analyze all engagement activity</p>
+                  </div>
+                </div>
+                <Switch
+                  checked={engagementTracking}
+                  onCheckedChange={setEngagementTracking}
+                  data-testid="switch-engagement-tracking"
+                />
+              </div>
+              {engagementTracking && recentEngagements.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-700">
+                  <h5 className="text-sm font-medium text-gray-400 mb-2">Last 7 Days</h5>
+                  <div className="flex items-end justify-between space-x-1">
+                    {recentEngagements.map((day, index) => (
+                      <div key={index} className="flex flex-col items-center">
+                        <div 
+                          className="w-8 bg-purple-500 rounded-t"
+                          style={{ height: `${Math.min(day.count * 3, 60)}px` }}
+                          data-testid={`engagement-bar-${index}`}
+                        />
+                        <span className="text-xs text-gray-500 mt-1">{day.date.slice(-2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Engagement Filter */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -385,16 +447,50 @@ export function CommunityManager() {
                   </Badge>
                 ))}
               </div>
+              <div className="flex items-center space-x-2">
+                {['positive', 'neutral', 'negative'].map((sentiment) => (
+                  <Badge
+                    key={sentiment}
+                    variant={sentimentFilter === sentiment ? 'default' : 'outline'}
+                    className={`cursor-pointer capitalize ${
+                      sentimentFilter === sentiment 
+                        ? 'bg-green-500 hover:bg-green-600' 
+                        : 'border-gray-600 hover:border-green-500'
+                    }`}
+                    onClick={() => setSentimentFilter(sentimentFilter === sentiment ? null : sentiment)}
+                    data-testid={`filter-sentiment-${sentiment}`}
+                  >
+                    {sentiment}
+                  </Badge>
+                ))}
+              </div>
+              <div className="flex items-center space-x-2">
+                {['high', 'medium', 'low'].map((priority) => (
+                  <Badge
+                    key={priority}
+                    variant={priorityFilter === priority ? 'default' : 'outline'}
+                    className={`cursor-pointer capitalize ${
+                      priorityFilter === priority 
+                        ? 'bg-red-500 hover:bg-red-600' 
+                        : 'border-gray-600 hover:border-red-500'
+                    }`}
+                    onClick={() => setPriorityFilter(priorityFilter === priority ? null : priority)}
+                    data-testid={`filter-priority-${priority}`}
+                  >
+                    {priority}
+                  </Badge>
+                ))}
+              </div>
             </div>
             <div className="flex items-center space-x-2">
               <Bell className="h-4 w-4 text-gray-400" />
-              <span className="text-sm text-gray-400">4 unread</span>
+              <span className="text-sm text-gray-400">{filteredEngagements.filter(e => !e.replied).length} unread</span>
             </div>
           </div>
 
           {/* Engagement List */}
           <div className="grid gap-4">
-            {engagements.map((engagement) => (
+            {filteredEngagements.map((engagement) => (
               <Card key={engagement.id} className="bg-gradient-to-r from-gray-900/50 to-gray-800/50 border-gray-700/50">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0">
                   <div className="flex items-center space-x-3">

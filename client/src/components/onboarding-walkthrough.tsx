@@ -106,11 +106,45 @@ export function OnboardingWalkthrough({ isOpen, onClose, onComplete }: Onboardin
   const [currentStep, setCurrentStep] = useState(0);
   const [highlightedElement, setHighlightedElement] = useState<HTMLElement | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-  // TODO: Implement user-specific tutorial state
-  const { user: _user } = useAuth();
+  const { user } = useAuth();
 
   const step = tutorialSteps[currentStep];
   const progress = ((currentStep + 1) / tutorialSteps.length) * 100;
+
+  // Load user-specific tutorial state from localStorage
+  useEffect(() => {
+    if (user?.id) {
+      const storageKey = `walkthrough-progress-${user.id}`;
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        try {
+          const savedStep = parseInt(saved, 10);
+          if (!isNaN(savedStep) && savedStep >= 0 && savedStep < tutorialSteps.length) {
+            setCurrentStep(savedStep);
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    }
+  }, [user?.id]);
+
+  // Persist current step to user-specific localStorage
+  useEffect(() => {
+    if (user?.id && isOpen) {
+      const storageKey = `walkthrough-progress-${user.id}`;
+      localStorage.setItem(storageKey, currentStep.toString());
+    }
+  }, [currentStep, user?.id, isOpen]);
+
+  // Restart walkthrough function
+  const restartWalkthrough = useCallback(() => {
+    setCurrentStep(0);
+    if (user?.id) {
+      const storageKey = `walkthrough-progress-${user.id}`;
+      localStorage.removeItem(storageKey);
+    }
+  }, [user?.id]);
 
   // Highlight target element
   useEffect(() => {
@@ -175,8 +209,21 @@ export function OnboardingWalkthrough({ isOpen, onClose, onComplete }: Onboardin
   }, [currentStep]);
 
   const skipTutorial = useCallback(() => {
+    // Store the last focused element to restore focus later
+    const lastFocusedElement = document.activeElement as HTMLElement;
+    if (lastFocusedElement && typeof lastFocusedElement.blur === 'function') {
+      lastFocusedElement.blur();
+    }
     onClose();
   }, [onClose]);
+
+  // Restore focus when walkthrough closes
+  useEffect(() => {
+    if (!isOpen && highlightedElement) {
+      highlightedElement.focus();
+      setHighlightedElement(null);
+    }
+  }, [isOpen, highlightedElement]);
 
   if (!isOpen) return null;
 
@@ -263,21 +310,35 @@ export function OnboardingWalkthrough({ isOpen, onClose, onComplete }: Onboardin
                 )}
 
                 <div className="flex items-center justify-between">
-                  <Button
-                    variant="ghost"
-                    onClick={previousStep}
-                    disabled={currentStep === 0}
-                    className="flex items-center gap-2"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    Previous
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      onClick={previousStep}
+                      disabled={currentStep === 0}
+                      className="flex items-center gap-2"
+                      data-testid="button-walkthrough-previous"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={restartWalkthrough}
+                      className="flex items-center gap-2"
+                      data-testid="button-walkthrough-restart"
+                    >
+                      <Play className="h-4 w-4" />
+                      Restart
+                    </Button>
+                  </div>
 
                   <div className="flex gap-2">
                     <Button
                       variant="ghost"
                       onClick={skipTutorial}
                       className="text-gray-500"
+                      data-testid="button-walkthrough-skip"
                     >
                       Skip Tour
                     </Button>
@@ -285,6 +346,7 @@ export function OnboardingWalkthrough({ isOpen, onClose, onComplete }: Onboardin
                     <Button
                       onClick={nextStep}
                       className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 flex items-center gap-2"
+                      data-testid="button-walkthrough-next"
                     >
                       {currentStep === tutorialSteps.length - 1 ? (
                         <>
