@@ -18,11 +18,11 @@ import {
   DollarSign
 } from "lucide-react";
 import { useMetrics } from "@/hooks/use-metrics";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function PremiumLanding() {
   const [isVisible, setIsVisible] = useState(false);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
-  // TODO: Display loading state for metrics
   const { data: metrics, isLoading: metricsLoading } = useMetrics();
 
   useEffect(() => {
@@ -91,21 +91,29 @@ export function PremiumLanding() {
 
   const stats = [
     {
-      number: metrics?.creators.toLocaleString() ?? (metricsLoading ? "..." : "—"),
+      number: metrics?.creators.toLocaleString() ?? "—",
       label: "Active Creators",
-      icon: <Users className="h-5 w-5" />
+      icon: <Users className="h-5 w-5" />,
+      loading: metricsLoading && !metrics?.creators
     },
     {
-      number: metrics?.posts.toLocaleString() ?? (metricsLoading ? "..." : "—"),
+      number: metrics?.posts.toLocaleString() ?? "—",
       label: "Posts Generated",
-      icon: <Sparkles className="h-5 w-5" />
+      icon: <Sparkles className="h-5 w-5" />,
+      loading: metricsLoading && !metrics?.posts
     },
     {
-      number: metrics ? `${metrics.engagement}%` : metricsLoading ? "..." : "—",
+      number: metrics ? `${metrics.engagement}%` : "—",
       label: "Avg. Engagement Boost",
-      icon: <TrendingUp className="h-5 w-5" />
+      icon: <TrendingUp className="h-5 w-5" />,
+      loading: metricsLoading && !metrics?.engagement
     },
-    { number: "98%", label: "Cost Reduction vs Competitors", icon: <DollarSign className="h-5 w-5" /> }
+    { 
+      number: "98%", 
+      label: "Cost Reduction vs Competitors", 
+      icon: <DollarSign className="h-5 w-5" />,
+      loading: false
+    }
   ];
 
   return (
@@ -194,7 +202,11 @@ export function PremiumLanding() {
                         <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 border-2 border-white/20" />
                       ))}
                     </div>
-                    <span>{metrics?.creators ? `${metrics.creators.toLocaleString()}+ creators` : 'Creators'}</span>
+                    {metricsLoading && !metrics?.creators ? (
+                      <Skeleton className="h-4 w-24 bg-white/10" />
+                    ) : (
+                      <span>{metrics?.creators ? `${metrics.creators.toLocaleString()}+ creators` : 'Creators'}</span>
+                    )}
                   </div>
                   <div className="flex items-center space-x-1">
                     {[1,2,3,4,5].map((i) => (
@@ -220,11 +232,17 @@ export function PremiumLanding() {
           <div className="max-w-7xl mx-auto px-4">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
               {stats.map((stat, index) => (
-                <div key={index} className="text-center">
+                <div key={index} className="text-center" data-testid={`stat-${stat.label.toLowerCase().replace(/\s+/g, '-')}`}>
                   <div className="flex justify-center mb-2 text-purple-400">
                     {stat.icon}
                   </div>
-                  <div className="text-3xl font-bold text-white mb-1">{stat.number}</div>
+                  <div className="text-3xl font-bold text-white mb-1">
+                    {stat.loading ? (
+                      <Skeleton className="h-9 w-24 mx-auto bg-white/10" />
+                    ) : (
+                      stat.number
+                    )}
+                  </div>
                   <div className="text-gray-400 text-sm">{stat.label}</div>
                 </div>
               ))}
