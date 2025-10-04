@@ -23,40 +23,26 @@ const redditCallbackOptions: RedditAuthenticateOptions = {
   // Note: No successRedirect - we handle cookie + redirect in the callback handler
 };
 
-const getAuthCookieOptions = (): CookieOptions => {
+  const clearSessionCookie = (res: Response): void => {
+  const { name, cookie } = getSessionCookieConfig();
   const cookieOptions: CookieOptions = {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'none',
-    path: '/',
+    path: cookie.path ?? '/',
+    httpOnly: cookie.httpOnly ?? true,
   };
 
-  const cookieDomain = process.env.SESSION_COOKIE_DOMAIN?.trim();
-  if (cookieDomain) {
-    cookieOptions.domain = cookieDomain;
+  if (typeof cookie.sameSite !== 'undefined') {
+    cookieOptions.sameSite = cookie.sameSite;
   }
 
-  return cookieOptions;
-};
+  if (typeof cookie.secure !== 'undefined') {
+    cookieOptions.secure = cookie.secure;
+  }
 
-const setAuthCookie = (res: Response, token: string): void => {
-  res.cookie('authToken', token, {
-    ...getAuthCookieOptions(),
-    maxAge: 86400_000,
-  });
-};
+  if (cookie.domain) {
+    cookieOptions.domain = cookie.domain;
+  }
 
-const clearSessionCookie = (res: Response): void => {
-  const { name, cookie } = getSessionCookieConfig();
-  
-  res.cookie(name, '', {
-    maxAge: 0,
-    httpOnly: cookie.httpOnly ?? true,
-    sameSite: cookie.sameSite,
-    secure: Boolean(cookie.secure),
-    path: cookie.path ?? '/',
-    domain: cookie.domain,
-  });
+  res.clearCookie(name, cookieOptions);
 };
 
 export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
