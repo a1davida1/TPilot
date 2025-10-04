@@ -11,6 +11,7 @@ import { blacklistToken } from './lib/tokenBlacklist';
 import { logger } from './bootstrap/logger';
 import { API_PREFIX, prefixApiPath } from './lib/api-prefix.js';
 import { createToken } from './middleware/auth.js';
+import { getSessionCookieConfig } from './bootstrap/session.js';
 
 type RedditAuthenticateOptions = AuthenticateOptions & {
   state?: string;

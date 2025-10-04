@@ -28,6 +28,39 @@ const parseInteger = (value: string | undefined, fallback: number): number => {
   return Number.isNaN(parsed) ? fallback : parsed;
 };
 
+export interface SessionCookieConfig {
+  name: string;
+  cookie: session.CookieOptions;
+}
+
+export function getSessionCookieConfig(): SessionCookieConfig {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const cookieDomain = process.env.SESSION_COOKIE_DOMAIN?.trim();
+  const cookiePath = process.env.SESSION_COOKIE_PATH?.trim();
+
+  const cookie: session.CookieOptions = {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: isProduction,
+    maxAge: parseInteger(process.env.SESSION_MAX_AGE_MS, ONE_DAY_MS * 7),
+  };
+
+  if (cookieDomain) {
+    cookie.domain = cookieDomain;
+  }
+
+  if (cookiePath) {
+    cookie.path = cookiePath;
+  } else {
+    cookie.path = '/';
+  }
+
+  return {
+    name: process.env.SESSION_COOKIE_NAME ?? 'tpilot.sid',
+    cookie,
+  };
+}
+
 interface _RedisStoreConstructor {
   new (options: { client: RedisClient; prefix?: string; disableTouch?: boolean; ttl?: number }): Store;
 }
@@ -41,26 +74,16 @@ export function createSessionMiddleware(): ReturnType<typeof session> {
   const isProduction = process.env.NODE_ENV === 'production';
   const redisUrl = process.env.REDIS_URL;
   const usePgQueue = parseBoolean(process.env.USE_PG_QUEUE);
-  const cookieDomain = process.env.SESSION_COOKIE_DOMAIN?.trim();
 
-  const baseCookie: session.CookieOptions = {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: isProduction,
-    maxAge: parseInteger(process.env.SESSION_MAX_AGE_MS, ONE_DAY_MS * 7),
-  };
-
-  if (cookieDomain) {
-    baseCookie.domain = cookieDomain;
-  }
+  const { name: sessionName, cookie } = getSessionCookieConfig();
 
   const sessionOptions: session.SessionOptions = {
-    name: process.env.SESSION_COOKIE_NAME ?? 'tpilot.sid',
+    name: sessionName,
     secret,
     resave: false,
     saveUninitialized: false,
     rolling: true,
-    cookie: baseCookie,
+    cookie,
   };
 
   if (redisUrl) {
