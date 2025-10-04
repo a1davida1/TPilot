@@ -1926,7 +1926,6 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   app.get('/api/debug/env', (req, res) => {
     res.json({
       hasAdminEmail: !!process.env.ADMIN_EMAIL,
-      hasAdminPassword: !!process.env.ADMIN_PASSWORD,
       hasAdminPasswordHash: !!process.env.ADMIN_PASSWORD_HASH,
       adminEmailLength: process.env.ADMIN_EMAIL?.length || 0,
       nodeEnv: process.env.NODE_ENV,
