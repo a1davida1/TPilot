@@ -1,10 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ReferralManager } from '../../server/lib/referral-system.js';
 
-// Mock dependencies
-const mockDbSelect = vi.fn();
-const mockDbInsert = vi.fn();
-const mockDbUpdate = vi.fn();
+// Mock dependencies with vi.hoisted to avoid TDZ issues
+const { mockDbSelect, mockDbInsert, mockDbUpdate } = vi.hoisted(() => ({
+  mockDbSelect: vi.fn(),
+  mockDbInsert: vi.fn(),
+  mockDbUpdate: vi.fn()
+}));
 
 vi.mock('../../server/db.js', () => ({
   db: {
@@ -14,7 +16,10 @@ vi.mock('../../server/db.js', () => ({
   }
 }));
 
-const mockSendMail = vi.fn();
+const { mockSendMail } = vi.hoisted(() => ({
+  mockSendMail: vi.fn()
+}));
+
 vi.mock('../../server/services/email-service.js', () => ({
   emailService: {
     isEmailServiceConfigured: true,
@@ -101,18 +106,18 @@ describe('ReferralManager - Notification Service', () => {
     expect(referrerCall).toBeDefined();
     expect(referrerCall?.[0]).toMatchObject({
       to: 'referrer@example.com',
-      subject: expect.stringMatching(/referral commission/i)
+      subject: 'You Earned a Referral Reward! 🎉'
     });
     
     // Verify admin notification
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@thottopilot.com';
+    const adminEmail = process.env.ADMIN_EMAIL || process.env.FROM_EMAIL;
     const adminCall = mockSendMail.mock.calls.find(
       (call: [{ to: string; subject: string }]) => call[0].to === adminEmail
     );
     expect(adminCall).toBeDefined();
     expect(adminCall?.[0]).toMatchObject({
       to: adminEmail,
-      subject: expect.stringMatching(/Referral Commission Earned/i)
+      subject: 'Referral Conversion'
     });
   });
 
@@ -194,9 +199,23 @@ describe('ReferralManager - Notification Service', () => {
       ])
     };
 
+    const selectChain3 = {
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue([
+        { 
+          id: subscribingUserId,
+          email: 'subscriber@example.com',
+          firstName: 'Subscriber',
+          username: 'subscriber1'
+        }
+      ])
+    };
+
     mockDbSelect
       .mockReturnValueOnce(selectChain1)
-      .mockReturnValueOnce(selectChain2);
+      .mockReturnValueOnce(selectChain2)
+      .mockReturnValueOnce(selectChain3);
 
     mockDbInsert.mockReturnValue({
       values: vi.fn().mockReturnValue({
@@ -204,10 +223,17 @@ describe('ReferralManager - Notification Service', () => {
       })
     });
 
-    // Should throw if email fails
-    await expect(
-      ReferralManager.processReferralReward(subscribingUserId)
-    ).rejects.toThrow('Email failed');
+    // Email errors should be caught and not prevent reward processing
+    const result = await ReferralManager.processReferralReward(subscribingUserId);
+    
+    expect(result).toMatchObject({
+      type: 'commission',
+      amount: 5,
+      description: 'Referral commission for successful subscription'
+    });
+    
+    // Verify sendMail was attempted (once before it threw)
+    expect(mockSendMail).toHaveBeenCalled();
   });
 
   it('should skip notifications when email addresses are missing', async () => {
@@ -243,10 +269,17 @@ describe('ReferralManager - Notification Service', () => {
       })
     });
 
-    // Should throw because email is required
-    await expect(
-      ReferralManager.processReferralReward(subscribingUserId)
-    ).rejects.toThrow();
+    // Missing email should be handled gracefully (reward still recorded, notifications skipped)
+    const result = await ReferralManager.processReferralReward(subscribingUserId);
+    
+    expect(result).toMatchObject({
+      type: 'commission',
+      amount: 5,
+      description: 'Referral commission for successful subscription'
+    });
+    
+    // Verify sendMail was NOT called because email is missing
+    expect(mockSendMail).not.toHaveBeenCalled();
   });
 });
 

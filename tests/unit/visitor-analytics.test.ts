@@ -1,13 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import Stripe from 'stripe';
 
-// Mock Stripe
-const mockRetrieve = vi.fn();
-const MockStripe = vi.fn().mockImplementation(() => ({
-  customers: {
-    retrieve: mockRetrieve
-  }
-}));
+// Mock Stripe with vi.hoisted to avoid TDZ issues
+const { mockRetrieve, MockStripe } = vi.hoisted(() => {
+  const mockRetrieve = vi.fn();
+  const MockStripe = vi.fn().mockImplementation(() => ({
+    customers: {
+      retrieve: mockRetrieve
+    }
+  }));
+  return { mockRetrieve, MockStripe };
+});
 
 vi.mock('stripe', () => ({
   default: MockStripe
