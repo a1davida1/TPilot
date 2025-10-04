@@ -127,8 +127,18 @@ export default function ReferralPage() {
     const totalCommission = referralSummary?.totalCommission ?? 0;
     const conversionRate = referralSummary?.conversionRate ?? 0;
     const pendingEarnings = Math.max(totalReferrals - activeReferrals, 0) * 5;
-    const normalizedConversionRate = Number.isFinite(conversionRate) ? conversionRate : 0;
-    const formattedConversionRate = `${(normalizedConversionRate * 100).toFixed(0)}%`;
+    const normalizedConversionRate = Number.isFinite(conversionRate) ? Math.max(conversionRate, 0) : 0;
+    const percentage = normalizedConversionRate * 100;
+    const formatter = new Intl.NumberFormat(undefined, {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    });
+    const formattedConversionRate =
+      percentage > 0 && percentage < 1
+        ? '<1%'
+        : percentage === 0
+          ? '0%'
+          : `${formatter.format(percentage)}%`;
 
     return {
       totalReferrals,

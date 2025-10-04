@@ -149,7 +149,68 @@ describe('ReferralPage', () => {
     expect(totalReferrals?.textContent).toContain('12');
     expect(totalCommission?.textContent).toContain('$35.00');
     expect(conversionRate).not.toBeNull();
-    expect(conversionRate?.textContent).toBe('58%');
+    expect(conversionRate?.textContent).toBe('58.0%');
+  });
+
+  it('renders sub-percent conversion rates with fallback', async () => {
+    mockUseAuth.mockReturnValue({ user: { id: 99 }, isLoading: false });
+
+    mockUseQuery.mockImplementation(({ queryKey }: MockQueryOptions) => {
+      const key = Array.isArray(queryKey) ? queryKey[0] : queryKey;
+
+      if (key === '/api/referral/code') {
+        return {
+          data: { referralCode: 'TP000001', referralUrl: 'https://example.com/signup?ref=TP000001' },
+          isLoading: false,
+          isError: false,
+          error: null,
+          refetch: vi.fn().mockResolvedValue(undefined),
+        } satisfies MockQueryResult;
+      }
+
+      if (key === '/api/referral/summary') {
+        return {
+          data: {
+            code: 'TP000001',
+            totalReferrals: 3,
+            activeReferrals: 1,
+            totalCommission: 5,
+            conversionRate: 0.0004,
+          },
+          isLoading: false,
+          isError: false,
+          error: null,
+          refetch: vi.fn().mockResolvedValue(undefined),
+        } satisfies MockQueryResult;
+      }
+
+      return {
+        data: undefined,
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: vi.fn().mockResolvedValue(undefined),
+      } satisfies MockQueryResult;
+    });
+
+    const { default: ReferralPage } = await import('../referral');
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ReferralPage />);
+    });
+
+    await act(async () => {
+      await flushPromises();
+    });
+
+    const conversionRate = container.querySelector('[data-testid="stat-conversion-rate"]');
+
+    expect(conversionRate).not.toBeNull();
+    expect(conversionRate?.textContent).toBe('<1%');
   });
 
   it('copies and shares referral information using live API payloads', async () => {

@@ -19,15 +19,15 @@ export function toOpenAIImageUrl(input: string, fallbackMime = 'image/jpeg'): st
     const data = input.substring(commaIndex + 1);
     // Remove all whitespace from the base64 portion
     const clean = data.replace(/\s+/g, '');
-    return `${head},${clean}`;
+    const normalized = clean.replace(/-/g, '+').replace(/_/g, '/');
+    return `${head},${normalized}`;
   }
 
-  // If it's raw base64 (including URL-safe base64), wrap as a data URL
+  // If it's raw base64, wrap as a data URL
   if (/^[A-Za-z0-9+/=_-]+$/.test(input.replace(/\s+/g, ''))) {
     const cleanBase64 = input.replace(/\s+/g, '');
-    // Normalize URL-safe base64 to standard base64
-    const standardBase64 = cleanBase64.replace(/-/g, '+').replace(/_/g, '/');
-    return `data:${fallbackMime};base64,${standardBase64}`;
+    const normalizedBase64 = cleanBase64.replace(/-/g, '+').replace(/_/g, '/');
+    return `data:${fallbackMime};base64,${normalizedBase64}`;
   }
 
   // Anything else: return as-is (lets you spot bad inputs in logs)
@@ -94,7 +94,7 @@ export function logImageInfo(imageUrl: string, requestId?: string): void {
     return;
   }
 
-  if (/^[A-Za-z0-9+/=]+$/.test(imageUrl)) {
+  if (/^[A-Za-z0-9+/=_-]+$/.test(imageUrl)) {
     console.error(`${prefix}Received raw base64 payload (length: ${imageUrl.length})`);
     return;
   }
