@@ -734,14 +734,17 @@ export class DatabaseStorage implements IStorage {
       }
 
       // If no rows were updated, insert new state
+      const insertPayload: InsertOnboardingState = {
+        userId,
+        completedSteps: state.completedSteps ?? [],
+        isMinimized: state.isMinimized ?? false,
+        isDismissed: state.isDismissed ?? false,
+        ...(state.createdAt ? { createdAt: state.createdAt } : {}),
+        ...(state.updatedAt ? { updatedAt: state.updatedAt } : {})
+      };
+
       const [insertedState] = await db.insert(onboardingStates)
-        .values({ 
-          ...state, 
-          userId,
-          completedSteps: state.completedSteps ?? [],
-          isMinimized: state.isMinimized ?? false,
-          isDismissed: state.isDismissed ?? false
-        } as InsertOnboardingState)
+        .values(insertPayload)
         .returning();
       return insertedState;
     } catch (error) {

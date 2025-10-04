@@ -25,6 +25,10 @@ export function PremiumLanding() {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const { data: metrics, isLoading: metricsLoading } = useMetrics();
 
+  const creatorsCount = metrics?.creators;
+  const postsCount = metrics?.posts;
+  const engagementBoost = metrics?.engagement;
+
   useEffect(() => {
     setIsVisible(true);
     
@@ -67,8 +71,8 @@ export function PremiumLanding() {
     {
       name: "Sarah M.",
       role: "Content Creator",
-      content: metrics
-        ? `ThottoPilot increased my engagement by ${metrics.engagement}% in just 2 weeks. The AI understands exactly what my audience wants!`
+      content: engagementBoost !== undefined
+        ? `ThottoPilot increased my engagement by ${engagementBoost}% in just 2 weeks. The AI understands exactly what my audience wants!`
         : "ThottoPilot increased my engagement in just 2 weeks. The AI understands exactly what my audience wants!",
       rating: 5,
       verified: true
@@ -91,22 +95,22 @@ export function PremiumLanding() {
 
   const stats = [
     {
-      number: metrics?.creators.toLocaleString() ?? "—",
+      number: creatorsCount !== undefined ? creatorsCount.toLocaleString() : "—",
       label: "Active Creators",
       icon: <Users className="h-5 w-5" />,
-      loading: metricsLoading && !metrics?.creators
+      loading: metricsLoading && creatorsCount === undefined
     },
     {
-      number: metrics?.posts.toLocaleString() ?? "—",
+      number: postsCount !== undefined ? postsCount.toLocaleString() : "—",
       label: "Posts Generated",
       icon: <Sparkles className="h-5 w-5" />,
-      loading: metricsLoading && !metrics?.posts
+      loading: metricsLoading && postsCount === undefined
     },
     {
-      number: metrics ? `${metrics.engagement}%` : "—",
+      number: engagementBoost !== undefined ? `${engagementBoost}%` : "—",
       label: "Avg. Engagement Boost",
       icon: <TrendingUp className="h-5 w-5" />,
-      loading: metricsLoading && !metrics?.engagement
+      loading: metricsLoading && engagementBoost === undefined
     },
     { 
       number: "98%", 
@@ -202,10 +206,10 @@ export function PremiumLanding() {
                         <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 border-2 border-white/20" />
                       ))}
                     </div>
-                    {metricsLoading && !metrics?.creators ? (
+                    {metricsLoading && creatorsCount === undefined ? (
                       <Skeleton className="h-4 w-24 bg-white/10" />
                     ) : (
-                      <span>{metrics?.creators ? `${metrics.creators.toLocaleString()}+ creators` : 'Creators'}</span>
+                      <span>{creatorsCount !== undefined ? `${creatorsCount.toLocaleString()}+ creators` : 'Creators'}</span>
                     )}
                   </div>
                   <div className="flex items-center space-x-1">
@@ -290,9 +294,9 @@ export function PremiumLanding() {
         <section className="py-20 bg-black/20">
           <div className="max-w-4xl mx-auto px-4 text-center">
             <h2 className="text-3xl font-bold text-white mb-12">
-              {metrics?.creators ? (
+              {creatorsCount !== undefined ? (
                 <>
-                  Loved by <span className="text-purple-400">{metrics.creators.toLocaleString()}+</span> Creators
+                  Loved by <span className="text-purple-400">{creatorsCount.toLocaleString()}+</span> Creators
                 </>
               ) : (
                 'Loved by Creators'
@@ -341,8 +345,8 @@ export function PremiumLanding() {
                   Ready to 10x Your Content Game?
                 </h2>
                 <p className="text-xl text-gray-300">
-                  {metrics?.creators
-                    ? `Join ${metrics.creators.toLocaleString()}+ successful creators. Setup takes less than 30 seconds.`
+                  {creatorsCount !== undefined
+                    ? `Join ${creatorsCount.toLocaleString()}+ successful creators. Setup takes less than 30 seconds.`
                     : 'Join successful creators. Setup takes less than 30 seconds.'}
                 </p>
                 

@@ -788,12 +788,16 @@ export const insertUserSchema = createInsertSchema(users);
 export const insertContentGenerationSchema = createInsertSchema(contentGenerations);
 export const insertUserSampleSchema = createInsertSchema(userSamples);
 export const insertUserPreferenceSchema = createInsertSchema(userPreferences);
+<<<<<<< ours
 export const insertOnboardingStateSchema = z.object({
   userId: z.number(),
   completedSteps: z.array(z.string()).optional(),
   isMinimized: z.boolean().optional(),
   isDismissed: z.boolean().optional()
 });
+=======
+export const insertOnboardingStateSchema = createInsertSchema(onboardingStates);
+>>>>>>> theirs
 export const insertUserImageSchema = createInsertSchema(userImages);
 export const insertLeadSchema = createInsertSchema(leads);
 export const insertVerificationTokenSchema = createInsertSchema(verificationTokens);

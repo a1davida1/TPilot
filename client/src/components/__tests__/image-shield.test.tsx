@@ -85,6 +85,7 @@ describe("ImageShield comparison slider", () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     act(() => {
       root.unmount();
     });
@@ -120,17 +121,15 @@ describe("ImageShield comparison slider", () => {
 
     // Mock canvas
     const mockCanvas = document.createElement('canvas');
-    const mockContext = {
+    const mockContext: Pick<CanvasRenderingContext2D, 'drawImage' | 'getImageData' | 'putImageData' | 'filter'> = {
       drawImage: vi.fn(),
-      getImageData: vi.fn(() => ({
-        data: new Uint8ClampedArray(100)
-      })),
+      getImageData: vi.fn(() => new ImageData(new Uint8ClampedArray(100), 5, 5)),
       putImageData: vi.fn(),
       filter: '',
     };
-    mockCanvas.getContext = vi.fn(() => mockContext);
-    HTMLCanvasElement.prototype.getContext = vi.fn(() => mockContext);
-    HTMLCanvasElement.prototype.toDataURL = vi.fn(() => mockImageData);
+    vi.spyOn(mockCanvas, 'getContext').mockReturnValue(mockContext as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(mockContext as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue(mockImageData);
 
     // Upload image
     const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
