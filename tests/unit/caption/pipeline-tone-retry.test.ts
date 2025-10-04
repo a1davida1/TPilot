@@ -43,13 +43,13 @@ const mockGeminiModules = (
   visionModel: GeminiModelMock = { generateContent: vi.fn<(input: unknown) => Promise<MockGeminiResponse>>() },
   isAvailable: () => boolean = () => true
 ) => {
-  vi.doMock('../../../server/lib/gemini-client', () => ({
+  vi.doMock('../../../server/lib/gemini-client.js', () => ({
     __esModule: true,
     getTextModel: () => textModel,
     getVisionModel: () => visionModel,
     isGeminiAvailable: isAvailable,
   }));
-  vi.doMock('../../../server/lib/gemini.ts', () => ({
+  vi.doMock('../../../server/lib/gemini.js', () => ({
     __esModule: true,
     textModel,
     visionModel,
@@ -61,7 +61,14 @@ const mockGeminiModules = (
 
 function extractVariantPromptEnvelopes(mockCalls: any[][]) {
   return mockCalls
-    .map(call => call[0]?.[0]?.text)
+    .map(call => {
+      const firstArg = call[0];
+      if (Array.isArray(firstArg) && firstArg.length > 0) {
+        const part = firstArg[0] as MockCallPart;
+        return part.text ?? '';
+      }
+      return '';
+    })
     .filter(text => text && typeof text === 'string')
     .map(text => {
       try {
