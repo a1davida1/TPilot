@@ -58,12 +58,84 @@ async function resolveResponseText(payload: unknown): Promise<string | undefined
     return value;
   };
 
+  const extractFromCandidates = (value: unknown): string | undefined => {
+    if (!value || typeof value !== "object") {
+      return undefined;
+    }
+
+    const container = value as Record<string, unknown>;
+    if (!('candidates' in container)) {
+      return undefined;
+    }
+
+    const rawCandidates = container['candidates'];
+    const candidateList = Array.isArray(rawCandidates) ? rawCandidates : [rawCandidates];
+    const outputs: string[] = [];
+
+    for (const candidate of candidateList) {
+      if (!candidate || typeof candidate !== "object") {
+        continue;
+      }
+      const candidateRecord = candidate as Record<string, unknown>;
+      const segments: string[] = [];
+
+      const directText = candidateRecord['text'];
+      if (typeof directText === "string") {
+        segments.push(directText);
+      }
+
+      const contentValue = candidateRecord['content'];
+      const contentEntries = Array.isArray(contentValue)
+        ? contentValue
+        : contentValue
+          ? [contentValue]
+          : [];
+
+      for (const content of contentEntries) {
+        if (!content || typeof content !== "object") {
+          continue;
+        }
+        const contentRecord = content as Record<string, unknown>;
+        const partsValue = contentRecord['parts'];
+        const parts = Array.isArray(partsValue)
+          ? partsValue
+          : partsValue
+            ? [partsValue]
+            : [];
+
+        for (const part of parts) {
+          if (!part || typeof part !== "object") {
+            continue;
+          }
+          const partRecord = part as Record<string, unknown>;
+          const partText = partRecord['text'];
+          if (typeof partText === "string") {
+            segments.push(partText);
+          }
+        }
+      }
+
+      const combined = segments.join("");
+      if (combined.trim().length > 0) {
+        outputs.push(combined.trim());
+      }
+    }
+
+    const aggregated = outputs.join("\n").trim();
+    return aggregated.length > 0 ? aggregated : undefined;
+  };
+
   if (typeof payload === "string") {
     return ensureNonEmpty(payload);
   }
 
   if (!payload || typeof payload !== "object") {
     return undefined;
+  }
+
+  const candidateText = extractFromCandidates(payload);
+  if (candidateText) {
+    return ensureNonEmpty(candidateText);
   }
 
   const candidate = payload as GeminiResponse;
