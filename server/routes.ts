@@ -505,7 +505,7 @@ import { registerRedditRoutes } from "./reddit-routes.js";
 import { registerAnalyticsRoutes } from "./analytics-routes.js";
 import { createLead, confirmLead } from "./api/leads.js";
 import { getLeads } from './api/admin-leads.js';
-import { getComplianceStatus } from './api/compliance-status.js';
+import { complianceStatusRouter } from './api/compliance-status.js';
 import { captionRouter } from "./routes/caption.js";
 import { registerSocialMediaRoutes } from "./social-media-routes.js";
 
@@ -1449,7 +1449,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   app.get('/api/admin/leads', getLeads);
 
   // Compliance dashboard endpoint
-  app.get('/api/admin/compliance', getComplianceStatus);
+  app.use('/api/admin/compliance', complianceStatusRouter);
 
   // Reddit Communities Admin Routes (temporarily disabled for compilation)
   // TODO: Implement storage methods and re-enable routes

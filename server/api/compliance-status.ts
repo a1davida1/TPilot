@@ -1,5 +1,7 @@
 
-import { Request, Response } from 'express';
+import { Router, type Request, type Response, type RequestHandler } from 'express';
+import { authenticateToken } from '../middleware/auth.js';
+import { requireAdmin } from '../admin-routes.js';
 
 /**
  * Compliance telemetry endpoint for the admin dashboard.
@@ -100,3 +102,12 @@ export async function getComplianceStatus(req: Request, res: Response) {
     });
   }
 }
+
+export const complianceStatusRouter = Router();
+
+complianceStatusRouter.get(
+  '/',
+  authenticateToken(true) as unknown as RequestHandler,
+  requireAdmin as unknown as RequestHandler,
+  getComplianceStatus
+);
