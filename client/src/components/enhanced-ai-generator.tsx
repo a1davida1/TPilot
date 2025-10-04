@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -105,21 +105,47 @@ export function EnhancedAIGenerator({
 
   const isGuestMode = !isAuthenticated || userTier === "guest";
 
-  // TODO: Implement tier-based UI customization and limits
-  const _tierConfig = {
+  // Tier-based configuration map with quotas and styling
+  type TierKey = "guest" | "free" | "pro" | "premium";
+  
+  const tierConfig: Record<TierKey, {
+    dailyLimit: number;
+    color: string;
+    ctaMessage: string;
+  }> = {
     guest: {
       dailyLimit: 3,
-      color: 'bg-gradient-to-br from-orange-50 to-amber-100 hover:from-orange-100 hover:to-amber-200 text-orange-900 border-2 border-orange-200 hover:border-orange-300 shadow-sm hover:shadow-md'
+      color: 'bg-gradient-to-br from-gray-50 to-slate-100 hover:from-gray-100 hover:to-slate-200 text-gray-900 border-2 border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md',
+      ctaMessage: 'Sign up for 10 daily generations'
     },
     free: {
       dailyLimit: 10,
-      color: 'bg-gradient-to-br from-orange-50 to-amber-100 hover:from-orange-100 hover:to-amber-200 text-orange-900 border-2 border-orange-200 hover:border-orange-300 shadow-sm hover:shadow-md'
+      color: 'bg-gradient-to-br from-orange-50 to-amber-100 hover:from-orange-100 hover:to-amber-200 text-orange-900 border-2 border-orange-200 hover:border-orange-300 shadow-sm hover:shadow-md',
+      ctaMessage: 'Upgrade to Pro for unlimited generations'
     },
     pro: {
       dailyLimit: 100,
-      color: 'bg-gradient-to-br from-orange-50 to-amber-100 hover:from-orange-100 hover:to-amber-200 text-orange-900 border-2 border-orange-200 hover:border-orange-300 shadow-sm hover:shadow-md'
+      color: 'bg-gradient-to-br from-purple-50 to-indigo-100 hover:from-purple-100 hover:to-indigo-200 text-purple-900 border-2 border-purple-200 hover:border-purple-300 shadow-sm hover:shadow-md',
+      ctaMessage: 'Pro: 100 generations per day'
+    },
+    premium: {
+      dailyLimit: 1000,
+      color: 'bg-gradient-to-br from-yellow-50 to-amber-100 hover:from-yellow-100 hover:to-amber-200 text-yellow-900 border-2 border-yellow-200 hover:border-yellow-300 shadow-sm hover:shadow-md',
+      ctaMessage: 'Premium: Unlimited generations'
     }
   };
+
+  const currentTierConfig = tierConfig[userTier as TierKey] || tierConfig.guest;
+
+  // Fetch user's daily generation count for quota enforcement
+  const { data: dailyUsage } = useQuery<{ count: number }>({
+    queryKey: ["/api/stats/daily-usage"],
+    enabled: isAuthenticated,
+    retry: false
+  });
+
+  const generationsUsed = dailyUsage?.count ?? 0;
+  const quotaExhausted = generationsUsed >= currentTierConfig.dailyLimit;
 
   const basePhotoInstructions: ContentGeneration["photoInstructions"] = {
     lighting: "Soft natural lighting",
@@ -318,6 +344,16 @@ export function EnhancedAIGenerator({
       return;
     }
 
+    // Enforce tier-based quota limits
+    if (quotaExhausted) {
+      toast({
+        title: "Daily limit reached",
+        description: `You've used ${generationsUsed}/${currentTierConfig.dailyLimit} generations today. ${currentTierConfig.ctaMessage}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     generateContentMutation.mutate({
       platform: "reddit",
       style: tone,
@@ -435,24 +471,38 @@ export function EnhancedAIGenerator({
             Log in to generate content
           </Button>
         ) : (
-          <Button
-            onClick={handleGenerate}
-            disabled={generateContentMutation.isPending}
-            className="w-full bg-gradient-to-r from-orange-500 via-amber-500 to-red-500 hover:from-orange-600 hover:via-amber-500 hover:to-red-500 text-white font-medium"
-            size="lg"
-          >
-            {generateContentMutation.isPending ? (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Generate Content
-              </>
-            )}
-          </Button>
+          <div className="space-y-2">
+            <Button
+              onClick={handleGenerate}
+              disabled={generateContentMutation.isPending || quotaExhausted}
+              className={`w-full ${currentTierConfig.color} font-medium`}
+              size="lg"
+              data-testid="button-generate-content"
+            >
+              {generateContentMutation.isPending ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Generate Content
+                </>
+              )}
+            </Button>
+            <div className="text-xs text-center text-gray-600">
+              {quotaExhausted ? (
+                <span className="text-red-600 font-medium">
+                  Daily limit reached ({generationsUsed}/{currentTierConfig.dailyLimit})
+                </span>
+              ) : (
+                <span>
+                  {generationsUsed}/{currentTierConfig.dailyLimit} generations used today
+                </span>
+              )}
+            </div>
+          </div>
         )}
 
         {generatedContent && (
