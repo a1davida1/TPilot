@@ -142,7 +142,7 @@ describe("EnhancedAIGenerator", () => {
   it("renders without crashing for authenticated user", () => {
     render(
       <QueryClientProvider client={queryClient}>
-        <EnhancedAIGenerator onContentGenerated={vi.fn()} />
+        <EnhancedAIGenerator userTier="free" onContentGenerated={vi.fn()} />
       </QueryClientProvider>
     );
 
@@ -153,7 +153,7 @@ describe("EnhancedAIGenerator", () => {
   it("displays quota information for free tier", () => {
     render(
       <QueryClientProvider client={queryClient}>
-        <EnhancedAIGenerator onContentGenerated={vi.fn()} />
+        <EnhancedAIGenerator userTier="free" onContentGenerated={vi.fn()} />
       </QueryClientProvider>
     );
 
@@ -166,7 +166,7 @@ describe("EnhancedAIGenerator", () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <EnhancedAIGenerator onContentGenerated={vi.fn()} />
+        <EnhancedAIGenerator userTier="guest" onContentGenerated={vi.fn()} />
       </QueryClientProvider>
     );
 
@@ -179,7 +179,7 @@ describe("EnhancedAIGenerator", () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <EnhancedAIGenerator onContentGenerated={vi.fn()} />
+        <EnhancedAIGenerator userTier="free" onContentGenerated={vi.fn()} />
       </QueryClientProvider>
     );
 
@@ -190,7 +190,7 @@ describe("EnhancedAIGenerator", () => {
   it("displays photo type selection dropdown", () => {
     render(
       <QueryClientProvider client={queryClient}>
-        <EnhancedAIGenerator onContentGenerated={vi.fn()} />
+        <EnhancedAIGenerator userTier="free" onContentGenerated={vi.fn()} />
       </QueryClientProvider>
     );
 
@@ -219,7 +219,7 @@ describe("EnhancedAIGenerator", () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <EnhancedAIGenerator onContentGenerated={vi.fn()} />
+        <EnhancedAIGenerator userTier="free" onContentGenerated={vi.fn()} />
       </QueryClientProvider>
     );
 
