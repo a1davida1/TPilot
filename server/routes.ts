@@ -349,6 +349,45 @@ function registerProResourcesRoutes(app: Express, apiPrefix: string = API_PREFIX
     }
   });
 
+  // POST /api/pro-resources/:id/referral-code - Generate referral code for a perk
+  app.post(route('/pro-resources/:id/referral-code'), authenticateToken(true), async (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const userTier = await getUserTier(req.user);
+      if (userTier === 'free' || userTier === 'starter') {
+        return res.status(403).json({ message: "Pro subscription required" });
+      }
+
+      const perkId = req.params.id;
+      if (!perkId) {
+        return res.status(400).json({ message: "Perk ID required" });
+      }
+
+      // Verify the perk exists and user has access
+      const availablePerks = userTier === 'premium'
+        ? getAvailablePerks('pro')
+        : getAvailablePerks(userTier);
+      const perk = availablePerks.find(p => p.id === perkId);
+
+      if (!perk) {
+        return res.status(404).json({ message: "Perk not found or not accessible" });
+      }
+
+      const referralCode = await generateReferralCode(req.user.id, perkId);
+
+      res.json({
+        referralCode
+      });
+
+    } catch (error) {
+      logger.error("Referral code generation error:", error);
+      res.status(500).json({ message: "Failed to generate referral code" });
+    }
+  });
+
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
@@ -489,7 +528,7 @@ import { generateUnifiedAIContent } from "./services/unified-ai-service.js";
 import { imageToBase64, validateImageFormat } from "./image-caption-generator.js";
 
 // Reddit communities now handled in reddit-routes.ts
-import { getAvailablePerks, getSignupInstructions } from "./pro-perks.js";
+import { getAvailablePerks, getSignupInstructions, generateReferralCode } from "./pro-perks.js";
 
 type SentryInstance = typeof import('@sentry/node');
 
