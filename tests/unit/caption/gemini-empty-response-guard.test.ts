@@ -24,17 +24,58 @@ interface CandidateVariantMock {
   nsfw: boolean;
 }
 
-const buildCandidateVariants = (): CandidateVariantMock[] =>
-  Array.from({ length: 5 }, (_, index) => ({
-    caption: `Candidate caption ${index + 1} delivering value ${index}`,
-    alt: `Detailed alternate description for candidate ${index + 1} covering the scene with engaging language and clarity.`,
-    hashtags: ['#unique', '#crafted', `#story${index + 1}`],
+const buildCandidateVariants = (): CandidateVariantMock[] => [
+  {
+    caption: 'Living my best life under studio lights ✨',
+    alt: 'Professional studio portrait with warm lighting and creative composition',
+    hashtags: ['#studiovibe', '#creative', '#photoday'],
     cta: 'Share your thoughts below!',
     mood: 'engaging',
     style: 'authentic',
     safety_level: 'normal',
     nsfw: false,
-  }));
+  },
+  {
+    caption: 'Behind the scenes magic happening right now 🎬',
+    alt: 'Candid moment during a professional photoshoot session',
+    hashtags: ['#bts', '#photoshoot', '#magic'],
+    cta: 'Drop a comment!',
+    mood: 'playful',
+    style: 'casual',
+    safety_level: 'normal',
+    nsfw: false,
+  },
+  {
+    caption: 'Captured this moment of pure confidence today 💪',
+    alt: 'Empowering portrait showcasing strength and determination',
+    hashtags: ['#confidence', '#powerful', '#moment'],
+    cta: 'What do you think?',
+    mood: 'empowering',
+    style: 'bold',
+    safety_level: 'normal',
+    nsfw: false,
+  },
+  {
+    caption: 'Exploring new creative directions in the studio 🎨',
+    alt: 'Artistic experimental photoshoot with unique styling and angles',
+    hashtags: ['#artistic', '#experimental', '#creative'],
+    cta: 'Tell me your favorite!',
+    mood: 'artistic',
+    style: 'experimental',
+    safety_level: 'normal',
+    nsfw: false,
+  },
+  {
+    caption: 'Grateful for another amazing shoot day 🙏',
+    alt: 'Heartfelt moment captured during a successful photoshoot',
+    hashtags: ['#grateful', '#blessed', '#thankful'],
+    cta: 'Send some love!',
+    mood: 'grateful',
+    style: 'heartfelt',
+    safety_level: 'normal',
+    nsfw: false,
+  },
+];
 
 const createCandidateResponse = (variants: CandidateVariantMock[]): MockResponse => ({
   candidates: [

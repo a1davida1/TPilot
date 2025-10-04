@@ -512,8 +512,6 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
     }
 
     const _needsBannedHint = bannedDetected;
-
-    attempt += 1;
   }
 
   if (uniqueVariants.length < VARIANT_TARGET) {
