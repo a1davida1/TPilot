@@ -1,5 +1,6 @@
 import React from "react";
 import { useState, useCallback, useMemo } from "react";
+import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,6 @@ import {
   Users,
   ExternalLink,
   Shield,
-  Copy,
   Clock,
   Eye,
   Info,
@@ -119,9 +119,7 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>("all");
   const [selectedPerk, setSelectedPerk] = useState<ProPerk | null>(null);
   const [instructionsByPerk, setInstructionsByPerk] = useState<Record<string, SignupInstructions>>({});
-  const [referralCodes, setReferralCodes] = useState<Record<string, string>>({});
   const [_instructionsLoading, setInstructionsLoading] = useState<string | null>(null);
-  const [referralLoading, setReferralLoading] = useState<string | null>(null);
   const { toast } = useToast();
 
   const sessionFetch = useCallback(
@@ -267,59 +265,6 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
     setSelectedPerk(perk);
     void ensureInstructions(perk);
   }, [ensureInstructions]);
-
-  const handleGenerateReferral = useCallback(async (perk: ProPerk) => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    try {
-      setReferralLoading(perk.id);
-      const response = await sessionFetch(`/api/pro-resources/${perk.id}/referral-code`, {
-        method: "POST"
-      });
-
-      if (response.status === 401 || response.status === 403) {
-        toast({
-          title: "Sign in required",
-          description: "Log in with your Pro account to generate referral codes.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error("Failed to generate referral code");
-      }
-
-      const payload = await response.json() as { referralCode: string };
-      setReferralCodes((previous) => ({
-        ...previous,
-        [perk.id]: payload.referralCode
-      }));
-
-      if (window.navigator && window.navigator.clipboard) {
-        await window.navigator.clipboard.writeText(payload.referralCode);
-        toast({
-          title: "Referral Code Generated",
-          description: `Code "${payload.referralCode}" copied to clipboard!`,
-        });
-      } else {
-        toast({
-          title: "Referral Code Generated",
-          description: `Your code: ${payload.referralCode}`,
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Unable to generate referral",
-        description: error instanceof Error ? error.message : "Unexpected error generating referral code.",
-        variant: "destructive"
-      });
-    } finally {
-      setReferralLoading(null);
-    }
-  }, [sessionFetch, toast]);
 
   // Show empty state when no resources available or no access
   if (!isLoading && (!hasAccess || perks.length === 0)) {
@@ -665,32 +610,18 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
                       </Button>
                     )}
 
-                    <Button 
-                      className="w-full bg-gradient-to-r from-purple-500 to-pink-500"
-                      onClick={() => handleGenerateReferral(selectedPerk)}
-                      disabled={referralLoading === selectedPerk.id}
-                      data-testid={`generate-referral-${selectedPerk.id}`}
-                    >
-                      {referralLoading === selectedPerk.id ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-4 w-4 mr-2" />
-                          Generate Referral Code
-                        </>
-                      )}
-                    </Button>
-
-                    {referralCodes[selectedPerk.id] && (
-                      <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                        <p className="text-green-400 font-mono text-sm text-center">
-                          {referralCodes[selectedPerk.id]}
-                        </p>
-                      </div>
-                    )}
+                    <div className="space-y-2">
+                      <Button
+                        asChild
+                        className="w-full bg-gradient-to-r from-purple-500 to-pink-500"
+                        data-testid={`manage-referral-${selectedPerk.id}`}
+                      >
+                        <Link href="/referral">Manage your referral program</Link>
+                      </Button>
+                      <p className="text-xs text-gray-400 text-center">
+                        Create and share referral codes from your dedicated referral dashboard.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>

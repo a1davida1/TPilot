@@ -100,8 +100,8 @@ vi.mock("lucide-react", () => ({
   DollarSign: () => <span />,
 }));
 
-vi.mock("next/link", () => ({
-  default: ({ href, children }: { href: string; children: React.ReactNode }) => (
+vi.mock("wouter", () => ({
+  Link: ({ href, children }: { href: string; children: React.ReactNode }) => (
     <a href={href}>{children}</a>
   ),
 }));
