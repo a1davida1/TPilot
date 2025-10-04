@@ -1349,7 +1349,7 @@ const platformProfiles: Record<string, PlatformProfile> = {
     maxSentenceLength: [90, 100, 110],
     paragraphCounts: [3, 4, 5],
     emojiDensity: [2, 3, 4],
-    callToActions: ['Link in bio!', 'DM for details!', 'Tap the link!'],
+    callToActions: ['Link in bio!', 'DM for details!', 'Tap the bio link for the full drop 🔗'],
     paragraphSeparator: '\n\n',
     sentenceSeparator: ' ',
     postProcessTitle: (title, context) => {
@@ -1382,7 +1382,7 @@ const platformProfiles: Record<string, PlatformProfile> = {
     maxSentenceLength: [80, 90, 100],
     paragraphCounts: [1, 2],
     emojiDensity: [0, 1, 2],
-    callToActions: ['Check it out!', 'Read more!', 'Link below 👇'],
+    callToActions: ['Check it out!', "RT if you're ready for more 🔁", 'Link below 👇'],
     paragraphSeparator: '\n',
     sentenceSeparator: ' ',
     postProcessTitle: (title, context) => {
@@ -1475,6 +1475,42 @@ const platformProfiles: Record<string, PlatformProfile> = {
         }
       }
       return processedContent.trim();
+    }
+  },
+  'fansly': {
+    maxSentenceLength: [90, 100, 110],
+    paragraphCounts: [2, 3, 4],
+    emojiDensity: [3, 4, 5],
+    callToActions: ['Unlock the rest on my Fansly 💖', 'Full content on Fansly 💕', 'See more on my Fansly 💗'],
+    paragraphSeparator: '\n\n',
+    sentenceSeparator: ' ',
+    postProcessTitle: (title, context) => {
+      title = applyEmojiDensity(title, context.emojiPool, context.emojiCount);
+      return clampSentenceLength(title, [90, 100]);
+    },
+    postProcessContent: (content, context) => {
+      content = applyEmojiDensity(content, context.emojiPool, context.emojiCount);
+      const sentences = content.split(/(?<=[.!?])\s+/);
+      let processedContent = '';
+      let currentParagraphLength = 0;
+      const paragraphCount = pickRandom(platformProfiles.fansly.paragraphCounts);
+
+      for (let i = 0; i < sentences.length; i++) {
+        const sentence = sentences[i];
+        processedContent += sentence + platformProfiles.fansly.sentenceSeparator;
+        currentParagraphLength += sentence.length + platformProfiles.fansly.sentenceSeparator.length;
+
+        if (i < sentences.length - 1 && Math.random() < 0.5 && currentParagraphLength > 50) {
+          if (processedContent.split(platformProfiles.fansly.paragraphSeparator).length < paragraphCount) {
+            processedContent += platformProfiles.fansly.paragraphSeparator;
+            currentParagraphLength = 0;
+          }
+        }
+      }
+      
+      // Add emoji cluster at the end for Fansly
+      const emojiCluster = context.emojiPool.slice(0, 3).join('');
+      return `${processedContent.trim()}\n${emojiCluster}`;
     }
   }
 };
