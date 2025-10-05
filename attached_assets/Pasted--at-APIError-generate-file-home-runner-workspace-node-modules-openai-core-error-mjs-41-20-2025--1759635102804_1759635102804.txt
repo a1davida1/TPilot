@@ -1,0 +1,144 @@
+ at APIError.generate (file:///home/runner/workspace/node_modules/openai/core/error.mjs:41:20)
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+at OpenAI.makeStatusError (file:///home/runner/workspace/node_modules/openai/client.mjs:160:32)
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+at OpenAI.makeRequest (file:///home/runner/workspace/node_modules/openai/client.mjs:328:30)
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+at async file:///home/runner/workspace/node_modules/@sentry/core/build/esm/utils/openai/index.js:251:28
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+at async openAICaptionFallback (file:///home/runner/workspace/dist/server/caption/openaiFallback.js:209:26)
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+at async resolveWithOpenAIFallback (file:///home/runner/workspace/dist/server/caption/geminiPipeline.js:1182:24)
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+at async file:///home/runner/workspace/dist/server/routes/caption.js:87:24 {
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+status: 400,
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+headers: Headers {
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+date: 'Sun, 05 Oct 2025 03:30:41 GMT',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'content-type': 'application/json',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'content-length': '149',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+connection: 'keep-alive',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'access-control-expose-headers': 'X-Request-ID',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'openai-organization': 'beardeals',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'openai-processing-ms': '11',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'openai-project': 'proj_8IxHNdgZo1WlE4nB8dAd6vXD',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'openai-version': '2020-10-01',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'x-ratelimit-limit-input-images': '50000',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'x-ratelimit-limit-requests': '500',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'x-ratelimit-limit-tokens': '30000',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'x-ratelimit-remaining-input-images': '49999',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'x-ratelimit-remaining-requests': '499',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'x-ratelimit-remaining-tokens': '28779',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'x-ratelimit-reset-input-images': '1ms',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'x-ratelimit-reset-requests': '120ms',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'x-ratelimit-reset-tokens': '2.442s',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'x-request-id': 'req_5112b9c4a7a448e099945598352c2a3b',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'x-envoy-upstream-service-time': '165',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'x-openai-proxy-wasm': 'v0.1',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'cf-cache-status': 'DYNAMIC',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'set-cookie': '__cf_bm=_Wg97nJ_IjYCUw4qJzXY0DHglHdXLeCUehrAfXoQZvU-1759635041-1.0.1.1-JY578Hihk2cSNepEB5s99rmVGhtKbuGvW6XEyKnQMDpDuCVYYWRPocUjNNM917q5fX85V6MMTkbJEsrGBDbXzBCvtv5zaePT1KduljS2L4g; path=/; expires=Sun, 05-Oct-25 04:00:41 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None, _cfuvid=x0JhgdRI5pn8g1MPCikvI1P2P7XFqGAMfDbzJtW1Ghc-1759635041810-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'strict-transport-security': 'max-age=31536000; includeSubDomains; preload',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+'x-content-type-options': 'nosniff',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
+server: 'cloudflare',
+2025-10-04 22:30:41.82
+85fd4eb0
+User
