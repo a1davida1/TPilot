@@ -116,7 +116,7 @@ export class AiService {
   }
   
   private static async generateWithGemini(input: GenerationInput): Promise<Omit<AiResponse, 'cached'>> {
-    const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = gemini.getGenerativeModel({ model: "gemini-2.5-flash" });
     
     const systemPrompt = this.buildSystemPrompt(input.platforms, input.styleHints);
     const userPrompt = input.prompt ?? "Generate engaging content for adult content creator";
@@ -132,7 +132,7 @@ export class AiService {
     return {
       content,
       tokensUsed: response.usageMetadata?.totalTokenCount || 0,
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
     };
   }
   
