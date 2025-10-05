@@ -1,0 +1,164 @@
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'content-type': 'application/json',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'content-length': '149',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+connection: 'keep-alive',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'access-control-expose-headers': 'X-Request-ID',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'openai-organization': 'beardeals',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'openai-processing-ms': '14',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'openai-project': 'proj_8IxHNdgZo1WlE4nB8dAd6vXD',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'openai-version': '2020-10-01',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'x-ratelimit-limit-input-images': '50000',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'x-ratelimit-limit-requests': '500',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'x-ratelimit-limit-tokens': '30000',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'x-ratelimit-remaining-input-images': '49999',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'x-ratelimit-remaining-requests': '499',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'x-ratelimit-remaining-tokens': '28779',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'x-ratelimit-reset-input-images': '1ms',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'x-ratelimit-reset-requests': '120ms',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'x-ratelimit-reset-tokens': '2.442s',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'x-request-id': 'req_531e637e299d492aa7e72367e3415a6f',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'x-envoy-upstream-service-time': '161',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'x-openai-proxy-wasm': 'v0.1',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'cf-cache-status': 'DYNAMIC',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'set-cookie': '__cf_bm=kzU7TzvlCfruTdVZUh2M9WhT3O_hTCUWnblNsCfW1tU-1759635130-1.0.1.1-ZIYKY_raxN99BtO5XrGVomD96DvcCroJAUQF_YyfUy1LMF8yyuogIPV78YY3TBf.wUiaqRvO7ql4yOhE1V1xqSXhyRicroGjDBlWDaHlu3k; path=/; expires=Sun, 05-Oct-25 04:02:10 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None, _cfuvid=1bSD3oTrZvv7wQAcNAr1AP1X4JtXL_g_71t6fW1EBrA-1759635130039-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'strict-transport-security': 'max-age=31536000; includeSubDomains; preload',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'x-content-type-options': 'nosniff',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+server: 'cloudflare',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'cf-ray': '9899d9a98d8aeb01-ORD',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+'alt-svc': 'h3=":443"; ma=86400'
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+},
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+requestID: 'req_531e637e299d492aa7e72367e3415a6f',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+error: {
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+message: 'Invalid base64 image_url.',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+type: 'invalid_request_error',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+param: null,
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+code: 'invalid_base64'
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+},
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+code: 'invalid_base64',
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+param: null,
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+type: 'invalid_request_error'
+2025-10-04 22:32:10.04
+85fd4eb0
+User
+}
+2025-10-04 22:32:10.07
+85fd4eb0
+User
+2025-10-05T03:32:10.074Z [info] [6d07e206-0fb8-49b9-b48f-acf4b7199e1a] POST /api/caption/generate 200 in 337ms :: {"final":{"caption":"Captivating visual that tells your story","alt":"Engaging social media content","hashtags":["authentic","creative","storytelling"],"mood":"flirty","style":"authentic","cta":"Share your thoughts","safety_level":"normal","titles":["Captivating Visual That Tells Your Story","Captivating Visual That Tells Your Story (2)","Captivating Visual That Tells Your Story (3)"]},"ranked":{"reason":"OpenAI fallback selected after Gemini pipeline error","winner_index":0,"scores":[1,0,0,0,0],"final":{"caption":"Captivating visual that tells your story","alt":"Engaging social media content","hashtags":["authentic","creative","storytelling"],"cta":"Share your thoughts","mood":"flirty","style":"authentic","safety_level":"normal","nsfw":true,"titles":["Captivating Visual That Tells Your Story","Captivating Visual That Tells Your Story (2)","Captivating Visual That Tells Your Story (3)"]}},"provider":"openai","titles":["Captivating Visual That Tells Your Story","Captivating… (truncated)
+2025-10-04 22:32:35.26
+85fd4eb0
+User
+warn: CSRF token validation failed {"hasSession":true,"ip":"34.60.209.83","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-05T03:32:35.261Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
