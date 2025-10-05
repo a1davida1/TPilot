@@ -74,7 +74,7 @@ const rawApiVersion =
   env.GEMINI_API_VERSION ??
   "";
 const normalizedApiVersion = stripQuotes(rawApiVersion.trim());
-const apiVersion = normalizedApiVersion.length > 0 ? normalizedApiVersion : "v1beta";
+const apiVersion = normalizedApiVersion.length > 0 ? normalizedApiVersion : "v1";
 const shouldAppendLatestSuffix = apiVersion.trim().toLowerCase() !== "v1";
 
 const textModelRaw =
