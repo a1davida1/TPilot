@@ -2,6 +2,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { z } from "zod";
 import { visionModel, textModel, isGeminiAvailable, type GeminiModel } from "../lib/gemini.js";
+import { captionWithInternVL, isOpenRouterEnabled } from "../lib/openrouter-client.js";
 import { CaptionArray, CaptionItem, RankResult, platformChecks } from "./schema";
 import { normalizeSafetyLevel } from "./normalizeSafetyLevel";
 import { BANNED_WORDS_HINT, variantContainsBannedWord } from "./bannedWords";
@@ -922,6 +923,57 @@ function _buildDuplicateRetryHintMessage(duplicates: string[]): string {
 export async function extractFacts(imageUrl: string): Promise<Record<string, unknown>> {
   try {
     console.error('Starting fact extraction for image:', imageUrl.substring(0, 100) + '...');
+    
+    // Try OpenRouter InternVL first if available
+    if (isOpenRouterEnabled()) {
+      try {
+        console.error('[InternVL] Attempting fact extraction with OpenRouter InternVL...');
+        const internPrompt = `Analyze this image and extract the following facts as JSON:
+{
+  "categories": ["list of categories"],
+  "objects": ["list of objects/people/items visible"],
+  "keywords": ["relevant keywords"],
+  "summary": "brief description",
+  "colors": ["dominant colors"],
+  "vibe": "overall mood/atmosphere",
+  "setting": "location/environment description",
+  "wardrobe": ["clothing/outfit details if visible"],
+  "angles": ["camera angles/perspectives"],
+  "mood": "emotional tone",
+  "style": "visual style/aesthetic"
+}
+
+Be explicit and specific for NSFW content. Return ONLY valid JSON without any markdown formatting or code blocks.`;
+
+        let imageInput;
+        if (imageUrl.startsWith('data:')) {
+          imageInput = { dataUrl: imageUrl };
+        } else {
+          imageInput = { url: imageUrl };
+        }
+
+        const internResponse = await captionWithInternVL(imageInput, {
+          prompt: internPrompt,
+          temperature: 0.2,
+          maxTokens: 1024,
+        });
+
+        console.error('[InternVL] Raw response:', internResponse.substring(0, 200) + '...');
+        
+        try {
+          const result = stripToJSON(internResponse) as Record<string, unknown>;
+          console.error('[InternVL] Successfully extracted facts');
+          return result;
+        } catch (parseError) {
+          console.error('[InternVL] Failed to parse JSON response, falling back to Gemini:', parseError);
+        }
+      } catch (internError) {
+        console.error('[InternVL] Vision extraction failed, falling back to Gemini:', internError);
+      }
+    }
+
+    // Gemini fallback
+    console.error('[Gemini] Using Gemini vision for fact extraction...');
     const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("extract.txt");
     const _vision = visionModel;
 
