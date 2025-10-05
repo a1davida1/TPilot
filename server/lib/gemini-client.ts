@@ -90,6 +90,9 @@ const textModelResolvedBase =
     : textModelBase;
 const textModelName = `${MODEL_PREFIX}${textModelResolvedBase}`;
 
+// Debug: Log what model we're using
+console.log(`[Gemini Config] Text model: ${textModelName}, API version: ${apiVersion}, shouldAppendLatest: ${shouldAppendLatestSuffix}`);
+
 const visionModelRaw =
   process.env.GEMINI_VISION_MODEL ??
   env.GEMINI_VISION_MODEL ??
@@ -105,6 +108,9 @@ const visionModelResolvedBase =
     ? `${visionModelBase}-latest`
     : visionModelBase;
 const visionModelName = `${MODEL_PREFIX}${visionModelResolvedBase}`;
+
+// Debug: Log what model we're using
+console.log(`[Gemini Config] Vision model: ${visionModelName}`);
 
 type GeminiContentPart = Record<string, unknown> | string | number | boolean | null;
 
