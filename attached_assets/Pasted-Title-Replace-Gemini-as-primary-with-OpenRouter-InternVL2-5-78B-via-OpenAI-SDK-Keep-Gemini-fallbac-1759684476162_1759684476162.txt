@@ -1,0 +1,214 @@
+Title: Replace Gemini as primary with OpenRouter InternVL2.5-78B via OpenAI SDK. Keep Gemini fallback. Remove model suffix normalization. Add tests + smoke.
+
+Instructions:
+
+Create a feature branch
+
+Branch name: feature/openrouter-internvl-78b
+
+Dependencies
+
+Ensure openai@^4 is installed. If not: npm i openai@^4
+
+Keep @google/genai for fallback.
+
+Env + config
+
+Add to .env.example and deployment secrets:
+
+OPENROUTER_API_KEY=<set in Replit secrets>
+
+OPENROUTER_MODEL=opengvlab/internvl2_5-78b
+
+OPENROUTER_SITE_URL=https://thottopilot.com
+
+OPENROUTER_APP_NAME=ThottoPilot
+
+Do not append models/ or -latest anywhere.
+
+Leave existing Gemini vars as fallback:
+
+GEMINI_API_KEY (already present)
+
+GEMINI_TEXT_MODEL=gemini-2.5-flash
+
+GEMINI_VISION_MODEL=gemini-2.5-flash
+
+New client: server/lib/openrouter-client.ts
+Create this file with the content below. Use ESM imports and keep .js extensions in internal imports to match the repo style.
+
+// server/lib/openrouter-client.ts
+import OpenAI from "openai";
+import { FRONTEND_URL } from "../config.js";
+
+const baseURL = "https://openrouter.ai/api/v1";
+const apiKey = process.env.OPENROUTER_API_KEY!;
+if (!apiKey) {
+  throw new Error("OPENROUTER_API_KEY is required");
+}
+
+const site = process.env.OPENROUTER_SITE_URL || FRONTEND_URL || "https://thottopilot.com";
+const appName = process.env.OPENROUTER_APP_NAME || "ThottoPilot";
+const DEFAULT_MODEL = process.env.OPENROUTER_MODEL || "opengvlab/internvl2_5-78b";
+
+export const openrouter = new OpenAI({
+  apiKey,
+  baseURL,
+  defaultHeaders: {
+    "HTTP-Referer": site,
+    "X-Title": appName,
+  },
+});
+
+export async function generateText(opts: {
+  prompt: string;
+  system?: string;
+  model?: string;
+  temperature?: number;
+}) {
+  const model = opts.model || DEFAULT_MODEL;
+  const resp = await openrouter.chat.completions.create({
+    model,
+    messages: [
+      ...(opts.system ? [{ role: "system", content: opts.system }] : []),
+      { role: "user", content: opts.prompt },
+    ],
+    temperature: opts.temperature ?? 0.7,
+  });
+  return resp.choices?.[0]?.message?.content ?? "";
+}
+
+export async function generateVision(opts: {
+  prompt: string;
+  imageUrl: string; // supports https:// or data:
+  model?: string;
+  temperature?: number;
+}) {
+  const model = opts.model || DEFAULT_MODEL;
+  const resp = await openrouter.chat.completions.create({
+    model,
+    messages: [{
+      role: "user",
+      content: [
+        { type: "text", text: opts.prompt },
+        { type: "image_url", image_url: { url: opts.imageUrl } },
+      ],
+    }],
+    temperature: opts.temperature ?? 0.2,
+  });
+  return resp.choices?.[0]?.message?.content ?? "";
+}
+
+
+Stop Gemini model mutations
+In server/lib/gemini-client.ts (or wherever the Gemini client normalizes model names):
+
+Remove any logic that prefixes models/ or appends -latest.
+
+Keep it to straight env reads only:
+
+const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-2.5-flash";
+
+const VISION_MODEL = process.env.GEMINI_VISION_MODEL || "gemini-2.5-flash";
+
+Pipeline refactor
+
+If you have server/caption/geminiPipeline.ts, either rename it to visionPipeline.ts or keep the filename but switch primary provider to OpenRouter and keep Gemini as fallback.
+
+Implement this minimal adapter inside the pipeline module:
+
+// server/caption/visionPipeline.ts  (or update existing geminiPipeline.ts)
+import { generateVision } from "../lib/openrouter-client.js";
+import { generateVision as geminiVision } from "../lib/gemini-client.js"; // your existing function
+import { logger } from "../bootstrap/logger.js";
+
+export async function extractFacts(imageDataUrl: string, prompt: string) {
+  try {
+    logger.info({ provider: "openrouter", model: process.env.OPENROUTER_MODEL || "opengvlab/internvl2_5-78b" }, "vision request");
+    const result = await generateVision({ prompt, imageUrl: imageDataUrl, temperature: 0.2 });
+    return result;
+  } catch (e: any) {
+    logger.warn({ err: e?.message, provider: "openrouter" }, "openrouter vision failed, falling back to gemini");
+    const r = await geminiVision({ prompt, dataUrl: imageDataUrl });
+    return r;
+  }
+}
+
+
+Ensure the downstream code that previously called geminiPipeline.extractFacts now imports from visionPipeline (or the updated file).
+
+Routes
+
+Update server/routes/caption.ts (or similar) to import the new pipeline entrypoint.
+
+Add a debug log of the final model string sent to each provider and provider tag in logs.
+
+Tests
+
+Add unit tests for openrouter-client:
+
+Mock openai module with vi.mock('openai').
+
+Assert:
+
+baseURL is https://openrouter.ai/api/v1
+
+Default headers include HTTP-Referer and X-Title
+
+Default model is opengvlab/internvl2_5-78b
+
+Vision payload includes { type: "image_url", image_url: { url: ... } }
+
+Update pipeline tests:
+
+Success path: OpenRouter returns 200 → pipeline uses OpenRouter result.
+
+Failure path: OpenRouter throws → pipeline calls Gemini fallback.
+
+Remove any assertions that expect models/ or -latest in Gemini model names.
+
+Smoke script
+
+Add scripts/smoke-openrouter.ts:
+
+import { generateVision } from "../server/lib/openrouter-client.js";
+
+const url = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB..."; // tiny 1x1 ok
+generateVision({ prompt: "Say 'ok' if you can see an image", imageUrl: url })
+  .then((t) => { console.log("OK:", t.slice(0, 120)); process.exit(0); })
+  .catch((e) => { console.error("ERR:", e?.message || e); process.exit(1); });
+
+
+Add npm script:
+
+"smoke:openrouter": "ts-node --esm scripts/smoke-openrouter.ts"
+
+Lint, build, run
+
+Ensure TypeScript builds.
+
+Run tests and the smoke script.
+
+Commit with message:
+
+feat(ai): primary vision via OpenRouter InternVL2.5-78B; Gemini fallback; remove model suffix normalization; tests + smoke
+
+Guard rails
+
+Do not touch unrelated auth/logout code.
+
+No changes to cookies or CSRF in this task.
+
+Keep all imports using .js extension for internal modules to match the project ESM pattern.
+
+Report back
+
+Post:
+
+Files changed list
+
+Any test updates
+
+Output of smoke script
+
+Example log line showing provider=openrouter and model string used

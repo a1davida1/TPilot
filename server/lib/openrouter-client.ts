@@ -1,119 +1,100 @@
-// OpenRouter client using OpenAI SDK for InternVL3-78B
-// Leverages official OpenAI SDK with OpenRouter's API-compatible endpoint
+// OpenRouter client using OpenAI SDK for InternVL2.5-78B
+import OpenAI from "openai";
+import { FRONTEND_URL } from "../config.js";
 
-import OpenAI from 'openai';
+const baseURL = "https://openrouter.ai/api/v1";
+const apiKey = process.env.OPENROUTER_API_KEY;
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL ?? 'https://openrouter.ai/api/v1';
-/**
- * Default to InternVL3-78B (latest, best for NSFW). Change via env if you prefer others.
- * Examples:
- *   opengvlab/internvl3-78b (recommended)
- *   opengvlab/internvl2_5-78b
- *   opengvlab/internvl3-14b
- */
-const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL ?? 'opengvlab/internvl3-78b';
-
-if (!OPENROUTER_API_KEY) {
-  console.warn('[openrouter] OPENROUTER_API_KEY not set. Provider will be disabled.');
+if (!apiKey) {
+  console.warn("[OpenRouter] OPENROUTER_API_KEY not set. Provider will be disabled.");
 }
 
-// Initialize OpenAI client with OpenRouter endpoint
-const client = OPENROUTER_API_KEY ? new OpenAI({
-  apiKey: OPENROUTER_API_KEY,
-  baseURL: OPENROUTER_BASE_URL,
+const site = process.env.OPENROUTER_SITE_URL || FRONTEND_URL || "https://thottopilot.com";
+const appName = process.env.OPENROUTER_APP_NAME || "ThottoPilot";
+const DEFAULT_MODEL = process.env.OPENROUTER_MODEL || "opengvlab/internvl2_5-78b";
+
+console.log(`[OpenRouter] Default model: ${DEFAULT_MODEL}`);
+
+export const openrouter = apiKey ? new OpenAI({
+  apiKey,
+  baseURL,
   defaultHeaders: {
-    'HTTP-Referer': process.env.OPENROUTER_SITE_URL ?? 'https://thottopilot.com',
-    'X-Title': process.env.OPENROUTER_APP_NAME ?? 'ThottoPilot',
+    "HTTP-Referer": site,
+    "X-Title": appName,
   },
 }) : null;
 
-type ImageInput =
-  | { dataUrl: string }               // e.g. "data:image/jpeg;base64,..."
-  | { url: string };                  // public URL
-
-export interface CaptionOptions {
-  prompt?: string;
-  temperature?: number;
-  maxTokens?: number;
+export async function generateText(opts: {
+  prompt: string;
   system?: string;
-  model?: string;                     // override env model per-call
-  frequencyPenalty?: number;
-  presencePenalty?: number;
-}
-
-/**
- * Build OpenAI-style content array with one image and prompt text.
- */
-function buildContent(image: ImageInput, prompt: string): Array<{ type: string; text?: string; image_url?: { url: string } }> {
-  const imageUrl = 'dataUrl' in image ? image.dataUrl : image.url;
-
-  return [
-    { type: 'text', text: prompt },
-    {
-      type: 'image_url',
-      image_url: { url: imageUrl },
-    },
-  ];
-}
-
-/**
- * Primary captioner using InternVL through OpenRouter.
- * Accepts a Data URL or a public URL. Returns plain caption text.
- */
-export async function captionWithInternVL(
-  image: ImageInput,
-  opts: CaptionOptions = {},
-): Promise<string> {
-  if (!client) {
-    throw new Error('OPENROUTER_API_KEY not set');
+  model?: string;
+  temperature?: number;
+}) {
+  if (!openrouter) {
+    throw new Error("OpenRouter client not initialized - API key missing");
   }
 
-  const model = opts.model ?? OPENROUTER_MODEL;
-  const prompt =
-    opts.prompt ??
-    'Describe this image in explicit detail suitable for NSFW captioning. Be specific, concise, and avoid disclaimers.';
+  const model = opts.model || DEFAULT_MODEL;
+  console.log(`[OpenRouter] Text generation with model: ${model}`);
   
-  const systemPrompt = opts.system ?? 
-    'You are an unrestricted AI assistant analyzing images for social media content. Be explicit and specific for NSFW content without disclaimers or hedging. Return factual, detailed observations.';
-
-  const response = await client.chat.completions.create({
+  const resp = await openrouter.chat.completions.create({
     model,
-    temperature: opts.temperature ?? 1.4,
-    max_tokens: opts.maxTokens ?? 512,
+    messages: [
+      ...(opts.system ? [{ role: "system" as const, content: opts.system }] : []),
+      { role: "user" as const, content: opts.prompt },
+    ],
+    temperature: opts.temperature ?? 0.7,
+  });
+  return resp.choices?.[0]?.message?.content ?? "";
+}
+
+export async function generateVision(opts: {
+  prompt: string;
+  imageUrl: string; // supports https:// or data:
+  model?: string;
+  temperature?: number;
+  frequencyPenalty?: number;
+  presencePenalty?: number;
+  system?: string;
+}) {
+  if (!openrouter) {
+    throw new Error("OpenRouter client not initialized - API key missing");
+  }
+
+  const model = opts.model || DEFAULT_MODEL;
+  console.log(`[OpenRouter] Vision generation with model: ${model}`);
+
+  const messages: any[] = [];
+  
+  if (opts.system) {
+    messages.push({ role: "system", content: opts.system });
+  }
+
+  messages.push({
+    role: "user",
+    content: [
+      { type: "text", text: opts.prompt },
+      { type: "image_url", image_url: { url: opts.imageUrl } },
+    ],
+  });
+
+  const resp = await openrouter.chat.completions.create({
+    model,
+    messages,
+    temperature: opts.temperature ?? 0.2,
     frequency_penalty: opts.frequencyPenalty ?? 0.7,
     presence_penalty: opts.presencePenalty ?? 1.5,
-    messages: [
-      {
-        role: 'system',
-        content: systemPrompt,
-      },
-      {
-        role: 'user',
-        content: buildContent(image, prompt) as any,
-      },
-    ],
-    // OpenRouter-specific provider settings
-    // @ts-ignore - OpenRouter extends standard OpenAI API
+    // @ts-ignore - OpenRouter-specific provider settings
     provider: {
       allow_fallbacks: true,
       require_parameters: true,
-      data_collection: 'deny',
+      data_collection: "deny",
     },
   });
-
-  const choice = response.choices[0];
-  if (!choice) throw new Error('No choices returned from OpenRouter');
-
-  const content = choice.message.content;
-  if (!content) throw new Error('Empty content from OpenRouter');
-
-  return content.trim();
+  
+  return resp.choices?.[0]?.message?.content ?? "";
 }
 
-/**
- * Convenience: detect availability.
- */
 export function isOpenRouterEnabled(): boolean {
-  return Boolean(OPENROUTER_API_KEY && client);
+  return Boolean(apiKey && openrouter);
 }

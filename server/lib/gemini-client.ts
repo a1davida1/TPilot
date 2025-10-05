@@ -62,52 +62,12 @@ const apiKey =
   env.GEMINI_API_KEY ||
   "";
 
-const DEFAULT_TEXT_MODEL = "gemini-2.5-flash";
-const MODEL_PREFIX = "models/";
-const VERSION_SUFFIX_PATTERN = /-(?:latest|exp|flash|\d[\w]*)$/i;
+// No model suffix normalization - use env vars directly
+const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-2.5-flash";
+const VISION_MODEL = process.env.GEMINI_VISION_MODEL || "gemini-2.5-flash";
 
-// Helper to strip quotes from environment variables (prevents 'gemini-2.0-flash' with quotes)
-const stripQuotes = (s: string): string => s.replace(/^['"]|['"]$/g, '');
-
-const rawApiVersion =
-  process.env.GEMINI_API_VERSION ??
-  env.GEMINI_API_VERSION ??
-  "";
-const normalizedApiVersion = stripQuotes(rawApiVersion.trim());
-const apiVersion = normalizedApiVersion.length > 0 ? normalizedApiVersion : "v1";
-const shouldAppendLatestSuffix = apiVersion.trim().toLowerCase() !== "v1";
-
-const textModelRaw =
-  process.env.GEMINI_TEXT_MODEL ??
-  env.GEMINI_TEXT_MODEL ??
-  DEFAULT_TEXT_MODEL;
-const textModelTrimmed = stripQuotes(textModelRaw.trim());
-const textModelBaseCandidate = textModelTrimmed.startsWith(MODEL_PREFIX)
-  ? textModelTrimmed.slice(MODEL_PREFIX.length)
-  : textModelTrimmed;
-const textModelBase =
-  textModelBaseCandidate.length > 0 ? textModelBaseCandidate : DEFAULT_TEXT_MODEL;
-const textModelResolvedBase =
-  shouldAppendLatestSuffix && !VERSION_SUFFIX_PATTERN.test(textModelBase)
-    ? `${textModelBase}`
-    : textModelBase;
-const textModelName = `${MODEL_PREFIX}${textModelResolvedBase}`;
-
-const visionModelRaw =
-  process.env.GEMINI_VISION_MODEL ??
-  env.GEMINI_VISION_MODEL ??
-  textModelBase;
-const visionModelTrimmed = stripQuotes(visionModelRaw.trim());
-const visionModelBaseCandidate = visionModelTrimmed.startsWith(MODEL_PREFIX)
-  ? visionModelTrimmed.slice(MODEL_PREFIX.length)
-  : visionModelTrimmed;
-const visionModelBase =
-  visionModelBaseCandidate.length > 0 ? visionModelBaseCandidate : textModelBase;
-const visionModelResolvedBase =
-  shouldAppendLatestSuffix && !VERSION_SUFFIX_PATTERN.test(visionModelBase)
-    ? `${visionModelBase}`
-    : visionModelBase;
-const visionModelName = `${MODEL_PREFIX}${visionModelResolvedBase}`;
+console.log(`[Gemini] Text model: ${TEXT_MODEL}`);
+console.log(`[Gemini] Vision model: ${VISION_MODEL}`);
 
 type GeminiContentPart = Record<string, unknown> | string | number | boolean | null;
 
@@ -165,10 +125,7 @@ const ensureClient = (): LegacyGoogleGenAI => {
   }
 
   if (!client) {
-    const options: GoogleGenAIOptions = { apiKey };
-    if (apiVersion && apiVersion.trim().length > 0) {
-      options.apiVersion = apiVersion;
-    }
+    const options: GoogleGenAIOptions = { apiKey, apiVersion: "v1" };
     client = new GoogleGenAI(options) as LegacyGoogleGenAI;
   }
 
@@ -238,7 +195,7 @@ const createModelAdapter = (modelName: string): GeminiModel => ({
 
 export const getVisionModel = (): GeminiModel => {
   if (!cachedVisionModel) {
-    cachedVisionModel = createModelAdapter(visionModelName);
+    cachedVisionModel = createModelAdapter(VISION_MODEL);
   }
 
   return cachedVisionModel;
@@ -246,7 +203,7 @@ export const getVisionModel = (): GeminiModel => {
 
 export const getTextModel = (): GeminiModel => {
   if (!cachedTextModel) {
-    cachedTextModel = createModelAdapter(textModelName);
+    cachedTextModel = createModelAdapter(TEXT_MODEL);
   }
 
   return cachedTextModel;
