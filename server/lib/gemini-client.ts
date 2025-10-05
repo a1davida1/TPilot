@@ -62,7 +62,7 @@ const apiKey =
   env.GEMINI_API_KEY ||
   "";
 
-const DEFAULT_TEXT_MODEL = "gemini-2.0-flash";
+const DEFAULT_TEXT_MODEL = "gemini-2.5-flash";
 const MODEL_PREFIX = "models/";
 const VERSION_SUFFIX_PATTERN = /-(?:latest|exp|flash|\d[\w]*)$/i;
 
@@ -93,9 +93,6 @@ const textModelResolvedBase =
     : textModelBase;
 const textModelName = `${MODEL_PREFIX}${textModelResolvedBase}`;
 
-// Debug: Log what model we're using
-console.log(`[Gemini Config] Text model: ${textModelName}, API version: ${apiVersion}, shouldAppendLatest: ${shouldAppendLatestSuffix}`);
-
 const visionModelRaw =
   process.env.GEMINI_VISION_MODEL ??
   env.GEMINI_VISION_MODEL ??
@@ -111,9 +108,6 @@ const visionModelResolvedBase =
     ? `${visionModelBase}-latest`
     : visionModelBase;
 const visionModelName = `${MODEL_PREFIX}${visionModelResolvedBase}`;
-
-// Debug: Log what model we're using
-console.log(`[Gemini Config] Vision model: ${visionModelName}`);
 
 type GeminiContentPart = Record<string, unknown> | string | number | boolean | null;
 

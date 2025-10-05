@@ -120,7 +120,7 @@ async function configureStaticAssets(
 
   const candidateClientPaths: string[] = [
     path.resolve(__dirname, '..', '..', 'dist', 'client'),
-    path.resolve(__dirname, '..', 'client', 'dist'),
+    path.resolve(__dirname, '..', '..', 'client', 'dist'),
   ];
 
   if (enableVite) {
