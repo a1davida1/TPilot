@@ -17,7 +17,7 @@ export type CaptionVariants = z.infer<typeof CaptionArray>;
 export const RankResult = z.object({
   winner_index: z.number().min(0).max(4),
   scores: z.array(z.number()).length(5),
-  reason: z.string().min(1).max(240),
+  reason: z.string().min(1).max(1000),
   final: CaptionItem
 });
 
