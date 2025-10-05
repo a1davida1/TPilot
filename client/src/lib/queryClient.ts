@@ -15,7 +15,7 @@ export interface ApiError extends Error {
 let csrfToken: string | null = null;
 let csrfTokenPromise: Promise<string> | null = null;
 
-async function getCsrfToken(): Promise<string> {
+export async function getCsrfToken(): Promise<string> {
   // If we have a valid token, return it
   if (csrfToken) {
     return csrfToken;

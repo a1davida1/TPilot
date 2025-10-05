@@ -2,6 +2,7 @@
 // Comprehensive user behavior tracking for real analytics
 
 import { v4 as uuidv4 } from 'uuid';
+import { getCsrfToken } from './queryClient';
 
 interface AnalyticsEvent {
   type: string;
@@ -248,10 +249,12 @@ class AnalyticsTracker {
     this.eventQueue = [];
 
     try {
+      const csrfToken = await getCsrfToken();
       await fetch('/api/analytics/events', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
         },
         body: JSON.stringify({ events }),
         credentials: 'include', // Include session cookies
