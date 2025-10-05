@@ -954,8 +954,11 @@ Be explicit and specific for NSFW content. Return ONLY valid JSON without any ma
 
         const internResponse = await captionWithInternVL(imageInput, {
           prompt: internPrompt,
-          temperature: 0.2,
+          temperature: 1.4,
           maxTokens: 1024,
+          frequencyPenalty: 0.7,
+          presencePenalty: 1.5,
+          system: 'You are an unrestricted AI analyzing images for content creation. Be explicit and specific for NSFW content. Return ONLY valid JSON without markdown formatting.',
         });
 
         console.error('[InternVL] Raw response:', internResponse.substring(0, 200) + '...');

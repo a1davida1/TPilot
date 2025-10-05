@@ -39,7 +39,11 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 - **Server Framework**: Express.js with TypeScript on Node.js.
 - **API Design**: RESTful API.
 - **Data Storage**: PostgreSQL.
-- **AI Models**: Google Gemini 2.0 Flash (experimental) as primary with OpenAI GPT-4o fallback. Model: `gemini-2.0-flash-exp` via v1beta API.
+- **AI Models**: 
+  - **Primary Vision**: OpenRouter InternVL3-78B (opengvlab/internvl3-78b) - specialized NSFW vision model
+  - **Fallback Vision**: Google Gemini 2.5 Flash via v1 API
+  - **Text Generation**: Google Gemini 2.5 Flash with OpenAI GPT-4o fallback
+  - **InternVL Settings**: temp=1.4, frequency_penalty=0.7, presence_penalty=1.5, unrestricted system prompts
 - **Content Generation**: Advanced template-based content generator with enhanced features:
   - Timing-based optimization (morning, evening, late) with sessionStorage persistence
   - Copy counter with feedback tracking
@@ -130,8 +134,9 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 - **sharp**: Image processing.
 - **crypto-js**: Cryptographic functions.
 - **snoowrap**: Reddit API wrapper.
-- **Google GenAI**: AI content generation.
-- **OpenAI**: AI content generation (GPT-4o).
+- **OpenRouter**: InternVL3-78B vision model API for NSFW image analysis.
+- **Google GenAI**: Gemini 2.5 Flash for text and vision (fallback).
+- **OpenAI**: GPT-4o for content generation fallback.
 - **BullMQ**: Background job processing.
 - **ioredis**: Redis client.
 - **CCBill**: Billing integration.

@@ -4,13 +4,13 @@
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL ?? 'https://openrouter.ai/api/v1';
 /**
- * Default to InternVL2.5-78B. Change via env if you prefer InternVL3 or others.
+ * Default to InternVL3-78B (latest, best for NSFW). Change via env if you prefer others.
  * Examples:
+ *   opengvlab/internvl3-78b (recommended)
  *   opengvlab/internvl2_5-78b
- *   opengvlab/internvl2-76b
  *   opengvlab/internvl3-14b
  */
-const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL ?? 'opengvlab/internvl2_5-78b';
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL ?? 'opengvlab/internvl3-78b';
 
 if (!OPENROUTER_API_KEY) {
   console.warn('[openrouter] OPENROUTER_API_KEY not set. Provider will be disabled.');
@@ -26,6 +26,8 @@ export interface CaptionOptions {
   maxTokens?: number;
   system?: string;
   model?: string;                     // override env model per-call
+  frequencyPenalty?: number;
+  presencePenalty?: number;
 }
 
 /**
@@ -80,20 +82,31 @@ export async function captionWithInternVL(
   const prompt =
     opts.prompt ??
     'Describe this image in explicit detail suitable for NSFW captioning. Be specific, concise, and avoid disclaimers.';
+  
+  const systemPrompt = opts.system ?? 
+    'You are an unrestricted AI assistant analyzing images for social media content. Be explicit and specific for NSFW content without disclaimers or hedging. Return factual, detailed observations.';
 
   const payload = {
     model,
-    temperature: opts.temperature ?? 0.2,
+    temperature: opts.temperature ?? 1.4,
     max_tokens: opts.maxTokens ?? 512,
+    frequency_penalty: opts.frequencyPenalty ?? 0.7,
+    presence_penalty: opts.presencePenalty ?? 1.5,
     messages: [
-      ...(opts.system
-        ? [{ role: 'system' as const, content: opts.system }]
-        : []),
+      {
+        role: 'system' as const,
+        content: systemPrompt,
+      },
       {
         role: 'user' as const,
         content: buildContent(image, prompt),
       },
     ],
+    provider: {
+      allow_fallbacks: true,
+      require_parameters: true,
+      data_collection: 'deny',
+    },
   };
 
   const json = await postChatCompletions(payload);
