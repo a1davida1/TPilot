@@ -150,7 +150,7 @@ try {
       GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
       OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
       GEMINI_TEXT_MODEL: process.env.GEMINI_TEXT_MODEL || 'models/gemini-2.5-flash',
-      GEMINI_VISION_MODEL: process.env.GEMINI_VISION_MODEL || 'models/gemini-2.5-flash-latest',
+      GEMINI_VISION_MODEL: process.env.GEMINI_VISION_MODEL || 'models/gemini-2.5-flash',
       GEMINI_API_VERSION: process.env.GEMINI_API_VERSION || 'v1',
       AWS_ACCESS_KEY_ID: '',
       AWS_SECRET_ACCESS_KEY: '',
