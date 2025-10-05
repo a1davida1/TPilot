@@ -66,11 +66,14 @@ const DEFAULT_TEXT_MODEL = "gemini-2.0-flash";
 const MODEL_PREFIX = "models/";
 const VERSION_SUFFIX_PATTERN = /-(?:latest|exp|flash|\d[\w]*)$/i;
 
+// Helper to strip quotes from environment variables (prevents 'gemini-2.0-flash' with quotes)
+const stripQuotes = (s: string): string => s.replace(/^['"]|['"]$/g, '');
+
 const rawApiVersion =
   process.env.GEMINI_API_VERSION ??
   env.GEMINI_API_VERSION ??
   "";
-const normalizedApiVersion = rawApiVersion.trim();
+const normalizedApiVersion = stripQuotes(rawApiVersion.trim());
 const apiVersion = normalizedApiVersion.length > 0 ? normalizedApiVersion : "v1beta";
 const shouldAppendLatestSuffix = apiVersion.trim().toLowerCase() !== "v1";
 
@@ -78,7 +81,7 @@ const textModelRaw =
   process.env.GEMINI_TEXT_MODEL ??
   env.GEMINI_TEXT_MODEL ??
   DEFAULT_TEXT_MODEL;
-const textModelTrimmed = textModelRaw.trim();
+const textModelTrimmed = stripQuotes(textModelRaw.trim());
 const textModelBaseCandidate = textModelTrimmed.startsWith(MODEL_PREFIX)
   ? textModelTrimmed.slice(MODEL_PREFIX.length)
   : textModelTrimmed;
@@ -97,7 +100,7 @@ const visionModelRaw =
   process.env.GEMINI_VISION_MODEL ??
   env.GEMINI_VISION_MODEL ??
   textModelBase;
-const visionModelTrimmed = visionModelRaw.trim();
+const visionModelTrimmed = stripQuotes(visionModelRaw.trim());
 const visionModelBaseCandidate = visionModelTrimmed.startsWith(MODEL_PREFIX)
   ? visionModelTrimmed.slice(MODEL_PREFIX.length)
   : visionModelTrimmed;
