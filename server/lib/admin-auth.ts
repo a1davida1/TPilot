@@ -47,16 +47,17 @@ export const ensureAdminAccount = async (): Promise<EnsureAdminAccountResult> =>
     .where(or(eq(users.email, resolvedEmail), eq(users.username, username)))
     .limit(1);
 
-  const hashedPassword = await resolveAdminPasswordHash(passwordHash);
-
   if (existing.length > 0) {
     const admin = existing[0];
     
-    // Update admin if email or password hash changed
+    // Only update email, username, and admin flags - NEVER update password hash
+    // Password updates should only happen through explicit password change flows
     const needsUpdate = 
       admin.email !== resolvedEmail || 
       admin.username !== username ||
-      admin.password !== hashedPassword;
+      !admin.isAdmin ||
+      admin.role !== 'admin' ||
+      admin.tier !== 'admin';
 
     if (needsUpdate) {
       await db
@@ -64,7 +65,6 @@ export const ensureAdminAccount = async (): Promise<EnsureAdminAccountResult> =>
         .set({
           email: resolvedEmail,
           username,
-          password: hashedPassword,
           isAdmin: true,
           role: 'admin',
           emailVerified: true,
@@ -75,6 +75,9 @@ export const ensureAdminAccount = async (): Promise<EnsureAdminAccountResult> =>
 
     return { created: false, email: resolvedEmail };
   }
+
+  // Only hash password when creating NEW admin account
+  const hashedPassword = await resolveAdminPasswordHash(passwordHash);
 
   await db.insert(users).values({
     email: resolvedEmail,
@@ -97,30 +100,23 @@ export const verifyAdminCredentials = async (
     return null;
   }
 
-  // Look up admin user in database by email or username
-  const adminUser = await db
-    .select()
-    .from(users)
-    .where(
-      or(
-        eq(users.email, identifier),
-        eq(users.username, identifier)
-      )
-    )
-    .limit(1);
+  const { email: adminEmail } = getAdminCredentials();
+  const adminPassword = process.env.ADMIN_PASSWORD ?? null;
 
-  if (adminUser.length === 0) {
+  // Must have admin credentials configured
+  if (!adminEmail || !adminPassword) {
     return null;
   }
 
-  const user = adminUser[0];
+  // Check if identifier matches admin email or username
+  const adminUsername = process.env.ADMIN_USERNAME ?? DEFAULT_ADMIN_USERNAME;
+  const isAdminIdentifier = identifier === adminEmail || identifier === adminUsername;
 
-  // Verify user is actually an admin
-  if (!user.isAdmin) {
+  if (!isAdminIdentifier) {
     return null;
   }
 
-  // Compare provided password against stored hash
-  const matches = await bcrypt.compare(password, user.password);
-  return matches ? user.email : null;
+  // Compare password with ADMIN_PASSWORD from env
+  const matches = password === adminPassword;
+  return matches ? adminEmail : null;
 };
