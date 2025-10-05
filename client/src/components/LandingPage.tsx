@@ -4,6 +4,7 @@ import { ArrowRight, BarChart3, CheckCircle2, Quote, ShieldCheck, Sparkles, User
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ThottoPilotLogo } from "@/components/thottopilot-logo";
 import { useMetrics, useMetricsSuspense } from "@/hooks/use-metrics";
 
 const numberFormatter = new Intl.NumberFormat("en-US");
@@ -150,6 +151,9 @@ export default function LandingPage() {
     <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-purple-50 py-16 text-foreground dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-20 px-6">
         <section className="text-center sm:text-left">
+          <div className="mb-8 flex justify-center sm:justify-start">
+            <ThottoPilotLogo size="xl" />
+          </div>
           <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/80 px-4 py-2 text-sm font-semibold shadow-sm">
             <Badge variant="secondary" className="bg-primary/10 text-primary">
               Live production metrics
