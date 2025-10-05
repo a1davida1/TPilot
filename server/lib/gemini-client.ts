@@ -62,7 +62,7 @@ const apiKey =
   env.GEMINI_API_KEY ||
   "";
 
-const DEFAULT_TEXT_MODEL = "gemini-1.5-flash";
+const DEFAULT_TEXT_MODEL = "gemini-2.5-flash";
 const MODEL_PREFIX = "models/";
 const VERSION_SUFFIX_PATTERN = /-(?:latest|\d[\w]*)$/i;
 
