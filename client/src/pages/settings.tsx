@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -56,6 +58,9 @@ export default function SettingsPage() {
   const [emailUpdates, setEmailUpdates] = useState(true);
   const [autoSave, setAutoSave] = useState(true);
   const [defaultPlatform, setDefaultPlatform] = useState('reddit');
+  const [displayName, setDisplayName] = useState('');
+  const [email, setEmail] = useState('');
+  const [bio, setBio] = useState('');
   const [apiUsage] = useState({ used: 0, limit: 1000 });
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -257,13 +262,36 @@ export default function SettingsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="displayName">Display Name</Label>
+                  <Input 
+                    id="displayName" 
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Enter your display name"
+                    data-testid="input-displayname"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
+                  <Input 
+                    id="email" 
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    data-testid="input-email"
+                  />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="bio">Bio</Label>
+                <Textarea 
+                  id="bio" 
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Tell us about yourself"
+                  rows={4}
+                  data-testid="textarea-bio"
+                />
               </div>
             </CardContent>
           </Card>
