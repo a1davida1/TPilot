@@ -93,16 +93,34 @@ export const verifyAdminCredentials = async (
   identifier: string | undefined,
   password: string | undefined
 ): Promise<string | null> => {
-  const { email, passwordHash } = getAdminCredentials();
-
-  if (!email || !passwordHash || typeof identifier !== 'string' || typeof password !== 'string') {
+  if (typeof identifier !== 'string' || typeof password !== 'string') {
     return null;
   }
 
-  if (identifier !== email) {
+  // Look up admin user in database by email or username
+  const adminUser = await db
+    .select()
+    .from(users)
+    .where(
+      or(
+        eq(users.email, identifier),
+        eq(users.username, identifier)
+      )
+    )
+    .limit(1);
+
+  if (adminUser.length === 0) {
     return null;
   }
 
-  const matches = await bcrypt.compare(password, passwordHash);
-  return matches ? email : null;
+  const user = adminUser[0];
+
+  // Verify user is actually an admin
+  if (!user.isAdmin) {
+    return null;
+  }
+
+  // Compare provided password against stored hash
+  const matches = await bcrypt.compare(password, user.password);
+  return matches ? user.email : null;
 };
