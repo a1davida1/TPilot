@@ -5,6 +5,7 @@ ThottoPilot is a social media content creation platform designed for adult conte
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
+Development workflow: Always prioritize production/deployment fixes - test and deploy changes to live environment immediately
 Authentication: Landing page first, registration form only shows when "Register" clicked, guest mode available for trial
 UI/UX: Ultra-polished dark interface with neon accents, glass morphism, and dynamic gradients
 Navigation: Left sidebar with collapsible sections (cleaner and more user-friendly than tabs)
