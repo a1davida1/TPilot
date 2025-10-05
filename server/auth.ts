@@ -18,6 +18,7 @@ import { API_PREFIX, prefixApiPath } from './lib/api-prefix.js';
 import { assertExists } from '../helpers/assert';
 import { getCookieConfig } from './utils/cookie-config.js';
 import { ensureAdminAccount, verifyAdminCredentials, getAdminCredentials } from './lib/admin-auth.js';
+import { applyProductionFixes } from './bootstrap/production-fixes.js';
 
 // Auth validation schemas removed - handled by middleware
 
@@ -43,6 +44,13 @@ export async function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
     await ensureAdminAccount();
   } catch (err) {
     logger.error('Failed to ensure admin account exists', { err });
+  }
+
+  // Apply production database fixes (tier upgrades, email verification)
+  try {
+    await applyProductionFixes();
+  } catch (err) {
+    logger.error('Failed to apply production fixes', { err });
   }
 
   // Regular signup
