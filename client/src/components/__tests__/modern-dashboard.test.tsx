@@ -10,7 +10,7 @@ import {
 } from "vitest";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 
 import { ModernDashboard } from "@/components/modern-dashboard";
 import { QuickStartModal } from "@/components/dashboard-quick-start";

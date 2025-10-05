@@ -2,7 +2,7 @@ import React from "react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 import { IntegratedFineTuning } from "@/components/integrated-fine-tuning";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 

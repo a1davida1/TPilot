@@ -38,7 +38,7 @@ interface GettingStartedProps {
 export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom: _isAtBottom = false, onSetupLater }: GettingStartedProps) {
   const { data: savedState, isLoading: isLoadingState, updateState } = useOnboardingState();
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
-  const [expandedStep, setExpandedStep] = useState<string | null>(null);
+  const [expandedStep, setExpandedStep] = useState<string>("");
   const [isMinimized, setIsMinimized] = useState(false);
 
   // Load saved state when available
@@ -316,8 +316,8 @@ export function GettingStarted({ userTier = 'free', onSectionSelect, isAtBottom:
             <Accordion 
               type="single" 
               collapsible 
-              value={expandedStep || undefined}
-              onValueChange={(value) => setExpandedStep(value || null)}
+              value={expandedStep}
+              onValueChange={(value) => setExpandedStep(value || "")}
               data-testid="getting-started-accordion"
             >
               {steps.map((step, _index) => {

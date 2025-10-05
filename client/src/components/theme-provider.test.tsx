@@ -2,7 +2,7 @@ import React, { useEffect } from "react"
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
 import { createRoot } from "react-dom/client"
 import type { Root } from "react-dom/client"
-import { act } from "react-dom/test-utils"
+import { act } from "react"
 
 import { ThemeProvider, useTheme } from "./theme-provider"
 
@@ -175,7 +175,10 @@ describe("ThemeProvider", () => {
     expect(document.documentElement.classList.contains("dark")).toBe(true)
 
     systemPrefersDark = false
-    emitSystemChange()
+    
+    await act(async () => {
+      emitSystemChange()
+    })
 
     await flushEffects()
 

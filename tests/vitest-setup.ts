@@ -5,6 +5,10 @@ import { beforeEach } from 'vitest';
 // Load .env.test file specifically for vitest tests
 dotenv.config({ path: '.env.test' });
 
+// React 18 expects this in test environments
+// Prevents: "The current testing environment is not configured to support act(...)"
+(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+
 // Set default test environment variables if not present
 const ensureTestEnvDefaults = () => {
   process.env.APP_BASE_URL = process.env.APP_BASE_URL || 'https://thottopilot.com';

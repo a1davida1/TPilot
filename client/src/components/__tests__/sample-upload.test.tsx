@@ -11,7 +11,7 @@ import {
 } from "vitest";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 import type { UploadResult } from "@uppy/core";
 
 import SampleUpload from "@/components/sample-upload";

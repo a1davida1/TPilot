@@ -1,7 +1,7 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
-import { act } from 'react-dom/test-utils';
+import { act } from "react";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GettingStarted } from '../getting-started';
 

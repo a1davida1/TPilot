@@ -2,7 +2,7 @@ import React from "react";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 
 const { toastMock, loginMock, apiRequestMock } = vi.hoisted(() => ({
   toastMock: vi.fn(),
