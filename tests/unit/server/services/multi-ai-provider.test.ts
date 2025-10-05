@@ -121,25 +121,25 @@ describe('generateWithMultiProvider provider selection', () => {
     expect(googleGenAIConstructor).toHaveBeenCalledWith(expect.objectContaining({ apiKey: 'genai-key' }));
     expect(googleGenAIModels.generateContent).toHaveBeenCalledTimes(1);
     const [geminiRequest] = googleGenAIModels.generateContent.mock.calls[0] ?? [];
-    expect(geminiRequest?.model).toBe('models/gemini-test-latest');
+    expect(geminiRequest?.model).toBe('models/gemini-test');
     expect(geminiRequest?.contents?.[0]?.parts?.[0]?.text).toContain('instagram');
     expect(mockAnthropic.messages.create).not.toHaveBeenCalled();
     expect(mockOpenAI.chat.completions.create).not.toHaveBeenCalled();
   });
 
-  it('normalizes Gemini model names without explicit versions', async () => {
+  it('uses Gemini model names directly from env without normalization', async () => {
     process.env.GOOGLE_GENAI_API_KEY = 'genai-key';
     process.env.OPENAI_API_KEY = 'openai-key';
     process.env.ANTHROPIC_API_KEY = 'anthropic-key';
-    process.env.GEMINI_TEXT_MODEL = 'gemini-1.5-flash';
+    process.env.GEMINI_TEXT_MODEL = 'gemini-2.5-flash';
 
     vi.resetModules();
     const { generateWithMultiProvider } = await import('../../../../server/services/multi-ai-provider');
 
     googleGenAIModels.generateContent.mockResolvedValueOnce({
       text: JSON.stringify({
-        titles: ['Normalized Gemini model'],
-        content: 'Gemini responds using the normalized model name to avoid 404 errors.',
+        titles: ['Direct model name'],
+        content: 'Gemini uses the model name directly from environment variable without any normalization.',
         photoInstructions: {
           lighting: 'natural',
           cameraAngle: 'eye-level',
@@ -159,7 +159,7 @@ describe('generateWithMultiProvider provider selection', () => {
 
     expect(googleGenAIModels.generateContent).toHaveBeenCalledTimes(1);
     const [geminiRequest] = googleGenAIModels.generateContent.mock.calls[0] ?? [];
-    expect(geminiRequest?.model).toBe('models/gemini-1.5-flash-latest');
+    expect(geminiRequest?.model).toBe('gemini-2.5-flash');
   });
 
   it('falls back to Claude before OpenAI when Gemini is unavailable', async () => {
