@@ -78,7 +78,7 @@ describe('OpenRouter Client', () => {
     });
 
     const callArgs = mockOpenAI.chat.completions.create.mock.calls[0]?.[0];
-    expect(callArgs.messages[1]).toEqual({
+    expect(callArgs.messages[0]).toEqual({
       role: 'user',
       content: [
         { type: 'text', text: 'describe this' },

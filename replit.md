@@ -40,7 +40,7 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 - **API Design**: RESTful API.
 - **Data Storage**: PostgreSQL.
 - **AI Models**: 
-  - **Primary Vision**: OpenRouter InternVL3-78B (opengvlab/internvl3-78b) - specialized NSFW vision model
+  - **Primary Vision**: OpenRouter InternVL2.5-78B (opengvlab/internvl2_5-78b) - specialized NSFW vision model
   - **Fallback Vision**: Google Gemini 2.5 Flash via v1 API
   - **Text Generation**: Google Gemini 2.5 Flash with OpenAI GPT-4o fallback
   - **InternVL Settings**: temp=1.4, frequency_penalty=0.7, presence_penalty=1.5, unrestricted system prompts

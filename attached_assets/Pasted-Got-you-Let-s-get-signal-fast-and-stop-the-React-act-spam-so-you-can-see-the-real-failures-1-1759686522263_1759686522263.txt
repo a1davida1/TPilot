@@ -1,0 +1,184 @@
+Got you. Let’s get signal fast and stop the React “act(…)” spam so you can see the real failures.
+
+1) One-shot triage run (no repo changes)
+
+Paste this as-is to run Vitest with a temporary setup that silences Radix/Presence warnings and jsdom gaps:
+
+# TRIAGE: run vitest with a temp setup (no file changes)
+cat >/tmp/vitest.setup.ts <<'TS'
+import '@testing-library/jest-dom';
+import { afterEach } from 'vitest';
+import { cleanup } from '@testing-library/react';
+afterEach(() => cleanup());
+
+// Tell React we're in a test harness (suppresses many act() warnings)
+(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+
+// jsdom shims Radix often needs
+if (!(globalThis as any).matchMedia) {
+  (globalThis as any).matchMedia = (q: string) => ({
+    matches: q.includes('prefers-reduced-motion'),
+    media: q, onchange: null,
+    addListener() {}, removeListener() {},
+    addEventListener() {}, removeEventListener() {},
+    dispatchEvent() { return false; }
+  });
+}
+if (!(globalThis as any).ResizeObserver) {
+  (globalThis as any).ResizeObserver = class { observe(){} unobserve(){} disconnect(){} };
+}
+if (!(document as any).startViewTransition) {
+  (document as any).startViewTransition = () => ({
+    finished: Promise.resolve(), ready: Promise.resolve(),
+    updateCallbackDone: Promise.resolve(), skip() {}
+  });
+}
+TS
+
+# run only to first failure, jsdom env, show details
+npx vitest run --environment=jsdom --setupFiles=/tmp/vitest.setup.ts --reporter=verbose --bail
+
+2) Make it permanent (copy-paste patch, with dry-run first)
+
+Dry-run:
+
+(cd "$(git rev-parse --show-toplevel)" && git apply -p0 --3way --reject --check <<'PATCH'
+diff --git a/vitest.setup.ts b/vitest.setup.ts
+new file mode 100644
+index 0000000..5b8b4b2
+--- /dev/null
++++ b/vitest.setup.ts
+@@ -0,0 +1,46 @@
++import '@testing-library/jest-dom';
++import { afterEach } from 'vitest';
++import { cleanup } from '@testing-library/react';
++afterEach(() => cleanup());
++
++// Suppress "testing environment is not configured to support act(...)" warnings
++(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
++
++// jsdom shims Radix components frequently rely on
++if (!(globalThis as any).matchMedia) {
++  (globalThis as any).matchMedia = (q: string) => ({
++    matches: q.includes('prefers-reduced-motion'),
++    media: q, onchange: null,
++    addListener() {}, removeListener() {},
++    addEventListener() {}, removeEventListener() {},
++    dispatchEvent() { return false; }
++  });
++}
++if (!(globalThis as any).ResizeObserver) {
++  (globalThis as any).ResizeObserver = class { observe(){} unobserve(){} disconnect(){} };
++}
++if (!(document as any).startViewTransition) {
++  (document as any).startViewTransition = () => ({
++    finished: Promise.resolve(), ready: Promise.resolve(),
++    updateCallbackDone: Promise.resolve(), skip() {}
++  });
++}
+diff --git a/vitest.config.ts b/vitest.config.ts
+new file mode 100644
+index 0000000..a3c6c3b
+--- /dev/null
++++ b/vitest.config.ts
+@@ -0,0 +1,18 @@
++import { defineConfig } from 'vitest/config';
++export default defineConfig({
++  test: {
++    environment: 'jsdom',
++    setupFiles: ['./vitest.setup.ts'],
++    globals: true,
++    css: true,
++    // Radix + animations are noisy in parallel; single thread keeps logs sane
++    poolOptions: { threads: { singleThread: true } },
++  },
++});
+diff --git a/package.json b/package.json
+index 1111111..2222222 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "scripts": {
+-    "test": "vitest run"
++    "test": "vitest run --environment=jsdom --setupFiles=vitest.setup.ts"
+   }
+ }
+PATCH
+))
+
+
+Apply:
+
+(cd "$(git rev-parse --show-toplevel)" && git apply -p0 --3way --reject <<'PATCH'
+diff --git a/vitest.setup.ts b/vitest.setup.ts
+new file mode 100644
+index 0000000..5b8b4b2
+--- /dev/null
++++ b/vitest.setup.ts
+@@ -0,0 +1,46 @@
++import '@testing-library/jest-dom';
++import { afterEach } from 'vitest';
++import { cleanup } from '@testing-library/react';
++afterEach(() => cleanup());
++
++// Suppress "testing environment is not configured to support act(...)" warnings
++(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
++
++// jsdom shims Radix components frequently rely on
++if (!(globalThis as any).matchMedia) {
++  (globalThis as any).matchMedia = (q: string) => ({
++    matches: q.includes('prefers-reduced-motion'),
++    media: q, onchange: null,
++    addListener() {}, removeListener() {},
++    addEventListener() {}, removeEventListener() {},
++    dispatchEvent() { return false; }
++  });
++}
++if (!(globalThis as any).ResizeObserver) {
++  (globalThis as any).ResizeObserver = class { observe(){} unobserve(){} disconnect(){} };
++}
++if (!(document as any).startViewTransition) {
++  (document as any).startViewTransition = () => ({
++    finished: Promise.resolve(), ready: Promise.resolve(),
++    updateCallbackDone: Promise.resolve(), skip() {}
++  });
++}
+diff --git a/vitest.config.ts b/vitest.config.ts
+new file mode 100644
+index 0000000..a3c6c3b
+--- /dev/null
++++ b/vitest.config.ts
+@@ -0,0 +1,18 @@
++import { defineConfig } from 'vitest/config';
++export default defineConfig({
++  test: {
++    environment: 'jsdom',
++    setupFiles: ['./vitest.setup.ts'],
++    globals: true,
++    css: true,
++    // Radix + animations are noisy in parallel; single thread keeps logs sane
++    poolOptions: { threads: { singleThread: true } },
++  },
++});
+diff --git a/package.json b/package.json
+index 1111111..2222222 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "scripts": {
+-    "test": "vitest run"
++    "test": "vitest run --environment=jsdom --setupFiles=vitest.setup.ts"
+   }
+ }
+PATCH
+))
+
+
+Then re-run:
+
+pnpm test --filter client -- --bail
+
+
+If you still see Gemini 400s, ping me with the first failing server test or the model string your logs print; I’ll give you a one-file patch to stop any “-latest” auto-append.
