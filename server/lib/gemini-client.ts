@@ -89,7 +89,7 @@ const textModelBase =
   textModelBaseCandidate.length > 0 ? textModelBaseCandidate : DEFAULT_TEXT_MODEL;
 const textModelResolvedBase =
   shouldAppendLatestSuffix && !VERSION_SUFFIX_PATTERN.test(textModelBase)
-    ? `${textModelBase}-latest`
+    ? `${textModelBase}`
     : textModelBase;
 const textModelName = `${MODEL_PREFIX}${textModelResolvedBase}`;
 
@@ -105,7 +105,7 @@ const visionModelBase =
   visionModelBaseCandidate.length > 0 ? visionModelBaseCandidate : textModelBase;
 const visionModelResolvedBase =
   shouldAppendLatestSuffix && !VERSION_SUFFIX_PATTERN.test(visionModelBase)
-    ? `${visionModelBase}-latest`
+    ? `${visionModelBase}`
     : visionModelBase;
 const visionModelName = `${MODEL_PREFIX}${visionModelResolvedBase}`;
 
