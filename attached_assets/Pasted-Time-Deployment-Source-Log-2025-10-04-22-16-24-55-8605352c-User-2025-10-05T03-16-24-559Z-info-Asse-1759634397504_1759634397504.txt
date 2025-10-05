@@ -1,0 +1,264 @@
+Time
+Deployment
+Source
+Log
+2025-10-04 22:16:24.55
+8605352c
+User
+2025-10-05T03:16:24.559Z [info] Asset request received: GET /assets/index-C07ZwJ9A.js
+2025-10-04 22:18:40.21
+8605352c
+User
+2025-10-05T03:18:40.211Z [info] [ca09c77d-b7ea-438b-8c25-3d031561bfa7] POST /api/caption/generate-text 500 in 68361ms :: {"error":"[\n {\n \"code\": \"too_big\",\n \"maximum\": 240,\n \"type\": \"string\",\n \"inclusive\": true,\n \"exact\": false,\n \"message\": \"String must contain at most 240 character(s)\",\n \"path\": [\n \"reason\"\n ]\n }\n]"}
+2025-10-04 22:18:40.62
+8605352c
+User
+2025-10-05T03:18:40.621Z [info] [850ee2b2-74a2-4927-9a2d-a9cce128c51a] GET /api/content-generations 200 in 102ms :: [{"id":98,"userId":5,"platform":"reddit","style":"playful","theme":"image_based","titles":["Captivating Visual That Tells Your Story","Captivating Visual That Tells Your Story (2)","Captivating Visual That Tells Your Story (3)"],"content":"Captivating visual that tells your story","photoInstructions":{"mood":"Confident and natural","styling":"Authentic styling","lighting":"Natural lighting","cameraAngle":"Eye level","composition":"Center composition","technicalSettings":"Auto settings"},"prompt":"Image-based generation for reddit","subreddit":null,"allowsPromotion":true,"generationType":"ai","createdAt":"2025-10-05T03:16:17.818Z"},{"id":97,"userId":5,"platform":"reddit","style":"playful","theme":"image_based","titles":["Captivating Visual That Tells Your Story","Captivating Visual That Tells Your Story (2)","Captivating Visual That Tells Your Story (3)"],"content":"Captivating visual that tells your story","photoInstructions":{"mood":"Confident and natural","styling":"Auth… (truncated)
+2025-10-04 22:18:54.90
+8605352c
+User
+warn: CSRF token validation failed {"hasSession":true,"ip":"34.63.214.71","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-05T03:18:54.909Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+2025-10-04 22:18:58.40
+8605352c
+User
+warn: CSRF token validation failed {"hasSession":true,"ip":"34.42.86.89","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-05T03:18:58.404Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+2025-10-04 22:19:06.00
+8605352c
+User
+Starting fact extraction for image: data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxMTEhUSEhMVFRUVFRcVGBUVFRUYGBcXFhcWGBcVF...
+2025-10-04 22:19:06.00
+8605352c
+User
+Processing data URL with mime type: image/jpeg, data length: 9976
+2025-10-04 22:19:06.00
+8605352c
+User
+Base64 starts with: /9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxMTEhUSEhMVFR...
+2025-10-04 22:19:06.00
+8605352c
+User
+Sending to Gemini for fact extraction...
+2025-10-04 22:19:06.03
+8605352c
+User
+Gemini vision model generateContent failed: ApiError: {"error":{"code":400,"message":"* GenerateContentRequest.model: unexpected model name format\n","status":"INVALID_ARGUMENT"}}
+2025-10-04 22:19:06.03
+8605352c
+User
+at throwErrorIfNotOK (file:///home/runner/workspace/node_modules/@google/genai/dist/node/index.mjs:14934:30)
+2025-10-04 22:19:06.03
+8605352c
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-10-04 22:19:06.03
+8605352c
+User
+at async file:///home/runner/workspace/node_modules/@google/genai/dist/node/index.mjs:14710:13
+2025-10-04 22:19:06.03
+8605352c
+User
+at async Models.generateContent (file:///home/runner/workspace/node_modules/@google/genai/dist/node/index.mjs:15978:24)
+2025-10-04 22:19:06.03
+8605352c
+User
+at async Object.generateContent (file:///home/runner/workspace/dist/server/lib/gemini-client.js:150:26)
+2025-10-04 22:19:06.03
+8605352c
+User
+at async extractFacts (file:///home/runner/workspace/dist/server/caption/geminiPipeline.js:804:25)
+2025-10-04 22:19:06.03
+8605352c
+User
+at async pipeline (file:///home/runner/workspace/dist/server/caption/geminiPipeline.js:1233:23)
+2025-10-04 22:19:06.03
+8605352c
+User
+at async file:///home/runner/workspace/dist/server/routes/caption.js:87:24 {
+2025-10-04 22:19:06.03
+8605352c
+User
+status: 400
+2025-10-04 22:19:06.03
+8605352c
+User
+}
+2025-10-04 22:19:06.03
+8605352c
+User
+Error in extractFacts: ApiError: {"error":{"code":400,"message":"* GenerateContentRequest.model: unexpected model name format\n","status":"INVALID_ARGUMENT"}}
+2025-10-04 22:19:06.03
+8605352c
+User
+at throwErrorIfNotOK (file:///home/runner/workspace/node_modules/@google/genai/dist/node/index.mjs:14934:30)
+2025-10-04 22:19:06.03
+8605352c
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-10-04 22:19:06.03
+8605352c
+User
+at async file:///home/runner/workspace/node_modules/@google/genai/dist/node/index.mjs:14710:13
+2025-10-04 22:19:06.03
+8605352c
+User
+at async Models.generateContent (file:///home/runner/workspace/node_modules/@google/genai/dist/node/index.mjs:15978:24)
+2025-10-04 22:19:06.03
+8605352c
+User
+at async Object.generateContent (file:///home/runner/workspace/dist/server/lib/gemini-client.js:150:26)
+2025-10-04 22:19:06.03
+8605352c
+User
+at async extractFacts (file:///home/runner/workspace/dist/server/caption/geminiPipeline.js:804:25)
+2025-10-04 22:19:06.03
+8605352c
+User
+at async pipeline (file:///home/runner/workspace/dist/server/caption/geminiPipeline.js:1233:23)
+2025-10-04 22:19:06.03
+8605352c
+User
+at async file:///home/runner/workspace/dist/server/routes/caption.js:87:24 {
+2025-10-04 22:19:06.03
+8605352c
+User
+status: 400
+2025-10-04 22:19:06.03
+8605352c
+User
+}
+2025-10-04 22:19:06.04
+8605352c
+User
+Gemini pipeline failed, using OpenAI fallback: Error: Failed to extract facts: {"error":{"code":400,"message":"* GenerateContentRequest.model: unexpected model name format\n","status":"INVALID_ARGUMENT"}}
+2025-10-04 22:19:06.04
+8605352c
+User
+at extractFacts (file:///home/runner/workspace/dist/server/caption/geminiPipeline.js:850:15)
+2025-10-04 22:19:06.04
+8605352c
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-10-04 22:19:06.04
+8605352c
+User
+at async pipeline (file:///home/runner/workspace/dist/server/caption/geminiPipeline.js:1233:23)
+2025-10-04 22:19:06.04
+8605352c
+User
+at async file:///home/runner/workspace/dist/server/routes/caption.js:87:24
+2025-10-04 22:19:06.04
+8605352c
+User
+OpenAI fallback: Analyzing image for accurate captions
+2025-10-04 22:19:06.24
+8605352c
+User
+Error calling OpenAI API: BadRequestError: 400 Invalid base64 image_url.
+2025-10-04 22:19:06.24
+8605352c
+User
+at APIError.generate (file:///home/runner/workspace/node_modules/openai/core/error.mjs:41:20)
+2025-10-04 22:19:06.24
+8605352c
+User
+at OpenAI.makeStatusError (file:///home/runner/workspace/node_modules/openai/client.mjs:160:32)
+2025-10-04 22:19:06.24
+8605352c
+User
+at OpenAI.makeRequest (file:///home/runner/workspace/node_modules/openai/client.mjs:328:30)
+2025-10-04 22:19:06.24
+8605352c
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-10-04 22:19:06.24
+8605352c
+User
+at async file:///home/runner/workspace/node_modules/@sentry/core/build/esm/utils/openai/index.js:251:28
+2025-10-04 22:19:06.24
+8605352c
+User
+at async openAICaptionFallback (file:///home/runner/workspace/dist/server/caption/openaiFallback.js:209:26)
+2025-10-04 22:19:06.24
+8605352c
+User
+at async resolveWithOpenAIFallback (file:///home/runner/workspace/dist/server/caption/geminiPipeline.js:1182:24)
+2025-10-04 22:19:06.24
+8605352c
+User
+at async file:///home/runner/workspace/dist/server/routes/caption.js:87:24 {
+2025-10-04 22:19:06.24
+8605352c
+User
+status: 400,
+2025-10-04 22:19:06.24
+8605352c
+User
+headers: Headers {
+2025-10-04 22:19:06.24
+8605352c
+User
+date: 'Sun, 05 Oct 2025 03:19:06 GMT',
+2025-10-04 22:19:06.24
+8605352c
+User
+'content-type': 'application/json',
+2025-10-04 22:19:06.24
+8605352c
+User
+'content-length': '149',
+2025-10-04 22:19:06.24
+8605352c
+User
+connection: 'keep-alive',
+2025-10-04 22:19:06.24
+8605352c
+User
+'access-control-expose-headers': 'X-Request-ID',
+2025-10-04 22:19:06.24
+8605352c
+User
+'openai-organization': 'beardeals',
+2025-10-04 22:19:06.24
+8605352c
+User
+'openai-processing-ms': '24',
+2025-10-04 22:19:06.24
+8605352c
+User
+'openai-project': 'proj_8IxHNdgZo1WlE4nB8dAd6vXD',
+2025-10-04 22:19:06.24
+8605352c
+User
+'openai-version': '2020-10-01',
+2025-10-04 22:19:06.24
+8605352c
+User
+'x-ratelimit-limit-input-images': '50000',
+2025-10-04 22:19:06.24
+8605352c
+User
+'x-ratelimit-limit-requests': '500',
+2025-10-04 22:19:06.24
+8605352c
+User
+'x-ratelimit-limit-tokens': '30000',
+2025-10-04 22:19:06.24
+8605352c
+User
+'x-ratelimit-remaining-input-images': '49999',
+2025-10-04 22:19:06.24
+8605352c
+User
+'x-ratelimit-remaining-requests': '499',
+2025-10-04 22:19:06.24
+8605352c
+User
+'x-ratelimit-remaining-tokens': '28779',
+2025-10-04 22:19:06.24
+8605352c
+User
+'x-ratelimit-reset-input-images': '1ms',
+2025-10-04 22:19:06.24
+8605352c
+User
+'x-ratelimit-reset-requests': '120ms',

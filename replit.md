@@ -38,6 +38,7 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 - **Server Framework**: Express.js with TypeScript on Node.js.
 - **API Design**: RESTful API.
 - **Data Storage**: PostgreSQL.
+- **AI Models**: Google Gemini 2.0 Flash (experimental) as primary with OpenAI GPT-4o fallback. Model: `gemini-2.0-flash-exp` via v1beta API.
 - **Content Generation**: Advanced template-based content generator with enhanced features:
   - Timing-based optimization (morning, evening, late) with sessionStorage persistence
   - Copy counter with feedback tracking
