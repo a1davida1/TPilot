@@ -311,7 +311,6 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   const shouldStartQueue = startQueueOption && queuePrerequisitesPresent;
 
   try {
-    app.use(`${API_PREFIX}/auth`, authLimiter);
 
     if (shouldStartQueue) {
       await startQueue();
