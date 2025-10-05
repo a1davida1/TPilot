@@ -2,6 +2,7 @@ import { eq, or } from 'drizzle-orm';
 import { db } from '../db.js';
 import { users } from '@shared/schema';
 import { logger } from './logger.js';
+import { ensureAdminAccount } from '../lib/admin-auth.js';
 
 /**
  * Production database fixes that run on startup
@@ -11,10 +12,18 @@ export async function applyProductionFixes(): Promise<void> {
   try {
     logger.info('🔧 Applying production database fixes...');
 
-    // Fix 1: Ensure a1davida1 is Pro tier with verified email
+    // Fix 1: Ensure admin account exists (uses ADMIN_USERNAME and ADMIN_PASSWORD env vars)
+    const adminResult = await ensureAdminAccount();
+    if (adminResult.created) {
+      logger.info(`✅ Created admin account: ${adminResult.email}`);
+    } else {
+      logger.info(`✅ Admin account verified: ${adminResult.email}`);
+    }
+
+    // Fix 2: Ensure a1davida1 is Pro tier with verified email
     await ensureUserTier('a1davida1', 'pro');
     
-    // Fix 2: Ensure a1davida1 email is verified
+    // Fix 3: Ensure a1davida1 email is verified
     await ensureEmailVerified('a1davida1');
 
     logger.info('✅ Production database fixes completed');
