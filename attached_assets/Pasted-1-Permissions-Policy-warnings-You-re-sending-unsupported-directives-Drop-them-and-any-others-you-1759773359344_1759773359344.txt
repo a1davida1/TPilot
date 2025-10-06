@@ -1,0 +1,108 @@
+1) Permissions-Policy warnings
+
+You’re sending unsupported directives. Drop them (and any others your browser doesn’t know).
+
+Do:
+
+Permissions-Policy: geolocation=(), camera=(), microphone=(), accelerometer=(), autoplay=(), gyroscope=(), magnetometer=(), midi=(), usb=(), fullscreen=(self)
+
+
+Don’t include: ambient-light-sensor, battery, document-domain (often unrecognized).
+
+If you see “payment is not allowed…” and you don’t use Payment Request, either ignore it or remove payment=() from the header. If you do use it, allow it: payment=(self) and feature-detect in code.
+
+2) document.write() violations
+
+Those content.js lines are almost certainly a browser extension injecting scripts. You can’t fix an extension. If your own code uses document.write, replace it with dynamic script injection:
+
+const s = document.createElement('script');
+s.src = 'https://example.com/sdk.js';
+s.async = true; s.defer = true;
+document.head.appendChild(s);
+
+3) GET /api/reddit/communities 500 → UI crash (checkedAt of undefined)
+
+Your API fails, then the UI tries to read checkedAt from missing data. Fix both:
+
+Frontend (React Query + guards):
+
+const { data, isLoading, isError } = useQuery({
+  queryKey: ['communities'],
+  queryFn: fetchCommunities,
+  retry: 1,
+});
+
+if (isLoading) return <Spinner />;
+if (isError)   return <ErrorState message="Couldn’t load communities." />;
+
+const items = data?.items ?? [];
+return items.map(c => (
+  <Row
+    key={c.id}
+    name={c.name}
+    checkedAt={c?.checkedAt ? new Date(c.checkedAt) : null}
+  />
+));
+
+
+Safer rendering:
+
+function Row({ name, checkedAt }: { name: string; checkedAt: Date|null }) {
+  return (
+    <div>
+      <span>{name}</span>
+      <span>{checkedAt ? checkedAt.toLocaleString() : '—'}</span>
+    </div>
+  );
+}
+
+
+Backend (return predictable shape + proper errors):
+
+// Example Next.js route /api/reddit/communities
+export async function GET() {
+  try {
+    const items = await db.community.findMany(); // or your fetch
+    return Response.json({
+      items: items.map(i => ({ ...i, checkedAt: i.checkedAt ?? null })),
+    });
+  } catch (err) {
+    console.error('communities error', err);
+    return new Response(JSON.stringify({ error: 'COMMUNITIES_FETCH_FAILED' }), {
+      status: 500,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+}
+
+
+Quick 500 triage:
+
+Reproduce: curl -i https://thottopilot.com/api/reddit/communities
+
+Check server logs for stack trace/env (missing token? bad DB?)
+
+Validate CORS/auth (should be same-origin here)
+
+Ensure the route is deployed and not behind auth in prod
+
+4) Optional: schema-validate the response
+
+Catch bad payloads before they hit the UI.
+
+import { z } from 'zod';
+const Community = z.object({
+  id: z.string(),
+  name: z.string(),
+  checkedAt: z.string().datetime().nullable().optional(),
+});
+const Communities = z.object({ items: z.array(Community) });
+
+const fetchCommunities = async () => {
+  const res = await fetch('/api/reddit/communities');
+  if (!res.ok) throw new Error('Network error');
+  return Communities.parse(await res.json());
+};
+
+
+Apply the header cleanup, add the UI guards, and fix/normalize the API response—those console errors and the crash will be gone.
