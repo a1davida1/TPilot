@@ -109,27 +109,32 @@ export async function getEligibleCommunitiesForUser(criteria: CommunityEligibili
  */
 export function normalizeRules(rawRules: unknown, promotionAllowed?: string, category?: string): RedditCommunityRuleSet {
   try {
-    // Handle null or undefined
+    // Handle null or undefined - infer policy from flags if available
     if (!rawRules) {
-      return createDefaultRules();
+      const defaults = createDefaultRules();
+      if (promotionAllowed || category) {
+        const inferredPolicy = inferSellingPolicy(promotionAllowed || 'no', category || 'general');
+        if (defaults.content) {
+          defaults.content.sellingPolicy = inferredPolicy;
+        }
+      }
+      return defaults;
     }
     
     // Handle legacy array-based rules (backward compatibility)
     if (Array.isArray(rawRules)) {
-      const defaults = createDefaultRules() as RedditCommunityRuleSet;
-      const defaultContent = defaults.content;
+      const defaults = createDefaultRules();
+      if (!defaults || !defaults.content) {
+        console.error('Failed to create default rules');
+        return createDefaultRules();
+      }
+      
       return {
         ...defaults,
         content: {
-          titleGuidelines: defaultContent.titleGuidelines,
+          ...defaults.content,
           contentGuidelines: rawRules.filter(rule => typeof rule === 'string'),
-          linkRestrictions: defaultContent.linkRestrictions,
-          bannedContent: defaultContent.bannedContent,
-          formattingRequirements: defaultContent.formattingRequirements,
           sellingPolicy: inferSellingPolicy(promotionAllowed || 'no', category || 'general'),
-          watermarksAllowed: defaultContent.watermarksAllowed,
-          promotionalLinks: defaultContent.promotionalLinks,
-          nsfwRequired: defaultContent.nsfwRequired
         }
       };
     }
@@ -140,25 +145,23 @@ export function normalizeRules(rawRules: unknown, promotionAllowed?: string, cat
       try {
         const parsed = redditCommunityRuleSetSchema.parse(rawRules);
         if (parsed) {
-          // If sellingPolicy is undefined/null, try to infer from promotion flags
-          if (!parsed.content?.sellingPolicy && (promotionAllowed || category)) {
+          // If sellingPolicy is not explicitly set, try to infer from promotion flags
+          // Only infer if it's undefined or if there's no content object
+          const shouldInferPolicy = !parsed.content || 
+                                   parsed.content.sellingPolicy === undefined;
+          
+          if (shouldInferPolicy && (promotionAllowed || category)) {
             const inferredPolicy = inferSellingPolicy(promotionAllowed || 'no', category || 'general');
-            if (parsed.content) {
+            if (!parsed.content) {
+              const defaults = createDefaultRules();
+              if (defaults?.content) {
+                parsed.content = {
+                  ...defaults.content,
+                  sellingPolicy: inferredPolicy,
+                };
+              }
+            } else if (parsed.content.sellingPolicy === undefined) {
               parsed.content.sellingPolicy = inferredPolicy;
-            } else {
-              const defaults = createDefaultRules() as RedditCommunityRuleSet;
-              const defaultContent = defaults.content;
-              parsed.content = {
-                titleGuidelines: defaultContent.titleGuidelines,
-                contentGuidelines: defaultContent.contentGuidelines,
-                linkRestrictions: defaultContent.linkRestrictions,
-                bannedContent: defaultContent.bannedContent,
-                formattingRequirements: defaultContent.formattingRequirements,
-                sellingPolicy: inferredPolicy,
-                watermarksAllowed: defaultContent.watermarksAllowed,
-                promotionalLinks: defaultContent.promotionalLinks,
-                nsfwRequired: defaultContent.nsfwRequired
-              };
             }
           }
           return parsed;

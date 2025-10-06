@@ -55,9 +55,10 @@ describe('Reddit Communities Rules Unit Tests', () => {
       regularSeed.forEach((community: TestCommunity) => {
         expect(community).toHaveProperty('rules');
         expect(typeof community.rules).toBe('object');
-        expect(community.rules).toHaveProperty('sellingAllowed');
-        expect(community.rules).toHaveProperty('watermarksAllowed');
+        // Check nested structure
         if (community.rules?.content) {
+          expect(community.rules.content).toHaveProperty('sellingPolicy');
+          expect(community.rules.content).toHaveProperty('watermarksAllowed');
           expect(community.rules.content).toHaveProperty('titleGuidelines');
           expect(community.rules.content).toHaveProperty('contentGuidelines');
           expect(Array.isArray(community.rules.content.titleGuidelines)).toBe(true);
@@ -69,9 +70,10 @@ describe('Reddit Communities Rules Unit Tests', () => {
       fullSeed.forEach((community: TestCommunity) => {
         expect(community).toHaveProperty('rules');
         expect(typeof community.rules).toBe('object');
-        expect(community.rules).toHaveProperty('sellingAllowed');
-        expect(community.rules).toHaveProperty('watermarksAllowed');
+        // Check nested structure
         if (community.rules?.content) {
+          expect(community.rules.content).toHaveProperty('sellingPolicy');
+          expect(community.rules.content).toHaveProperty('watermarksAllowed');
           expect(community.rules.content).toHaveProperty('titleGuidelines');
           expect(community.rules.content).toHaveProperty('contentGuidelines');
           expect(Array.isArray(community.rules.content.titleGuidelines)).toBe(true);
@@ -79,24 +81,24 @@ describe('Reddit Communities Rules Unit Tests', () => {
         }
       });
       
-      // Test specific communities from different seeds
+      // Test specific communities from different seeds with nested structure
       const gonewild = fullSeed.find((c: TestCommunity) => c.id === 'gonewild');
       expect(gonewild).toBeDefined();
-      expect(gonewild.rules.sellingAllowed).toBe('not_allowed');
-      expect(gonewild.rules.watermarksAllowed).toBe(false);
-      expect(gonewild.rules.verificationRequired).toBe(true);
+      expect(gonewild.rules?.content?.sellingPolicy).toBe('not_allowed');
+      expect(gonewild.rules?.content?.watermarksAllowed).toBe(false);
+      expect(gonewild.rules?.eligibility?.verificationRequired).toBe(true);
       
       const onlyfans = fullSeed.find((c: TestCommunity) => c.id === 'onlyfans');
       expect(onlyfans).toBeDefined();
-      expect(onlyfans.rules.sellingAllowed).toBe('allowed');
-      expect(onlyfans.rules.watermarksAllowed).toBe(true);
+      expect(onlyfans.rules?.content?.sellingPolicy).toBe('allowed');
+      expect(onlyfans.rules?.content?.watermarksAllowed).toBe(true);
       
       const fitness = regularSeed.find((c: TestCommunity) => c.id === 'fitness');
       expect(fitness).toBeDefined();
-      expect(fitness.rules.minKarma).toBe(100);
-      expect(fitness.rules.minAccountAge).toBe(30);
-      expect(fitness.rules.sellingAllowed).toBe('not_allowed');
-      expect(fitness.rules.watermarksAllowed).toBe(false);
+      expect(fitness.rules?.eligibility?.minKarma).toBe(100);
+      expect(fitness.rules?.eligibility?.minAccountAgeDays).toBe(30);
+      expect(fitness.rules?.content?.sellingPolicy).toBe('not_allowed');
+      expect(fitness.rules?.content?.watermarksAllowed).toBe(false);
     });
 
   });
@@ -107,20 +109,20 @@ describe('Reddit Communities Rules Unit Tests', () => {
       const legacyRules = ['Verification required', 'No selling', 'OC only'];
       const result = normalizeRules(legacyRules, 'no', 'gonewild');
       
-      expect(result.contentRules).toEqual(legacyRules);
-      expect(result.sellingAllowed).toBe('not_allowed'); // Inferred from promotion='no'
-      expect(result.titleRules).toEqual([]);
-      expect(result.verificationRequired).toBe(false); // Default value
+      expect(result.content?.contentGuidelines).toEqual(legacyRules);
+      expect(result.content?.sellingPolicy).toBe('not_allowed'); // Inferred from promotion='no'
+      expect(result.content?.titleGuidelines).toEqual([]);
+      expect(result.eligibility?.verificationRequired).toBe(false); // Default value
       
       // Test empty legacy rules
       const emptyResult = normalizeRules([], 'yes', 'selling');
-      expect(emptyResult.contentRules).toEqual([]);
-      expect(emptyResult.sellingAllowed).toBe('allowed'); // Inferred from promotion='yes'
+      expect(emptyResult.content?.contentGuidelines).toEqual([]);
+      expect(emptyResult.content?.sellingPolicy).toBe('allowed'); // Inferred from promotion='yes'
       
-      // Test null rules
+      // Test null rules - should infer from promotion flag
       const nullResult = normalizeRules(null, 'limited', 'general');
-      expect(nullResult.sellingAllowed).toBe('unknown'); // Default value
-      expect(nullResult.contentRules).toEqual([]);
+      expect(nullResult.content?.sellingPolicy).toBe('limited'); // Inferred from promotion='limited'
+      expect(nullResult.content?.contentGuidelines).toEqual([]);
     });
 
     it('should properly infer selling policy from promotion flags and category', async () => {
@@ -133,9 +135,9 @@ describe('Reddit Communities Rules Unit Tests', () => {
       expect(inferSellingPolicy('unknown', 'gonewild')).toBe('unknown');
       
       // Test with normalizeRules to verify integration
-      const rules = { sellingAllowed: 'unknown' };
-      expect(normalizeRules(rules, 'yes', 'general').sellingAllowed).toBe('unknown'); // Rules already specify policy
-      expect(normalizeRules({}, 'yes', 'general').sellingAllowed).toBe('allowed'); // Empty rules, infer from flags
+      const rules = { content: { sellingPolicy: 'unknown' } };
+      expect(normalizeRules(rules, 'yes', 'general').content?.sellingPolicy).toBe('unknown'); // Rules already specify policy
+      expect(normalizeRules({}, 'yes', 'general').content?.sellingPolicy).toBe('allowed'); // Empty rules, infer from flags
     });
 
     it('should derive insights warnings from structured rules', async () => {
@@ -151,17 +153,29 @@ describe('Reddit Communities Rules Unit Tests', () => {
         competitionLevel: 'medium',
         bestPostingTimes: ['morning', 'evening'],
         rules: {
-          minKarma: 500,
-          minAccountAge: 30,
-          watermarksAllowed: false,
-          sellingAllowed: 'limited',
-          titleRules: ['No clickbait', 'Include category'],
-          contentRules: ['High quality only', 'No spam'],
-          verificationRequired: true,
-          requiresApproval: true,
-          nsfwRequired: false,
-          maxPostsPerDay: 1,
-          cooldownHours: 48
+          eligibility: {
+            minKarma: 500,
+            minAccountAgeDays: 30,
+            verificationRequired: true,
+            requiresApproval: true,
+          },
+          content: {
+            watermarksAllowed: false,
+            sellingPolicy: 'limited',
+            titleGuidelines: ['No clickbait', 'Include category'],
+            contentGuidelines: ['High quality only', 'No spam'],
+            nsfwRequired: false,
+            linkRestrictions: [],
+            bannedContent: [],
+            formattingRequirements: [],
+            promotionalLinks: null,
+            requiresOriginalContent: false,
+          },
+          posting: {
+            maxPostsPerDay: 1,
+            cooldownHours: 48,
+          },
+          notes: null,
         }
       };
 
@@ -170,15 +184,15 @@ describe('Reddit Communities Rules Unit Tests', () => {
       const warnings: string[] = [];
       
       // Replicate the warning logic from getCommunityInsights
-      if (rules.verificationRequired) warnings.push('Verification required - complete r/GetVerified');
-      if (rules.sellingAllowed === 'no') warnings.push('No promotion/selling allowed - content only');
-      if (rules.sellingAllowed === 'limited') warnings.push('Limited promotion allowed - check specific rules');
-      if (rules.watermarksAllowed === false) warnings.push('Watermarks not allowed - use clean images');
-      if (rules.minKarma && rules.minKarma > 50) warnings.push(`Requires ${rules.minKarma}+ karma`);
-      if (rules.minAccountAge && rules.minAccountAge > 7) warnings.push(`Account must be ${rules.minAccountAge}+ days old`);
-      if (rules.maxPostsPerDay && rules.maxPostsPerDay <= 1) warnings.push(`Limited to ${rules.maxPostsPerDay} post${rules.maxPostsPerDay === 1 ? '' : 's'} per day`);
-      if (rules.cooldownHours && rules.cooldownHours >= 24) warnings.push(`${rules.cooldownHours}h cooldown between posts`);
-      if (rules.requiresApproval) warnings.push('Posts require mod approval - expect delays');
+      if (rules.eligibility?.verificationRequired) warnings.push('Verification required - complete r/GetVerified');
+      if (rules.content?.sellingPolicy === 'no') warnings.push('No promotion/selling allowed - content only');
+      if (rules.content?.sellingPolicy === 'limited') warnings.push('Limited promotion allowed - check specific rules');
+      if (rules.content?.watermarksAllowed === false) warnings.push('Watermarks not allowed - use clean images');
+      if (rules.eligibility?.minKarma && rules.eligibility.minKarma > 50) warnings.push(`Requires ${rules.eligibility.minKarma}+ karma`);
+      if (rules.eligibility?.minAccountAgeDays && rules.eligibility.minAccountAgeDays > 7) warnings.push(`Account must be ${rules.eligibility.minAccountAgeDays}+ days old`);
+      if (rules.posting?.maxPostsPerDay && rules.posting.maxPostsPerDay <= 1) warnings.push(`Limited to ${rules.posting.maxPostsPerDay} post${rules.posting.maxPostsPerDay === 1 ? '' : 's'} per day`);
+      if (rules.posting?.cooldownHours && rules.posting.cooldownHours >= 24) warnings.push(`${rules.posting.cooldownHours}h cooldown between posts`);
+      if (rules.eligibility?.requiresApproval) warnings.push('Posts require mod approval - expect delays');
       
       // Verify warnings are generated correctly
       expect(warnings).toContain('Verification required - complete r/GetVerified');
@@ -191,30 +205,42 @@ describe('Reddit Communities Rules Unit Tests', () => {
       expect(warnings).toContain('Posts require mod approval - expect delays');
       
       // Verify structured rules are properly normalized
-      expect(rules.sellingAllowed).toBe('limited');
-      expect(rules.watermarksAllowed).toBe(false);
-      expect(rules.verificationRequired).toBe(true);
+      expect(rules.content?.sellingPolicy).toBe('limited');
+      expect(rules.content?.watermarksAllowed).toBe(false);
+      expect(rules.eligibility?.verificationRequired).toBe(true);
     });
   });
 
   describe('Schema validation', () => {
     it('should validate RedditCommunityRuleSet schema correctly', async () => {
       // Import schema components
-      const { redditCommunityRuleSetSchema, createDefaultRules } = await import('../../../shared/schema.ts');
+      const { redditCommunityRuleSetSchema } = await import('../../../shared/schema.ts');
       
-      // Test valid rule set
+      // Test valid rule set with new nested structure
       const validRules = {
-        minKarma: 100,
-        minAccountAge: 30,
-        watermarksAllowed: false,
-        sellingAllowed: 'not_allowed' as const,
-        titleRules: ['No clickbait'],
-        contentRules: ['High quality only'],
-        verificationRequired: true,
-        requiresApproval: false,
-        nsfwRequired: true,
-        maxPostsPerDay: 2,
-        cooldownHours: 24
+        eligibility: {
+          minKarma: 100,
+          minAccountAgeDays: 30,
+          verificationRequired: true,
+          requiresApproval: false,
+        },
+        content: {
+          watermarksAllowed: false,
+          sellingPolicy: 'not_allowed' as const,
+          titleGuidelines: ['No clickbait'],
+          contentGuidelines: ['High quality only'],
+          nsfwRequired: true,
+          linkRestrictions: [],
+          bannedContent: [],
+          formattingRequirements: [],
+          promotionalLinks: null,
+          requiresOriginalContent: false,
+        },
+        posting: {
+          maxPostsPerDay: 2,
+          cooldownHours: 24,
+        },
+        notes: null,
       };
       
       const result = redditCommunityRuleSetSchema.parse(validRules);
@@ -227,34 +253,64 @@ describe('Reddit Communities Rules Unit Tests', () => {
       const defaults = createDefaultRules();
       
       expect(defaults).toMatchObject({
-        minKarma: null,
-        minAccountAge: null,
-        watermarksAllowed: null,
-        sellingAllowed: 'unknown',
-        titleRules: [],
-        contentRules: [],
-        verificationRequired: false,
-        requiresApproval: false,
-        nsfwRequired: false,
-        maxPostsPerDay: null,
-        cooldownHours: null
+        eligibility: {
+          minKarma: null,
+          minAccountAgeDays: null,
+          verificationRequired: false,
+          requiresApproval: false,
+        },
+        content: {
+          watermarksAllowed: null,
+          sellingPolicy: undefined,
+          titleGuidelines: [],
+          contentGuidelines: [],
+          nsfwRequired: false,
+          linkRestrictions: [],
+          bannedContent: [],
+          formattingRequirements: [],
+          promotionalLinks: null,
+          requiresOriginalContent: false,
+        },
+        posting: {
+          maxPostsPerDay: null,
+          cooldownHours: null,
+        },
+        notes: null,
       });
     });
 
-    it('should validate sellingAllowed enum values', async () => {
+    it('should validate sellingPolicy enum values', async () => {
       const { redditCommunityRuleSetSchema } = await import('../../../shared/schema.ts');
       
       const validValues = ['allowed', 'limited', 'not_allowed', 'unknown'];
       
       for (const value of validValues) {
-        const rules = { content: { sellingPolicy: value } };
+        const rules = { 
+          content: { 
+            sellingPolicy: value,
+            titleGuidelines: [],
+            contentGuidelines: [],
+            linkRestrictions: [],
+            bannedContent: [],
+            formattingRequirements: [],
+          } 
+        };
         const result = redditCommunityRuleSetSchema.parse(rules);
         expect(result?.content?.sellingPolicy).toBe(value);
       }
       
       // Test invalid value
       expect(() => {
-        redditCommunityRuleSetSchema.parse({ content: { sellingPolicy: 'invalid' } });
+        redditCommunityRuleSetSchema.parse({ 
+          content: { 
+            sellingPolicy: 'invalid',
+            titleGuidelines: [],
+            contentGuidelines: [],
+            linkRestrictions: [],
+            bannedContent: [],
+            formattingRequirements: [],
+          } 
+        });
       }).toThrow();
     });
   });
