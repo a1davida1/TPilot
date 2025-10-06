@@ -24,6 +24,9 @@ import {
   type ExperimentAssignment
 } from './engagement-experiments.js';
 
+// Gate for one-time preset warning
+let __presetWarningShown = false;
+
 // Utility type for making properties mutable
 type Mutable<T> = {
   -readonly [P in keyof T]: T[P];
@@ -282,6 +285,12 @@ export function applyHumanization(content: string, toneStyle: ToneStyle, options
     return content;
   }
 
+  // Preserve trailing hashtags by splitting them out before humanization
+  const hashtagPattern = /(\s+#\S+(?:\s+#\S+)*)\s*$/;
+  const hashtagMatch = content.match(hashtagPattern);
+  const trailingHashtags = hashtagMatch ? hashtagMatch[1] : '';
+  const bodyContent = hashtagMatch ? content.slice(0, hashtagMatch.index) : content;
+
   const context: HumanizationContext = { random, toneStyle };
 
   const quirks: HumanizationQuirk[] = [
@@ -295,7 +304,7 @@ export function applyHumanization(content: string, toneStyle: ToneStyle, options
     quirks.push({ chance: 0.2, apply: injectImperfectionToken });
   }
 
-  let result = content;
+  let result = bodyContent;
   let applied = 0;
 
   for (const quirk of quirks) {
@@ -312,7 +321,8 @@ export function applyHumanization(content: string, toneStyle: ToneStyle, options
     }
   }
 
-  return result;
+  // Re-append trailing hashtags untouched
+  return result + trailingHashtags;
 }
 
 export interface ManualTypingOptions {
@@ -1997,7 +2007,10 @@ async function loadPresetVariations(): Promise<Record<string, PresetVariation[]>
     );
 
     if (Object.keys(overrides).length === 0) {
-      console.warn('Preset variations file is empty, using built-in presets');
+      if (!__presetWarningShown) {
+        console.warn('Preset variations file is empty, using built-in presets');
+        __presetWarningShown = true;
+      }
       return { ...BUILT_IN_PRESET_VARIATIONS };
     }
 
@@ -2249,7 +2262,7 @@ function generateMainContent(
     }
   }
 
-  if (params.selectedHashtags.length > 0) {
+  if (params.selectedHashtags && params.selectedHashtags.length > 0) {
     conversationalContent = `${conversationalContent} ${params.selectedHashtags.join(' ')}`;
   }
 
