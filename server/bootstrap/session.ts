@@ -73,6 +73,7 @@ export function createSessionMiddleware(): ReturnType<typeof session> {
   }
 
   const isProduction = process.env.NODE_ENV === 'production';
+  const isTest = process.env.NODE_ENV === 'test';
   const redisUrl = process.env.REDIS_URL;
   const usePgQueue = parseBoolean(process.env.USE_PG_QUEUE);
 
@@ -90,7 +91,15 @@ export function createSessionMiddleware(): ReturnType<typeof session> {
     },
   };
 
-  if (redisUrl) {
+  // Force in-memory store for tests to prevent DB connection leaks
+  if (isTest) {
+    const MemoryStore = createMemoryStore(session);
+    sessionOptions.store = new MemoryStore({
+      checkPeriod: parseInteger(process.env.SESSION_CHECK_PERIOD_MS, ONE_DAY_MS),
+      max: parseInteger(process.env.SESSION_MEMORY_MAX, 5_000),
+    });
+    logger.info('Using in-memory session store for tests');
+  } else if (redisUrl) {
     const redisClient = new Redis(redisUrl, {
       lazyConnect: false,
       maxRetriesPerRequest: null,
