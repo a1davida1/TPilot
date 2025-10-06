@@ -349,15 +349,21 @@ export function registerRedditRoutes(app: Express) {
         communities = communities.filter(c => c.category === category);
       }
 
+      // Ensure checkedAt is always present (null if undefined) to prevent UI crashes
+      const normalizedCommunities = communities.map(c => ({
+        ...c,
+        checkedAt: c.checkedAt ?? null
+      }));
+
       // Runtime validation using canonical shared schema to ensure type safety
       const { redditCommunityArrayZodSchema } = await import('@shared/schema');
 
-      const validatedCommunities = redditCommunityArrayZodSchema.parse(communities);
+      const validatedCommunities = redditCommunityArrayZodSchema.parse(normalizedCommunities);
       res.json(validatedCommunities);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       logger.error('Error fetching Reddit communities', { error: err.message, stack: err.stack });
-      res.status(500).json({ error: 'Failed to fetch Reddit communities' });
+      res.status(500).json({ error: 'Failed to fetch Reddit communities', items: [] });
     }
   });
 
