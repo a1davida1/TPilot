@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import { Assertion, util as chaiUtils } from 'chai';
-import { beforeEach, afterAll } from 'vitest';
+import { beforeEach, afterEach, afterAll, vi } from 'vitest';
 
 // Load .env.test file specifically for vitest tests
 dotenv.config({ path: '.env.test' });
@@ -72,6 +72,16 @@ Assertion.overwriteChainableMethod(
 // Clean up between tests
 beforeEach(() => {
   // Reset any global state here if needed
+});
+
+// Clean up after EACH test file to prevent handle accumulation
+afterEach(async () => {
+  try {
+    // Clear all timers
+    vi.clearAllTimers();
+  } catch (error) {
+    // Ignore if vi is not available
+  }
 });
 
 // Clean up all connections after all tests complete

@@ -37,12 +37,23 @@ export default defineConfig({
     ],
     setupFiles: ['./tests/vitest-setup.ts'],
     testTimeout: 10000,
-    // Detect open handles that prevent tests from exiting
+    hookTimeout: 30000, // Force cleanup hooks to timeout after 30s
+    teardownTimeout: 10000, // Force teardown to complete within 10s
+    // Run tests sequentially to prevent handle accumulation
     poolOptions: {
       threads: {
         singleThread: true,
+        minThreads: 1,
+        maxThreads: 1,
+      },
+      forks: {
+        singleFork: true,
       },
     },
+    // Isolate each test file in its own environment
+    isolate: true,
+    // Force test files to run in sequence
+    fileParallelism: false,
     coverage: {
       reporter: ['text', 'lcov'],
       thresholds: {
