@@ -112,7 +112,7 @@ export function normalizeRules(rawRules: unknown, promotionAllowed?: string, cat
     // Handle null or undefined - infer policy from flags if available
     if (!rawRules) {
       const defaults = createDefaultRules();
-      if (promotionAllowed || category) {
+      if (defaults && (promotionAllowed || category)) {
         const inferredPolicy = inferSellingPolicy(promotionAllowed || 'no', category || 'general');
         if (defaults.content) {
           defaults.content.sellingPolicy = inferredPolicy;
