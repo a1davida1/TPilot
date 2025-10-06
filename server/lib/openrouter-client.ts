@@ -1,4 +1,4 @@
-// OpenRouter client using OpenAI SDK for InternVL2.5-78B
+// OpenRouter client using OpenAI SDK for InternVL3-78B
 import OpenAI from "openai";
 import { FRONTEND_URL } from "../config.js";
 
