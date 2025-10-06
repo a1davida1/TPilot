@@ -256,18 +256,21 @@ export function OnboardingWalkthrough({ isOpen, onClose, onComplete }: Onboardin
 
           {/* Tutorial tooltip */}
           <div
-            className="fixed z-50"
+            className="fixed z-50 px-4 md:px-0"
             style={{
-              left: step.position === 'center' ? '50%' : tooltipPosition.x,
-              top: step.position === 'center' ? '50%' : tooltipPosition.y,
-              transform: step.position === 'center' ? 'translate(-50%, -50%)' : 
+              left: step.position === 'center' ? '50%' : 
+                window.innerWidth < 768 ? '50%' : tooltipPosition.x,
+              top: step.position === 'center' ? '50%' : 
+                window.innerWidth < 768 ? '50%' : tooltipPosition.y,
+              transform: step.position === 'center' || window.innerWidth < 768 ? 'translate(-50%, -50%)' : 
                 step.position === 'top' ? 'translate(-50%, -100%)' :
                 step.position === 'bottom' ? 'translate(-50%, 0%)' :
                 step.position === 'left' ? 'translate(-100%, -50%)' :
                 'translate(0%, -50%)',
+              maxWidth: window.innerWidth < 768 ? 'calc(100vw - 2rem)' : '20rem',
             }}
           >
-            <Card className="w-80 shadow-2xl border-purple-200">
+            <Card className="w-full md:w-80 shadow-2xl border-purple-200">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -309,35 +312,35 @@ export function OnboardingWalkthrough({ isOpen, onClose, onComplete }: Onboardin
                   </Button>
                 )}
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Button
                       variant="ghost"
                       onClick={previousStep}
                       disabled={currentStep === 0}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 text-sm"
                       data-testid="button-walkthrough-previous"
                     >
                       <ArrowLeft className="h-4 w-4" />
-                      Previous
+                      <span className="hidden sm:inline">Previous</span>
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={restartWalkthrough}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 text-sm"
                       data-testid="button-walkthrough-restart"
                     >
                       <Play className="h-4 w-4" />
-                      Restart
+                      <span className="hidden sm:inline">Restart</span>
                     </Button>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <Button
                       variant="ghost"
                       onClick={skipTutorial}
-                      className="text-gray-500"
+                      className="text-gray-500 dark:text-gray-400 text-sm flex-1 md:flex-none"
                       data-testid="button-walkthrough-skip"
                     >
                       Skip Tour
@@ -345,7 +348,7 @@ export function OnboardingWalkthrough({ isOpen, onClose, onComplete }: Onboardin
                     
                     <Button
                       onClick={nextStep}
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 flex items-center gap-2"
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 flex items-center gap-2 flex-1 md:flex-none"
                       data-testid="button-walkthrough-next"
                     >
                       {currentStep === tutorialSteps.length - 1 ? (
@@ -368,17 +371,17 @@ export function OnboardingWalkthrough({ isOpen, onClose, onComplete }: Onboardin
 
           {/* Floating progress indicator */}
           <div
-            className="fixed top-24 right-6 z-50"
+            className="fixed top-20 md:top-24 right-4 md:right-6 z-50"
           >
-            <Card className="p-3 bg-white/95 backdrop-blur-sm">
-              <div className="flex items-center gap-3">
-                <div className="text-sm font-medium">Tutorial Progress</div>
+            <Card className="p-2 md:p-3 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="text-xs md:text-sm font-medium text-foreground">Tutorial Progress</div>
                 <div className="flex gap-1">
                   {tutorialSteps.map((_, index) => (
                     <div
                       key={index}
                       className={`w-2 h-2 rounded-full transition-colors ${
-                        index <= currentStep ? 'bg-purple-600' : 'bg-gray-300'
+                        index <= currentStep ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'
                       }`}
                     />
                   ))}

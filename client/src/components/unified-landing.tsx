@@ -36,6 +36,36 @@ export function UnifiedLanding() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Handle OAuth error parameters
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error');
+    
+    if (error) {
+      const errorMessages: Record<string, string> = {
+        'reddit_failed': 'Reddit sign-in failed. Please try again or use another method.',
+        'google_failed': 'Google sign-in failed. Please try again or use another method.',
+        'facebook_failed': 'Facebook sign-in failed. Please try again or use another method.',
+        'reddit_auth_failed': 'Reddit authentication failed. Please try again.',
+        'google_auth_failed': 'Google authentication failed. Please try again.',
+        'facebook_auth_failed': 'Facebook authentication failed. Please try again.',
+      };
+      
+      toast({
+        title: "Sign-in Error",
+        description: errorMessages[error] || 'Authentication failed. Please try again.',
+        variant: "destructive",
+        duration: 6000,
+      });
+      
+      // Clean up the URL by removing the error parameter
+      if (window.history.replaceState) {
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, '', cleanUrl);
+      }
+    }
+  }, [toast]);
+
   const _handleTryFeatures = () => {
     toast({
       description: "Try our features without signing up!",

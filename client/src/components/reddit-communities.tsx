@@ -94,7 +94,7 @@ export function RedditCommunities() {
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const { hasFullAccess, isVerified, user, isLoading: authLoading } = useAuth();
 
-  // Fetch communities data
+  // Fetch communities data - Available to all users
   const {
     data: communities = [],
     isLoading: communitiesLoading,
@@ -110,7 +110,7 @@ export function RedditCommunities() {
       return response.json();
     },
     retry: false,
-    enabled: hasFullAccess,
+    enabled: true, // Changed from hasFullAccess to allow all users
   });
 
   const communityAccessState = getCommunityAccessState({

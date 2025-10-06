@@ -109,16 +109,22 @@ export default function Dashboard() {
 
     // Handle OAuth errors
     if (error) {
-      let errorMessage = "Authentication failed. Please try again.";
-      
-      // General OAuth error handling
-      if (error === 'oauth-not-implemented') {
-        errorMessage = "Social login is being set up. Please try again later.";
-      }
+      const errorMessages: Record<string, string> = {
+        'oauth-not-implemented': 'Social login is being set up. Please try again later.',
+        'reddit_access_denied': 'Reddit access was denied. Please try again.',
+        'reddit_missing_params': 'Reddit authentication is incomplete. Please try again.',
+        'invalid_state': 'Security validation failed. Please try again.',
+        'reddit_token_exchange_failed': 'Failed to connect to Reddit. Please try again.',
+        'reddit_profile_failed': 'Could not retrieve Reddit profile. Please try again.',
+        'reddit_connection_failed': 'Reddit connection failed. Please try again.',
+        'reddit_failed': 'Reddit sign-in failed. Please try again.',
+        'google_failed': 'Google sign-in failed. Please try again.',
+        'facebook_failed': 'Facebook sign-in failed. Please try again.',
+      };
       
       toast({
         title: "Connection Failed",
-        description: errorMessage,
+        description: errorMessages[error] || "Authentication failed. Please try again.",
         variant: "destructive",
       });
       // Clean URL
