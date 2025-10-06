@@ -11,7 +11,7 @@ if (!apiKey) {
 
 const site = process.env.OPENROUTER_SITE_URL || FRONTEND_URL || "https://thottopilot.com";
 const appName = process.env.OPENROUTER_APP_NAME || "ThottoPilot";
-const DEFAULT_MODEL = process.env.OPENROUTER_MODEL || "opengvlab/internvl2_5-78b";
+const DEFAULT_MODEL = process.env.OPENROUTER_MODEL || "opengvlab/internvl3-78b";
 
 console.log(`[OpenRouter] Default model: ${DEFAULT_MODEL}`);
 

@@ -39,7 +39,7 @@ describe('OpenRouter Client', () => {
     });
   });
 
-  it('uses default model opengvlab/internvl2_5-78b', async () => {
+  it('uses default model opengvlab/internvl3-78b', async () => {
     process.env.OPENROUTER_API_KEY = 'sk-or-test-key';
 
     mockOpenAI.chat.completions.create.mockResolvedValueOnce({
@@ -56,7 +56,7 @@ describe('OpenRouter Client', () => {
 
     expect(mockOpenAI.chat.completions.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        model: 'opengvlab/internvl2_5-78b'
+        model: 'opengvlab/internvl3-78b'
       })
     );
   });
