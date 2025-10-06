@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import { Assertion, util as chaiUtils } from 'chai';
-import { beforeEach } from 'vitest';
+import { beforeEach, afterAll } from 'vitest';
 
 // Load .env.test file specifically for vitest tests
 dotenv.config({ path: '.env.test' });
@@ -72,4 +72,18 @@ Assertion.overwriteChainableMethod(
 // Clean up between tests
 beforeEach(() => {
   // Reset any global state here if needed
+});
+
+// Clean up all connections after all tests complete
+afterAll(async () => {
+  try {
+    // Close database connections to prevent handle leaks
+    const { closeDatabaseConnections } = await import('../server/db.js');
+    await closeDatabaseConnections();
+    
+    // Give a moment for connections to fully close
+    await new Promise(resolve => setTimeout(resolve, 100));
+  } catch (error) {
+    console.error('Error during test cleanup:', error);
+  }
 });

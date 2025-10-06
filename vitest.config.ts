@@ -37,6 +37,12 @@ export default defineConfig({
     ],
     setupFiles: ['./tests/vitest-setup.ts'],
     testTimeout: 10000,
+    // Detect open handles that prevent tests from exiting
+    poolOptions: {
+      threads: {
+        singleThread: true,
+      },
+    },
     coverage: {
       reporter: ['text', 'lcov'],
       thresholds: {
