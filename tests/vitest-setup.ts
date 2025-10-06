@@ -78,8 +78,11 @@ beforeEach(() => {
 afterAll(async () => {
   try {
     // Close database connections to prevent handle leaks
-    const { closeDatabaseConnections } = await import('../server/db.js');
+    const { closeDatabaseConnections, logOpenHandles } = await import('./test-utils.js');
     await closeDatabaseConnections();
+    
+    // Log any remaining open handles for debugging
+    logOpenHandles();
     
     // Give a moment for connections to fully close
     await new Promise(resolve => setTimeout(resolve, 100));
