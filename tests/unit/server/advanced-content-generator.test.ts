@@ -145,7 +145,7 @@ describe('generateAdvancedContent humanization', () => {
     includePromotion: false,
     selectedHashtags: ['#glow', '#mood'],
     customPrompt: undefined,
-    platform: 'instagram',
+    platform: 'reddit', // Use reddit to get simple space-separated hashtags
     humanization: {
       maxQuirks: 3
     }
