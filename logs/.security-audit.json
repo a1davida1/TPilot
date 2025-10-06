@@ -6,16 +6,6 @@
     "auditLog": "/home/runner/workspace/logs/.security-audit.json",
     "files": [
         {
-            "date": 1757061847414,
-            "name": "/home/runner/workspace/logs/security-2025-09-05.log",
-            "hash": "5f9f542381d1f5fae137d71f84b3a6541c44f6c1b1d64935a6073713bd5cf9b8"
-        },
-        {
-            "date": 1757116931264,
-            "name": "/home/runner/workspace/logs/security-2025-09-06.log",
-            "hash": "4cc634fa5c9f227df287f71951c7ab4144c2f261bdc0bb6c94f8a5fc683eaf15"
-        },
-        {
             "date": 1757203569901,
             "name": "/home/runner/workspace/logs/security-2025-09-07.log",
             "hash": "8fe83938e9121e698c49b3ccfaa55f0fdd6dbeebedcc030914c53d3471c3fc07"
@@ -149,6 +139,11 @@
             "date": 1759622473601,
             "name": "/home/runner/workspace/logs/security-2025-10-05.log",
             "hash": "ed695ad33dd28f8f459c7b20884915a045b7968c2000f03d4ca13eac7d05c3c9"
+        },
+        {
+            "date": 1759710783901,
+            "name": "/home/runner/workspace/logs/security-2025-10-06.log",
+            "hash": "94e02a16a976761c1a630289cafbb0dfbc4d06e0e7be2f2bce3520d2a82fa574"
         }
     ],
     "hashType": "sha256"

@@ -1,0 +1,127 @@
+You are an assistant developer working in this repo (Node + Vitest). 
+TIMEBOX: Work for up to 45 minutes. Prioritize getting targeted tests green, then run full test suite. 
+Do not change tests except for obviously broken mocks/messages. Keep changes minimal, typed, and logged.
+
+GOAL
+Fix these failing areas:
+1) advanced-content-generator humanization should preserve appended hashtags.
+2) reddit-communities rules normalization should accept legacy shapes, infer selling policy, and never throw.
+
+ACCEPTANCE CRITERIA
+- tests/unit/server/advanced-content-generator.test.ts passes, specifically:
+  “generateAdvancedContent humanization › keeps appended hashtags intact after applying humanization”.
+- tests/unit/server/reddit-communities.rules.test.ts passes all (seed verification, normalization, schema).
+- No new failures introduced; full `npm test` (or `pnpm test`) exits 0.
+- Reduce repeated “Preset variations file is empty, using built-in presets” log spam to once per process.
+
+PATCH PLAN
+
+A) Preserve trailing hashtags during humanization
+File: server/advanced-content-generator.ts
+1. Add a helper to split trailing hashtag block from the main body:
+   function splitTrailingHashtags(input: string) {
+     const m = input.match(/(\n{1,}\s*(?:#\S+(?:\s+#\S+)*\s*(?:\n|$))+)\s*$/);
+     if (!m) return { body: input, tags: '' };
+     return { body: input.slice(0, m.index!), tags: m[1] };
+   }
+2. In applyHumanization (or wherever humanization happens), split first, humanize only the body, then append tags untouched:
+   export function applyHumanization(input: string, opts: { maxQuirks: number }) {
+     const { body, tags } = splitTrailingHashtags(input);
+     const humanizedBody = humanize(body, opts); // existing logic
+     return humanizedBody + tags;
+   }
+3. Gate the “Preset variations file is empty…” warning so it prints only once per process:
+   let __presetWarned = false;
+   function warnOnce(msg: string) { if (!__presetWarned) { __presetWarned = true; console.warn(msg); } }
+   // replace repeated console.warn calls with warnOnce(...)
+
+B) Normalize Reddit community rules robustly
+File: server/reddit-communities.ts
+1. Add safe defaults and widen input acceptance. Implement:
+   type SellingPolicy = 'yes'|'no'|'limited'|'subtle'|'strict'|'unknown';
+   interface RedditCommunityRuleSet {
+     guidelines: { titleGuidelines: string[]; bodyGuidelines: string[] };
+     sellingAllowed: SellingPolicy;
+     insightsWarnings?: string[];
+   }
+   const DEFAULT_RULES: RedditCommunityRuleSet = {
+     guidelines: { titleGuidelines: [], bodyGuidelines: [] },
+     sellingAllowed: 'unknown',
+     insightsWarnings: [],
+   };
+   const toArr = (v:any): string[] => Array.isArray(v) ? v.filter(Boolean).map(String) : v ? [String(v)] : [];
+   function inferSellingPolicy(promotionAllowed?: any, category?: any): SellingPolicy {
+     const v = typeof promotionAllowed === 'string' ? promotionAllowed.toLowerCase() : promotionAllowed;
+     if (v === true || v === 'yes') return 'yes';
+     if (v === false || v === 'no') return 'no';
+     if (v === 'limited' || v === 'subtle' || v === 'strict') return v as SellingPolicy;
+     if (typeof category === 'string' && /promo|market|sell|shop/i.test(category)) return 'limited';
+     return 'unknown';
+   }
+   function deriveInsightsWarnings(rules: RedditCommunityRuleSet): string[] {
+     const all = [...rules.guidelines.titleGuidelines, ...rules.guidelines.bodyGuidelines].join(' ').toLowerCase();
+     const warns:string[] = [];
+     if (/no\s*promotion|self[- ]promo\s*not\s*allowed/.test(all) || rules.sellingAllowed === 'no') warns.push('no-promo');
+     if (/no\s*link\s*shortener/.test(all)) warns.push('no-shorteners');
+     if (/image[- ]only|no\s*text\s*posts/.test(all)) warns.push('image-only');
+     return warns;
+   }
+   export function normalizeRules(input:any): RedditCommunityRuleSet {
+     try {
+       if (Array.isArray(input)) {
+         const titleGuidelines:string[] = [];
+         const bodyGuidelines:string[] = [];
+         let promotionAllowed:any; let category:any;
+         for (const item of input) {
+           if (typeof item === 'string') bodyGuidelines.push(item);
+           else if (item && typeof item === 'object') {
+             if (item.title) titleGuidelines.push(String(item.title));
+             if (item.body) bodyGuidelines.push(String(item.body));
+             if (item.promotionAllowed !== undefined) promotionAllowed = item.promotionAllowed;
+             if (item.category !== undefined) category = item.category;
+           }
+         }
+         const rules: RedditCommunityRuleSet = {
+           guidelines: { titleGuidelines, bodyGuidelines },
+           sellingAllowed: inferSellingPolicy(promotionAllowed, category),
+         };
+         rules.insightsWarnings = deriveInsightsWarnings(rules);
+         return rules;
+       }
+       const obj = input ?? {};
+       const g = obj.guidelines ?? {};
+       const rules: RedditCommunityRuleSet = {
+         guidelines: {
+           titleGuidelines: toArr(g.titleGuidelines),
+           bodyGuidelines: toArr(g.bodyGuidelines),
+         },
+         sellingAllowed: inferSellingPolicy(obj.promotionAllowed ?? obj.sellingAllowed, obj.category),
+       };
+       rules.insightsWarnings = deriveInsightsWarnings(rules);
+       return rules;
+     } catch {
+       return { ...DEFAULT_RULES };
+     }
+   }
+2. If a Zod/TypeBox schema is used, ensure validation happens AFTER normalization, or update the schema to accept both legacy arrays and structured objects; then always return the normalized shape.
+
+COMMANDS TO RUN (adjust for npm/pnpm/yarn as present):
+- Install if needed: `pnpm i`
+- Run focused tests while iterating:
+  `pnpm vitest run tests/unit/server/advanced-content-generator.test.ts`
+  `pnpm vitest run tests/unit/server/reddit-communities.rules.test.ts`
+- Then full suite: `pnpm test`
+
+QUALITY
+- Keep TypeScript strict, no any leaks in public types.
+- Prettier/ESLint pass.
+- No breaking API changes outside these functions.
+
+DELIVERABLES
+- Single commit with message:
+  feat(stability): preserve trailing hashtags during humanization; robust reddit rules normalization + one-time preset warning
+- PR description:
+  - Preserves appended hashtag blocks in humanized captions (fixes failing humanization test).
+  - Adds fault-tolerant `normalizeRules` supporting legacy array shapes and structured objects; infers `sellingAllowed`; derives `insightsWarnings`; prevents undefined property reads.
+  - Gates repetitive “Preset variations…” warning to once per process.
+  - All relevant tests pass locally.
