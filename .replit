@@ -69,4 +69,4 @@ task = "shell.exec"
 args = "npm start"
 
 [agent]
-integrations = ["javascript_database:1.0.0", "javascript_stripe:1.0.0"]
+integrations = ["javascript_database:1.0.0", "javascript_stripe:1.0.0", "javascript_xai:1.0.0"]
