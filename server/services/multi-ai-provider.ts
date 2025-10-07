@@ -4,9 +4,10 @@ import { GoogleGenAI } from '@google/genai';
 import type { LegacyGoogleGenAI } from '../lib/gemini-client.js';
 import { safeLog } from '../lib/logger-utils.js';
 import { getTextModel, isGeminiAvailable } from '../lib/gemini-client.js';
+import { openrouter, GROK_4_FAST, INTERNVL_78B, isOpenRouterEnabled } from '../lib/openrouter-client.js';
 
 // Multi-provider AI system for cost optimization
-// Priority: Gemini Flash (cheapest) -> Claude Haiku -> OpenAI (fallback)
+// Priority: Grok 4 Fast (primary) -> InternVL (fallback) -> Gemini Flash -> Claude Haiku -> OpenAI
 
 interface AIProvider {
   name: string;
@@ -17,6 +18,8 @@ interface AIProvider {
 
 function getProviders(): AIProvider[] {
   return [
+    { name: 'grok-4-fast', inputCost: 0.50, outputCost: 1.50, available: isOpenRouterEnabled() },
+    { name: 'internvl-78b', inputCost: 0.60, outputCost: 1.80, available: isOpenRouterEnabled() },
     { name: 'gemini-flash', inputCost: 0.075, outputCost: 0.30, available: isGeminiAvailable() },
     { name: 'claude-haiku', inputCost: 0.80, outputCost: 4.00, available: !!process.env.ANTHROPIC_API_KEY },
     { name: 'openai-gpt4o', inputCost: 5.00, outputCost: 15.00, available: !!process.env.OPENAI_API_KEY }
@@ -77,6 +80,12 @@ export async function generateWithMultiProvider(request: MultiAIRequest): Promis
 
       let result: MultiAIResponse | null = null;
       switch (provider.name) {
+        case 'grok-4-fast':
+          result = await generateWithGrok(prompt);
+          break;
+        case 'internvl-78b':
+          result = await generateWithInternVL(prompt);
+          break;
         case 'gemini-flash':
           result = await generateWithGemini(prompt);
           break;
@@ -109,6 +118,74 @@ export async function generateWithMultiProvider(request: MultiAIRequest): Promis
 
   safeLog('error', 'All AI providers failed - no fallback available', {});
   throw new Error('All AI providers failed');
+}
+
+async function generateWithGrok(prompt: string) {
+  if (!openrouter) return null;
+
+  try {
+    const response = await openrouter.chat.completions.create({
+      model: GROK_4_FAST,
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert social media content creator specializing in adult content creation. Create engaging, authentic content that respects platform guidelines while being appealing and personality-driven. Always respond with valid JSON."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.8
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      safeLog('warn', 'Grok returned empty response', {});
+      return null;
+    }
+
+    const result = JSON.parse(content);
+    return validateAndFormatResponse(result);
+  } catch (error) {
+    safeLog('warn', 'Grok generation failed', { error: error instanceof Error ? error.message : String(error) });
+    return null;
+  }
+}
+
+async function generateWithInternVL(prompt: string) {
+  if (!openrouter) return null;
+
+  try {
+    const response = await openrouter.chat.completions.create({
+      model: INTERNVL_78B,
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert social media content creator specializing in adult content creation. Create engaging, authentic content that respects platform guidelines while being appealing and personality-driven. Always respond with valid JSON."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.8
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      safeLog('warn', 'InternVL returned empty response', {});
+      return null;
+    }
+
+    const result = JSON.parse(content);
+    return validateAndFormatResponse(result);
+  } catch (error) {
+    safeLog('warn', 'InternVL generation failed', { error: error instanceof Error ? error.message : String(error) });
+    return null;
+  }
 }
 
 async function generateWithGemini(prompt: string) {
