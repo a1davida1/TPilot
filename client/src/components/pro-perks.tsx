@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
 import { 
   Gift,
   Search,
@@ -29,6 +30,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import type { LucideIcon } from "lucide-react";
 import { trackFeatureUsage } from "@/lib/analytics-tracker";
+import { ThottoPilotLogo } from "@/components/thottopilot-logo";
+import { cn } from "@/lib/utils";
 
 interface ProPerk {
   id: string;
@@ -62,6 +65,37 @@ interface ProPerksProps {
 }
 
 type CategoryFilter = "all" | ProPerk["category"];
+
+const BEST_EXCLUSIVE_PERK_IDS = [
+  "onlyfans-referral",
+  "fansly-affiliate",
+  "lovense-affiliate",
+  "streamate-affiliate",
+  "whop-monetization"
+];
+
+const highlightCopy: Record<string, { reason: string; bonus: string }> = {
+  "onlyfans-referral": {
+    reason: "Lock in higher revshare for onlyfans recruits without extra paperwork.",
+    bonus: "T-Perks ask: extend payouts to 18 months so your roster keeps compounding."
+  },
+  "fansly-affiliate": {
+    reason: "Diversify income on a platform actively poaching premium creators.",
+    bonus: "T-Perks ask: +2% revshare lift for the first 6 months when you migrate."
+  },
+  "lovense-affiliate": {
+    reason: "Bundle interactive toys with your live schedule for higher AOV per fan.",
+    bonus: "T-Perks ask: guaranteed 30% commission floor plus branded starter kits."
+  },
+  "streamate-affiliate": {
+    reason: "Recruit cam talent with an industry-best CPA and lifetime override.",
+    bonus: "T-Perks ask: $120 CPA floor on your first 100 ThottoPilot-sourced signups."
+  },
+  "whop-monetization": {
+    reason: "Stand up paid Discords and digital offers with automated fulfillment.",
+    bonus: "T-Perks ask: waive Whop fees for 90 days and add concierge onboarding."
+  }
+};
 
 const categoryMetadata: Record<ProPerk["category"], {
   label: string;
@@ -125,6 +159,8 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
   const [referralCodesByPerk, setReferralCodesByPerk] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const _queryClient = useQueryClient();
+  const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
+  const [activeSlide, setActiveSlide] = useState(0);
   const loadTrackedRef = useRef(false);
 
   const sessionFetch = useCallback(
@@ -176,32 +212,49 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
     }
   }, [isLoading, hasAccess, perks.length]);
 
+  useEffect(() => {
+    if (!carouselApi) {
+      return;
+    }
+
+    const onSelect = () => {
+      setActiveSlide(carouselApi.selectedScrollSnap());
+    };
+
+    onSelect();
+    carouselApi.on("select", onSelect);
+
+    return () => {
+      carouselApi.off("select", onSelect);
+    };
+  }, [carouselApi]);
+
   const referralDescription = hasAccess
-    ? "Invite other creators to unlock Pro perks and earn recurring revenue from every upgrade."
-    : "Share ThottoPilot with your audience and earn payouts whenever someone you refer goes Pro.";
+    ? "Invite creators to unlock T-Perks and ride along on their upgrade revenue."
+    : "Share ThottoPilot and earn whenever your audience joins Pro and unlocks the T-Perks vault.";
 
   const referralCta = (
-    <Card className="bg-gradient-to-br from-emerald-900/20 to-teal-900/10 border-emerald-500/30">
+    <Card className="bg-gradient-to-br from-emerald-900/30 via-emerald-800/10 to-teal-900/20 border-emerald-500/30 shadow-[0_0_25px_rgba(16,185,129,0.2)]">
       <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
           <CardTitle className="flex items-center gap-2 text-emerald-300">
             <Users className="h-5 w-5" />
             Referral Hub
           </CardTitle>
-          <CardDescription className="text-gray-300">
+          <CardDescription className="text-gray-200">
             {referralDescription}
           </CardDescription>
         </div>
         <Button
           asChild
-          className="w-full md:w-auto bg-gradient-to-r from-emerald-500 to-teal-500 border-0 text-white"
+          className="w-full md:w-auto bg-gradient-to-r from-emerald-500 to-cyan-500 border-0 text-white shadow-lg"
           data-testid="referral-hub-cta"
         >
           <Link to="/referral">Open referral hub</Link>
         </Button>
       </CardHeader>
       <CardContent className="text-sm text-emerald-100/80">
-        <p>Track signups, campaign assets, and payouts in one dashboard designed for affiliates.</p>
+        <p>Track referrals, generate codes, and route bonuses with a single-click workspace.</p>
       </CardContent>
     </Card>
   );
@@ -455,64 +508,175 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <Card className="bg-gradient-to-br from-purple-900/20 to-pink-900/20 border-purple-500/30">
+      <Card className="bg-gradient-to-br from-primary-900/50 via-purple-900/40 to-rose-900/30 border-primary-500/40 shadow-[0_0_45px_rgba(168,85,247,0.25)]">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-3xl bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Pro Perks Library
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-3">
+              <CardTitle className="text-3xl bg-gradient-to-r from-teal-300 via-primary-200 to-rose-300 bg-clip-text text-transparent">
+                T-Perks Command Center
               </CardTitle>
-              <CardDescription className="text-gray-300 mt-2">
-                Exclusive affiliate programs, tools, and monetization opportunities for creators
+              <CardDescription className="text-gray-200 max-w-2xl">
+                Swipe through the flagship perks we’ve already negotiated for creators, then dive into the full catalog by category. Every T-Perk spells out the baseline offer and the bonus you unlock through ThottoPilot.
               </CardDescription>
             </div>
-            <div className="text-right">
-              <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0">
-                PRO MEMBER
+            <div className="flex flex-col items-start lg:items-end gap-2">
+              <Badge className="bg-gradient-to-r from-teal-500 to-primary-500 text-white border-0 shadow-lg">
+                T-PERKS ACCESS
               </Badge>
-              <p className="text-sm text-gray-400 mt-2">
-                {perks.length} perks • {affiliateCount} affiliate programs
+              <p className="text-sm text-gray-300">
+                {perks.length} curated perks • {affiliateCount} affiliate funnels • {availableNowCount} live today
               </p>
             </div>
           </div>
         </CardHeader>
       </Card>
 
+      {/* Featured Carousel */}
+      <div className="relative">
+        <Carousel
+          setApi={setCarouselApi}
+          className="w-full"
+          opts={{ align: "start", loop: true }}
+        >
+          <CarouselContent className="-ml-4">
+            {perks.map((perk) => (
+              <CarouselItem key={perk.id} className="pl-4 md:basis-1/2 xl:basis-1/3">
+                <Card
+                  className="relative h-full bg-gradient-to-br from-slate-950/70 via-slate-900/40 to-slate-950/30 border-white/10 backdrop-blur-xl overflow-hidden group"
+                  data-testid={`perk-carousel-${perk.id}`}
+                >
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.6),transparent_60%),radial-gradient(circle_at_bottom_right,rgba(244,114,182,0.45),transparent_60%)]" />
+                  <CardHeader className="relative z-10 space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-2">
+                        <Badge className={statusStyles[perk.status].className}>
+                          {statusStyles[perk.status].label}
+                        </Badge>
+                        <Badge variant="outline" className="border-white/20 text-white/80">
+                          {categoryMetadata[perk.category].label}
+                        </Badge>
+                      </div>
+                      {BEST_EXCLUSIVE_PERK_IDS.includes(perk.id) && (
+                        <div className={cn(
+                          "transition-transform duration-500",
+                          selectedPerk?.id === perk.id || perks[activeSlide % perks.length]?.id === perk.id
+                            ? "translate-y-0"
+                            : "-translate-y-3 opacity-80"
+                        )}>
+                          <div className="flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 px-3 py-1 text-xs font-semibold text-white shadow-lg">
+                            <ThottoPilotLogo className="h-4 w-4" size="sm" />
+                            Best Exclusive T-Perk
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <CardTitle className="text-2xl text-white">
+                      {perk.name}
+                    </CardTitle>
+                    <CardDescription className="text-slate-200 text-sm">
+                      {perk.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="relative z-10 space-y-5">
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2 text-teal-300">
+                        <Percent className="h-4 w-4" />
+                        <span>{perk.commissionRate ?? "See bonus details"}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-rose-300">
+                        <DollarSign className="h-4 w-4" />
+                        <span>{perk.estimatedEarnings}</span>
+                      </div>
+                    </div>
+
+                    {highlightCopy[perk.id] ? (
+                      <div className="rounded-xl border border-white/10 bg-white/5 p-4 shadow-inner space-y-3">
+                        <p className="text-sm text-white/90">
+                          {highlightCopy[perk.id].reason}
+                        </p>
+                        <p className="text-sm font-semibold text-sky-300">
+                          {highlightCopy[perk.id].bonus}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-2">
+                        <p className="text-sm text-white/90">
+                          {perk.description}
+                        </p>
+                        <p className="text-sm font-semibold text-sky-300">
+                          {perk.commissionRate
+                            ? `T-Perks bonus: ${perk.commissionRate}`
+                            : `T-Perks target: ${perk.estimatedEarnings}`}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between">
+                      <Button
+                        variant="outline"
+                        className="border-white/30 text-white hover:bg-white/10"
+                        onClick={() => handleOpenPerk(perk)}
+                        data-testid={`view-carousel-perk-${perk.id}`}
+                      >
+                        Explore Details
+                      </Button>
+                      {perk.officialLink && (
+                        <Button
+                          variant="ghost"
+                          className="text-sky-300 hover:text-sky-200"
+                          onClick={() => window.open(perk.officialLink, "_blank")}
+                          data-testid={`visit-carousel-${perk.id}`}
+                        >
+                          Visit Site
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </CarouselItem>
+              
+            ))}
+          </CarouselContent>
+          <CarouselPrevious className="-left-6 bg-white/10 text-white border-white/20 hover:bg-white/20" />
+          <CarouselNext className="-right-6 bg-white/10 text-white border-white/20 hover:bg-white/20" />
+        </Carousel>
+      </div>
+
       {referralCta}
 
       {/* Stats Cards */}
       <div className="grid md:grid-cols-3 gap-4">
-        <Card className="bg-emerald-900/20 border-emerald-500/30">
+        <Card className="bg-emerald-900/30 border-emerald-500/40 shadow-[0_0_30px_rgba(16,185,129,0.25)]">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <CheckCircle className="h-8 w-8 text-emerald-400" />
+              <CheckCircle className="h-8 w-8 text-emerald-300" />
               <div>
-                <p className="text-2xl font-bold text-emerald-400">{availableNowCount}</p>
-                <p className="text-sm text-gray-400">Available Now</p>
+                <p className="text-2xl font-bold text-emerald-100">{availableNowCount}</p>
+                <p className="text-sm text-emerald-200/80">Available Now</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-yellow-900/20 border-yellow-500/30">
+        <Card className="bg-amber-900/30 border-amber-500/40 shadow-[0_0_30px_rgba(251,191,36,0.18)]">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <Clock className="h-8 w-8 text-yellow-400" />
+              <Clock className="h-8 w-8 text-amber-200" />
               <div>
-                <p className="text-2xl font-bold text-yellow-400">{applicationRequiredCount}</p>
-                <p className="text-sm text-gray-400">Application Required</p>
+                <p className="text-2xl font-bold text-amber-100">{applicationRequiredCount}</p>
+                <p className="text-sm text-amber-100/80">Application Required</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-purple-900/20 border-purple-500/30">
+        <Card className="bg-fuchsia-900/30 border-fuchsia-500/40 shadow-[0_0_30px_rgba(217,70,239,0.22)]">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <Sparkles className="h-8 w-8 text-purple-400" />
+              <Sparkles className="h-8 w-8 text-fuchsia-200" />
               <div>
-                <p className="text-2xl font-bold text-purple-400">{affiliateCount}</p>
-                <p className="text-sm text-gray-400">Affiliate Programs</p>
+                <p className="text-2xl font-bold text-fuchsia-100">{affiliateCount}</p>
+                <p className="text-sm text-fuchsia-100/80">Affiliate Programs</p>
               </div>
             </div>
           </CardContent>
@@ -564,6 +728,15 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
           );
         })}
       </div>
+
+      <Card className="bg-slate-950/70 border-white/10">
+        <CardContent className="space-y-3 p-6 text-xs text-slate-300">
+          <p>ThottoPilot may receive affiliate commissions on certain T-Perks when creators activate partner offers.</p>
+          <p><em>Creator-first, never sponsored.</em> None of these vendors approached us first—we scouted them because they help you build faster and smarter, or at the very least live your life happier whether you're on or off the digital clock.</p>
+          <p>And as a bonus, many of these expenses potentially qualify to be used as a tax write-off.</p>
+          <p>We only fight for perks we genuinely believe will upgrade your workflow and life, on the clock or off.</p>
+        </CardContent>
+      </Card>
 
       {/* Perks Grid */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

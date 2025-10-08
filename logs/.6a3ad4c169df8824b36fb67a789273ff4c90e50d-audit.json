@@ -9,6 +9,11 @@
             "date": 1759832681111,
             "name": "/home/dave/CascadeProjects/TPilot/logs/exceptions-2025-10-07.log",
             "hash": "df6c8a082b6b161b0ce8d27146ada45e81b887bbd6e5e38143a021d808c19788"
+        },
+        {
+            "date": 1759921371017,
+            "name": "/home/dave/CascadeProjects/TPilot/logs/exceptions-2025-10-08.log",
+            "hash": "d8f5198162aeeb9a289a72e5d1d1907d2e5e657cfe9fd3a14989855d320c121f"
         }
     ],
     "hashType": "sha256"

@@ -1,6 +1,6 @@
-# Pro Perks Playbook
+# T-Perks Playbook
 
-Internal field guide for the offers already published in `server/pro-perks.ts` plus the partners we want next. Every table lists (a) the **current signup offer creators receive today** and (b) the **realistic ask** we should pursue during negotiations.
+Internal field guide for the offers already published in `server/pro-perks.ts` plus the partners we want next. Every table lists (a) the **current signup offer creators receive today** and (b) the **realistic ask** we should pursue during negotiations across the T-Perks catalog.
 
 ---
 
@@ -12,191 +12,191 @@ Internal field guide for the offers already published in `server/pro-perks.ts` p
 
 ---
 
-## Live Perks Catalogue (39)
+## Live T-Perks Catalogue (39)
 
 ### 1. Cam & Subscription Platforms (12)
 
 - **OnlyFans Creator Referral**  
-  • Standard offer: 5% of creator earnings for 12 months (cap $50K)  
-  • Negotiation target: Extend to 18 months or remove cap  
-  • Notes: Leverage TPilot referral analytics.
+  - **Standard creator offer:** 5% of creator earnings for 12 months (cap $50K). No upfront bonus.  
+  - **Creator upgrade goal:** Secure 18-month revshare or remove the payout cap so creators keep earning longer.  
+  - **Why it matters:** Longer revshare windows compound income for agencies onboarding new talent; TPilot analytics back up the ask.
 - **Fansly Creator Program**  
-  • Standard offer: 5% lifetime revshare  
-  • Negotiation target: 7% revshare for first 6 months  
-  • Notes: Aggressively courting OF switchers.
+  - **Standard creator offer:** 5% lifetime revshare, with occasional $50 launch boosts.  
+  - **Creator upgrade goal:** Raise revshare to 7% for the first 6 months so migrants from OF land soft bonuses.  
+  - **Why it matters:** Fans get stronger incentives to switch when early earnings jump 40%+.
 - **Streamate Cam Affiliate**  
-  • Standard offer: Up to $100 CPA + 25% revshare  
-  • Negotiation target: Lock $120 CPA tier for TPilot leads  
-  • Notes: Showcase global conversion data.
+  - **Standard creator offer:** $100 CPA ceiling plus 25% lifetime revshare; $50 fast-start bonus in some geos.  
+  - **Creator upgrade goal:** Guarantee $120 CPA on TPilot leads so recruiters get predictable cash flow.  
+  - **Why it matters:** Higher CPA underwrites paid acquisition for cam studios.
 - **CAM4 Affiliate Program**  
-  • Standard offer: $50 CPA + 20% lifetime revshare (+ $25 deposit)  
-  • Negotiation target: $75 CPA for first 50 TPilot signups  
-  • Notes: Strong LATAM/EU traction.
+  - **Standard creator offer:** $50 CPA, 20% lifetime revshare, and $25 onboarding deposit.  
+  - **Creator upgrade goal:** Lift CPA to $75 for the first 50 TPilot signups so recruiters can scale faster.  
+  - **Why it matters:** Additional CPA covers onboarding costs for LATAM/EU talent.
 - **Chaturbate Broadcasting Referral**  
-  • Standard offer: 20% lifetime revshare  
-  • Negotiation target: 25% revshare for first 6 months  
-  • Notes: Premier traffic; highlight analytics access.
+  - **Standard creator offer:** 20% lifetime revshare plus milestone bonuses around $50.  
+  - **Creator upgrade goal:** Negotiate 25% revshare for the first 6 months so broadcasters see immediate lift.  
+  - **Why it matters:** Extra 5 points on revshare materially increases day-one earnings.
 - **Stripchat Affiliate Network**  
-  • Standard offer: Up to 45% revshare or $120 CPA (+ $75 bonus)  
-  • Negotiation target: 50% revshare for 60 days + custom creatives  
-  • Notes: White-label portals fit agencies.
+  - **Standard creator offer:** Up to 45% revshare or $120 CPA and a $75 launch bonus.  
+  - **Creator upgrade goal:** Lock 50% revshare for 60 days and provide custom creatives to improve conversion.  
+  - **Why it matters:** Gives agencies higher lifetime value during launch campaigns.
 - **BongaCams Partner Program**  
-  • Standard offer: $120 CPA or 25% revshare (+ $50 bounty)  
-  • Negotiation target: $150 CPA on Tier A geos  
-  • Notes: EU-heavy audiences.
+  - **Standard creator offer:** $120 CPA or 25% revshare plus a $50 starter bounty.  
+  - **Creator upgrade goal:** Push Tier A geos to $150 CPA so scouts can reinvest in sourcing talent.  
+  - **Why it matters:** Higher CPA makes EU recruiting viable for smaller agencies.
 - **FanCentro Ambassador Program**  
-  • Standard offer: 75% creator share + 10% referral bonus  
-  • Negotiation target: 12% override + CentroU content bundle  
-  • Notes: Includes training resources.
+  - **Standard creator offer:** 75% revenue share, 10% referral override, CentroUniversity onboarding, and occasional welcome kits.  
+  - **Creator upgrade goal:** Lift referral override to 12% and include a dedicated content bundle for launches.  
+  - **Why it matters:** Additional override drives teams to build referral trees.
 - **JustForFans Partner Program**  
-  • Standard offer: 80% share + 5% referral (+ 50% verification discount)  
-  • Negotiation target: 7% referral override for 60 days + feature slot  
-  • Notes: Creator-owned marketplace.
+  - **Standard creator offer:** 80% share, 5% referral override, 50% verification discount, and featured listings based on performance.  
+  - **Creator upgrade goal:** Secure 7% referral override for 60 days plus guaranteed feature placement.  
+  - **Why it matters:** Bigger override accelerates agency rollouts and recoups verification costs.
 - **FanVue Creator Accelerator**  
-  • Standard offer: 85% share + 5% referral (+ $100 VR credit)  
-  • Negotiation target: Waive 15% first-month fees + studio day access  
-  • Notes: VR/8K differentiator.
+  - **Standard creator offer:** 85% share, 5% referral override, and $100 VR promo credit.  
+  - **Creator upgrade goal:** Waive the first-month 15% platform fee and include a studio day to capture 8K content.  
+  - **Why it matters:** Upfront studio access lets creators produce premium catalogues quickly.
 - **PocketStars Partner Program**  
-  • Standard offer: 80% share + 5% referral (+ $50 launch boost)  
-  • Negotiation target: 10% referral kicker for 90 days  
-  • Notes: Built by NSFW creators.
+  - **Standard creator offer:** 80% share, 5% referral override, $50 launch boost, and periodic promo slots.  
+  - **Creator upgrade goal:** Add a 10% referral kicker for the first 90 days so agencies can reinvest in ads.  
+  - **Why it matters:** Higher override offsets marketing spend during launch.
 - **XLoveCam Partner Program**  
-  • Standard offer: 35% lifetime revshare (+ $30 fast-start)  
-  • Negotiation target: 40% revshare + biweekly payouts  
-  • Notes: Strong FR/DE presence.
+  - **Standard creator offer:** 35% lifetime revshare and $30 fast-start bonus.  
+  - **Creator upgrade goal:** Unlock 40% lifetime revshare with biweekly payouts to improve cash flow.  
+  - **Why it matters:** Faster payouts keep international studios liquid.
 
 ### 2. Clip & Digital Marketplaces (3)
 
 - **ManyVids Affiliate**  
-  • Standard offer: 15% lifetime commission  
-  • Negotiation target: 18% + homepage feature  
-  • Notes: Promote bundle campaigns.
+  - **Standard creator offer:** 15% lifetime commission and rotating $100 launch contests.  
+  - **Creator upgrade goal:** Move to 18% commission plus guaranteed homepage feature week one.  
+  - **Why it matters:** Higher revshare + placement spikes early catalog sales.
 - **IWantClips Affiliate**  
-  • Standard offer: 10% commission + 5% fan coupon  
-  • Negotiation target: 12% base + “Trending” homepage slot  
-  • Notes: Strong niche fetish reach.
+  - **Standard creator offer:** 10% commission, 5% fan coupon, and seasonal clip challenges.  
+  - **Creator upgrade goal:** Lift to 12% baseline commission and secure a “Trending” homepage slot.  
+  - **Why it matters:** Extra 2% pays out immediately on loyal clip buyers.
 - **Clips4Sale Partner Program**  
-  • Standard offer: 7% commission + $25 credit  
-  • Negotiation target: 10% for 6 months + marketing toolkit  
-  • Notes: Legacy clip marketplace.
+  - **Standard creator offer:** 7% commission, $25 producer credit, and access to paid email blasts.  
+  - **Creator upgrade goal:** 10% commission for 6 months plus co-branded marketing toolkit.  
+  - **Why it matters:** Jump in revshare funds content reinvestment.
 
 ### 3. Messaging & High-Touch Monetization (3)
 
 - **NiteFlirt Phone/Chat Affiliate**  
-  • Standard offer: $5–$25 CPA + 5% ongoing spend  
-  • Negotiation target: $15 CPA floor + 7% override  
-  • Notes: Focus on “whale” retention benefits.
+  - **Standard creator offer:** $5–$25 CPA on new callers and 5% ongoing spend share; occasional “Top Line” bonuses.  
+  - **Creator upgrade goal:** Set a $15 CPA floor and 7% override so high-touch operators get consistent payouts.  
+  - **Why it matters:** Stabilizes revenue for boutique phone agencies.
 - **SextPanther Operator Program**  
-  • Standard offer: Up to 80% revshare  
-  • Negotiation target: 85% for 90 days + concierge support  
-  • Notes: Ideal for SMS/voice upsells.
+  - **Standard creator offer:** Up to 80% revshare plus sporadic text bundles for launch.  
+  - **Creator upgrade goal:** Push to 85% revshare for the first 90 days with concierge support for routing.  
+  - **Why it matters:** Extra 5% margin funds paid moderators.
 - **DreamLover SMS & Call Affiliate**  
-  • Standard offer: 60–70% revshare + $20 credit  
-  • Negotiation target: 75% revshare for first 30 days + lead routing  
-  • Notes: Premium pay-per-text clientele.
+  - **Standard creator offer:** 60–70% revshare and $20 onboarding credit.  
+  - **Creator upgrade goal:** 75% revshare for 30 days plus priority lead routing.  
+  - **Why it matters:** Higher share smooths the ramp on premium clients.
 
 ### 4. Commerce, Merch & Payment Playbooks (5)
 
 - **Lovense Product Affiliate**  
-  • Standard offer: 20–35% per sale + sample kit  
-  • Negotiation target: 30% floor + creator-branded bundles  
-  • Notes: Pair with interactive cam SOPs.
+  - **Standard creator offer:** 20–35% per sale, sample kit credit, and periodic product giveaways.  
+  - **Creator upgrade goal:** Lock 30% floor and secure creator-branded bundles for launch weeks.  
+  - **Why it matters:** Higher guaranteed commission lets creators price confidently.
 - **Adam & Eve Affiliate**  
-  • Standard offer: Up to 16% per sale + 40% coupon + $75 launch bonus  
-  • Negotiation target: 18% payout + quarterly promo drops  
-  • Notes: Build NSFW wellness bundles.
+  - **Standard creator offer:** Up to 16% per sale, 40% fan discount, $75 launch bonus, and dedicated AM support.  
+  - **Creator upgrade goal:** 18% payout with quarterly co-marketed promo drops tailored to NSFW sets.  
+  - **Why it matters:** Extra 2% improves lifetime margins on curated kits.
 - **Premium Snapchat Monetization**  
-  • Standard offer: DIY playbook  
-  • Negotiation target: Free Stripe setup + 0% TPilot fee for first month  
-  • Notes: Fast start for solo creators.
+  - **Standard creator offer:** DIY workflow templates and community best practices.  
+  - **Creator upgrade goal:** Free Stripe setup, waived TPilot fee for month one, and onboarding office hours.  
+  - **Why it matters:** Eliminates upfront costs when spinning up new subscription funnels.
 - **Cryptocurrency Payment Integration**  
-  • Standard offer: Keep 100% revenue + wallet checklist  
-  • Negotiation target: Waive consulting fee + exchange promo code  
-  • Notes: Appeals to privacy buyers.
+  - **Standard creator offer:** Keep 100% of revenue, receive wallet checklist, and access to recommended exchanges.  
+  - **Creator upgrade goal:** Add partner exchange promo code and waive consulting retainer for TPilot teams.  
+  - **Why it matters:** Reduces friction for privacy-focused fans.
 - **AfterDark Merch Fulfillment**  
-  • Standard offer: 30–40% net margin + $150 sample kit  
-  • Negotiation target: 45% margin for first 500 units + co-branded drops  
-  • Notes: Print-on-demand merch + lingerie.
+  - **Standard creator offer:** 30–40% net margin, $150 sample kit, POD catalog access.  
+  - **Creator upgrade goal:** 45% margin on first 500 units plus co-branded drops to showcase collections.  
+  - **Why it matters:** Better margin pays for creative shoots.
 
 ### 5. SaaS, Automation & CRM Stack (6)
 
 - **Whop Creator Monetization**  
-  • Standard offer: 5% platform fee share + 50% fee rebate on first $1K GMV  
-  • Negotiation target: Waive platform fees for 90 days  
-  • Notes: Ideal for high-ticket coaching.
+  - **Standard creator offer:** 5% platform fee share and 50% fee rebate on first $1K GMV.  
+  - **Creator upgrade goal:** Waive all platform fees for 90 days and bundle VIP onboarding.  
+  - **Why it matters:** Extra $50 per $1K GMV returns to creators immediately.
 - **Upgrade.chat Payment Bot**  
-  • Standard offer: 3–5% processing markup + 30-day premium  
-  • Negotiation target: Permanent 2% cap + starter automations  
-  • Notes: Automates Discord paywalls.
+  - **Standard creator offer:** 3–5% processing markup, 30-day premium trial, and standard bot templates.  
+  - **Creator upgrade goal:** Cap fees at 2% for life plus deliver ready-made funnels.  
+  - **Why it matters:** Lower fees protect recurring Discord income.
 - **Tapfiliate System**  
-  • Standard offer: 14-day trial + configurable commissions  
-  • Negotiation target: 25% year-one discount + concierge onboarding  
-  • Notes: Perfect for agency-led affiliate funnels.
+  - **Standard creator offer:** 14-day trial, configurable commissions, and ticketed support.  
+  - **Creator upgrade goal:** 25% discount for year one with concierge onboarding and migration support.  
+  - **Why it matters:** Lower upfront cost when spinning up creator sub-affiliate programs.
 - **ModelCentro Website Builder**  
-  • Standard offer: 25% recurring share + template pack  
-  • Negotiation target: 30% first-year revshare + migration support  
-  • Notes: Upgrade path beyond OF.
+  - **Standard creator offer:** 25% recurring share, template pack, and limited migration help.  
+  - **Creator upgrade goal:** 30% first-year revshare and dedicated migration engineers.  
+  - **Why it matters:** Higher revshare funds paid traffic for custom sites.
 - **AdultMemberHub Collaboration**  
-  • Standard offer: 20% commission + $199 audit  
-  • Negotiation target: 30% commission + churn campaign setup  
-  • Notes: CRM + retention automation.
+  - **Standard creator offer:** 20% commission and $199 retention audit.  
+  - **Creator upgrade goal:** 30% commission plus a done-for-you churn campaign.  
+  - **Why it matters:** Bigger share and retention automation keep members active.
 - **SexEdVault Creator Courses**  
-  • Standard offer: ~20% tuition revshare + free webinar seat  
-  • Negotiation target: 30% commission + reserved cohort seats  
-  • Notes: Education funnel.
+  - **Standard creator offer:** ~20% tuition revshare and free webinar seat.  
+  - **Creator upgrade goal:** 30% commission and priority enrollment slots for TPilot pros.  
+  - **Why it matters:** Guarantees spots in the most profitable cohorts.
 
 ### 6. Payments & Financial Infrastructure (2)
 
 - **CCBill Payment Processing**  
-  • Standard offer: $100–$500 merchant bounty  
-  • Negotiation target: $250 bounty + reduced processing rates  
-  • Notes: Adult billing mainstay.
+  - **Standard creator offer:** $100–$500 merchant bounty and standard processing rates.  
+  - **Creator upgrade goal:** $250 bounty plus rate reductions targeted at adult creators.  
+  - **Why it matters:** Lower fees go straight to creator profits.
 - **Segpay Merchant Referral Program**  
-  • Standard offer: 0.25% lifetime override + $150 bounty  
-  • Negotiation target: 0.35% override + marketing collateral  
-  • Notes: Trusted high-risk processor.
+  - **Standard creator offer:** 0.25% lifetime override and $150 activation bounty.  
+  - **Creator upgrade goal:** 0.35% override plus prebuilt marketing collateral.  
+  - **Why it matters:** Extra override adds residual cash for agencies.
 
 ### 7. Traffic, Affiliate Networks & Advertising (3)
 
 - **CrakRevenue Adult Network**  
-  • Standard offer: Up to 40% revshare or hybrid CPA (+ $50 credit)  
-  • Negotiation target: +10% revshare for 60 days or $100 credit  
-  • Notes: Aggregate TPilot traffic for upgrades.
+  - **Standard creator offer:** Up to 40% revshare or hybrid CPA plus $50 traffic credit.  
+  - **Creator upgrade goal:** +10% revshare for 60 days or $100 credit to accelerate campaign testing.  
+  - **Why it matters:** Extra revshare funds broader ad experiments.
 - **PlugRush Traffic Network**  
-  • Standard offer: $2–$6 CPM equivalent + $50 ad credit  
-  • Negotiation target: $100 credit + smartlink exclusives  
-  • Notes: Monetize idle impressions.
+  - **Standard creator offer:** $2–$6 CPM equivalent and $50 ad credit.  
+  - **Creator upgrade goal:** $100 credit plus smartlink exclusives to improve conversion.  
+  - **Why it matters:** Larger credit bankrolls GEO testing.
 - **JuicyAds Publisher Network**  
-  • Standard offer: CPM/CPC marketplace + 10% referral  
-  • Negotiation target: 15% override + managed campaign support  
-  • Notes: Adult-safe ad inventory.
+  - **Standard creator offer:** CPM/CPC marketplace access and 10% referral override.  
+  - **Creator upgrade goal:** 15% override plus managed campaign support for NSFW creators.  
+  - **Why it matters:** Managed campaigns increase fill rates for smaller sites.
 
 ### 8. Community, Partnerships & Support (5)
 
 - **Discord Partner Program**  
-  • Standard offer: Nitro, vanity URL, partner badge  
-  • Negotiation target: Priority review + NSFW-friendly co-marketing  
-  • Notes: Prestige boost for large servers.
+  - **Standard creator offer:** Nitro perks, vanity URL, and partner badge after review.  
+  - **Creator upgrade goal:** Priority review plus NSFW-friendly co-marketing slots.  
+  - **Why it matters:** Faster approval unlocks community-scale perks sooner.
 - **Reddit Promoted User Status**  
-  • Standard offer: ≈$100 ad credits + promoted opportunities  
-  • Negotiation target: Guaranteed $250 ad credit + spotlight week  
-  • Notes: Maintain compliance track record.
+  - **Standard creator offer:** ≈$100 ad credits and access to promoted post inventory.  
+  - **Creator upgrade goal:** $250 guaranteed ad credit and spotlight placement for creator launches.  
+  - **Why it matters:** Larger ad credit drives early subreddit growth.
 - **Telegram Premium Monetization**  
-  • Standard offer: 70/30 revenue split  
-  • Negotiation target: Fee waiver on first $5K revenue  
-  • Notes: Privacy-friendly messaging.
+  - **Standard creator offer:** 70/30 revenue split with premium channel tools.  
+  - **Creator upgrade goal:** Waive fees on the first $5K revenue and unlock verified status quickly.  
+  - **Why it matters:** Zero-fee window accelerates channel monetization.
 - **SexSells Verified Seller**  
-  • Standard offer: Verified badge + marketplace access  
-  • Negotiation target: Fast-track verification + pinned week  
-  • Notes: Reddit funnel for leads.
+  - **Standard creator offer:** Verified badge, marketplace access, and moderated listings.  
+  - **Creator upgrade goal:** Fast-track verification plus pinned promo week.  
+  - **Why it matters:** Front-page visibility drives initial sales.
 - **OnlyFans Agency Partnership**  
-  • Standard offer: 10–30% agency fee share  
-  • Negotiation target: 5% referral override + curated roster access  
-  • Notes: Use data-backed vetting.
+  - **Standard creator offer:** 10–30% management fee share dependent on agency deal.  
+  - **Creator upgrade goal:** 5% referral override on agency fees and curated roster access for vetted partners.  
+  - **Why it matters:** Referral override rewards agencies for matching high-performing talent.
 
 ---
 
-## Expansion Pipeline (30 Prospects)
+## T-Perks Expansion Pipeline (30 Prospects)
 
 | Partner | Category | Standard Sign Up Offer | TPilot Negotiation Target | Why It Matters |
 |---------|----------|------------------------|---------------------------|----------------|

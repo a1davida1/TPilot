@@ -20,13 +20,13 @@ export default function ProPerksPage() {
         <header className="mb-10 space-y-4">
           <div className="inline-flex items-center gap-2 rounded-full bg-primary-500/10 px-4 py-2 text-primary-600 dark:text-primary-300">
             <Sparkles className="h-4 w-4" />
-            <span className="text-sm font-semibold tracking-wide uppercase">Creator Opportunities</span>
+            <span className="text-sm font-semibold tracking-wide uppercase">Signature T-Perks</span>
           </div>
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl bg-gradient-to-r from-primary-600 via-accent-rose to-primary-700 dark:from-primary-400 dark:via-accent-rose dark:to-primary-500 bg-clip-text text-transparent">
-            High-Leverage Pro Perks & Residual Programs
+            The T-Perks Vault
           </h1>
           <p className="max-w-2xl text-lg text-muted-foreground">
-            A curated pipeline of 30+ partner programs, affiliate networks, and monetization platforms ideal for NSFW creators. Each listing includes requirements, onboarding steps, and the residual earning potential so you can sprint toward higher MRR.
+            Curated partner programs, studio gear, and revenue plays crafted exclusively for ThottoPilot creators. Every T-Perk spells out the baseline offer and the upgrade we negotiate so you can focus on building income, not hunting deals.
           </p>
         </header>
 
@@ -37,18 +37,18 @@ export default function ProPerksPage() {
                 <div className="space-y-2">
                   <div className="inline-flex items-center gap-2 rounded-full bg-primary-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-200">
                     <Gift className="h-3 w-3" />
-                    Pro Exclusive
+                    T-Perks Exclusive
                   </div>
                   <h2 className="text-2xl font-semibold text-primary-800 dark:text-primary-100">
-                    Upgrade to unlock the full partner pipeline
+                    Unlock the full T-Perks roster
                   </h2>
                   <p className="text-sm text-primary-700/80 dark:text-primary-100/80">
-                    Access vetted affiliate deals, agency introductions, and monetization playbooks when you join ThottoPilot Pro.
+                    Join ThottoPilot Pro to access the complete vault of partner deals, launch playbooks, and negotiated creator bonuses.
                   </p>
                 </div>
                 <Button asChild className="bg-gradient-to-r from-primary-500 to-accent-rose text-white shadow-lg">
                   <Link href="/settings">
-                    Upgrade to Pro
+                    Unlock T-Perks Access
                   </Link>
                 </Button>
               </div>
