@@ -17,17 +17,20 @@ export const safeArrayAccess = <T>(array: T[] | undefined | null, index: number,
   return Array.isArray(array) && array.length > index && index >= 0 ? array[index] : fallback;
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
 // Safe object property access
 export const safeGet = <T>(obj: unknown, path: string, fallback: T): T => {
   if (!obj) return fallback;
   const keys = path.split('.');
-  let current = obj;
+  let current: unknown = obj;
   
   for (const key of keys) {
-    if (current === null || current === undefined || typeof current !== 'object' || !(key in current)) {
+    if (!isRecord(current) || !(key in current)) {
       return fallback;
     }
-    current = (current as Record<string, unknown>)[key];
+    current = current[key];
   }
   
   return current === null || current === undefined ? fallback : current as T;

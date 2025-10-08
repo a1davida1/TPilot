@@ -767,7 +767,7 @@ const resolveBillingPeriodEnd = (
 // ==========================================
 // PRO PERKS HELPER FUNCTIONS
 // ==========================================
-const deriveSharePercentage = (perk: ProPerk): number => {
+const _deriveSharePercentage = (perk: ProPerk): number => {
     if (!perk.commissionRate) {
       return 20;
     }
@@ -1181,7 +1181,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
         timing,
         allowsPromotion
       );
-      const normalizedPhotoInstructions = normalizePhotoInstructions(result.photoInstructions);
+      const _normalizedPhotoInstructions = normalizePhotoInstructions(result.photoInstructions);
       const toNormalizedString = (value: string | string[] | undefined, fallback: string): string => {
         const normalized = normalizeInstructionValue(value);
         return normalized ?? fallback;
@@ -1663,7 +1663,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // AI generation endpoint - REAL
   app.post('/api/ai/generate', authenticateToken(true), async (req: AuthenticatedRequest, res) => {
     try {
-      const { prompt, platforms, styleHints, variants } = req.body;
+      const { prompt, platforms, styleHints, variants: _variants } = req.body;
 
       const results = await Promise.all(
         platforms.map(async (platform: string) => {

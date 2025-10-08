@@ -212,7 +212,7 @@ export function AdminDashboard() {
     },
     onSuccess: (data, variables) => {
       if (variables.action === 'reset-password') {
-        setTempPassword(data.tempPassword);
+        setTempPassword(data.tempPassword ?? '');
         toast({ title: "Password Reset Successful", description: "Temporary password generated." });
       } else if (variables.action === 'tier-management') {
         toast({ title: "Tier Updated", description: `User tier changed to ${variables.newTier}` });

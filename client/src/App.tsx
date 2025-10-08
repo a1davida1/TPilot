@@ -110,7 +110,7 @@ function AuthenticatedRoutes() {
       <Route path="/enterprise" component={Enterprise} />
       <Route path="/phase4" component={Phase4Dashboard} />
       <Route path="/reddit" component={RedditPostingPage} />
-      <Route path="/communities" component={() => <CommunitiesPage />} />
+      <Route path="/reddit/communities" component={() => <CommunitiesPage />} />
       <Route path="/gallery" component={() => <GalleryPage />} />
       <Route path="/tax-tracker" component={() => <TaxTracker />} />
       {/* Pro user only route */}

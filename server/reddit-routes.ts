@@ -350,15 +350,9 @@ export function registerRedditRoutes(app: Express) {
       }
 
       // Ensure checkedAt is always present (null if undefined) to prevent UI crashes
-      const normalizedCommunities = communities.map(c => ({
-        ...c,
-        checkedAt: c.checkedAt ?? null
-      }));
-
-      // Runtime validation using canonical shared schema to ensure type safety
       const { redditCommunityArrayZodSchema } = await import('@shared/schema');
 
-      const validatedCommunities = redditCommunityArrayZodSchema.parse(normalizedCommunities);
+      const validatedCommunities = redditCommunityArrayZodSchema.parse(communities);
       res.json(validatedCommunities);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));

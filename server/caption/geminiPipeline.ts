@@ -673,7 +673,7 @@ export async function variantsRewrite(
     load("rewrite.txt")
   ]);
 
-  const model = textModel;
+  const _model = textModel;
   const voiceGuide = buildVoiceGuideBlock(params.voice);
   const sanitizedBaseHint = sanitizeHintForRetry(params.hint);
   const voiceContext = formatVoiceContext(params.voice);
@@ -945,11 +945,11 @@ export async function extractFacts(imageUrl: string): Promise<Record<string, unk
 
 Be explicit and specific for NSFW content. Return ONLY valid JSON without any markdown formatting or code blocks.`;
 
-        let imageInput;
+        let _imageInput;
         if (imageUrl.startsWith('data:')) {
-          imageInput = { dataUrl: imageUrl };
+          _imageInput = { dataUrl: imageUrl };
         } else {
-          imageInput = { url: imageUrl };
+          _imageInput = { url: imageUrl };
         }
 
         const internResponse = await generateVision({
@@ -1159,7 +1159,7 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
     load("guard.txt"),
     load("variants.txt")
   ]);
-  const model = textModel;
+  const _model = textModel;
   const voiceGuide = buildVoiceGuideBlock(params.voice);
 
   const sanitizeVariant = (item: Record<string, unknown>): z.infer<typeof CaptionItem> => {
@@ -1174,8 +1174,8 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
 
   const buildUserPrompt = (
     varietyHint: string | undefined,
-    existingCaptions: string[],
-    duplicateCaption?: string
+    _existingCaptions: string[],
+    _duplicateCaption?: string
   ): string => {
     const hintSegments: Array<string | undefined> = [];
 
@@ -1234,7 +1234,7 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
       let rawText: string | undefined;
       try {
         rawText = await resolveResponseText(res);
-      } catch (error) {
+      } catch (_error) {
         console.error("Gemini: empty response received, using fallback variants");
         return candidates;
       }
@@ -1459,7 +1459,7 @@ async function requestGeminiRanking(
     } else if (typeof res === "string") {
       textOutput = res;
     }
-  } catch (error) {
+  } catch (_error) {
     console.error("Gemini: empty response received during ranking");
     return fallbackResult();
   }
@@ -1540,7 +1540,7 @@ export async function rankAndSelect(
   const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("rank.txt");
   const promptBlock = `${sys}\n${guard}\n${prompt}`;
   const serializedVariants = JSON.stringify(variants);
-  const model = textModel;
+  const _model = textModel;
 
   if (!textModel) {
     throw new Error('Gemini text model is not available');

@@ -8,8 +8,25 @@ interface SocialLoginButtonsProps {
 }
 
 export function SocialLoginButtons({ onClose: _onClose }: SocialLoginButtonsProps) {
-  const handleSocialLogin = (provider: string) => {
-    // Redirect to backend OAuth endpoint
+  const handleSocialLogin = async (provider: string) => {
+    // Prefer the secure Reddit connect flow that preserves intent and state
+    if (provider === 'reddit') {
+      try {
+        const response = await fetch('/api/reddit/connect?intent=account-link', {
+          credentials: 'include',
+        });
+        if (response.ok) {
+          const data = (await response.json()) as { authUrl?: string };
+          if (data.authUrl) {
+            window.location.href = data.authUrl;
+            return;
+          }
+        }
+      } catch (_e) {
+        // fall through to generic handler on failure
+      }
+    }
+    // Fallback: generic social auth endpoint
     window.location.href = `/api/auth/${provider}`;
   };
 

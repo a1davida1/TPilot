@@ -78,9 +78,11 @@ async function detectNSFW(image: Buffer): Promise<boolean> {
         .find((d) => d.label.toLowerCase() === 'nsfw')?.score;
       return (nsfwScore ?? 0) > 0.5;
     }
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
+
+  return false;
 }
 
 async function captionImage(image: Buffer): Promise<string> {

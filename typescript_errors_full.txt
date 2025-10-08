@@ -1,0 +1,74 @@
+
+> rest-express@1.0.0 typecheck
+> tsc -p tsconfig.json --noEmit
+
+client/src/components/admin/admin-communities-panel.tsx(135,39): error TS2339: Property 'eligibility' does not exist on type '{ content?: { titleGuidelines: string[]; contentGuidelines: string[]; linkRestrictions: string[]; bannedContent: string[]; formattingRequirements: string[]; sellingPolicy?: "limited" | "allowed" | "not_allowed" | "unknown" | undefined; watermarksAllowed?: boolean | ... 1 more ... | undefined; promotionalLinks?: "yes...'.
+client/src/components/admin/admin-communities-panel.tsx(136,35): error TS2339: Property 'content' does not exist on type '{ content?: { titleGuidelines: string[]; contentGuidelines: string[]; linkRestrictions: string[]; bannedContent: string[]; formattingRequirements: string[]; sellingPolicy?: "limited" | "allowed" | "not_allowed" | "unknown" | undefined; watermarksAllowed?: boolean | ... 1 more ... | undefined; promotionalLinks?: "yes...'.
+client/src/components/admin/admin-communities-panel.tsx(137,35): error TS2339: Property 'posting' does not exist on type '{ content?: { titleGuidelines: string[]; contentGuidelines: string[]; linkRestrictions: string[]; bannedContent: string[]; formattingRequirements: string[]; sellingPolicy?: "limited" | "allowed" | "not_allowed" | "unknown" | undefined; watermarksAllowed?: boolean | ... 1 more ... | undefined; promotionalLinks?: "yes...'.
+client/src/components/admin/admin-communities-panel.tsx(162,7): error TS2322: Type 'string[] | undefined' is not assignable to type 'string[]'.
+  Type 'undefined' is not assignable to type 'string[]'.
+client/src/components/admin/admin-communities-panel.tsx(163,7): error TS2322: Type 'string[] | undefined' is not assignable to type 'string[]'.
+  Type 'undefined' is not assignable to type 'string[]'.
+client/src/components/admin/admin-communities-panel.tsx(164,7): error TS2322: Type 'string[] | undefined' is not assignable to type 'string[]'.
+  Type 'undefined' is not assignable to type 'string[]'.
+client/src/components/admin/admin-communities-panel.tsx(188,26): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(o: { [s: string]: string | { minKarma?: number | null | undefined; minAccountAgeDays?: number | null | undefined; verificationRequired?: boolean | undefined; requiresApproval?: boolean | undefined; } | { ...; } | { ...; } | null; } | ArrayLike<...>): (string | ... 3 more ... | null)[]', gave the following error.
+    Argument of type 'Partial<{ content?: { titleGuidelines: string[]; contentGuidelines: string[]; linkRestrictions: string[]; bannedContent: string[]; formattingRequirements: string[]; sellingPolicy?: "limited" | "allowed" | "not_allowed" | "unknown" | undefined; watermarksAllowed?: boolean | ... 1 more ... | undefined; promotionalLink...' is not assignable to parameter of type '{ [s: string]: string | { minKarma?: number | null | undefined; minAccountAgeDays?: number | null | undefined; verificationRequired?: boolean | undefined; requiresApproval?: boolean | undefined; } | { ...; } | { ...; } | null; } | ArrayLike<...>'.
+      Type 'undefined' is not assignable to type '{ [s: string]: string | { minKarma?: number | null | undefined; minAccountAgeDays?: number | null | undefined; verificationRequired?: boolean | undefined; requiresApproval?: boolean | undefined; } | { ...; } | { ...; } | null; } | ArrayLike<...>'.
+  Overload 2 of 2, '(o: {}): any[]', gave the following error.
+    Argument of type 'Partial<{ content?: { titleGuidelines: string[]; contentGuidelines: string[]; linkRestrictions: string[]; bannedContent: string[]; formattingRequirements: string[]; sellingPolicy?: "limited" | "allowed" | "not_allowed" | "unknown" | undefined; watermarksAllowed?: boolean | ... 1 more ... | undefined; promotionalLink...' is not assignable to parameter of type '{}'.
+      Type 'undefined' is not assignable to type '{}'.
+client/src/components/enhanced-ai-generator.tsx(649,54): error TS18048: 'generatedContent.photoInstructions' is possibly 'undefined'.
+client/src/components/enhanced-ai-generator.tsx(649,54): error TS7053: Element implicitly has an 'any' type because expression of type '"mood" | "lighting" | "cameraAngle" | "composition" | "styling" | "technicalSettings"' can't be used to index type 'string | { lighting: string; cameraAngle: string; composition: string; styling: string; mood: string; technicalSettings: string; }'.
+  Property 'mood' does not exist on type 'string | { lighting: string; cameraAngle: string; composition: string; styling: string; mood: string; technicalSettings: string; }'.
+client/src/components/enterprise/PostScheduler.tsx(316,21): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+client/src/components/enterprise/PostScheduler.tsx(330,21): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+client/src/pages/admin.tsx(215,25): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'SetStateAction<string>'.
+  Type 'undefined' is not assignable to type 'SetStateAction<string>'.
+client/src/pages/change-password.tsx(9,9): error TS2322: Type 'AuthUser | null | undefined' is not assignable to type 'AuthUser | null'.
+  Type 'undefined' is not assignable to type 'AuthUser | null'.
+client/src/pages/dashboard.tsx(163,7): error TS2322: Type '{ username: string; id: number; email: string | null; role: string | null; isAdmin: boolean | null; emailVerified: boolean; firstName: string | null; lastName: string | null; tier: string; ... 25 more ...; reddit_username?: string | ... 1 more ... | undefined; } | undefined' is not assignable to type '{ id: number; username: string; email?: string | undefined; tier?: string | undefined; isVerified?: boolean | undefined; } | undefined'.
+  Type '{ username: string; id: number; email: string | null; role: string | null; isAdmin: boolean | null; emailVerified: boolean; firstName: string | null; lastName: string | null; tier: string; ... 25 more ...; reddit_username?: string | null; }' is not assignable to type '{ id: number; username: string; email?: string | undefined; tier?: string | undefined; isVerified?: boolean | undefined; }'.
+    Types of property 'email' are incompatible.
+      Type 'string | null' is not assignable to type 'string | undefined'.
+        Type 'null' is not assignable to type 'string | undefined'.
+client/src/utils/safeDataAccess.ts(30,5): error TS2322: Type 'unknown' is not assignable to type '{}'.
+server/caption/nsfwFallback.ts(52,43): error TS2366: Function lacks ending return statement and return type does not include 'undefined'.
+server/lib/queue-pg.ts(60,7): error TS2322: Type 'QueueJobHandler<T>' is not assignable to type 'QueueJobHandler<unknown>'.
+  Type 'unknown' is not assignable to type 'T'.
+    'T' could be instantiated with an arbitrary type which could be unrelated to 'unknown'.
+server/lib/reddit.ts(1748,9): error TS2322: Type '{ id: string; title: string | undefined; createdUtc: number | undefined; }[]' is not assignable to type '{ id: string; title: string; createdUtc: number; }[]'.
+  Type '{ id: string; title: string | undefined; createdUtc: number | undefined; }' is not assignable to type '{ id: string; title: string; createdUtc: number; }'.
+    Types of property 'title' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+server/middleware/security.ts(169,7): error TS18048: 'env' is possibly 'undefined'.
+server/middleware/security.ts(169,41): error TS18048: 'env' is possibly 'undefined'.
+server/reddit-routes.ts(355,22): error TS2339: Property 'checkedAt' does not exist on type 'NormalizedRedditCommunity'.
+server/routes/referrals.ts(151,16): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(left: PgColumn<{ name: "email"; tableName: "users"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: false; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}, { ...; }>, right: string | SQLWrapper): SQL<...>', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | SQLWrapper'.
+      Type 'undefined' is not assignable to type 'string | SQLWrapper'.
+  Overload 2 of 3, '(left: Aliased<string | undefined>, right: string | SQLWrapper | undefined): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "email"; tableName: "users"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: false; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}, { ...; }>' is not assignable to parameter of type 'Aliased<string | undefined>'.
+      Type 'PgColumn<{ name: "email"; tableName: "users"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: false; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}, { ...; }>' is missing the following properties from type 'Aliased<string | undefined>': sql, fieldAlias
+  Overload 3 of 3, '(left: never, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "email"; tableName: "users"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: false; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}, { ...; }>' is not assignable to parameter of type 'never'.
+server/routes/upload.ts(320,7): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+server/scripts/sync-subreddit-rules.ts(275,47): error TS18048: 'defaults' is possibly 'undefined'.
+server/scripts/sync-subreddit-rules.ts(276,65): error TS18048: 'defaults' is possibly 'undefined'.
+server/scripts/sync-subreddit-rules.ts(277,71): error TS18048: 'defaults' is possibly 'undefined'.
+server/scripts/sync-subreddit-rules.ts(278,25): error TS18048: 'defaults' is possibly 'undefined'.
+server/scripts/sync-subreddit-rules.ts(282,26): error TS18048: 'defaults' is possibly 'undefined'.
+server/scripts/sync-subreddit-rules.ts(283,25): error TS18048: 'defaults' is possibly 'undefined'.
+server/scripts/sync-subreddit-rules.ts(284,54): error TS18048: 'defaults' is possibly 'undefined'.
+server/scripts/sync-subreddit-rules.ts(285,21): error TS18048: 'defaults' is possibly 'undefined'.
+server/scripts/sync-subreddit-rules.ts(286,86): error TS18048: 'defaults' is possibly 'undefined'.
+server/scripts/sync-subreddit-rules.ts(287,44): error TS18048: 'defaults' is possibly 'undefined'.
+server/scripts/sync-subreddit-rules.ts(288,46): error TS18048: 'defaults' is possibly 'undefined'.
+server/scripts/sync-subreddit-rules.ts(289,42): error TS18048: 'defaults' is possibly 'undefined'.
+server/scripts/sync-subreddit-rules.ts(290,31): error TS18048: 'defaults' is possibly 'undefined'.
+server/scripts/sync-subreddit-rules.ts(293,23): error TS18048: 'defaults' is possibly 'undefined'.
+server/scripts/sync-subreddit-rules.ts(294,22): error TS18048: 'defaults' is possibly 'undefined'.
+server/scripts/sync-subreddit-rules.ts(298,9): error TS18048: 'defaults' is possibly 'undefined'.

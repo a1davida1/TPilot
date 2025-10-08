@@ -1,4 +1,12 @@
-import React, { useState, useEffect, useRef, useCallback, useTransition } from "react";
+/**
+ * ModernDashboard Presentational Component
+ *
+ * Responsibilities:
+ * - Render the dashboard UI (cards, actions, activity, etc.)
+ * - Receive minimal typed props from the page container (`pages/dashboard.tsx`)
+ * - Avoids routing/auth concerns; focuses on visual behavior and interactions
+ */
+import React, { useState, useEffect, useCallback, useTransition } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
@@ -176,10 +184,7 @@ function hasTierAccess(currentTier: UserTier, requiredTier: UserTier | undefined
 
 export function ModernDashboard({ isRedditConnected = false, user, userTier = 'free', isAdmin = false }: ModernDashboardProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
   const [showMoreTools, setShowMoreTools] = useState(false);
   const [onboardingProgress, setOnboardingProgress] = useState<OnboardingProgress>(() => readStoredProgress());
   const [quickStartOpen, setQuickStartOpen] = useState(false);
@@ -271,74 +276,6 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     return "Good evening";
   };
 
-  // Mobile detection
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // File upload handler
-  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-
-    setUploading(true);
-    try {
-      const file = files[0];
-      
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Invalid File Type",
-          description: "Please upload an image file (JPG, PNG, GIF, etc.)",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Validate file size (max 10MB)
-      const maxSize = 10 * 1024 * 1024;
-      if (file.size > maxSize) {
-        toast({
-          title: "File Too Large",
-          description: "Please upload an image smaller than 10MB",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      toast({
-        title: "Uploading Image...",
-        description: `Processing ${file.name}`,
-      });
-
-      // Here you would typically upload to your server or storage
-      // For now, we'll just show a success message
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate upload
-
-      toast({
-        title: "Upload Successful!",
-        description: `${file.name} has been uploaded`,
-      });
-    } catch (error) {
-      toast({
-        title: "Upload Failed",
-        description: error instanceof Error ? error.message : "Failed to upload image",
-        variant: "destructive",
-      });
-    } finally {
-      setUploading(false);
-      if (event.target) {
-        event.target.value = ''; // Reset input
-      }
-    }
-  }, [toast]);
-
   const statsLoadingWithoutData = statsLoading && !statsData;
   const statsUnavailable = (!statsLoading && !statsData && statsError instanceof Error) || statsLoadingWithoutData;
   const statsSummary = {
@@ -395,7 +332,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
       description: "Best communities for you",
       icon: <Target className="h-6 w-6" />,
       color: "from-orange-500 to-orange-600",
-      route: "/communities",
+      route: "/reddit/communities",
       group: "core",
       requiredMilestones: ["connectedReddit"],
       completeMilestone: "selectedCommunities"
@@ -692,7 +629,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                   </p>
                 </div>
                 <Button
-                  onClick={() => setLocation('/communities')}
+                  onClick={() => setLocation('/reddit/communities')}
                   className="bg-white text-blue-600 hover:bg-gray-100"
                 >
                   Browse Communities
@@ -838,7 +775,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
               <span>Media Gallery</span>
             </button>
             <button 
-              onClick={() => setLocation('/communities')}
+              onClick={() => setLocation('/reddit/communities')}
               className="w-full flex items-center gap-3 px-3 py-2.5 text-white hover:bg-purple-600/20 rounded-lg transition-all"
             >
               <Users className="h-5 w-5" />

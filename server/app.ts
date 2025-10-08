@@ -8,7 +8,7 @@ import { registerRoutes } from './routes.js';
 import { setupAuth } from './auth.js';
 import { setupSocialAuth } from './social-auth.js';
 import { mountBillingRoutes } from './routes/billing.js';
-import { authLimiter, generalLimiter, sanitize } from './middleware/security.js';
+import { generalLimiter, sanitize } from './middleware/security.js';
 import { permissionsPolicy } from './middleware/permissions-policy.js';
 import { mountStripeWebhook } from './routes/webhooks.stripe.js';
 import { logger } from './bootstrap/logger.js';

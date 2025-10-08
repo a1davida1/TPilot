@@ -2078,7 +2078,7 @@ function generateTitles(
   const profile = profiles[params.platform] ?? profiles.default;
   const maxSentenceLengths = profile.maxSentenceLength;
   const emojiCount = pickRandom(profile.emojiDensity);
-  const callToAction = pickRandom(profile.callToActions);
+  const _callToAction = pickRandom(profile.callToActions);
   const context: PlatformPostProcessContext = {
     emojiPool: toneStyle.emojis,
     emojiCount

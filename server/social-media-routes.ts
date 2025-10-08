@@ -349,11 +349,11 @@ export function registerSocialMediaRoutes(app: Express) {
       const sanitizedAccountMetadata = sanitizeAccountMetadata(account.metadata);
       const metadataStrings = extractStringMetadata(sanitizedAccountMetadata);
       const syncSet = getCredentialSet(sanitizedAccountMetadata, 'sync');
-      let connectionRole: AccountCredentialRole = 'sync';
+      let _connectionRole: AccountCredentialRole = 'sync';
       let credentialSetForRole = syncSet;
 
       if (!syncSet || Object.keys(credentialSetToStringRecord(syncSet)).length === 0) {
-        connectionRole = 'posting';
+        _connectionRole = 'posting';
         credentialSetForRole = getCredentialSet(sanitizedAccountMetadata, 'posting');
       }
 

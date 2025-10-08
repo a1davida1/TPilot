@@ -638,7 +638,6 @@ export function EnhancedAIGenerator({
                 </div>
               </div>
             )}
-
             <div className="space-y-2">
               <Label className="text-sm font-medium text-amber-700">Photo Instructions:</Label>
               <div className="relative p-3 bg-white rounded-lg border">
@@ -646,7 +645,11 @@ export function EnhancedAIGenerator({
                   {photoInstructionFields.map(({ key, label }) => (
                     <div key={key} className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1">
                       <dt className="font-semibold text-orange-700">{label}</dt>
-                      <dd className="sm:text-right">{generatedContent.photoInstructions[key]}</dd>
+                      <dd className="sm:text-right">
+                        {typeof generatedContent.photoInstructions === 'object' && generatedContent.photoInstructions
+                          ? (generatedContent.photoInstructions as Record<string, string | undefined>)[key] ?? ''
+                          : ''}
+                      </dd>
                     </div>
                   ))}
                 </dl>
@@ -654,7 +657,10 @@ export function EnhancedAIGenerator({
                   variant="ghost"
                   size="sm"
                   onClick={() =>
-                    copyToClipboard(JSON.stringify(generatedContent.photoInstructions, null, 2), "Photo Instructions")
+                    copyToClipboard(
+                      JSON.stringify(generatedContent.photoInstructions ?? {}, null, 2),
+                      "Photo Instructions"
+                    )
                   }
                   className="absolute top-2 right-2 h-7 px-2 text-xs opacity-70 hover:opacity-100 text-orange-600"
                 >

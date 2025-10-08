@@ -145,6 +145,17 @@ referralRouter.post('/apply', authenticateToken(false), async (req: AuthRequest,
         });
       }
 
+      if (!sanitizedApplicant.email) {
+        logger.warn('Anonymous referral attempt missing applicant email', {
+          referralCode: normalizedCode,
+        });
+
+        return res.status(400).json({
+          success: false,
+          error: 'Email address is required to apply a referral code.',
+        });
+      }
+
       const [emailOwner] = await db
         .select({ id: users.id })
         .from(users)

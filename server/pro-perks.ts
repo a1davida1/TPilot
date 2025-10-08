@@ -587,7 +587,7 @@ export const perkSuccessMetrics = {
 };
 
 // Generate referral code for a user and perk
-export async function generateReferralCode(userId: number, perkId: string): Promise<string> {
+export async function generateReferralCode(userId: number, _perkId: string): Promise<string> {
   const referralCode = await ReferralManager.getUserReferralCode(userId);
   return referralCode;
 }

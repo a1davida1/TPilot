@@ -24,6 +24,9 @@ interface PostJob {
   updatedAt: string;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
 interface SchedulePostForm {
   subreddit: string;
   title: string;
@@ -291,6 +294,10 @@ export default function PostScheduler() {
             <div className="space-y-4">
               {(scheduledPosts as PostJob[])?.map((post: PostJob) => {
                 const { date, time } = formatDateTime(post.scheduledAt);
+                const resultData = isRecord(post.resultJson) ? post.resultJson : null;
+                const resultUrl = typeof resultData?.url === 'string' ? resultData.url : undefined;
+                const resultError = typeof resultData?.error === 'string' ? resultData.error : undefined;
+
                 return (
                   <div key={post.id} className="border rounded-lg p-4 space-y-3">
                     <div className="flex items-start justify-between">
@@ -313,11 +320,11 @@ export default function PostScheduler() {
                       </div>
                     </div>
                     
-                    {post.status === 'sent' && (post.resultJson as Record<string, unknown>)?.url && (
+                    {post.status === 'sent' && resultUrl && (
                       <div className="flex items-center gap-2 text-sm">
                         <CheckCircle2 className="h-4 w-4 text-green-500" />
                         <a 
-                          href={(post.resultJson as Record<string, unknown>).url as string}
+                          href={resultUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-500 hover:underline"
@@ -327,10 +334,10 @@ export default function PostScheduler() {
                       </div>
                     )}
                     
-                    {post.status === 'failed' && (post.resultJson as Record<string, unknown>)?.error && (
+                    {post.status === 'failed' && resultError && (
                       <div className="flex items-center gap-2 text-sm text-red-600">
                         <XCircle className="h-4 w-4" />
-                        <span>Failed: {(post.resultJson as Record<string, unknown>).error as string}</span>
+                        <span>Failed: {resultError}</span>
                       </div>
                     )}
                   </div>

@@ -1,4 +1,5 @@
 import { GoogleGenAI, type GoogleGenAIOptions } from "@google/genai";
+import { logger } from "../bootstrap/logger.js";
 import { env } from "./config.js";
 
 // Debug helper
@@ -66,8 +67,8 @@ const apiKey =
 const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-2.5-flash";
 const VISION_MODEL = process.env.GEMINI_VISION_MODEL || "gemini-2.5-flash";
 
-console.log(`[Gemini] Text model: ${TEXT_MODEL}`);
-console.log(`[Gemini] Vision model: ${VISION_MODEL}`);
+logger.info(`[Gemini] Text model: ${TEXT_MODEL}`);
+logger.info(`[Gemini] Vision model: ${VISION_MODEL}`);
 
 type GeminiContentPart = Record<string, unknown> | string | number | boolean | null;
 

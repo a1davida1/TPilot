@@ -1,0 +1,3 @@
+{"filename":"test.jpg","level":"info","message":"File uploaded successfully","size":15,"timestamp":"2025-10-07T10:24:35.124Z","userId":1}
+{"error":"Storage quota exceeded. Used: 100MB, Quota: 100MB","level":"error","message":"Upload error","timestamp":"2025-10-07T10:24:35.134Z"}
+{"error":"Upload failed","level":"error","message":"Upload error","timestamp":"2025-10-07T10:24:35.139Z"}

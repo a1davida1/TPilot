@@ -283,9 +283,8 @@ describe('GettingStarted', () => {
 
   describe('Visual States', () => {
     it('should display correct tier badge for different user tiers', async () => {
-      const { unmount } = await act(async () => {
+      await act(async () => {
         root.render(renderWithProvider(<GettingStarted userTier="guest" />));
-        return { unmount: () => {} };
       });
       
       let tierBadge = Array.from(container.querySelectorAll('.bg-purple-100')).find(

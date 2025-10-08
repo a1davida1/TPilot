@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 export default function ChangePasswordPage() {
   const [_location, navigate] = useLocation();
   const { user } = useAuth();
-  const typedUser: AuthUser | null = user;
+  const typedUser: AuthUser | null = user ?? null;
 
   // Get userId from URL params
   const urlParams = new URLSearchParams(window.location.search);

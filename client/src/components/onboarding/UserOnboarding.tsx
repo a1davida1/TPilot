@@ -314,14 +314,6 @@ export default function UserOnboarding() {
     });
   };
 
-  const startMainTutorial = () => {
-    // Mark step as completed and provide user feedback
-    const currentStepId = onboardingSteps[currentStep].id;
-    setCompletedSteps(prev => new Set([...prev, currentStepId]));
-    // In a real implementation, this would navigate to the content creator
-    // or open a guided tutorial overlay
-  };
-
   // Complete current tutorial step
   const handleComplete = () => {
     const currentStepId = onboardingSteps[currentStep].id;

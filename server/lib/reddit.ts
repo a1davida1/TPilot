@@ -1722,13 +1722,14 @@ export class RedditManager {
         .filter((sub: SubmissionRecord) => !publicPostIds.has(sub.id))
         .map((sub: SubmissionRecord) => ({
           id: sub.id,
-          title: sub.title,
-          createdUtc: sub.created_utc
+          title: sub.title ?? '(untitled post)',
+          createdUtc: typeof sub.created_utc === 'number' ? sub.created_utc : 0,
         }));
 
       const totalSelfPosts = recentSubmissions.length;
       const publicCount = publicSubmissions.length;
       const hiddenCount = hiddenPosts.length;
+
       const isShadowbanned = hiddenCount > 0;
 
       let statusMessage = '';

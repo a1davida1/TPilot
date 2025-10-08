@@ -92,12 +92,12 @@ export function RedditCommunities() {
   const [filterPromotion, setFilterPromotion] = useState<string>('all');
   const [filterVerification, setFilterVerification] = useState<string>('all');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
-  const { hasFullAccess, isVerified, user, isLoading: authLoading } = useAuth();
+  const { hasFullAccess, isVerified, user, isLoading: _authLoading } = useAuth();
 
   // Fetch communities data - Available to all users
   const {
     data: communities = [],
-    isLoading: communitiesLoading,
+    isLoading: _communitiesLoading,
     error: communitiesError,
   } = useQuery({
     queryKey: ['/api/reddit/communities', filterCategory, searchTerm],

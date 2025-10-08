@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 30
+    },
+    "auditLog": "/home/dave/CascadeProjects/TPilot/logs/.d55462594c066aa1de6daecd55e01bdf8b5d1d71-audit.json",
+    "files": [
+        {
+            "date": 1759832681114,
+            "name": "/home/dave/CascadeProjects/TPilot/logs/rejections-2025-10-07.log",
+            "hash": "9a483a4d855ea7077c8c9e659fa7daa87dadf442ac4fde592092573880809b7c"
+        }
+    ],
+    "hashType": "sha256"
+}

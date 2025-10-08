@@ -1,5 +1,6 @@
 // OpenRouter client using OpenAI SDK for InternVL3-78B
 import OpenAI from "openai";
+import { logger } from "../bootstrap/logger.js";
 import { FRONTEND_URL } from "../config.js";
 
 const baseURL = "https://openrouter.ai/api/v1";
@@ -17,7 +18,7 @@ const DEFAULT_MODEL = process.env.OPENROUTER_MODEL || "opengvlab/internvl3-78b";
 export const GROK_4_FAST = "x-ai/grok-4-fast";
 export const INTERNVL_78B = "opengvlab/internvl3-78b";
 
-console.log(`[OpenRouter] Default model: ${DEFAULT_MODEL}`);
+logger.info(`[OpenRouter] Default model: ${DEFAULT_MODEL}`);
 
 export const openrouter = apiKey ? new OpenAI({
   apiKey,
@@ -39,7 +40,7 @@ export async function generateText(opts: {
   }
 
   const model = opts.model || DEFAULT_MODEL;
-  console.log(`[OpenRouter] Text generation with model: ${model}`);
+  logger.debug(`[OpenRouter] Text generation with model: ${model}`);
   
   const resp = await openrouter.chat.completions.create({
     model,
@@ -66,7 +67,7 @@ export async function generateVision(opts: {
   }
 
   const model = opts.model || DEFAULT_MODEL;
-  console.log(`[OpenRouter] Vision generation with model: ${model}`);
+  logger.debug(`[OpenRouter] Vision generation with model: ${model}`);
 
   const messages: any[] = [];
   

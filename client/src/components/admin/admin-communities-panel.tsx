@@ -80,6 +80,11 @@ interface CommunityFormState {
   competitionLevel: CompetitionLevel;
 }
 
+type StructuredRules = NonNullable<CommunityRules>;
+type StructuredEligibility = NonNullable<StructuredRules['eligibility']>;
+type StructuredContent = NonNullable<StructuredRules['content']>;
+type StructuredPosting = NonNullable<StructuredRules['posting']>;
+
 const defaultFormState: CommunityFormState = {
   id: '',
   name: '',
@@ -123,7 +128,7 @@ function parseList(value: string): string[] | undefined {
     .split(/\n|,/)
     .map(item => item.trim())
     .filter(Boolean);
-  return items.length ? items : undefined;
+  return items.length > 0 ? items : undefined;
 }
 
 function toStringValue(value: string | number | null | undefined): string {
@@ -131,49 +136,90 @@ function toStringValue(value: string | number | null | undefined): string {
   return String(value);
 }
 
-interface RuleContext {
-  eligibility: RedditCommunityRuleSet['eligibility'] | null | undefined;
-  content: RedditCommunityRuleSet['content'] | null | undefined;
-  posting: RedditCommunityRuleSet['posting'] | null | undefined;
-  legacy: LegacyRedditCommunityRuleSet | null | undefined;
-}
-
-function getRuleContext(community: AdminCommunity): RuleContext {
-  const rules = community.rules ?? null;
-  const legacyRules = community.legacyRules ?? null;
+function splitRuleContext(community: AdminCommunity): {
+  structured: RedditCommunityRuleSet | null;
+  legacy: LegacyRedditCommunityRuleSet | null;
+} {
   return {
-    eligibility: rules?.eligibility ?? legacyRules,
-    content: rules?.content ?? legacyRules,
-    posting: rules?.posting ?? legacyRules,
-    legacy: legacyRules,
+    structured: community.rules ?? null,
+    legacy: community.legacyRules ?? null,
   };
 }
 
 function formToPayload(formState: CommunityFormState): CommunityPayload {
-  const rules: Partial<CommunityRules> = {
-    eligibility: {
-      minKarma: parseNumber(formState.rulesMinKarma),
-      minAccountAgeDays: parseNumber(formState.rulesMinAccountAge),
-    },
-    content: {
-      watermarksAllowed: formState.rulesWatermarksAllowed === 'allowed' ? true : 
-                        formState.rulesWatermarksAllowed === 'disallowed' ? false : null,
-      sellingPolicy: formState.rulesSellingAllowed === 'unspecified' ? undefined : formState.rulesSellingAllowed as RedditCommunitySellingPolicy,
-      titleGuidelines: parseList(formState.rulesTitleRules),
-      contentGuidelines: parseList(formState.rulesContentRules),
-      linkRestrictions: parseList(formState.rulesLinkRestrictions),
-    },
-    posting: {
-      maxPostsPerDay: parseNumber(formState.postingLimitsPerDay),
-      cooldownHours: parseNumber(formState.postingLimitsCooldownHours),
-    }
-  };
+  const rulesPayload: Partial<StructuredRules> = {};
 
-  const postingLimits: PostingLimits = {
-    perDay: parseNumber(formState.postingLimitsPerDay),
-    perWeek: parseNumber(formState.postingLimitsPerWeek),
-    cooldownHours: parseNumber(formState.postingLimitsCooldownHours),
-  };
+  const minKarma = parseNumber(formState.rulesMinKarma);
+  const minAccountAgeDays = parseNumber(formState.rulesMinAccountAge);
+  const eligibilitySection: StructuredEligibility = {};
+  if (minKarma !== undefined) {
+    eligibilitySection.minKarma = minKarma;
+  }
+  if (minAccountAgeDays !== undefined) {
+    eligibilitySection.minAccountAgeDays = minAccountAgeDays;
+  }
+  if (Object.keys(eligibilitySection).length > 0) {
+    rulesPayload.eligibility = eligibilitySection;
+  }
+
+  const titleGuidelines = parseList(formState.rulesTitleRules);
+  const contentGuidelines = parseList(formState.rulesContentRules);
+  const linkRestrictions = parseList(formState.rulesLinkRestrictions);
+
+  const sellingPolicy =
+    formState.rulesSellingAllowed === 'unspecified'
+      ? undefined
+      : (formState.rulesSellingAllowed as RedditCommunitySellingPolicy);
+
+  const watermarksAllowed =
+    formState.rulesWatermarksAllowed === 'allowed'
+      ? true
+      : formState.rulesWatermarksAllowed === 'disallowed'
+        ? false
+        : null;
+
+  const hasContentData =
+    sellingPolicy !== undefined ||
+    watermarksAllowed !== null ||
+    (titleGuidelines?.length ?? 0) > 0 ||
+    (contentGuidelines?.length ?? 0) > 0 ||
+    (linkRestrictions?.length ?? 0) > 0;
+
+  if (hasContentData) {
+    const contentSection: StructuredContent = {
+      titleGuidelines: titleGuidelines ?? [],
+      contentGuidelines: contentGuidelines ?? [],
+      linkRestrictions: linkRestrictions ?? [],
+      bannedContent: [],
+      formattingRequirements: [],
+    };
+
+    if (sellingPolicy !== undefined) {
+      contentSection.sellingPolicy = sellingPolicy;
+    }
+    if (watermarksAllowed !== null) {
+      contentSection.watermarksAllowed = watermarksAllowed;
+    }
+
+    rulesPayload.content = contentSection;
+  }
+
+  const postingLimits: PostingLimits = {};
+  const perDay = parseNumber(formState.postingLimitsPerDay);
+  const perWeek = parseNumber(formState.postingLimitsPerWeek);
+  const cooldownHours = parseNumber(formState.postingLimitsCooldownHours);
+
+  if (perDay !== undefined) postingLimits.perDay = perDay;
+  if (perWeek !== undefined) postingLimits.perWeek = perWeek;
+  if (cooldownHours !== undefined) postingLimits.cooldownHours = cooldownHours;
+
+  if (Object.keys(postingLimits).length > 0) {
+    const postingRule: StructuredPosting = {
+      maxPostsPerDay: perDay ?? null,
+      cooldownHours: cooldownHours ?? null,
+    };
+    rulesPayload.posting = postingRule;
+  }
 
   return {
     id: formState.id || undefined,
@@ -184,35 +230,40 @@ function formToPayload(formState: CommunityFormState): CommunityPayload {
     engagementRate: parseNumber(formState.engagementRate) || 0,
     verificationRequired: formState.verificationRequired,
     promotionAllowed: formState.promotionAllowed,
-    postingLimits: Object.values(postingLimits).some(v => v !== undefined) ? postingLimits : null,
-    rules: Object.values(rules).some(section => section && Object.values(section).some(v => v !== undefined && v !== null)) ? rules : null,
-    bestPostingTimes: parseList(formState.bestPostingTimes),
+    postingLimits: Object.keys(postingLimits).length > 0 ? postingLimits : null,
+    rules: Object.keys(rulesPayload).length > 0 ? rulesPayload : null,
+    bestPostingTimes: parseList(formState.bestPostingTimes) ?? null,
     averageUpvotes: parseNumber(formState.averageUpvotes),
     successProbability: parseNumber(formState.successProbability),
     growthTrend: formState.growthTrend,
     modActivity: formState.modActivity,
     description: formState.description || null,
-    tags: parseList(formState.tags),
+    tags: parseList(formState.tags) ?? null,
     competitionLevel: formState.competitionLevel,
   };
 }
 
 function communityToForm(community: AdminCommunity): CommunityFormState {
-  const { eligibility, content, posting, legacy } = getRuleContext(community);
+  const { structured, legacy } = splitRuleContext(community);
+
+  const structuredEligibility = structured?.eligibility;
+  const structuredContent = structured?.content;
+  const structuredPosting = structured?.posting;
+
   const postingLimits = community.postingLimits ?? null;
-  const titleGuidelines = content?.titleGuidelines ?? legacy?.titleRules ?? [];
-  const contentGuidelines = content?.contentGuidelines ?? legacy?.contentRules ?? [];
-  const linkRestrictions = content?.linkRestrictions ?? [] as string[];
-  const watermarksAllowed = content?.watermarksAllowed ?? legacy?.watermarksAllowed ?? null;
-  const sellingPolicy = content?.sellingPolicy ?? legacy?.sellingAllowed ?? undefined;
-  const minKarma = eligibility?.minKarma ?? legacy?.minKarma ?? null;
+  const titleGuidelines = structuredContent?.titleGuidelines ?? legacy?.titleRules ?? [];
+  const contentGuidelines = structuredContent?.contentGuidelines ?? legacy?.contentRules ?? [];
+  const linkRestrictions = structuredContent?.linkRestrictions ?? [];
+  const watermarksAllowed = structuredContent?.watermarksAllowed ?? legacy?.watermarksAllowed ?? null;
+  const sellingPolicy = structuredContent?.sellingPolicy ?? legacy?.sellingAllowed ?? undefined;
+  const minKarma = structuredEligibility?.minKarma ?? legacy?.minKarma ?? null;
   const minAccountAge =
-    eligibility?.minAccountAgeDays ?? legacy?.minAccountAge ?? legacy?.minAccountAgeDays ?? null;
+    structuredEligibility?.minAccountAgeDays ?? legacy?.minAccountAge ?? legacy?.minAccountAgeDays ?? null;
   const maxPostsPerDay =
-    postingLimits?.perDay ?? posting?.maxPostsPerDay ?? legacy?.maxPostsPerDay ?? null;
+    postingLimits?.perDay ?? structuredPosting?.maxPostsPerDay ?? legacy?.maxPostsPerDay ?? null;
   const maxPostsPerWeek = postingLimits?.perWeek ?? null;
   const cooldownHours =
-    postingLimits?.cooldownHours ?? posting?.cooldownHours ?? legacy?.cooldownHours ?? null;
+    postingLimits?.cooldownHours ?? structuredPosting?.cooldownHours ?? legacy?.cooldownHours ?? null;
 
   return {
     id: community.id,
@@ -254,7 +305,9 @@ function communityToForm(community: AdminCommunity): CommunityFormState {
 }
 
 function RuleSummary({ community }: { community: AdminCommunity }) {
-  const { eligibility, content, legacy } = getRuleContext(community);
+  const { structured, legacy } = splitRuleContext(community);
+  const eligibility = structured?.eligibility ?? null;
+  const content = structured?.content ?? null;
   const ruleItems: string[] = [];
 
   const minKarma = eligibility?.minKarma ?? legacy?.minKarma;

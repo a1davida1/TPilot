@@ -283,7 +283,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
     }
 
     // Generate secure output filename
-    let outputFilename: string | undefined;
+    let outputFilename: string | null = null;
     try {
       outputFilename = `protected-${crypto.randomBytes(16).toString('hex')}.jpg`;
       processedFilePath = path.join(process.cwd(), 'uploads', outputFilename);
@@ -315,9 +315,10 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
     }
 
     // Apply ImageShield protection with retry and timeout
+    const targetFilePath = processedFilePath;
     const protect = () => applyImageShieldProtection(
       tempFilePath,
-      processedFilePath,
+      targetFilePath,
       validatedRequest.protectionLevel,
       validatedRequest.addWatermark,
       String(authReq.user?.id)

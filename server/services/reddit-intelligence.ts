@@ -1,5 +1,5 @@
 import { getRedditServiceClient, registerDefaultRedditClients, REDDIT_SERVICE_CLIENT_KEYS } from '../lib/reddit.js';
-import { listCommunities, type NormalizedRedditCommunity, getEligibleCommunitiesForUser } from '../reddit-communities.js';
+import { listCommunities, type NormalizedRedditCommunity } from '../reddit-communities.js';
 import { stateStore } from './state-store.js';
 import { logger } from '../lib/logger.js';
 import { db } from '../db.js';
@@ -241,7 +241,7 @@ export class RedditIntelligenceService {
 
   async getIntelligence(options?: IntelligenceOptions): Promise<RedditIntelligenceDataset> {
     const cacheKey = this.buildCacheKey(options?.userId);
-    const optInPersonalized = options?.userId !== undefined;
+    const _optInPersonalized = options?.userId !== undefined;
     
     try {
       const cached = await this.cacheStore.get(cacheKey);
@@ -548,7 +548,7 @@ export class RedditIntelligenceService {
   private async computeSubredditHealth(
     communities: NormalizedRedditCommunity[],
     trendingTopics: RedditTrendingTopic[],
-    userCommunities: string[] = []
+    _userCommunities: string[] = []
   ): Promise<SubredditHealthMetric[]> {
     const trendingSet = new Set<string>(
       trendingTopics.map(topic => normalizeSubredditName(topic.subreddit)),
@@ -674,7 +674,7 @@ export class RedditIntelligenceService {
   private buildForecastingSignals(
     trendingTopics: RedditTrendingTopic[],
     communityMap: Map<string, NormalizedRedditCommunity>,
-    userCommunities: string[] = []
+    _userCommunities: string[] = []
   ): RedditForecastingSignal[] {
     const signals: RedditForecastingSignal[] = [];
 

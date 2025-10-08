@@ -9,7 +9,6 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
   TrendingUp, 
-  TrendingDown, 
   Eye, 
   MessageCircle, 
   Users, 
@@ -102,22 +101,6 @@ export function TrendIntelligence() {
   const resolveRationale = (value: string) => {
     const trimmed = value.trim();
     return trimmed.length > 0 ? trimmed : null;
-  };
-
-  const getTrendIcon = (trend: string) => {
-    switch (trend) {
-      case 'rising': return <TrendingUp className="h-4 w-4 text-green-400" />;
-      case 'declining': return <TrendingDown className="h-4 w-4 text-red-400" />;
-      default: return <div className="h-4 w-4 rounded-full bg-yellow-400" />;
-    }
-  };
-
-  const getTrendColor = (trend: string) => {
-    switch (trend) {
-      case 'rising': return 'text-green-400';
-      case 'declining': return 'text-red-400';
-      default: return 'text-yellow-400';
-    }
   };
 
   // Derive trending topics with metadata

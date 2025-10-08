@@ -260,9 +260,42 @@ async function applyExistingOverrides(subreddit: string, newSpec: RuleSpecBase):
 /**
  * Sync rules for a single subreddit
  */
-function mapRuleSpecToCommunityRules(spec: RuleSpec): RedditCommunityRuleSet {
-  const defaults = createDefaultRules();
+type StructuredRuleSet = NonNullable<RedditCommunityRuleSet>;
+type EligibilityRulesDefaults = NonNullable<StructuredRuleSet['eligibility']>;
+type ContentRulesDefaults = NonNullable<StructuredRuleSet['content']>;
+type PostingRulesDefaults = NonNullable<StructuredRuleSet['posting']>;
 
+function mapRuleSpecToCommunityRules(spec: RuleSpec): RedditCommunityRuleSet {
+  const defaults = createDefaultRules() as RedditCommunityRuleSet | undefined;
+
+  const eligibilityDefaults: EligibilityRulesDefaults = {
+    minKarma: null,
+    minAccountAgeDays: null,
+    verificationRequired: false,
+    requiresApproval: false,
+    ...(defaults?.eligibility ?? {}),
+  };
+
+  const contentDefaults: ContentRulesDefaults = {
+    watermarksAllowed: null,
+    promotionalLinks: null,
+    requiresOriginalContent: false,
+    nsfwRequired: false,
+    titleGuidelines: [],
+    contentGuidelines: [],
+    linkRestrictions: [],
+    bannedContent: [],
+    formattingRequirements: [],
+    ...(defaults?.content ?? {}),
+  };
+
+  const postingDefaults: PostingRulesDefaults = {
+    maxPostsPerDay: null,
+    cooldownHours: null,
+    ...(defaults?.posting ?? {}),
+  };
+
+  const defaultNotes = defaults?.notes ?? null;
   const sellingPolicy = (() => {
     if (spec.linkPolicy === 'no-link') return 'not_allowed';
     if (spec.linkPolicy === 'one-link') return 'limited';
@@ -272,30 +305,30 @@ function mapRuleSpecToCommunityRules(spec: RuleSpec): RedditCommunityRuleSet {
 
   return {
     eligibility: {
-      minKarma: spec.manualFlags?.minKarma ?? defaults.eligibility?.minKarma ?? null,
-      minAccountAgeDays: spec.manualFlags?.minAccountAgeDays ?? defaults.eligibility?.minAccountAgeDays ?? null,
-      verificationRequired: spec.manualFlags?.verificationRequired ?? defaults.eligibility?.verificationRequired ?? false,
-      requiresApproval: defaults.eligibility?.requiresApproval ?? false,
+      minKarma: spec.manualFlags?.minKarma ?? eligibilityDefaults.minKarma ?? null,
+      minAccountAgeDays: spec.manualFlags?.minAccountAgeDays ?? eligibilityDefaults.minAccountAgeDays ?? null,
+      verificationRequired: spec.manualFlags?.verificationRequired ?? eligibilityDefaults.verificationRequired ?? false,
+      requiresApproval: eligibilityDefaults.requiresApproval ?? false,
     },
     content: {
       sellingPolicy,
-      watermarksAllowed: defaults.content?.watermarksAllowed ?? null,
-      promotionalLinks: defaults.content?.promotionalLinks ?? null,
-      requiresOriginalContent: spec.flairRequired ?? defaults.content?.requiresOriginalContent ?? false,
-      nsfwRequired: defaults.content?.nsfwRequired ?? false,
-      titleGuidelines: spec.titleRegexes?.map(regex => `Avoid pattern: ${regex}`) ?? defaults.content?.titleGuidelines ?? [],
-      contentGuidelines: spec.wikiNotes ?? defaults.content?.contentGuidelines ?? [],
-      linkRestrictions: spec.requiredTags ?? defaults.content?.linkRestrictions ?? [],
-      bannedContent: spec.bannedWords ?? defaults.content?.bannedContent ?? [],
-      formattingRequirements: defaults.content?.formattingRequirements ?? [],
+      watermarksAllowed: contentDefaults.watermarksAllowed ?? null,
+      promotionalLinks: contentDefaults.promotionalLinks ?? null,
+      requiresOriginalContent: spec.flairRequired ?? contentDefaults.requiresOriginalContent ?? false,
+      nsfwRequired: contentDefaults.nsfwRequired ?? false,
+      titleGuidelines: spec.titleRegexes?.map(regex => `Avoid pattern: ${regex}`) ?? contentDefaults.titleGuidelines ?? [],
+      contentGuidelines: spec.wikiNotes ?? contentDefaults.contentGuidelines ?? [],
+      linkRestrictions: spec.requiredTags ?? contentDefaults.linkRestrictions ?? [],
+      bannedContent: spec.bannedWords ?? contentDefaults.bannedContent ?? [],
+      formattingRequirements: contentDefaults.formattingRequirements ?? [],
     },
     posting: {
-      maxPostsPerDay: defaults.posting?.maxPostsPerDay ?? null,
-      cooldownHours: defaults.posting?.cooldownHours ?? null,
+      maxPostsPerDay: postingDefaults.maxPostsPerDay ?? null,
+      cooldownHours: postingDefaults.cooldownHours ?? null,
     },
     notes: (spec.manualFlags?.notes && spec.manualFlags.notes.length > 0)
       ? spec.manualFlags.notes.join('\n')
-      : defaults.notes ?? null,
+      : defaultNotes,
   };
 }
 

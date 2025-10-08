@@ -57,7 +57,7 @@ export class PgQueue implements IQueue {
     options: { concurrency?: number } = {}
   ): Promise<void> {
     this.processors.set(queueName, {
-      handler,
+      handler: handler as QueueJobHandler<unknown>,
       concurrency: options.concurrency || 1,
       active: true,
     });

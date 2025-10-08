@@ -1,3 +1,11 @@
+/**
+ * Dashboard Page Container
+ *
+ * Responsibilities:
+ * - Handles URL params (OAuth callbacks, verification banners, guest mode)
+ * - Resolves auth state, user tier, admin status, and reddit connection
+ * - Passes a minimal typed `user` to the presentational component `ModernDashboard`
+ */
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
@@ -160,7 +168,11 @@ export default function Dashboard() {
   
   return (
     <ModernDashboard 
-      user={user ? { ...user, username: user.username || user.email || 'User' } : undefined} 
+      user={user ? { 
+        ...user, 
+        username: user.username || user.email || 'User',
+        email: user.email ?? undefined,
+      } : undefined} 
       userTier={userTier} 
       isAdmin={isAdmin}
       isRedditConnected={isRedditConnected}

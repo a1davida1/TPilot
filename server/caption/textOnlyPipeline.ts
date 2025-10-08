@@ -415,7 +415,7 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
     let rawText: string | undefined;
     try {
       rawText = await resolveResponseText(response);
-    } catch (error) {
+    } catch (_error) {
       console.error("Gemini: empty response received in text-only pipeline, using fallback variants");
       return candidates;
     }
