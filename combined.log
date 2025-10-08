@@ -10,3 +10,6 @@
 {"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-08T03:33:27.809Z"}
 {"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-08T03:33:28.505Z"}
 {"level":"warn","message":"API 404","method":"GET","originalUrl":"/api/debug/reddit-session","path":"/","timestamp":"2025-10-08T03:33:28.520Z","url":"/"}
+{"filename":"test.jpg","level":"info","message":"File uploaded successfully","size":15,"timestamp":"2025-10-08T03:33:35.389Z","userId":1}
+{"error":"Storage quota exceeded. Used: 100MB, Quota: 100MB","level":"error","message":"Upload error","timestamp":"2025-10-08T03:33:35.398Z"}
+{"error":"Upload failed","level":"error","message":"Upload error","timestamp":"2025-10-08T03:33:35.404Z"}
