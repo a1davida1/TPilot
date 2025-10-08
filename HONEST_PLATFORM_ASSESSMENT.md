@@ -108,18 +108,18 @@ Config/Scripts:   ~8,400 lines
 
 **What "Stripe working" means:**
 ✅ Test mode works  
-⚠️ Production mode: Unknown  
-❌ CCBill, Paxum, Coinbase: Not implemented  
-❌ Refunds, disputes, webhooks: Unknown status  
-❌ Subscription management: Unknown completeness  
+- **Production mode**: ⚠️ Unknown status.  
+- **High-risk processors**: ❌ CCBill, Paxum, Coinbase integrations missing.  
+- **Lifecycle handling**: ❌ Refunds, disputes, webhook flows undocumented.  
+- **Subscription management**: ❌ Completeness unclear (upgrades/downgrades).
 
-**Critical Questions:**
-- Have you processed a REAL payment?
-- Are webhooks tested in production?
-- What happens when a payment fails?
-- Can users actually upgrade/downgrade?
+**Critical questions to resolve**
+- Have we processed a real payment end-to-end?  
+- Are production webhooks verified?  
+- What is the behavior on payment failure?  
+- Can users upgrade or downgrade without manual ops support?
 
-**Revised Score: 5/10** (Basic integration, not battle-tested)
+**Revised score**: **5/10** – baseline integration exists, but not battle-tested.
 
 ---
 
@@ -128,20 +128,19 @@ Config/Scripts:   ~8,400 lines
 **My Original Claim:** "100% operational"  
 **Reality Check:** What can admins actually DO?
 
-**Probably Works:**
-✅ View users  
-✅ View analytics  
-✅ Basic CRUD operations  
+- **What seems to work today**  
+  - ✅ User directory  
+  - ✅ Analytics snapshot  
+  - ✅ Basic CRUD for core resources  
+- **Gaps to close**  
+  - ❌ Refund / charge management  
+  - ❌ Support impersonation workflow  
+  - ❌ Ban & suspension tooling  
+  - ❌ Content moderation queue  
+  - ❌ Financial & payout reporting  
+  - ❌ System health visibility  
 
-**Probably Missing:**
-❌ Refund processing  
-❌ User impersonation (for support)  
-❌ Ban/suspend users  
-❌ Content moderation tools  
-❌ Financial reports  
-❌ System health monitoring  
-
-**Revised Score: 6/10** (Basic dashboard, not full admin suite)
+**Revised score**: **6/10** – useful dashboard but not yet an operational admin suite.
 
 ---
 
@@ -150,11 +149,11 @@ Config/Scripts:   ~8,400 lines
 **My Original Claim:** "Good interfaces, just needs strict mode"  
 **Reality Check:** I was TOO SOFT
 
-**Actual Problems:**
-- ❌ Strict mode OFF = type safety theater
-- ❌ 39 files with `any` types = runtime bombs
-- ❌ 69 files with console.log = unprofessional
-- ❌ ESLint warnings probably ignored
+**Reality check**
+- ❌ Strict mode disabled → false sense of type safety  
+- ❌ 39 files still using `any` → runtime risk  
+- ❌ 69 files logging to console → noisy, unprofessional  
+- ❌ ESLint signal likely ignored → no enforcement
 - ❌ Type errors probably hidden
 
 **The Truth:** Your type safety is an ILLUSION. You have TypeScript syntax but not TypeScript safety.

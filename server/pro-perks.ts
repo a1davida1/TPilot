@@ -504,6 +504,306 @@ export const realProPerks: ProPerk[] = [
       'Wallet security guidance'
     ]
   }
+  ,
+  {
+    id: 'stripchat-affiliate',
+    name: 'Stripchat Affiliate Network',
+    category: 'affiliate',
+    tier: 'pro',
+    description: 'Live cam platform with high-converting white-label and revshare offers.',
+    commissionRate: 'Up to 45% lifetime revenue share or $120 CPA',
+    requirements: ['Verified affiliate account', 'Compliant traffic sources'],
+    signupProcess: 'Apply at Stripchat affiliates portal → Select preferred offer model',
+    estimatedEarnings: '$250-$6,000 monthly with consistent traffic',
+    status: 'application-required',
+    officialLink: 'https://affiliate.strip.chat/',
+    features: [
+      'Multiple payout models (CPA, RevShare, Hybrid)',
+      'Customizable landing pages and chat widgets',
+      'Real-time stats dashboard',
+      'Weekly payouts via Paxum, Wire, USDT',
+      'Dedicated account managers for scaling'
+    ]
+  },
+  {
+    id: 'bongacams-partner',
+    name: 'BongaCams Partner Program',
+    category: 'affiliate',
+    tier: 'pro',
+    description: 'Top European cam network offering aggressive CPA and revenue share to affiliates.',
+    commissionRate: 'Up to $120 CPA or 25% lifetime revenue share',
+    requirements: ['Quality adult traffic', 'Compliance with regional regulations'],
+    signupProcess: 'Register on BongaCash → Get approved → Launch adult traffic campaigns',
+    estimatedEarnings: '$300-$8,000 monthly depending on geos',
+    status: 'application-required',
+    officialLink: 'https://www.bongacash.com/',
+    features: [
+      'International geo-optimized offers',
+      'Responsive promo creatives and banners',
+      'Postback & API tracking support',
+      'Daily stats with smart rotation links',
+      'Multiple payout options including crypto'
+    ]
+  },
+  {
+    id: 'fancentro-ambassador',
+    name: 'FanCentro Ambassador Program',
+    category: 'affiliate',
+    tier: 'pro',
+    description: 'Premium content marketplace for influencers selling fan subscriptions and bundles.',
+    commissionRate: '75% creator revenue share + 10% ambassador referral',
+    requirements: ['18+ verified identity', 'Active social presence with engaged fans'],
+    signupProcess: 'Apply on FanCentro → Complete KYC → Launch paid feed & ambassador links',
+    estimatedEarnings: '$300-$12,000 monthly from bundles + referrals',
+    status: 'available',
+    officialLink: 'https://fancentro.com/',
+    features: [
+      'Premium subscription storefront',
+      'Clip store and bundle upsells',
+      'CentroUniversity education resources',
+      'Ambassador mentor payouts',
+      'Integrated DM paywall tools'
+    ]
+  },
+  {
+    id: 'sextpanther-pro',
+    name: 'SextPanther Operator Program',
+    category: 'affiliate',
+    tier: 'pro',
+    description: 'SMS, voice, and media chat monetization for creators with per-message payouts.',
+    commissionRate: 'Up to 80% revenue share on texts, calls, and media tips',
+    requirements: ['Photo ID verification', 'Ability to respond within SLA windows'],
+    signupProcess: 'Create SextPanther profile → Verify identity → Configure pricing + availability',
+    estimatedEarnings: '$200-$4,000 monthly depending on responsiveness',
+    status: 'available',
+    officialLink: 'https://www.sextpanther.com/',
+    features: [
+      'Text, photo, audio, and video monetization',
+      'Automated away messages and scheduling',
+      'Pseudonymous phone numbers',
+      'Chargeback protection handled by platform',
+      'Analytics on top spenders and retention'
+    ]
+  },
+  {
+    id: 'justforfans-affiliate',
+    name: 'JustForFans Partner Program',
+    category: 'affiliate',
+    tier: 'pro',
+    description: 'Creator-owned subscription platform built specifically for adult entertainers.',
+    commissionRate: '80% revenue share + 5% referral bonus for new creators',
+    requirements: ['Creator verification', 'Active content catalog'],
+    signupProcess: 'Join JustForFans → Verify performer status → Share referral link & sell content',
+    estimatedEarnings: '$250-$7,500 monthly across subs, PPV, and bundles',
+    status: 'available',
+    officialLink: 'https://justfor.fans/',
+    features: [
+      'Customizable member tiers',
+      'Built-in store for videos and merch',
+      'Affiliate payouts for recruiting models',
+      'Bulk messaging and automation tools',
+      'Performer-led community support'
+    ]
+  },
+  {
+    id: 'fanvue-creator-pro',
+    name: 'FanVue Creator Accelerator',
+    category: 'integration',
+    tier: 'pro',
+    description: 'Subscription and PPV platform with better discovery and VR content support.',
+    commissionRate: '85% creator share + 5% referral bonus for new creators',
+    requirements: ['Identity verification', 'Compliance with FanVue content policies'],
+    signupProcess: 'Register on FanVue → Upload verification → Launch tiers and referral offers',
+    estimatedEarnings: '$150-$5,000 monthly with niche audiences',
+    status: 'available',
+    officialLink: 'https://fanvue.com/',
+    features: [
+      'VR and 8K content support',
+      'AI-powered discovery feed',
+      'Built-in tip goals and campaigns',
+      'Fan club referral incentives',
+      'Early access to brand sponsorship marketplace'
+    ]
+  },
+  {
+    id: 'dreamlover-affiliate',
+    name: 'DreamLover SMS & Call Affiliate',
+    category: 'affiliate',
+    tier: 'pro',
+    description: 'Premium texting and voice hub for monetizing high-value fans.',
+    commissionRate: '60-70% revenue share on premium texts and calls',
+    requirements: ['Performer verification', 'Consistent availability schedule'],
+    signupProcess: 'Apply at DreamLover → Complete onboarding → Set rates & launch campaigns',
+    estimatedEarnings: '$300-$6,500 monthly from whales and pay-per-text clients',
+    status: 'application-required',
+    officialLink: 'https://www.dreamlover.com/',
+    features: [
+      'Private SMS gateway with premium rates',
+      'Tribute and wishlist integrations',
+      'Fan leaderboard with upsell prompts',
+      'International billing support',
+      'Veteran operator community'
+    ]
+  },
+  {
+    id: 'pocketstars-pro',
+    name: 'PocketStars Partner Program',
+    category: 'affiliate',
+    tier: 'pro',
+    description: 'Subscription, clip, and shoutout marketplace built by NSFW creators.',
+    commissionRate: '80% creator share + 5% referral for new signups',
+    requirements: ['ID verification', 'Social presence or niche audience'],
+    signupProcess: 'Join PocketStars → Complete compliance → Launch subscription tiers and custom video offers',
+    estimatedEarnings: '$200-$3,500 monthly with consistent promotion',
+    status: 'available',
+    officialLink: 'https://www.pocketstars.com/',
+    features: [
+      'Video store and subscription bundles',
+      'Personalized shoutout marketplace',
+      'Fan messaging with paid media unlocks',
+      'Referral bonuses for creators and fans',
+      'Content scheduling and drip release tools'
+    ]
+  },
+  {
+    id: 'sexedvault-education',
+    name: 'SexEdVault Creator Courses',
+    category: 'pro',
+    tier: 'pro',
+    description: 'Professional development curriculum for adult creators covering legal, marketing, and scaling.',
+    requirements: ['Active content business', 'Commitment to ongoing education'],
+    signupProcess: 'Enroll via ThottoPilot partner portal → Access cohort-based workshops',
+    estimatedEarnings: 'Improves retention and ARPU by 15-35% per cohort',
+    status: 'coming-soon',
+    features: [
+      'Legal & 2257 compliance modules',
+      'Advanced social selling strategies',
+      'Creator tax & bookkeeping templates',
+      'Scaling playbooks for agencies',
+      'Expert office hours and community'
+    ]
+  },
+  {
+    id: 'adultmemberhub',
+    name: 'AdultMemberHub Collaboration',
+    category: 'tools',
+    tier: 'pro',
+    description: 'All-in-one CRM and churn-prevention toolkit for subscription creators.',
+    commissionRate: '20% referral commission + discounted creator pricing',
+    requirements: ['Existing subscriber base', 'Willingness to integrate CRM tooling'],
+    signupProcess: 'Schedule demo through AdultMemberHub → Implement retention automations',
+    estimatedEarnings: 'Reduces churn by 10-20%, increasing MRR $300-$2,000',
+    status: 'application-required',
+    officialLink: 'https://adultmemberhub.com/',
+    features: [
+      'Subscriber analytics and segmentation',
+      'Automated win-back campaigns',
+      'Failed payment recovery workflows',
+      'Fan journey tracking dashboard',
+      'Integrations with OnlyFans, Fansly, JustForFans'
+    ]
+  },
+  {
+    id: 'afterdark-merch',
+    name: 'AfterDark Merch Fulfillment',
+    category: 'tools',
+    tier: 'pro',
+    description: 'Print-on-demand merch and lingerie fulfillment tailored for adult creators.',
+    commissionRate: 'Creators keep 60-70% margin per product sold',
+    requirements: ['Brand assets or logo', 'Merch concept ready for launch'],
+    signupProcess: 'Submit merch concept → Approve samples → Launch storefront with fulfillment partner',
+    estimatedEarnings: '$150-$2,500 monthly incremental merch profit',
+    status: 'application-required',
+    officialLink: 'https://afterdarkmerch.com/',
+    features: [
+      'Discreet packaging and shipping',
+      'Lingerie, calendars, and novelty item catalog',
+      'Shopify & WooCommerce integration',
+      'Customer service handled by partner',
+      'Upsell kits for VIP subscribers'
+    ]
+  }
+  ,
+  {
+    id: 'xlovecam-affiliate',
+    name: 'XLoveCam Partner Program',
+    category: 'affiliate',
+    tier: 'pro',
+    description: 'Western European cam network with 35% lifetime revshare on models you recruit.',
+    commissionRate: '35% lifetime revenue share on referred performers',
+    requirements: ['Valid marketing channels', 'Performer verification for referrals'],
+    signupProcess: 'Join XLoveCash affiliate platform → Obtain unique recruiter links → Onboard qualified models',
+    estimatedEarnings: '$300-$8,000 monthly recurring based on model productivity',
+    status: 'available',
+    officialLink: 'https://www.xlovecash.com/',
+    features: [
+      'Residual income for lifetime of referred accounts',
+      'Tiered bonuses for volume recruiters',
+      'High-converting landing pages localized in 10+ languages',
+      'Detailed KPI dashboards and daily stats',
+      'Flexible payouts via wire, Paxum, crypto'
+    ]
+  },
+  {
+    id: 'plugrush-traffic-network',
+    name: 'PlugRush Traffic Monetization',
+    category: 'tools',
+    tier: 'pro',
+    description: 'Self-serve adult traffic exchange converting idle pageviews into recurring ad revenue.',
+    commissionRate: 'Revenue share varies by GEO (average $2-$6 CPM equivalent)',
+    requirements: ['Adult-friendly website or link-in-bio hub', 'GDPR/2257 compliance'],
+    signupProcess: 'Create PlugRush account → Verify property → Install ad zones or smartlinks',
+    estimatedEarnings: '$150-$3,000 monthly recurring depending on traffic volume',
+    status: 'available',
+    officialLink: 'https://www.plugrush.com/',
+    features: [
+      'Smartlink optimization for tiered GEO payouts',
+      'Residual revenue from revshare campaigns',
+      'In-house compliance and content filtering',
+      'API & postback support for advanced tracking',
+      'Marketplace to buy and sell targeted clicks'
+    ]
+  },
+  {
+    id: 'juicyads-publisher',
+    name: 'JuicyAds Publisher Network',
+    category: 'tools',
+    tier: 'pro',
+    description: 'Top adult CPM/CPC ad network delivering passive monthly payouts for NSFW properties.',
+    commissionRate: 'CPM/CPC marketplace + 10% referral override on new publishers',
+    requirements: ['Adult site, link hub, or tube channel', 'Traffic quality review'],
+    signupProcess: 'Register as JuicyAds publisher → Configure ad zones → Enable auto-optimization',
+    estimatedEarnings: '$200-$5,500 monthly recurring ad revenue',
+    status: 'available',
+    officialLink: 'https://juicyads.com/',
+    features: [
+      'Multiple ad formats including pop, banners, native',
+      'Real-time reporting and smart pricing',
+      'Dedicated account reps for scaling',
+      'Referral commissions on new publishers and advertisers',
+      'Weekly payouts via bank, crypto, Paxum'
+    ]
+  },
+  {
+    id: 'segpay-referral',
+    name: 'Segpay Merchant Referral Program',
+    category: 'tools',
+    tier: 'pro',
+    description: 'Industry-trusted adult payment processor offering lifetime override on referred merchants.',
+    commissionRate: '0.25% lifetime override on referred merchant processing volume',
+    requirements: ['Business entity or creator agency status', 'Qualified merchants in adult verticals'],
+    signupProcess: 'Apply as Segpay referral partner → Submit qualified merchant lead → Earn residual override after activation',
+    estimatedEarnings: '$250-$7,500 yearly per active merchant depending on volume',
+    status: 'application-required',
+    officialLink: 'https://www.segpay.com/partners/',
+    features: [
+      'Lifetime revenue share on processing fees',
+      'Segpay handles underwriting and compliance',
+      'Supports subscription, PPV, and tip billing',
+      'Reporting portal for partner earnings',
+      'Trusted banking relationships for high-risk merchants'
+    ]
+  }
 ];
 
 // Analytics for pro perks usage

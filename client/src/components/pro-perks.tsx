@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { LucideIcon } from "lucide-react";
+import { trackFeatureUsage } from "@/lib/analytics-tracker";
 
 interface ProPerk {
   id: string;
@@ -124,6 +125,7 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
   const [referralCodesByPerk, setReferralCodesByPerk] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const _queryClient = useQueryClient();
+  const loadTrackedRef = useRef(false);
 
   const sessionFetch = useCallback(
     async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -163,6 +165,16 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
 
   const perks = data?.perks ?? [];
   const hasAccess = data?.accessGranted ?? false;
+
+  useEffect(() => {
+    if (!isLoading && !loadTrackedRef.current) {
+      trackFeatureUsage("pro_perks", "load", {
+        accessGranted: hasAccess,
+        perkCount: perks.length,
+      });
+      loadTrackedRef.current = true;
+    }
+  }, [isLoading, hasAccess, perks.length]);
 
   const referralDescription = hasAccess
     ? "Invite other creators to unlock Pro perks and earn recurring revenue from every upgrade."
@@ -283,11 +295,16 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
         ...previous,
         [perk.id]: payload.instructions
       }));
+      trackFeatureUsage("pro_perks", "load_instructions", { perkId: perk.id });
     } catch (error) {
       toast({
         title: "Unable to load instructions",
         description: error instanceof Error ? error.message : "Unexpected error loading perk guidance.",
         variant: "destructive"
+      });
+      trackFeatureUsage("pro_perks", "load_instructions_error", {
+        perkId: perk.id,
+        message: error instanceof Error ? error.message : String(error),
       });
     } finally {
       setInstructionsLoading(null);
@@ -340,6 +357,7 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
 
   const handleGenerateReferralCode = useCallback((perkId: string) => {
     if (!referralCodesByPerk[perkId]) {
+      trackFeatureUsage("pro_perks", "generate_referral_start", { perkId });
       generateReferralMutation.mutate(perkId);
     }
   }, [referralCodesByPerk, generateReferralMutation]);
@@ -357,14 +375,23 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
         description: "Unable to copy to clipboard. Please copy manually.",
         variant: "destructive"
       });
+      trackFeatureUsage("pro_perks", "copy_referral_code_error");
     }
   }, [toast]);
 
   const handleOpenPerk = useCallback((perk: ProPerk) => {
     setSelectedPerk(perk);
+    trackFeatureUsage("pro_perks", "open_perk", { perkId: perk.id });
     void ensureInstructions(perk);
     handleGenerateReferralCode(perk.id);
   }, [ensureInstructions, handleGenerateReferralCode]);
+
+  const handleClosePerk = useCallback(() => {
+    if (selectedPerk) {
+      trackFeatureUsage("pro_perks", "close_perk", { perkId: selectedPerk.id });
+    }
+    setSelectedPerk(null);
+  }, [selectedPerk]);
 
   // Show empty state when no resources available or no access
   if (!isLoading && (!hasAccess || perks.length === 0)) {
@@ -499,7 +526,13 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
           <Input
             placeholder="Search affiliate programs, tools, or earnings potential..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setSearchTerm(value);
+              if (value.trim().length > 0) {
+                trackFeatureUsage("pro_perks", "search", { term: value.trim() });
+              }
+            }}
             className="pl-10 bg-gray-900/50 border-purple-500/20"
             data-testid="search-perks"
           />
@@ -515,7 +548,10 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
               key={category.id}
               variant={activeCategory === category.id ? "default" : "outline"}
               size="sm"
-              onClick={() => setActiveCategory(category.id)}
+              onClick={() => {
+                setActiveCategory(category.id);
+                trackFeatureUsage("pro_perks", "filter", { category: category.id });
+              }}
               className={activeCategory === category.id 
                 ? "bg-gradient-to-r from-purple-500 to-pink-500 border-0"
                 : "border-purple-500/30 hover:bg-purple-500/10"

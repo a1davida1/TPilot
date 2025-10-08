@@ -13,3 +13,15 @@
 {"filename":"test.jpg","level":"info","message":"File uploaded successfully","size":15,"timestamp":"2025-10-08T03:33:35.389Z","userId":1}
 {"error":"Storage quota exceeded. Used: 100MB, Quota: 100MB","level":"error","message":"Upload error","timestamp":"2025-10-08T03:33:35.398Z"}
 {"error":"Upload failed","level":"error","message":"Upload error","timestamp":"2025-10-08T03:33:35.404Z"}
+{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-08T03:38:16.827Z"}
+{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-08T03:38:17.510Z"}
+{"level":"warn","message":"API 404","method":"GET","originalUrl":"/api/debug/reddit-session","path":"/","timestamp":"2025-10-08T03:38:17.527Z","url":"/"}
+{"filename":"test.jpg","level":"info","message":"File uploaded successfully","size":15,"timestamp":"2025-10-08T03:38:24.213Z","userId":1}
+{"error":"Storage quota exceeded. Used: 100MB, Quota: 100MB","level":"error","message":"Upload error","timestamp":"2025-10-08T03:38:24.220Z"}
+{"error":"Upload failed","level":"error","message":"Upload error","timestamp":"2025-10-08T03:38:24.224Z"}
+{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-08T03:39:15.013Z"}
+{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-08T03:39:15.704Z"}
+{"level":"warn","message":"API 404","method":"GET","originalUrl":"/api/debug/reddit-session","path":"/","timestamp":"2025-10-08T03:39:15.719Z","url":"/"}
+{"filename":"test.jpg","level":"info","message":"File uploaded successfully","size":15,"timestamp":"2025-10-08T03:39:22.368Z","userId":1}
+{"error":"Storage quota exceeded. Used: 100MB, Quota: 100MB","level":"error","message":"Upload error","timestamp":"2025-10-08T03:39:22.376Z"}
+{"error":"Upload failed","level":"error","message":"Upload error","timestamp":"2025-10-08T03:39:22.381Z"}

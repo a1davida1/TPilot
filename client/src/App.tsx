@@ -31,6 +31,7 @@ const RedditPostingPage = React.lazy(() => import("@/pages/reddit-posting"));
 const ImageShieldPage = React.lazy(() => import("@/pages/imageshield"));
 const TaxTracker = React.lazy(() => import("@/pages/tax-tracker"));
 const ReferralPage = React.lazy(() => import("@/pages/referral"));
+const ProPerksPage = React.lazy(() => import("@/pages/pro-perks"));
 const TermsOfService = React.lazy(() => import("@/pages/terms-of-service"));
 const PrivacyPolicy = React.lazy(() => import("@/pages/privacy-policy"));
 import { RedditCommunities } from "@/components/reddit-communities";
@@ -113,10 +114,11 @@ function AuthenticatedRoutes() {
       <Route path="/reddit/communities" component={() => <CommunitiesPage />} />
       <Route path="/gallery" component={() => <GalleryPage />} />
       <Route path="/tax-tracker" component={() => <TaxTracker />} />
-      {/* Pro user only route */}
+      {/* Pro-exclusive surfaces */}
       {userTier === 'pro' && (
         <Route path="/referral" component={ReferralPage} />
       )}
+      <Route path="/pro-perks" component={ProPerksPage} />
       <Route path="/history" component={History} />
       <Route path="/settings" component={Settings} />
       <Route path="/checkout" component={Checkout} />
@@ -145,7 +147,6 @@ function UnauthenticatedRoutes() {
       <Route path="/signup">
         <SEOOptimization {...seoConfigs.landing} />
         <UnifiedLanding />
-      </Route>
       <Route path="/email-verification" component={EmailVerificationPage} />
       <Route path="/reset-password" component={ResetPasswordPage} />
       <Route path="/forgot-password" component={ForgotPasswordPage} />
@@ -153,6 +154,7 @@ function UnauthenticatedRoutes() {
       <Route path="/caption-generator" component={CaptionGeneratorPage} />
       <Route path="/imageshield" component={ImageShieldPage} />
       <Route path="/reddit" component={RedditPostingPage} />
+      <Route path="/pro-perks" component={ProPerksPage} />
       <Route path="/landing">
         <SEOOptimization {...seoConfigs.landing} />
         <UnifiedLanding />
