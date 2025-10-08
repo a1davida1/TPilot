@@ -109,7 +109,8 @@ function parseRulesToSpec(rules: RedditRule[], wikiContent: string): RuleSpecBas
             .split(/[,;]/)
             .map(w => w.trim().toLowerCase())
             .filter(w => w.length > 2);
-          spec.bannedWords!.push(...words);
+          spec.bannedWords = spec.bannedWords || [];
+          spec.bannedWords.push(...words);
         }
       }
     }
@@ -135,7 +136,8 @@ function parseRulesToSpec(rules: RedditRule[], wikiContent: string): RuleSpecBas
     // Extract required tags
     const tagMatches = description.match(/\[([^\]]+)\]/g);
     if (tagMatches) {
-      spec.requiredTags!.push(...tagMatches);
+      spec.requiredTags = spec.requiredTags || [];
+      spec.requiredTags.push(...tagMatches);
     }
 
     // Extract length limits
@@ -188,9 +190,9 @@ function parseRulesToSpec(rules: RedditRule[], wikiContent: string): RuleSpecBas
   }
 
   // Clean up arrays
-  spec.bannedWords = [...new Set(spec.bannedWords!.filter(w => w.length > 0))];
-  spec.requiredTags = [...new Set(spec.requiredTags!.filter(t => t.length > 0))];
-  spec.wikiNotes = [...new Set(spec.wikiNotes!.filter(n => n.length > 0))];
+  spec.bannedWords = [...new Set((spec.bannedWords || []).filter(w => w.length > 0))];
+  spec.requiredTags = [...new Set((spec.requiredTags || []).filter(t => t.length > 0))];
+  spec.wikiNotes = [...new Set((spec.wikiNotes || []).filter(n => n.length > 0))];
 
   return spec;
 }

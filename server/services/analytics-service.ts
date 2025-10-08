@@ -256,7 +256,8 @@ class AnalyticsService {
       });
     }
     const sessionData = this.sessionData.get(userId);
-    return sessionData!.id; // Safe because we just set it above
+    // sessionData is guaranteed to exist since we just set it above
+    return sessionData?.id ?? `fallback_${Date.now()}`;
   }
 
   private getDeviceInfo() {

@@ -39,6 +39,9 @@ export const envSchema = z
   CCBILL_FLEXFORM_ID: z.string().optional(),
   CCBILL_SALT: z.string().optional(),
   
+  // Stripe (required for production billing)
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  
   // Media Configuration (Phase 5: Updated quotas)
   PLAN_STORAGE_BYTES_FREE: z.coerce.number().default(2147483648), // 2GB
   PLAN_STORAGE_BYTES_STARTER: z.coerce.number().default(10737418240), // 10GB

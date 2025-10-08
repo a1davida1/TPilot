@@ -5,6 +5,7 @@ import { db } from "../db.js";
 import { subscriptions, invoices, users } from "../../shared/schema.js";
 import { eq } from "drizzle-orm";
 import { API_PREFIX, prefixApiPath } from "../lib/api-prefix.js";
+import { env } from "../lib/config.js";
 
 export function mountStripeWebhook(app: Express, apiPrefix: string = API_PREFIX) {
   const webhookPath = prefixApiPath('/webhooks/stripe', apiPrefix);
@@ -12,8 +13,14 @@ export function mountStripeWebhook(app: Express, apiPrefix: string = API_PREFIX)
   app.post(webhookPath, async (req: Request, res: Response) => {
     const sig = req.headers["stripe-signature"] as string;
     let event: Stripe.Event;
+    
+    const webhookSecret = env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      return res.status(500).send('Webhook Error: STRIPE_WEBHOOK_SECRET not configured');
+    }
+    
     try {
-      event = stripe.webhooks.constructEvent(req.body as Buffer, sig, process.env.STRIPE_WEBHOOK_SECRET!);
+      event = stripe.webhooks.constructEvent(req.body as Buffer, sig, webhookSecret);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       return res.status(400).send(`Webhook Error: ${message}`);

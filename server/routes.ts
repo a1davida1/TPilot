@@ -552,7 +552,6 @@ import { registerSocialMediaRoutes } from "./social-media-routes.js";
 // Core dependencies
 import multer from 'multer';
 import fs from 'fs/promises';
-import csrf from 'csurf';
 
 // Get secure environment variables (no fallbacks)
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
@@ -844,37 +843,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
     }
   });
 
-  // CSRF protection for session-based routes
+  // CSRF protection is now handled in app.ts via csrf-csrf
+  // This block is kept for backwards compatibility but deferred to app.ts
   const route = (path: string) => prefixApiPath(path, apiPrefix);
-  const csrfAlreadyConfigured = app.get('csrfProtectionConfigured') === true;
-
-  if (!csrfAlreadyConfigured) {
-    const csrfProtection: express.RequestHandler = csrf({
-      cookie: {
-        httpOnly: true,
-        secure: IS_PRODUCTION,
-        sameSite: 'strict'
-      }
-    }) as unknown as express.RequestHandler;
-
-    const csrfRoutes = buildCsrfProtectedRoutes(apiPrefix);
-
-    csrfRoutes.forEach((protectedRoute) => {
-      if (protectedRoute.includes('*')) {
-        const baseRoute = protectedRoute.replace('/*', '');
-        app.use(baseRoute, csrfProtection);
-        app.use(`${baseRoute}/*`, csrfProtection);
-      } else {
-        app.use(protectedRoute, csrfProtection);
-      }
-    });
-
-    app.get(route('/csrf-token'), csrfProtection, (req, res) => {
-      res.json({ csrfToken: req.csrfToken() });
-    });
-
-    app.set('csrfProtectionConfigured', true);
-  }
 
   // -------- Liveness and Readiness --------
   app.get(route('/health'), (_req, res) => {

@@ -146,8 +146,13 @@ export class DunningWorker {
 
   private async retryStripePayment(subscription: Subscription): Promise<RetryResult> {
     try {
+      const stripeKey = process.env.STRIPE_SECRET_KEY;
+      if (!stripeKey) {
+        return { success: false, provider: 'stripe', error: 'STRIPE_SECRET_KEY not configured' };
+      }
+      
       const { default: Stripe } = await import('stripe');
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+      const stripe = new Stripe(stripeKey);
       
       // Attempt to charge the customer's default payment method
       const paymentIntent = await stripe.paymentIntents.create({

@@ -2,7 +2,7 @@ import express from 'express';
 import type { RequestHandler } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import csrf from 'csurf';
+import { doubleCsrf } from 'csrf-csrf';
 import { v4 as uuidv4 } from 'uuid';
 import { registerRoutes } from './routes.js';
 import { setupAuth } from './auth.js';
@@ -251,18 +251,26 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   app.set('sessionConfigured', true);
 
   const isProd = process.env.NODE_ENV === 'production';
-  const csrfProtection: RequestHandler = csrf({
-    cookie: {
-      key: '_csrf',
+  
+  // Modern CSRF protection using csrf-csrf (maintained alternative to csurf)
+  const { generateToken, doubleCsrfProtection } = doubleCsrf({
+    getSecret: () => process.env.SESSION_SECRET || 'fallback-secret-for-dev',
+    cookieName: '__Host-psifi.x-csrf-token',
+    cookieOptions: {
       httpOnly: true,
       secure: isProd,
       sameSite: isProd ? 'strict' : 'lax',
-      path: '/',
+      maxAge: 3600000,
     },
+    size: 64,
+    ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
   });
 
-  app.get(`${API_PREFIX}/csrf-token`, csrfProtection, (req, res) => {
-    res.json({ csrfToken: req.csrfToken() });
+  const csrfProtection: RequestHandler = doubleCsrfProtection;
+
+  app.get(`${API_PREFIX}/csrf-token`, (req, res) => {
+    const token = generateToken(req, res);
+    res.json({ csrfToken: token });
   });
 
   app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {

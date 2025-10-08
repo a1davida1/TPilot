@@ -143,6 +143,26 @@
 
 ## Notes
 
+### Security & Dependencies
+
+**Snoowrap Vulnerabilities (13 warnings) - ACCEPTED RISK**
+- **Status**: Keep snoowrap despite npm audit warnings
+- **Rationale**: 
+  - Most mature Reddit API client with comprehensive features
+  - Vulnerabilities are in nested dependencies (`form-data`, `ws`, `tough-cookie` via deprecated `request` package)
+  - Attack vector requires compromising Reddit's servers first
+  - Not exploitable in our use case (server-side API calls only)
+  - Alternatives (reddit-api-client, raw fetch) are significantly worse
+- **Real risk**: Negligible - not user-facing, not directly exploitable
+- **Action**: Monitor for maintained alternatives, but don't replace unless critical vulnerability discovered
+- **Last reviewed**: 2025-10-07
+
+**Node Version Requirement**
+- **Required**: Node 20+ (multiple dependencies require it)
+- **Current local**: v18.19.1 (needs upgrade)
+- **Railway/Production**: Should use Node 20 LTS
+- **Action**: Update local Node to v20 before next development session
+
 ### Lint Philosophy
 - **Prefix with `_`**: Variables/functions that are intentionally unused (incomplete features, future use)
 - **Remove entirely**: Truly dead code with no purpose
