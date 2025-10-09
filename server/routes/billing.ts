@@ -28,6 +28,10 @@ export function mountBillingRoutes(app: Express, apiPrefix: string = API_PREFIX)
   // creates a Stripe Checkout Session and returns url
   app.post(route("/billing/checkout"), async (req: Request & { user?: unknown }, res: Response) => {
     try {
+      if (!stripe) {
+        return res.status(503).json({ error: "Billing services not configured" });
+      }
+      
       const user = req.user;
       if (!user) return res.status(401).json({ error: "unauthorized" });
       const uid = user.id.toString();

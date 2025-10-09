@@ -36,3 +36,9 @@
 
 {"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-09T01:58:47.324Z"}
 {"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-09T01:58:47.325Z"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-09T03:50:30.514Z"}
+{"level":"warn","message":"ADMIN_EMAIL environment variable is not set. Admin login is disabled.","timestamp":"2025-10-09T03:50:30.514Z"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-09T03:51:17.058Z"}
+{"level":"warn","message":"ADMIN_EMAIL environment variable is not set. Admin login is disabled.","timestamp":"2025-10-09T03:51:17.059Z"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-09T03:56:10.838Z"}
+{"level":"warn","message":"ADMIN_EMAIL environment variable is not set. Admin login is disabled.","timestamp":"2025-10-09T03:56:10.839Z"}

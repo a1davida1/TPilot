@@ -11,6 +11,10 @@ export function mountStripeWebhook(app: Express, apiPrefix: string = API_PREFIX)
   const webhookPath = prefixApiPath('/webhooks/stripe', apiPrefix);
   // IMPORTANT: raw body for Stripe signature verification. Ensure your server uses express.raw on this path.
   app.post(webhookPath, async (req: Request, res: Response) => {
+    if (!stripe) {
+      return res.status(503).send('Webhook Error: Stripe not configured');
+    }
+    
     const sig = req.headers["stripe-signature"] as string;
     let event: Stripe.Event;
     
