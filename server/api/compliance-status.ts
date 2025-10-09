@@ -3,6 +3,8 @@ import { Router, type Request, type Response, type RequestHandler } from 'expres
 import { authenticateToken } from '../middleware/auth.js';
 import { requireAdmin } from '../admin-routes.js';
 
+import { logger } from './../bootstrap/logger.js';
+import { formatLogArgs } from './../lib/logger-utils.js';
 /**
  * Compliance telemetry endpoint for the admin dashboard.
  * Currently returns mocked data while the moderation ingestion pipeline is developed.
@@ -95,7 +97,7 @@ export async function getComplianceStatus(req: Request, res: Response) {
       }
     });
   } catch (error) {
-    console.error('Compliance status error:', error);
+    logger.error(...formatLogArgs('Compliance status error:', error));
     res.status(500).json({ 
       error: 'Failed to fetch compliance status',
       details: process.env.NODE_ENV === 'development' ? error : undefined

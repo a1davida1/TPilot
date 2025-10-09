@@ -8,6 +8,8 @@ import { queueJobs } from '@shared/schema';
 import { eq, and, gte, sql } from 'drizzle-orm';
 import type { IQueue, QueueJobHandler, QueueJobOptions, QueueFailureStats } from './queue-interface';
 
+import { logger } from './../bootstrap/logger.js';
+import { formatLogArgs } from './logger-utils.js';
 interface ProcessorConfig<T = unknown> {
   handler: QueueJobHandler<T>;
   concurrency: number;
@@ -21,7 +23,7 @@ export class PgQueue implements IQueue {
   private pollTimer?: NodeJS.Timeout;
 
   async initialize(): Promise<void> {
-    console.error('🔧 Initializing PostgreSQL Queue backend');
+    logger.error(...formatLogArgs('🔧 Initializing PostgreSQL Queue backend'));
     this.startPolling();
   }
 
@@ -30,7 +32,7 @@ export class PgQueue implements IQueue {
     if (this.pollTimer) {
       clearTimeout(this.pollTimer);
     }
-    console.error('📦 PostgreSQL Queue backend closed');
+    logger.error(...formatLogArgs('📦 PostgreSQL Queue backend closed'));
   }
 
   async enqueue<T = unknown>(
@@ -140,7 +142,7 @@ export class PgQueue implements IQueue {
         await this.processQueueJobs(queueName, processor);
       }
     } catch (error) {
-      console.error('Error in queue polling:', error);
+      logger.error(...formatLogArgs('Error in queue polling:', error));
     }
 
     // Schedule next poll
@@ -207,7 +209,7 @@ export class PgQueue implements IQueue {
         .where(eq(queueJobs.id, job.id));
 
     } catch (error) {
-      console.error(`Job ${job.id} failed:`, error);
+      logger.error(...formatLogArgs(`Job ${job.id} failed:`, error));
       
       const attempts = job.attempts + 1;
       const shouldRetry = attempts < job.maxAttempts;

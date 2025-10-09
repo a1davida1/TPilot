@@ -17,6 +17,8 @@ import {
   type PersonaTone
 } from './story-persona.js';
 import { scoreAuthenticity, type AuthenticityScore } from './authenticity-metrics.js';
+import { logger } from './bootstrap/logger.js';
+import { formatLogArgs } from './lib/logger-utils.js';
 import {
   assignExperimentVariant,
   getExperimentDefinition,
@@ -1572,7 +1574,7 @@ export function generateAdvancedContent(params: ContentParameters): GeneratedCon
   // Check if this is a preset request and use preset variations
   const presetVariation = getRandomPresetVariation(params.style);
   if (presetVariation) {
-    console.error(`🎯 Using preset variation for: ${params.style}`);
+    logger.error(...formatLogArgs(`🎯 Using preset variation for: ${params.style}`));
     
     // Apply platform-specific formatting to preset content
     const formatted = applyPlatformFormatting(
@@ -1990,7 +1992,7 @@ async function loadPresetVariations(): Promise<Record<string, PresetVariation[]>
     const parsed: unknown = JSON.parse(data);
 
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      console.warn('Invalid preset variations file format, using built-in presets');
+      logger.warn(...formatLogArgs('Invalid preset variations file format, using built-in presets'));
       return { ...BUILT_IN_PRESET_VARIATIONS };
     }
 
@@ -2008,7 +2010,7 @@ async function loadPresetVariations(): Promise<Record<string, PresetVariation[]>
 
     if (Object.keys(overrides).length === 0) {
       if (!__presetWarningShown) {
-        console.warn('Preset variations file is empty, using built-in presets');
+        logger.warn(...formatLogArgs('Preset variations file is empty, using built-in presets'));
         __presetWarningShown = true;
       }
       return { ...BUILT_IN_PRESET_VARIATIONS };
@@ -2021,9 +2023,9 @@ async function loadPresetVariations(): Promise<Record<string, PresetVariation[]>
   } catch (error) {
     const nodeError = error as NodeJS.ErrnoException;
     if (nodeError?.code === 'ENOENT') {
-      console.warn('No preset variations file found, using built-in presets');
+      logger.warn(...formatLogArgs('No preset variations file found, using built-in presets'));
     } else {
-      console.warn('Failed to read preset variations file, using built-in presets', error);
+      logger.warn(...formatLogArgs('Failed to read preset variations file, using built-in presets', error));
     }
 
     return { ...BUILT_IN_PRESET_VARIATIONS };
@@ -2046,7 +2048,7 @@ export function getRandomPresetVariation(presetId: string): PresetVariation | nu
 
   if (!presetVariationsCache) {
     void getPresetVariations().catch(loadError => {
-      console.warn('Failed to preload preset variations', loadError);
+      logger.warn(...formatLogArgs('Failed to preload preset variations', loadError));
     });
 
     const fallbackVariations = BUILT_IN_PRESET_VARIATIONS[presetId];

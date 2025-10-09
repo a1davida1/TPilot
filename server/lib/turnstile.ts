@@ -1,5 +1,7 @@
 import { getEnvConfig } from './config';
 
+import { logger } from './../bootstrap/logger.js';
+import { formatLogArgs } from './logger-utils.js';
 interface TurnstileResponse {
   success: boolean;
   'error-codes'?: string[];
@@ -14,11 +16,11 @@ export async function verifyTurnstileToken(token: string, userIP?: string): Prom
   // If Turnstile is not configured, bypass only in development mode
   if (!config.TURNSTILE_SECRET_KEY) {
     if (isDevelopment) {
-      console.warn('⚠️ Turnstile not configured - bypassing verification in development');
+      logger.warn(...formatLogArgs('⚠️ Turnstile not configured - bypassing verification in development'));
       return true;
     }
 
-    console.error('❌ Turnstile secret key is not configured. Rejecting verification request.');
+    logger.error(...formatLogArgs('❌ Turnstile secret key is not configured. Rejecting verification request.'));
     return false;
   }
 
@@ -38,13 +40,13 @@ export async function verifyTurnstileToken(token: string, userIP?: string): Prom
     const result: TurnstileResponse = await response.json();
     
     if (!result.success) {
-      console.warn('Turnstile verification failed:', result['error-codes']);
+      logger.warn(...formatLogArgs('Turnstile verification failed:', result['error-codes']));
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('Turnstile verification error:', error);
+    logger.error(...formatLogArgs('Turnstile verification error:', error));
     return false;
   }
 }

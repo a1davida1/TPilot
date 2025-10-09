@@ -18,6 +18,8 @@ import { z, ZodError } from "zod";
 import { API_PREFIX } from './lib/api-prefix.js';
 import { mountMetrics } from './observability/metrics.js';
 
+import { logger } from './bootstrap/logger.js';
+import { formatLogArgs } from './lib/logger-utils.js';
 type AiHistoryDependencies = {
   getUserHistory?: (userId: number, limit?: number) => Promise<unknown[]>;
 };
@@ -48,7 +50,7 @@ export function createAiHistoryHandler(
       const history = await getUserHistory(userId, limit);
       res.json(history);
     } catch (error: unknown) {
-      console.error('Failed to get AI history:', error);
+      logger.error(...formatLogArgs('Failed to get AI history:', error));
       res.status(500).json({ error: getErrorMessage(error) });
     }
   };
@@ -165,7 +167,7 @@ export function registerApiRoutes(app: Express, apiPrefix: string = API_PREFIX) 
 
       res.json(result);
     } catch (error: unknown) {
-      console.error('Content linting failed:', error);
+      logger.error(...formatLogArgs('Content linting failed:', error));
       res.status(500).json({ error: getErrorMessage(error) });
     }
   });
@@ -225,7 +227,7 @@ export function registerApiRoutes(app: Express, apiPrefix: string = API_PREFIX) 
         scheduledAt: scheduledAt.toISOString(),
       });
     } catch (error: unknown) {
-      console.error('Failed to schedule post:', error);
+      logger.error(...formatLogArgs('Failed to schedule post:', error));
       res.status(500).json({ error: getErrorMessage(error) });
     }
   });
@@ -248,7 +250,7 @@ export function registerApiRoutes(app: Express, apiPrefix: string = API_PREFIX) 
 
       res.json(jobs);
     } catch (error: unknown) {
-      console.error('Failed to get scheduled posts:', error);
+      logger.error(...formatLogArgs('Failed to get scheduled posts:', error));
       res.status(500).json({ error: getErrorMessage(error) });
     }
   });
@@ -277,7 +279,7 @@ export function registerApiRoutes(app: Express, apiPrefix: string = API_PREFIX) 
         }
       });
     } catch (error: unknown) {
-      console.error('Failed to generate payment link:', error);
+      logger.error(...formatLogArgs('Failed to generate payment link:', error));
       res.status(500).json({ error: getErrorMessage(error) });
     }
   });
@@ -293,7 +295,7 @@ export function registerApiRoutes(app: Express, apiPrefix: string = API_PREFIX) 
         res.status(400).json({ error: result.message });
       }
     } catch (error: unknown) {
-      console.error('Webhook processing failed:', error);
+      logger.error(...formatLogArgs('Webhook processing failed:', error));
       res.status(500).json({ error: 'Internal server error' });
     }
   });
@@ -327,7 +329,7 @@ export function registerApiRoutes(app: Express, apiPrefix: string = API_PREFIX) 
         tier: isPro ? 'pro' : 'free',
       });
     } catch (error: unknown) {
-      console.error('Failed to get subscription:', error);
+      logger.error(...formatLogArgs('Failed to get subscription:', error));
       res.status(500).json({ error: getErrorMessage(error) });
     }
   });
@@ -346,7 +348,7 @@ export function registerApiRoutes(app: Express, apiPrefix: string = API_PREFIX) 
       const usage = await MediaManager.getUserStorageUsage(userId);
       res.json(usage);
     } catch (error: unknown) {
-      console.error('Failed to get storage usage:', error);
+      logger.error(...formatLogArgs('Failed to get storage usage:', error));
       res.status(500).json({ error: getErrorMessage(error) });
     }
   });

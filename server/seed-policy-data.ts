@@ -2,8 +2,10 @@ import { db } from "./db.js";
 import { subredditRules, featureFlags } from "@shared/schema";
 import type { RuleSpec } from "./lib/policy-linter.js";
 
+import { logger } from './bootstrap/logger.js';
+import { formatLogArgs } from './lib/logger-utils.js';
 export async function seedPolicyData() {
-  console.error("🌱 Seeding policy data...");
+  logger.error(...formatLogArgs("🌱 Seeding policy data..."));
 
   try {
     const policyData: Array<{
@@ -73,7 +75,7 @@ export async function seedPolicyData() {
           }
         });
       
-      console.error(`✅ Added rules for r/${subreddit}`);
+      logger.error(...formatLogArgs(`✅ Added rules for r/${subreddit}`));
     }
 
     // Insert policy feature flags
@@ -99,7 +101,7 @@ export async function seedPolicyData() {
         }
       });
 
-    console.error("✅ Added policy feature flags");
+    logger.error(...formatLogArgs("✅ Added policy feature flags"));
 
     // Add general content quality feature flags
     await db
@@ -124,10 +126,10 @@ export async function seedPolicyData() {
         }
       });
 
-    console.error("✅ Policy data seeding complete!");
+    logger.error(...formatLogArgs("✅ Policy data seeding complete!"));
 
   } catch (error) {
-    console.error("❌ Error seeding policy data:", error);
+    logger.error(...formatLogArgs("❌ Error seeding policy data:", error));
     throw error;
   }
 }
@@ -137,7 +139,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   seedPolicyData().then(() => {
     process.exit(0);
   }).catch((error) => {
-    console.error(error);
+    logger.error(...formatLogArgs(error));
     process.exit(1);
   });
 }

@@ -2,6 +2,8 @@ import { db } from "../db.js";
 import { subredditRules } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
+import { logger } from './../bootstrap/logger.js';
+import { formatLogArgs } from './logger-utils.js';
 export type PolicyResult = {
   state: "ok" | "warn" | "block";
   warnings: string[];
@@ -363,7 +365,7 @@ export async function lintCaption(input: {
     return { state, warnings };
 
   } catch (error) {
-    console.error("Policy linter error:", error);
+    logger.error(...formatLogArgs("Policy linter error:", error));
     // Fail safe - if linter crashes, allow with warning
     return {
       state: "warn",

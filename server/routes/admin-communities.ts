@@ -11,6 +11,8 @@ import { insertRedditCommunitySchema } from '@shared/schema';
 import { ZodError } from 'zod';
 import { formatZodError } from '../utils/error.js';
 
+import { logger } from './../bootstrap/logger.js';
+import { formatLogArgs } from './../lib/logger-utils.js';
 interface ValidationErrorShape {
   type?: string;
   code?: string;
@@ -73,7 +75,7 @@ router.get('/', async (req: AdminRequest, res: express.Response) => {
 
     res.json({ success: true, data: adminCommunities });
   } catch (error) {
-    console.error('Failed to list communities:', error);
+    logger.error(...formatLogArgs('Failed to list communities:', error));
     res.status(500).json({ success: false, error: 'Failed to load communities' });
   }
 });
@@ -109,7 +111,7 @@ router.post('/', async (req: AdminRequest, res: express.Response) => {
 
     res.status(201).json({ success: true, data: adminCommunity });
   } catch (error) {
-    console.error('Failed to create community:', error);
+    logger.error(...formatLogArgs('Failed to create community:', error));
     res.status(400).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create community'
@@ -153,7 +155,7 @@ router.put('/:id', async (req: AdminRequest, res: express.Response) => {
 
     res.json({ success: true, data: adminCommunity });
   } catch (error) {
-    console.error('Failed to update community:', error);
+    logger.error(...formatLogArgs('Failed to update community:', error));
     if (isKnownValidationError(error)) {
       const message = error instanceof ZodError
         ? formatZodError(error, 'Invalid community update data')
@@ -185,7 +187,7 @@ router.delete('/:id', async (req: AdminRequest, res: express.Response) => {
     
     res.json({ success: true, message: 'Community deleted successfully' });
   } catch (error) {
-    console.error('Failed to delete community:', error);
+    logger.error(...formatLogArgs('Failed to delete community:', error));
     res.status(500).json({ success: false, error: 'Failed to delete community' });
   }
 });

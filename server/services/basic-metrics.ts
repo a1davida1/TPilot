@@ -1,4 +1,6 @@
-// Basic in-memory metrics - can be extended to database later
+// Basic in-memory metrics - can be extended to database laterimport { logger } from './../bootstrap/logger.js';
+import { formatLogArgs } from './../lib/logger-utils.js';
+
 export class BasicAuthMetrics {
   private events: Array<{
     action: string;
@@ -40,7 +42,7 @@ export class BasicAuthMetrics {
     
     // Log failures for monitoring
     if (!success) {
-      console.error(`⚠️ Auth failure: ${action} - ${error}`);
+      logger.error(...formatLogArgs(`⚠️ Auth failure: ${action} - ${error}`));
     }
   }
   

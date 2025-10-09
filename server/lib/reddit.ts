@@ -10,6 +10,8 @@ import type { RedditCommunity, ShadowbanSubmissionSummary } from '@shared/schema
 import { lookup } from 'dns/promises';
 import { logger } from './logger.js';
 
+import { logger } from './../bootstrap/logger.js';
+import { formatLogArgs } from './logger-utils.js';
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 interface NormalizedSubredditRules {
@@ -190,7 +192,7 @@ async function secureFetchImage(imageUrl: string): Promise<Buffer> {
       }
     }
   } catch (dnsError) {
-    console.warn('DNS lookup failed for hostname:', hostname, dnsError);
+    logger.warn(...formatLogArgs('DNS lookup failed for hostname:', hostname, dnsError));
     throw new Error('Could not resolve hostname');
   }
 
@@ -377,7 +379,7 @@ function evaluateRulePredicates(input: RulePredicateInput): RulePredicateResult 
 function getEnvOrDefault(name: string, defaultValue?: string): string {
   const value = process.env[name];
   if (!value && !defaultValue) {
-    console.warn(`Warning: Missing environment variable: ${name}`);
+    logger.warn(...formatLogArgs(`Warning: Missing environment variable: ${name}`));
     return '';
   }
   return value || defaultValue || '';
@@ -709,13 +711,13 @@ export class RedditManager {
       const refreshToken = account.oauthRefresh ? decrypt(account.oauthRefresh) : '';
 
       if (!accessToken) {
-        console.error('Failed to decrypt access token for user:', userId);
+        logger.error(...formatLogArgs('Failed to decrypt access token for user:', userId));
         return null;
       }
 
       return new RedditManager(accessToken, refreshToken, userId);
     } catch (error) {
-      console.error('Failed to create Reddit manager for user:', error);
+      logger.error(...formatLogArgs('Failed to create Reddit manager for user:', error));
       return null;
     }
   }
@@ -726,7 +728,7 @@ export class RedditManager {
   async submitPost(options: RedditPostOptions): Promise<RedditPostResult> {
     let permission: PostingPermission | undefined;
     try {
-      console.error(`Submitting post to r/${options.subreddit}: "${options.title}"`);
+      logger.error(...formatLogArgs(`Submitting post to r/${options.subreddit}: "${options.title}"`));
 
       // Check if we can post to this subreddit
       permission = await RedditManager.canPostToSubreddit(this.userId, options.subreddit, {
@@ -792,11 +794,11 @@ export class RedditManager {
       const duplicateBody = combineContentSegments(options.body, options.url);
       await this.recordSafetySignals(options.subreddit, options.title, duplicateBody);
 
-      console.error('Reddit submission succeeded:', {
+      logger.error(...formatLogArgs('Reddit submission succeeded:', {
         userId: this.userId,
         subreddit: options.subreddit,
         postId: submission.id,
-      });
+      }));
 
       return {
         success: true,
@@ -806,8 +808,8 @@ export class RedditManager {
       };
 
     } catch (error: unknown) {
-      console.error('Reddit submission failed:', {
-        message: error instanceof Error ? error.message : String(error),
+      logger.error(...formatLogArgs('Reddit submission failed:', {
+        message: error instanceof Error ? error.message : String(error)),
         stack: error instanceof Error ? error.stack : undefined,
       });
 
@@ -870,7 +872,7 @@ export class RedditManager {
         try {
           options.imageBuffer = await secureFetchImage(options.imageUrl);
         } catch (fetchError) {
-          console.error('Failed to fetch image:', fetchError);
+          logger.error(...formatLogArgs('Failed to fetch image:', fetchError));
           return {
             success: false,
             error: fetchError instanceof Error ? fetchError.message : 'Failed to download image',
@@ -881,7 +883,7 @@ export class RedditManager {
 
       // Direct image upload to Reddit
       if (options.imageBuffer || options.imagePath) {
-        console.error('Uploading image directly to Reddit (i.redd.it)...');
+        logger.error(...formatLogArgs('Uploading image directly to Reddit (i.redd.it))...');
 
         const subreddit = (reddit as unknown as {
           getSubreddit(name: string): {
@@ -920,7 +922,7 @@ export class RedditManager {
             decision: permission,
           };
         } catch (imgError: unknown) {
-          console.error('Direct image upload failed, falling back to link post:', (imgError as { message?: string }).message);
+          logger.error(...formatLogArgs('Direct image upload failed, falling back to link post:', (imgError as { message?: string })).message);
           // Fallback to link post if image upload fails
           if (options.imageUrl) {
             return this.submitPost({
@@ -943,7 +945,7 @@ export class RedditManager {
       };
 
     } catch (error: unknown) {
-      console.error('Image submission failed:', error);
+      logger.error(...formatLogArgs('Image submission failed:', error));
       return {
         success: false,
         error: (error as { message?: string }).message ?? 'Failed to upload image',
@@ -1047,7 +1049,7 @@ export class RedditManager {
       // Not all subreddits support galleries
       const errorObj = error as { message?: string };
       if (errorObj.message?.includes('INVALID_OPTION') || errorObj.message?.includes('gallery')) {
-        console.error('Gallery not supported, falling back to single image');
+        logger.error(...formatLogArgs('Gallery not supported, falling back to single image'));
         return this.submitImagePost({
           subreddit: options.subreddit,
           title: options.title,
@@ -1094,7 +1096,7 @@ export class RedditManager {
         isNsfw: subreddit.over18 ?? false
       };
     } catch (error) {
-      console.error('Failed to check subreddit capabilities:', error);
+      logger.error(...formatLogArgs('Failed to check subreddit capabilities:', error));
       return {
         allowsImages: true,
         allowsGalleries: false,
@@ -1197,7 +1199,7 @@ export class RedditManager {
             }
           }
         } catch (error) {
-          console.warn('Failed to get Reddit profile for rule evaluation:', error);
+          logger.warn(...formatLogArgs('Failed to get Reddit profile for rule evaluation:', error));
         }
 
         const accountMetadata: AccountMetadata = {
@@ -1391,7 +1393,7 @@ export class RedditManager {
         } : undefined,
       };
     } catch (error) {
-      console.error('Error checking posting permission:', error);
+      logger.error(...formatLogArgs('Error checking posting permission:', error));
       return {
         canPost: false,
         reason: 'Error checking posting permission - please try again',
@@ -1460,7 +1462,7 @@ export class RedditManager {
       };
 
     } catch (error) {
-      console.error('Error checking subreddit eligibility:', error);
+      logger.error(...formatLogArgs('Error checking subreddit eligibility:', error));
       return {
         canPost: false,
         reason: 'Unable to verify posting permissions'
@@ -1486,9 +1488,9 @@ export class RedditManager {
         body
       );
 
-      console.error(`Recorded safety signals for user ${this.userId} in r/${subreddit}`);
+      logger.error(...formatLogArgs(`Recorded safety signals for user ${this.userId} in r/${subreddit}`));
     } catch (error) {
-      console.error('Failed to record safety signals:', error);
+      logger.error(...formatLogArgs('Failed to record safety signals:', error));
     }
   }
 
@@ -1520,7 +1522,7 @@ export class RedditManager {
         hasMail: user.has_mail ?? false,
       };
     } catch (error) {
-      console.error('Failed to get Reddit profile:', error);
+      logger.error(...formatLogArgs('Failed to get Reddit profile:', error));
       return null;
     }
   }
@@ -1535,7 +1537,7 @@ export class RedditManager {
       }).getMe();
       return true;
     } catch (error) {
-      console.error('Reddit connection test failed:', error);
+      logger.error(...formatLogArgs('Reddit connection test failed:', error));
       return false;
     }
   }
@@ -1550,7 +1552,7 @@ export class RedditManager {
         getMe(): Promise<unknown>;
       }).getMe();
     } catch (error) {
-      console.error('Token refresh failed:', error);
+      logger.error(...formatLogArgs('Token refresh failed:', error));
       throw error;
     }
   }
@@ -1583,7 +1585,7 @@ export class RedditManager {
       }));
 
     } catch (error) {
-      console.error('Failed to fetch private submissions:', error);
+      logger.error(...formatLogArgs('Failed to fetch private submissions:', error));
       return [];
     }
   }
@@ -1634,7 +1636,7 @@ export class RedditManager {
       return { submissions };
 
     } catch (error) {
-      console.error('Failed to fetch public submissions:', error);
+      logger.error(...formatLogArgs('Failed to fetch public submissions:', error));
       const errorMessage = error instanceof Error ? error.message : 'Unknown error fetching public submissions';
       return {
         submissions: [],
@@ -1751,7 +1753,7 @@ export class RedditManager {
       };
 
     } catch (error) {
-      console.error('Shadowban check failed:', error);
+      logger.error(...formatLogArgs('Shadowban check failed:', error));
       return {
         isShadowbanned: false,
         statusMessage: 'Unable to check shadowban status',
@@ -1836,7 +1838,7 @@ export function getRedditAuthUrl(state: string): string {
     redirectUri = `${protocol}://${domain}/api/reddit/callback`;
   }
 
-  console.error('Reddit OAuth redirect URI (auth):', redirectUri);
+  logger.error(...formatLogArgs('Reddit OAuth redirect URI (auth)):', redirectUri);
 
   const baseUrl = 'https://www.reddit.com/api/v1/authorize';
   const params = new URLSearchParams({
@@ -1869,7 +1871,7 @@ export async function exchangeRedditCode(code: string): Promise<{
     redirectUri = `${protocol}://${domain}/api/reddit/callback`;
   }
 
-  console.error('Reddit OAuth redirect URI (exchange):', redirectUri);
+  logger.error(...formatLogArgs('Reddit OAuth redirect URI (exchange)):', redirectUri);
 
   try {
     const response = await fetch('https://www.reddit.com/api/v1/access_token', {
@@ -1888,18 +1890,18 @@ export async function exchangeRedditCode(code: string): Promise<{
 
     if (!response.ok) {
       const body = await response.text();
-      console.error('Reddit token exchange failed:', {
+      logger.error(...formatLogArgs('Reddit token exchange failed:', {
         status: response.status,
         statusText: response.statusText,
         body,
-      });
+      }));
       throw new Error(`Reddit token exchange failed: ${response.statusText}`);
     }
 
     const data = await response.json();
 
     if (!data.refresh_token) {
-      console.warn('No refresh token returned from Reddit');
+      logger.warn(...formatLogArgs('No refresh token returned from Reddit'));
     }
 
     return {
@@ -1908,7 +1910,7 @@ export async function exchangeRedditCode(code: string): Promise<{
       expiresIn: data.expires_in,
     };
   } catch (error) {
-    console.error('Reddit code exchange error:', error);
+    logger.error(...formatLogArgs('Reddit code exchange error:', error));
     throw error;
   }
 }

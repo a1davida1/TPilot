@@ -1,8 +1,10 @@
 import { storage } from "../storage";
 
+import { logger } from './../bootstrap/logger.js';
+import { formatLogArgs } from './../lib/logger-utils.js';
 export async function seedExpenseCategories() {
   try {
-    console.error('🌱 Seeding expense categories...');
+    logger.error(...formatLogArgs('🌱 Seeding expense categories...'));
 
     const categories = [
       {
@@ -76,22 +78,22 @@ export async function seedExpenseCategories() {
     for (const category of categories) {
       try {
         await storage.createExpenseCategory(category);
-        console.error(`✅ Created category: ${category.name}`);
+        logger.error(...formatLogArgs(`✅ Created category: ${category.name}`));
       } catch (_error) {
         // Category might already exist, that's okay
-        console.error(`ℹ️ Category ${category.name} might already exist`);
+        logger.error(...formatLogArgs(`ℹ️ Category ${category.name} might already exist`));
       }
     }
 
-    console.error('✅ Expense categories seeded successfully');
+    logger.error(...formatLogArgs('✅ Expense categories seeded successfully'));
   } catch (error) {
-    console.error('❌ Error seeding expense categories:', error);
+    logger.error(...formatLogArgs('❌ Error seeding expense categories:', error));
   }
 }
 
 export async function seedTaxDeductionInfo() {
   try {
-    console.error('🌱 Seeding tax deduction information...');
+    logger.error(...formatLogArgs('🌱 Seeding tax deduction information...'));
 
     const taxInfo = [
       {
@@ -161,15 +163,15 @@ export async function seedTaxDeductionInfo() {
           requirements: [info.documentation],
           applicableFor: ['content creators', 'influencers', 'social media creators']
         });
-        console.error(`✅ Created tax info: ${info.title}`);
+        logger.error(...formatLogArgs(`✅ Created tax info: ${info.title}`));
       } catch (_error) {
-        console.error(`ℹ️ Tax info ${info.title} might already exist`);
+        logger.error(...formatLogArgs(`ℹ️ Tax info ${info.title} might already exist`));
       }
     }
 
-    console.error('✅ Tax deduction information seeded successfully');
+    logger.error(...formatLogArgs('✅ Tax deduction information seeded successfully'));
   } catch (error) {
-    console.error('❌ Error seeding tax deduction info:', error);
+    logger.error(...formatLogArgs('❌ Error seeding tax deduction info:', error));
   }
 }
 

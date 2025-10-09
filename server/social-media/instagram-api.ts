@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { logger } from './../bootstrap/logger.js';
+import { formatLogArgs } from './../lib/logger-utils.js';
 // Instagram Business API Integration
 export class InstagramAPI {
   private accessToken: string;
@@ -76,7 +78,7 @@ export class InstagramAPI {
         platform: 'instagram' as const,
       };
     } catch (error) {
-      console.error('Instagram API Error:', error);
+      logger.error(...formatLogArgs('Instagram API Error:', error));
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -103,7 +105,7 @@ export class InstagramAPI {
         platform: 'instagram' as const,
       };
     } catch (error) {
-      console.error('Instagram Metrics Error:', error);
+      logger.error(...formatLogArgs('Instagram Metrics Error:', error));
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -130,7 +132,7 @@ export class InstagramAPI {
         platform: 'instagram' as const,
       };
     } catch (error) {
-      console.error('Instagram Insights Error:', error);
+      logger.error(...formatLogArgs('Instagram Insights Error:', error));
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

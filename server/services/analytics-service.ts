@@ -2,6 +2,8 @@ import { db } from '../db';
 import { users } from '@shared/schema';
 import { and, eq, gte, lte, sql } from 'drizzle-orm';
 
+import { logger } from './../bootstrap/logger.js';
+import { formatLogArgs } from './../lib/logger-utils.js';
 export interface AnalyticsEvent<T extends Record<string, unknown> = Record<string, unknown>> {
   userId: string;
   event: string;
@@ -74,7 +76,7 @@ class AnalyticsService {
         .set({ lastLogin: new Date() })
         .where(eq(users.id, parseInt(userId)));
     } catch (error) {
-      console.error('Error updating last login:', error);
+      logger.error(...formatLogArgs('Error updating last login:', error));
     }
   }
 
@@ -145,7 +147,7 @@ class AnalyticsService {
       
       return result[0]?.count || 0;
     } catch (error) {
-      console.error('Error getting DAU:', error);
+      logger.error(...formatLogArgs('Error getting DAU:', error));
       return 0;
     }
   }
@@ -166,7 +168,7 @@ class AnalyticsService {
       
       return result[0]?.count || 0;
     } catch (error) {
-      console.error('Error getting MAU:', error);
+      logger.error(...formatLogArgs('Error getting MAU:', error));
       return 0;
     }
   }
@@ -243,7 +245,7 @@ class AnalyticsService {
     
     // Log in development
     if (process.env.NODE_ENV === 'development') {
-      console.error('Analytics Event:', event, properties);
+      logger.error(...formatLogArgs('Analytics Event:', event, properties));
     }
   }
 

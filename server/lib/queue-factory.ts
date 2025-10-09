@@ -8,6 +8,8 @@ import { RedisBullQueue } from './queue-redis.js';
 import { PgQueue } from './queue-pg.js';
 import { env } from './config.js';
 
+import { logger } from './../bootstrap/logger.js';
+import { formatLogArgs } from './logger-utils.js';
 let queueInstance: IQueue | null = null;
 
 export function getQueueBackend(): IQueue {
@@ -19,10 +21,10 @@ export function getQueueBackend(): IQueue {
   const shouldUseRedis = !env.USE_PG_QUEUE && env.REDIS_URL;
 
   if (shouldUseRedis && env.REDIS_URL) {
-    console.error('🚀 Using Redis BullMQ queue backend');
+    logger.error(...formatLogArgs('🚀 Using Redis BullMQ queue backend'));
     queueInstance = new RedisBullQueue(env.REDIS_URL);
   } else {
-    console.error('🔧 Using PostgreSQL queue backend (Redis not available)');
+    logger.error(...formatLogArgs('🔧 Using PostgreSQL queue backend (Redis not available))');
     queueInstance = new PgQueue();
   }
 

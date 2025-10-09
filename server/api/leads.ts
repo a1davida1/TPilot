@@ -11,6 +11,8 @@ import { trackEvent } from '../lib/analytics.js';
 import { eq } from 'drizzle-orm';
 import { assertExists } from '../../helpers/assert';
 
+import { logger } from './../bootstrap/logger.js';
+import { formatLogArgs } from './../lib/logger-utils.js';
 // Validation schema for lead creation
 const createLeadSchema = z.object({
   email: z.string().email(),
@@ -47,7 +49,7 @@ export async function createLead(req: Request, res: Response) {
         cookieUTM = JSON.parse(decodeURIComponent(req.cookies.utm_params));
       }
     } catch (error) {
-      console.error('Failed to parse UTM cookie:', error);
+      logger.error(...formatLogArgs('Failed to parse UTM cookie:', error));
       cookieUTM = {};
     }
     
@@ -99,7 +101,7 @@ export async function createLead(req: Request, res: Response) {
     // Send double opt-in email
     const emailSent = await sendDoubleOptInEmail(email, confirmToken);
     if (!emailSent) {
-      console.error('Failed to send confirmation email for:', email);
+      logger.error(...formatLogArgs('Failed to send confirmation email for:', email));
     }
 
     // Send admin notification
@@ -128,7 +130,7 @@ export async function createLead(req: Request, res: Response) {
     });
 
   } catch (error) {
-    console.error('Create lead error:', error);
+    logger.error(...formatLogArgs('Create lead error:', error));
     res.status(500).json({ error: 'Failed to process waitlist signup' });
   }
 }
@@ -238,7 +240,7 @@ export async function confirmLead(req: Request, res: Response) {
     `);
 
   } catch (error) {
-    console.error('Confirm lead error:', error);
+    logger.error(...formatLogArgs('Confirm lead error:', error));
     res.status(500).send(`
       <html>
         <head><title>Server Error</title></head>

@@ -1,6 +1,8 @@
 import crypto from 'crypto';
 import type { Request, Response, NextFunction } from 'express';
 
+import { logger } from './../bootstrap/logger.js';
+import { formatLogArgs } from './../lib/logger-utils.js';
 // Memory-based state store (Redis can be added later if needed)
 const memoryStore = new Map<string, { data: string; expires: number }>();
 
@@ -57,7 +59,7 @@ export function decrypt(text: string): string {
     );
     return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString();
   } catch (error) {
-    console.error('Decryption failed:', error);
+    logger.error(...formatLogArgs('Decryption failed:', error));
     return '';
   }
 }

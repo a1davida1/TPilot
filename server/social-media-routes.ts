@@ -11,6 +11,8 @@ import { storage } from "./storage.js";
 import { authenticateToken } from "./middleware/auth.js";
 import type { User } from "@shared/schema";
 
+import { logger } from './bootstrap/logger.js';
+import { formatLogArgs } from './lib/logger-utils.js';
 interface AuthRequest<
   B = Record<string, unknown>,
   P = Record<string, string>,
@@ -87,7 +89,7 @@ export function registerSocialMediaRoutes(app: Express) {
         },
       });
     } catch (error) {
-      console.error("Error connecting social media account:", error);
+      logger.error(...formatLogArgs("Error connecting social media account:", error));
       res.status(500).json({ 
         success: false,
         message: "Failed to connect social media account",
@@ -118,7 +120,7 @@ export function registerSocialMediaRoutes(app: Express) {
         })),
       });
     } catch (error) {
-      console.error("Error fetching social media accounts:", error);
+      logger.error(...formatLogArgs("Error fetching social media accounts:", error));
       res.status(500).json({ message: "Failed to fetch social media accounts" });
     }
   });
@@ -145,7 +147,7 @@ export function registerSocialMediaRoutes(app: Express) {
 
       res.json({ success: true, message: "Account disconnected" });
     } catch (error) {
-      console.error("Error disconnecting social media account:", error);
+      logger.error(...formatLogArgs("Error disconnecting social media account:", error));
       res.status(500).json({ message: "Failed to disconnect account" });
     }
   });
@@ -274,7 +276,7 @@ export function registerSocialMediaRoutes(app: Express) {
         scheduled: !!scheduledAt,
       });
     } catch (error) {
-      console.error("Error posting to social media:", error);
+      logger.error(...formatLogArgs("Error posting to social media:", error));
       res.status(500).json({ 
         success: false,
         message: "Failed to post to social media",
@@ -316,7 +318,7 @@ export function registerSocialMediaRoutes(app: Express) {
         })),
       });
     } catch (error) {
-      console.error("Error fetching social media posts:", error);
+      logger.error(...formatLogArgs("Error fetching social media posts:", error));
       res.status(500).json({ message: "Failed to fetch posts" });
     }
   });
@@ -395,7 +397,7 @@ export function registerSocialMediaRoutes(app: Express) {
         metrics: metrics || post.engagement,
       });
     } catch (error) {
-      console.error("Error fetching post metrics:", error);
+      logger.error(...formatLogArgs("Error fetching post metrics:", error));
       res.status(500).json({ message: "Failed to fetch metrics" });
     }
   });
@@ -421,7 +423,7 @@ export function registerSocialMediaRoutes(app: Express) {
         })),
       });
     } catch (error) {
-      console.error("Error fetching scheduled posts:", error);
+      logger.error(...formatLogArgs("Error fetching scheduled posts:", error));
       res.status(500).json({ message: "Failed to fetch scheduled posts" });
     }
   });
@@ -446,7 +448,7 @@ export function registerSocialMediaRoutes(app: Express) {
 
       res.json({ success: true, message: "Scheduled post cancelled" });
     } catch (error) {
-      console.error("Error cancelling scheduled post:", error);
+      logger.error(...formatLogArgs("Error cancelling scheduled post:", error));
       res.status(500).json({ message: "Failed to cancel scheduled post" });
     }
   });

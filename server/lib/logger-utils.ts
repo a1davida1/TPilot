@@ -91,3 +91,26 @@ export function redactUserData(user: User | null | undefined) {
     emailVerified: user.emailVerified
   };
 }
+
+/**
+ * Formats log arguments for Winston logger spread operator
+ * Handles both string messages and error objects
+ */
+export function formatLogArgs(message: string, data?: unknown): [string, Record<string, unknown>?] {
+  if (data === undefined) {
+    return [message];
+  }
+  
+  // If data is an Error object, extract message and stack
+  if (data instanceof Error) {
+    return [message, { error: data.message, stack: data.stack }];
+  }
+  
+  // If data is already an object, redact and use it
+  if (typeof data === 'object' && data !== null) {
+    return [message, redactSensitiveData(data) as Record<string, unknown>];
+  }
+  
+  // For primitives, wrap in object
+  return [message, { value: data }];
+}

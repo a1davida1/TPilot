@@ -51,6 +51,8 @@ import { db } from "./db";
 import { eq, desc, and, gte, sql, count } from "drizzle-orm";
 import { safeLog } from './lib/logger-utils';
 
+import { logger } from './bootstrap/logger.js';
+import { formatLogArgs } from './lib/logger-utils.js';
 type ExpenseCategoryWithDefaults = ExpenseCategory & {
   defaultBusinessPurpose?: string | null;
 };
@@ -541,7 +543,7 @@ export class DatabaseStorage implements IStorage {
         .from(contentGenerations);
       return result[0]?.count || 0;
     } catch (error) {
-      console.error('Error getting content generation count:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting content generation count:', { error: (error as Error)).message });
       return 0;
     }
   }
@@ -557,7 +559,7 @@ export class DatabaseStorage implements IStorage {
       const totalCents = result[0]?.total || 0;
       return Math.round(totalCents / 100);
     } catch (error) {
-      console.error('Error getting revenue:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting revenue:', { error: (error as Error)).message });
       return 0;
     }
   }
@@ -817,7 +819,7 @@ export class DatabaseStorage implements IStorage {
       const result = await db.select({ count: count() }).from(users);
       return result[0]?.count || 0;
     } catch (error) {
-      console.error('Error getting total user count:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting total user count:', { error: (error as Error)).message });
       return 0;
     }
   }
@@ -835,7 +837,7 @@ export class DatabaseStorage implements IStorage {
 
       return result.length;
     } catch (error) {
-      console.error('Error getting active user count:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting active user count:', { error: (error as Error)).message });
       return 0;
     }
   }
@@ -845,7 +847,7 @@ export class DatabaseStorage implements IStorage {
       const result = await db.select({ count: count() }).from(contentGenerations);
       return result[0]?.count || 0;
     } catch (error) {
-      console.error('Error getting total content generated:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting total content generated:', { error: (error as Error)).message });
       return 0;
     }
   }
@@ -865,7 +867,7 @@ export class DatabaseStorage implements IStorage {
 
       return counts;
     } catch (error) {
-      console.error('Error getting subscription counts:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting subscription counts:', { error: (error as Error)).message });
       return { free: 0, starter: 0, pro: 0 };
     }
   }
@@ -892,7 +894,7 @@ export class DatabaseStorage implements IStorage {
 
       return result[0]?.count || 0;
     } catch (error) {
-      console.error('Error getting daily generation count:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting daily generation count:', { error: (error as Error)).message });
       return 0;
     }
   }
@@ -906,7 +908,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return expenseCategory;
     } catch (error) {
-      console.error('Error creating expense category:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error creating expense category:', { error: (error as Error)).message });
       throw error;
     }
   }
@@ -917,7 +919,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(expenseCategories.isActive, true))
         .orderBy(expenseCategories.sortOrder, expenseCategories.name);
     } catch (error) {
-      console.error('Error getting expense categories:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting expense categories:', { error: (error as Error)).message });
       return [];
     }
   }
@@ -928,7 +930,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(expenseCategories.id, id));
       return result;
     } catch (error) {
-      console.error('Error getting expense category:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting expense category:', { error: (error as Error)).message });
       return undefined;
     }
   }
@@ -941,7 +943,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return result;
     } catch (error) {
-      console.error('Error updating expense category:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error updating expense category:', { error: (error as Error)).message });
       throw error;
     }
   }
@@ -952,7 +954,7 @@ export class DatabaseStorage implements IStorage {
         .set({ isActive: false })
         .where(eq(expenseCategories.id, id));
     } catch (error) {
-      console.error('Error deleting expense category:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error deleting expense category:', { error: (error as Error)).message });
       throw error;
     }
   }
@@ -966,7 +968,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return createdExpense;
     } catch (error) {
-      console.error('Error creating expense:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error creating expense:', { error: (error as Error)).message });
       throw error;
     }
   }
@@ -997,7 +999,7 @@ export class DatabaseStorage implements IStorage {
 
       return flattenedResults;
     } catch (error) {
-      console.error('Error getting user expenses:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting user expenses:', { error: (error as Error)).message });
       return [];
     }
   }
@@ -1008,7 +1010,7 @@ export class DatabaseStorage implements IStorage {
         .where(and(eq(expenses.id, id), eq(expenses.userId, userId)));
       return result;
     } catch (error) {
-      console.error('Error getting expense:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting expense:', { error: (error as Error)).message });
       return undefined;
     }
   }
@@ -1079,7 +1081,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return result;
     } catch (error) {
-      console.error('Error updating expense:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error updating expense:', { error: (error as Error)).message });
       throw error;
     }
   }
@@ -1089,7 +1091,7 @@ export class DatabaseStorage implements IStorage {
       await db.delete(expenses)
         .where(and(eq(expenses.id, id), eq(expenses.userId, userId)));
     } catch (error) {
-      console.error('Error deleting expense:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error deleting expense:', { error: (error as Error)).message });
       throw error;
     }
   }
@@ -1109,7 +1111,7 @@ export class DatabaseStorage implements IStorage {
         .where(and(...conditions))
         .orderBy(desc(expenses.expenseDate));
     } catch (error) {
-      console.error('Error getting expenses by category:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting expenses by category:', { error: (error as Error)).message });
       return [];
     }
   }
@@ -1124,7 +1126,7 @@ export class DatabaseStorage implements IStorage {
         ))
         .orderBy(desc(expenses.expenseDate));
     } catch (error) {
-      console.error('Error getting expenses by date range:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting expenses by date range:', { error: (error as Error)).message });
       return [];
     }
   }
@@ -1148,7 +1150,7 @@ export class DatabaseStorage implements IStorage {
 
       return summarizeExpenseTotals(results);
     } catch (error) {
-      console.error('Error getting expense totals:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting expense totals:', { error: (error as Error)).message });
       return { total: 0, deductible: 0, byCategory: {} };
     }
   }
@@ -1159,7 +1161,7 @@ export class DatabaseStorage implements IStorage {
       return await db.select().from(taxDeductionInfo)
         .orderBy(taxDeductionInfo.category, taxDeductionInfo.title);
     } catch (error) {
-      console.error('Error getting tax deduction info:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting tax deduction info:', { error: (error as Error)).message });
       return [];
     }
   }
@@ -1170,7 +1172,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(taxDeductionInfo.category, category))
         .orderBy(taxDeductionInfo.title);
     } catch (error) {
-      console.error('Error getting tax deduction info by category:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting tax deduction info by category:', { error: (error as Error)).message });
       return [];
     }
   }
@@ -1183,7 +1185,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return deductionInfo;
     } catch (error) {
-      console.error('Error creating tax deduction info:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error creating tax deduction info:', { error: (error as Error)).message });
       throw error;
     }
   }
@@ -1263,7 +1265,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return socialAccount;
     } catch (error) {
-      console.error('Error creating social media account:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error creating social media account:', { error: (error as Error)).message });
       throw error;
     }
   }
@@ -1274,7 +1276,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(socialMediaAccounts.userId, userId))
         .orderBy(desc(socialMediaAccounts.createdAt));
     } catch (error) {
-      console.error('Error getting user social media accounts:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting user social media accounts:', { error: (error as Error)).message });
       return [];
     }
   }
@@ -1286,7 +1288,7 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
       return result;
     } catch (error) {
-      console.error('Error getting social media account:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting social media account:', { error: (error as Error)).message });
       return undefined;
     }
   }
@@ -1299,7 +1301,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return result;
     } catch (error) {
-      console.error('Error updating social media account:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error updating social media account:', { error: (error as Error)).message });
       throw error;
     }
   }
@@ -1308,7 +1310,7 @@ export class DatabaseStorage implements IStorage {
     try {
       await db.delete(socialMediaAccounts).where(eq(socialMediaAccounts.id, accountId));
     } catch (error) {
-      console.error('Error deleting social media account:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error deleting social media account:', { error: (error as Error)).message });
       throw error;
     }
   }
@@ -1321,7 +1323,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return socialPost;
     } catch (error) {
-      console.error('Error creating social media post:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error creating social media post:', { error: (error as Error)).message });
       throw error;
     }
   }
@@ -1350,7 +1352,7 @@ export class DatabaseStorage implements IStorage {
         .limit(limit)
         .offset(offset);
     } catch (error) {
-      console.error('Error getting user social media posts:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting user social media posts:', { error: (error as Error)).message });
       return [];
     }
   }
@@ -1362,7 +1364,7 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
       return result;
     } catch (error) {
-      console.error('Error getting social media post:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting social media post:', { error: (error as Error)).message });
       return undefined;
     }
   }
@@ -1375,7 +1377,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return result;
     } catch (error) {
-      console.error('Error updating social media post:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error updating social media post:', { error: (error as Error)).message });
       throw error;
     }
   }
@@ -1384,7 +1386,7 @@ export class DatabaseStorage implements IStorage {
     try {
       await db.delete(socialMediaPosts).where(eq(socialMediaPosts.id, postId));
     } catch (error) {
-      console.error('Error deleting social media post:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error deleting social media post:', { error: (error as Error)).message });
       throw error;
     }
   }
@@ -1397,7 +1399,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return platformMetrics;
     } catch (error) {
-      console.error('Error creating platform engagement:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error creating platform engagement:', { error: (error as Error)).message });
       throw error;
     }
   }
@@ -1415,7 +1417,7 @@ export class DatabaseStorage implements IStorage {
         .where(and(...conditions))
         .orderBy(desc(platformEngagement.date));
     } catch (error) {
-      console.error('Error getting platform engagement:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting platform engagement:', { error: (error as Error)).message });
       return [];
     }
   }
@@ -1428,7 +1430,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return scheduledPost;
     } catch (error) {
-      console.error('Error creating post schedule:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error creating post schedule:', { error: (error as Error)).message });
       throw error;
     }
   }
@@ -1439,7 +1441,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(postSchedule.userId, userId))
         .orderBy(desc(postSchedule.scheduledTime));
     } catch (error) {
-      console.error('Error getting user scheduled posts:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting user scheduled posts:', { error: (error as Error)).message });
       return [];
     }
   }
@@ -1451,7 +1453,7 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
       return result;
     } catch (error) {
-      console.error('Error getting post schedule:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error getting post schedule:', { error: (error as Error)).message });
       return undefined;
     }
   }
@@ -1464,7 +1466,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return result;
     } catch (error) {
-      console.error('Error updating post schedule:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error updating post schedule:', { error: (error as Error)).message });
       throw error;
     }
   }
@@ -1473,7 +1475,7 @@ export class DatabaseStorage implements IStorage {
     try {
       await db.delete(postSchedule).where(eq(postSchedule.id, scheduleId));
     } catch (error) {
-      console.error('Error deleting post schedule:', { error: (error as Error).message });
+      logger.error(...formatLogArgs('Error deleting post schedule:', { error: (error as Error)).message });
       throw error;
     }
   }
@@ -1485,8 +1487,8 @@ export class DatabaseStorage implements IStorage {
         occurredAt: outcome.occurredAt ?? new Date(),
       } as typeof redditPostOutcomes.$inferInsert);
     } catch (error) {
-      console.error('Error recording reddit post outcome:', {
-        error: (error as Error).message,
+      logger.error(...formatLogArgs('Error recording reddit post outcome:', {
+        error: (error as Error)).message,
         userId: outcome.userId,
         subreddit: outcome.subreddit,
       });
@@ -1502,7 +1504,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(redditPostOutcomes.userId, userId))
         .orderBy(redditPostOutcomes.occurredAt);
     } catch (error) {
-      console.error('Error fetching reddit post outcomes:', { error: (error as Error).message, userId });
+      logger.error(...formatLogArgs('Error fetching reddit post outcomes:', { error: (error as Error)).message, userId });
       return [];
     }
   }
@@ -1525,7 +1527,7 @@ export class DatabaseStorage implements IStorage {
         )
         .groupBy(redditPostOutcomes.reason);
     } catch (error) {
-      console.error('Error summarizing reddit removal outcomes:', { error: (error as Error).message, userId });
+      logger.error(...formatLogArgs('Error summarizing reddit removal outcomes:', { error: (error as Error)).message, userId });
       return [];
     }
   }
@@ -1538,7 +1540,7 @@ export class DatabaseStorage implements IStorage {
       }
       await db.delete(redditPostOutcomes);
     } catch (error) {
-      console.error('Error clearing reddit post outcomes:', { error: (error as Error).message, userId });
+      logger.error(...formatLogArgs('Error clearing reddit post outcomes:', { error: (error as Error)).message, userId });
       throw error;
     }
   }

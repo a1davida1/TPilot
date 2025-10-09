@@ -1,6 +1,8 @@
 import type { Request } from 'express';
 import Stripe from 'stripe';
 
+import { logger } from './bootstrap/logger.js';
+import { formatLogArgs } from './lib/logger-utils.js';
 // Visitor Analytics System
 interface VisitorSession {
   id: string;
@@ -213,7 +215,7 @@ class VisitorAnalytics {
 
   async recordPayment(customerId: string, amount: number): Promise<void> {
     if (!this.stripe) {
-      console.warn('Stripe not configured, skipping payment recording');
+      logger.warn(...formatLogArgs('Stripe not configured, skipping payment recording'));
       return;
     }
     
@@ -261,16 +263,16 @@ class VisitorAnalytics {
         stats.conversionRate = (conversions / stats.uniqueVisitors) * 100;
       }
 
-      console.warn('Payment recorded:', {
+      logger.warn(...formatLogArgs('Payment recorded:', {
         customerId,
         amount,
         date: today,
-        totalConversions: (stats as { conversions?: number }).conversions,
+        totalConversions: (stats as { conversions?: number })).conversions,
         conversionRate: stats.conversionRate
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Stripe recordPayment error:', errorMessage);
+      logger.error(...formatLogArgs('Stripe recordPayment error:', errorMessage));
       throw error;
     }
   }

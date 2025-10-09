@@ -7,12 +7,14 @@
 import { db } from './db.js';
 import { sql } from 'drizzle-orm';
 
+import { logger } from './bootstrap/logger.js';
+import { formatLogArgs } from './lib/logger-utils.js';
 async function fixProductionSubscriptionStatus() {
-  console.error('🔧 Starting production-safe subscription_status fix...\n');
+  logger.error(...formatLogArgs('🔧 Starting production-safe subscription_status fix...\n'));
   
   try {
     // STEP 1: Inspect unexpected statuses
-    console.error('📊 STEP 1: Inspecting current subscription_status values...');
+    logger.error(...formatLogArgs('📊 STEP 1: Inspecting current subscription_status values...'));
     const inspectResult = await db.execute(sql`
       SELECT DISTINCT subscription_status, COUNT(*) as count
       FROM users
@@ -22,14 +24,14 @@ async function fixProductionSubscriptionStatus() {
     `);
     
     if (inspectResult.rows.length > 0) {
-      console.error('Found invalid subscription_status values:');
-      console.error(inspectResult.rows);
+      logger.error(...formatLogArgs('Found invalid subscription_status values:'));
+      logger.error(...formatLogArgs(inspectResult.rows));
     } else {
-      console.error('✅ No invalid subscription_status values found');
+      logger.error(...formatLogArgs('✅ No invalid subscription_status values found'));
     }
     
     // STEP 2: Normalize bad rows
-    console.error('\n🔄 STEP 2: Normalizing invalid values to "inactive"...');
+    logger.error(...formatLogArgs('\n🔄 STEP 2: Normalizing invalid values to "inactive"...'));
     const updateResult = await db.execute(sql`
       UPDATE users
       SET subscription_status = 'inactive'
@@ -37,10 +39,10 @@ async function fixProductionSubscriptionStatus() {
          OR subscription_status NOT IN ('active','inactive','cancelled','past_due')
     `);
     
-    console.error(`✅ Updated ${updateResult.rowCount} rows with invalid subscription_status`);
+    logger.error(...formatLogArgs(`✅ Updated ${updateResult.rowCount} rows with invalid subscription_status`));
     
     // STEP 3: Add constraint without validation (NOT VALID)
-    console.error('\n🔒 STEP 3: Adding constraint (NOT VALID - won\'t check existing rows)...');
+    logger.error(...formatLogArgs('\n🔒 STEP 3: Adding constraint (NOT VALID - won\'t check existing rows))...');
     try {
       // First check if constraint already exists
       const constraintExists = await db.execute(sql`
@@ -51,7 +53,7 @@ async function fixProductionSubscriptionStatus() {
       `);
       
       if (constraintExists.rows.length > 0) {
-        console.error('⚠️  Constraint already exists, skipping creation');
+        logger.error(...formatLogArgs('⚠️  Constraint already exists, skipping creation'));
       } else {
         await db.execute(sql`
           ALTER TABLE users
@@ -59,12 +61,12 @@ async function fixProductionSubscriptionStatus() {
           CHECK (subscription_status IN ('active','inactive','cancelled','past_due'))
           NOT VALID
         `);
-        console.error('✅ Constraint added (not validated yet)');
+        logger.error(...formatLogArgs('✅ Constraint added (not validated yet))');
       }
     } catch (error: unknown) {
       if (error instanceof Error) {
         if ((error as Error).message.includes('already exists')) {
-          console.error('⚠️  Constraint already exists, continuing...');
+          logger.error(...formatLogArgs('⚠️  Constraint already exists, continuing...'));
         } else {
           throw error;
         }
@@ -74,17 +76,17 @@ async function fixProductionSubscriptionStatus() {
     }
     
     // STEP 4: Validate the constraint
-    console.error('\n✔️  STEP 4: Validating constraint for all existing rows...');
+    logger.error(...formatLogArgs('\n✔️  STEP 4: Validating constraint for all existing rows...'));
     try {
       await db.execute(sql`
         ALTER TABLE users
         VALIDATE CONSTRAINT valid_subscription_status
       `);
-      console.error('✅ Constraint validated successfully');
+      logger.error(...formatLogArgs('✅ Constraint validated successfully'));
     } catch (error: unknown) {
       if (error instanceof Error) {
         if ((error as Error).message.includes('is already validated')) {
-          console.error('✅ Constraint was already validated');
+          logger.error(...formatLogArgs('✅ Constraint was already validated'));
         } else {
           throw error;
         }
@@ -94,7 +96,7 @@ async function fixProductionSubscriptionStatus() {
     }
     
     // Final verification
-    console.error('\n📈 Final subscription_status distribution:');
+    logger.error(...formatLogArgs('\n📈 Final subscription_status distribution:'));
     const finalResult = await db.execute(sql`
       SELECT subscription_status, COUNT(*) as count
       FROM users
@@ -102,14 +104,14 @@ async function fixProductionSubscriptionStatus() {
       ORDER BY count DESC
     `);
     
-    console.error(finalResult.rows);
+    logger.error(...formatLogArgs(finalResult.rows));
     
-    console.error('\n✅ Production database fixed successfully!');
-    console.error('You can now retry your deployment.');
+    logger.error(...formatLogArgs('\n✅ Production database fixed successfully!'));
+    logger.error(...formatLogArgs('You can now retry your deployment.'));
     
   } catch (error) {
-    console.error('\n❌ Error fixing production database:', error);
-    console.error('\nIf this script fails, you can run the SQL manually in the database pane.');
+    logger.error(...formatLogArgs('\n❌ Error fixing production database:', error));
+    logger.error(...formatLogArgs('\nIf this script fails, you can run the SQL manually in the database pane.'));
     process.exit(1);
   }
   
