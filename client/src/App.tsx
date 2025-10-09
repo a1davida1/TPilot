@@ -147,6 +147,7 @@ function UnauthenticatedRoutes() {
       <Route path="/signup">
         <SEOOptimization {...seoConfigs.landing} />
         <UnifiedLanding />
+      </Route>
       <Route path="/email-verification" component={EmailVerificationPage} />
       <Route path="/reset-password" component={ResetPasswordPage} />
       <Route path="/forgot-password" component={ForgotPasswordPage} />
