@@ -426,3 +426,5 @@
 {"level":"info","message":"Retrieved 0 media assets for user 316","timestamp":"2025-10-09T06:03:14.332Z"}
 {"level":"info","message":"[2025-10-09T06:03:15.951Z] GET /api/reddit/connect - IP: 127.0.0.1","timestamp":"2025-10-09T06:03:15.951Z"}
 {"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-09T06:03:16.066Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-09T06:30:13.807Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-09T06:30:13.808Z"}

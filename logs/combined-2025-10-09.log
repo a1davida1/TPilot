@@ -462,3 +462,27 @@
 {"level":"info","message":"GET /api/reddit/communities 200 in 124ms :: [{\"id\":\"fitness\",\"name\":\"fitness\",\"displayName\":\"Fitness\",\"members\":10000000,\"engagementRate\":7,\"category\":\"fitness\",\"verificationRequired\":true,\"promotionAllowed\":\"strict\",\"postingLimits\":{\"daily\":2},\"rules\":{\"eligibility\":{\"minKarma\":null,\"minAccountAgeDays\":null,\"verificationRequired\":false,\"requiresApproval\":false},\"content\":{\"sellingPolicy\":\"not_allowed\",\"watermarksAllowed\":null,\"promotionalLinks\":null,\"requiresOriginalContent\":false,\"nsfwRequired\":false,\"titleGuidelines\":[],\"contentGuidelines\":[\"No self-promotion\",\"Stay on topic\"],\"linkRestrictions\":[],\"bannedContent\":[],\"formattingRequirements\":[]},\"posting\":{\"maxPostsPerDay\":null,\"cooldownHours\":null},\"notes\":null},\"bestPostingTimes\":[\"afternoon\"],\"averageUpvotes\":250,\"successProbability\":70,\"growthTrend\":\"stable\",\"modActivity\":\"medium\",\"description\":\"Workout tips and discussion.\",\"tags\":[\"fitness\",\"health\"],\"competitionLevel\":\"high\"},{\"id\":\"photography\",\"name\":\"photography\",\"displayName\":\"Photography\",\"members\":50… (truncated)","requestId":"6086b679-a7ca-4a8f-9215-8bedefcad4e9","timestamp":"2025-10-09T06:03:14.378Z"}
 {"intent":"posting","level":"info","message":"Reddit OAuth initiated","queue":"reddit-posting","requestIP":"127.0.0.1","statePreview":"posting:...","timestamp":"2025-10-09T06:03:16.003Z","userId":316}
 {"level":"info","message":"GET /api/reddit/connect 200 in 55ms :: {\"authUrl\":\"https://www.reddit.com/api/v1/authorize?client_id=ByrMwubDSmQvi9OFhuQI6g&response_type=code&state=posting%3Aa387ece38053a0d42d9854783f51bc3bce2c89dc22e9ac26e1337baeee4d1c17&redirect_uri=http%3A%2F%2Flocalhost%3A5178%2Fapi%2Freddit%2Fcallback&duration=permanent&scope=identity+submit+edit+read+vote+save+history+mysubreddits\"}","requestId":"28433fa8-d5db-462e-95de-7de1d9f2d34e","timestamp":"2025-10-09T06:03:16.006Z"}
+{"level":"info","message":"Sentry initialized successfully","timestamp":"2025-10-09T06:30:08.851Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-09T06:30:12.752Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-09T06:30:12.753Z"}
+{"level":"info","message":"[HEALTH] Environment: production","timestamp":"2025-10-09T06:30:12.754Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-09T06:30:12.754Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-09T06:30:12.754Z"}
+{"level":"info","message":"Session store configured with PostgreSQL backend","timestamp":"2025-10-09T06:30:12.759Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-09T06:30:12.762Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-09T06:30:13.046Z"}
+{"level":"info","message":"✅ Admin account verified: thottopilot@thottopilot.com","timestamp":"2025-10-09T06:30:13.088Z"}
+{"level":"info","message":"User a1davida1 already has tier: pro","timestamp":"2025-10-09T06:30:13.128Z"}
+{"level":"info","message":"User a1davida1 email already verified","timestamp":"2025-10-09T06:30:13.165Z"}
+{"level":"info","message":"✅ Production database fixes completed","timestamp":"2025-10-09T06:30:13.166Z"}
+{"level":"info","message":"🔄 Initializing queue system...","timestamp":"2025-10-09T06:30:13.169Z"}
+{"level":"info","message":"✅ Queue system initialized","timestamp":"2025-10-09T06:30:13.171Z"}
+{"level":"info","message":"✅ Background workers initialized","timestamp":"2025-10-09T06:30:13.785Z"}
+{"level":"info","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-09T06:30:13.786Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-09T06:30:13.808Z"}
+{"level":"info","message":"Serving client from: /home/runner/workspace/client/dist","timestamp":"2025-10-09T06:30:13.850Z"}
+{"level":"info","message":"[HEALTH] Express app created successfully in 1098ms","timestamp":"2025-10-09T06:30:13.852Z"}
+{"level":"info","message":"[HEALTH] Target port from environment: 5000","timestamp":"2025-10-09T06:30:13.852Z"}
+{"level":"info","message":"[HEALTH] Starting server on 0.0.0.0:5000","timestamp":"2025-10-09T06:30:13.852Z"}
+{"level":"info","message":"[HEALTH] ✅ Server started successfully on port 5000 in 1101ms","timestamp":"2025-10-09T06:30:13.854Z"}
+{"level":"info","message":"serving on port 5000","timestamp":"2025-10-09T06:30:13.854Z"}
