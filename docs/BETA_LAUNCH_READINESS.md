@@ -104,39 +104,111 @@ npm run test:e2e -- --grep "content generation"
 
 ---
 
-### 4. ⚠️ Reddit Integration
-**Status**: NEEDS VALIDATION  
-**Priority**: P0 (Blocking)
+### 4. 🚨 Reddit Integration
+**Status**: CRITICAL - SKELETON IMPLEMENTATION  
+**Priority**: P0 (BLOCKING BETA)
 
 **Critical Features**:
-- [ ] **OAuth flow** (connect Reddit account)
-- [ ] **Posting to subreddits** (with rules validation)
-- [ ] **Subreddit recommendations**
-- [ ] **Post rate limiting** (1 post/subreddit/24h)
+- [ ] **OAuth flow** (connect Reddit account) ✅ Working
+- [ ] **Posting to subreddits** (with rules validation) ✅ Working
+- [ ] **Subreddit recommendations** ⚠️ Needs validation
+- [ ] **Post rate limiting** (1 post/subreddit/24h) ⚠️ Needs validation
+
+**BLOCKERS IDENTIFIED**:
+
+#### 4a. 🚨 Scheduled Posts System (SKELETON)
+**Current State**: Routes exist but return empty arrays (see `routes/scheduled-posts.ts:93`)
+
+**Must Implement**:
+- [ ] **Database queries** for scheduled posts
+  ```typescript
+  // TODO at line 91: Query posts table WHERE creator_id = user.id 
+  // AND scheduled_for IS NOT NULL AND posted_at IS NULL
+  ```
+- [ ] **BullMQ worker** to process scheduled posts
+  - Check for posts due in next 5 minutes
+  - Execute Reddit posting
+  - Update post status in database
+  - Handle errors and retries
+
+- [ ] **Cron job** or worker loop
+  ```typescript
+  // Every minute: check for due posts
+  setInterval(async () => {
+    const duePosts = await getDuePosts();
+    for (const post of duePosts) {
+      await queue.add('post-to-reddit', post);
+    }
+  }, 60000);
+  ```
+
+- [ ] **Cancel scheduled post** (endpoint exists but TODO)
+- [ ] **Edit scheduled post** before execution
+- [ ] **Retry failed posts** (with exponential backoff)
+
+**Files to Fix**:
+- `server/routes/scheduled-posts.ts` (lines 91-93, 119-120)
+- `server/lib/workers/batch-posting-worker.ts` (needs wiring)
+- `server/bootstrap/queue.ts` (ensure workers start)
+
+#### 4b. 🚨 Reddit Intelligence Gathering (INCOMPLETE)
+**Current State**: Service exists but user reports "nowhere near where it needs to be"
+
+**Must Implement**:
+- [ ] **Real-time trend detection**
+  - Fetch trending posts from 20-50 top subreddits
+  - Extract topics, hashtags, memes
+  - Score by engagement velocity
+
+- [ ] **Content suggestion engine**
+  - "Here's what's working in r/funny today"
+  - "Posts with [topic] are getting 2x engagement"
+  - Suggest optimal posting times per subreddit
+
+- [ ] **Subreddit analytics dashboard**
+  - Best posting times (heatmap by hour/day)
+  - Top performing content types
+  - Engagement rate trends
+  - Mod activity patterns
+
+- [ ] **Competitive analysis**
+  - "Top OnlyFans creators in this sub posted 3x this week"
+  - "Average caption length for top posts: 50 chars"
+
+- [ ] **Automated alerts**
+  - "New hot topic in your target subs"
+  - "Your subreddit just went viral"
+  - "Mod removed similar content yesterday"
+
+**Files to Enhance**:
+- `server/services/reddit-intelligence.ts` (expand capabilities)
+- `client/src/components/intelligence/TrendIntelligence.tsx` (UI)
+- Add: `server/workers/trend-scraper-worker.ts` (background job)
 
 **Known Issues**:
 - ⚠️ `snoowrap` dependency vulnerabilities (not blocking, see Phase 10)
 
 **How to Test**:
 ```bash
-# Integration test
-npm run test -- reddit-routes.test.ts
+# Scheduled posts
+1. Create post, schedule for +2 minutes
+2. Wait and verify it posts automatically
+3. Check database for status update
 
-# Manual test
-1. Connect Reddit account
-2. Select subreddit with posting rules
-3. Generate content + schedule post
-4. Verify post appears on Reddit
-5. Test rate limit (try posting twice)
+# Intelligence
+1. View intelligence dashboard
+2. Verify trending topics appear
+3. Test content suggestions
 ```
 
 **Acceptance Criteria**:
 - Reddit OAuth success rate > 98%
+- Scheduled posts execute within 1 minute of target time
 - Post delivery < 30s
-- Rules validation prevents rejections
-- Rate limits enforced server-side
+- Intelligence refreshes every 15 minutes
+- Trend detection accuracy > 70%
 
-**Estimated Time**: 3-4 hours
+**Estimated Time**: **12-16 hours** (was 3-4h, severely underestimated)
 
 ---
 
@@ -288,6 +360,125 @@ npm run test:load -- --users 50 --duration 60s
 - Image load time < 500ms (global)
 
 **Estimated Time**: 2 hours
+
+---
+
+### 8b. 🚨 Admin Portal Upgrade
+**Status**: CRITICAL - NEEDS MAJOR EXPANSION  
+**Priority**: P1 (High - Beta Blocker)
+
+**Current State**: Basic admin panel exists but missing critical features for beta operations
+
+**Must Implement**:
+
+#### User Management
+- [ ] **Search/filter users**
+  - By username, email, tier
+  - By signup date, last active
+  - By revenue (paying customers first)
+
+- [ ] **User actions**
+  - View full user profile
+  - Manually change tier (comp accounts)
+  - Ban/suspend accounts
+  - Reset password
+  - View audit log per user
+
+- [ ] **Bulk operations**
+  - Export users to CSV
+  - Bulk email to segment (e.g., "Free users who haven't upgraded")
+
+#### Content Moderation
+- [ ] **Flagged content review**
+  - Queue of posts flagged by Reddit mods
+  - Queue of posts reported by users
+  - Approve/reject with one click
+  - Add notes for patterns
+
+- [ ] **Content analytics**
+  - Most posted subreddits
+  - Average engagement by tier
+  - Top performing captions
+  - Ban rate by subreddit
+
+#### Financial Dashboard
+- [ ] **Revenue metrics**
+  - MRR (Monthly Recurring Revenue)
+  - Churn rate
+  - LTV (Lifetime Value) per cohort
+  - Conversion funnel (Free → Starter → Pro)
+
+- [ ] **Subscription management**
+  - View all active subscriptions
+  - Cancel/refund subscriptions
+  - Failed payment alerts
+  - Dunning management
+
+#### System Health
+- [ ] **Real-time metrics**
+  - Active users (last 5 min)
+  - API request rate
+  - Error rate by endpoint
+  - Queue depths (scheduled posts, AI jobs)
+
+- [ ] **Database stats**
+  - Connection pool usage
+  - Slow query log
+  - Table sizes
+  - Index hit rate
+
+- [ ] **Alerts & incidents**
+  - Critical errors in last 24h
+  - Failed scheduled posts
+  - AI service downtime
+  - Payment webhook failures
+
+#### Reddit Integration Status
+- [ ] **OAuth health**
+  - Connected accounts count
+  - Failed OAuth attempts
+  - Token refresh failures
+
+- [ ] **Posting metrics**
+  - Posts per hour (chart)
+  - Success rate by subreddit
+  - Ban/removal patterns
+  - Rate limit hits
+
+#### Compliance & Safety
+- [ ] **Age verification tracking**
+  - Users with verified ages
+  - Pending verifications
+  - Rejected verifications
+
+- [ ] **DMCA takedown queue**
+  - Automated detection of duplicate content
+  - Manual takedown requests
+  - Counter-notice handling
+
+**Files to Create/Modify**:
+- `client/src/pages/admin.tsx` (expand features)
+- `client/src/components/admin/` (split into subcomponents)
+- `server/routes/admin.ts` (add new endpoints)
+- Add: `server/middleware/require-admin.ts` (RBAC)
+
+**How to Test**:
+```bash
+# Login as admin
+1. Go to /admin
+2. Verify all tabs load
+3. Test user search
+4. Test ban user
+5. Check revenue dashboard shows real data
+```
+
+**Acceptance Criteria**:
+- All critical metrics visible at a glance
+- User actions complete in <2s
+- No admin feature requires database console access
+- Dashboard updates in real-time (5s refresh)
+
+**Estimated Time**: **10-12 hours**
 
 ---
 
@@ -533,37 +724,70 @@ npm run test:load -- --users 50 --duration 60s
 | Phase | Tasks | Complete | Priority | Time Est. |
 |-------|-------|----------|----------|-----------|
 | 1. Infrastructure | 2 | 2/2 ✅ | P0 | 0h |
-| 2. Features | 4 | 0/4 ⚠️ | P0-P1 | 9-11h |
-| 3. Performance | 2 | 0/2 ⚠️ | P2 | 5-6h |
+| 2. Features | 4 | 0/4 🚨 | **P0 BLOCKING** | **17-22h** ⬆️ |
+| 3. Performance | 3 | 0/3 ⚠️ | P1-P2 | **17-18h** ⬆️ |
 | 4. UX | 2 | 0/2 ⚠️ | P1-P2 | 5-7h |
 | 5. Production | 2 | 0/2 ⚠️ | P1-P3 | 3-4h |
-| **Total** | **12** | **2/12** | - | **22-28h** |
+| **Total** | **13** | **2/13** | - | **42-51h** |
 
-**Estimated time to beta-ready**: 3-4 days of focused work
+**Estimated time to beta-ready**: **6-7 days of focused work** (revised from 3-4 days)
+
+### ⚠️ **CRITICAL BLOCKERS IDENTIFIED**:
+1. 🚨 **Scheduled Posts** - Currently returns empty arrays (12h work)
+2. 🚨 **Reddit Intelligence** - Incomplete implementation (12h work)
+3. 🚨 **Admin Portal** - Missing critical ops features (10h work)
+
+**Recommendation**: Prioritize blockers before moving to nice-to-haves
 
 ---
 
 ## 🚀 Quick Start: Next Actions
 
-**Today** (4-6 hours):
-1. [ ] Test content generation pipeline (Step 3)
-2. [ ] Test Reddit integration (Step 4)
-3. [ ] Configure Stripe API version (Step 5)
+### ⚠️ **REVISED ROADMAP** - Blockers First
 
-**Tomorrow** (4-6 hours):
-4. [ ] Set up email delivery (Step 6)
-5. [ ] Test payment flows (Step 5)
-6. [ ] Error handling improvements (Step 9)
+**Week 1: Critical Blockers (34h)**
 
-**Day 3** (4-6 hours):
+**Day 1-2** (12-14h):
+1. [ ] 🚨 **Implement scheduled posts system** (Step 4a)
+   - Fix database queries
+   - Wire up BullMQ worker
+   - Add cron job for due posts
+   - Test end-to-end
+
+**Day 3-4** (12-14h):
+2. [ ] 🚨 **Build Reddit intelligence engine** (Step 4b)
+   - Real-time trend detection
+   - Content suggestion algorithm
+   - Analytics dashboard
+   - Background scraper worker
+
+**Day 5** (10-12h):
+3. [ ] 🚨 **Upgrade admin portal** (Step 8b)
+   - User management
+   - Content moderation
+   - Financial dashboard
+   - System health monitoring
+
+### Week 2: Validation & Polish (17h)
+
+**Day 6** (6-8h):
+4. [ ] Test content generation (Step 3)
+5. [ ] Configure Stripe + test payments (Step 5)
+6. [ ] Set up email delivery (Step 6)
+
+**Day 7** (5-6h):
 7. [ ] Database optimization (Step 7)
-8. [ ] Mobile testing (Step 10)
-9. [ ] Monitoring setup (Step 11)
+8. [ ] Error handling (Step 9)
 
-**Day 4** (2-4 hours):
-10. [ ] CDN validation (Step 8)
-11. [ ] Final smoke tests
-12. [ ] Launch! 🚀
+**Day 8** (3-4h):
+9. [ ] Mobile testing (Step 10)
+10. [ ] Monitoring setup (Step 11)
+
+**Day 9** (2-3h):
+11. [ ] CDN validation (Step 8a)
+12. [ ] Final smoke tests
+
+**Day 10**: Launch! 🚀
 
 ---
 
