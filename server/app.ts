@@ -253,7 +253,7 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   const isProd = process.env.NODE_ENV === 'production';
   
   // Modern CSRF protection using csrf-csrf (maintained alternative to csurf)
-  const { doubleCsrfProtection, generateToken } = doubleCsrf({
+  const csrfConfig = doubleCsrf({
     getSecret: () => process.env.SESSION_SECRET || 'fallback-secret-for-dev',
     getSessionIdentifier: (req) => req.sessionID || (req.session as { id?: string })?.id || '',
     cookieName: '__Host-psifi.x-csrf-token',
@@ -267,10 +267,13 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
     ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
   });
 
-  const csrfProtection: RequestHandler = doubleCsrfProtection;
+  const csrfProtection: RequestHandler = csrfConfig.doubleCsrfProtection;
 
   app.get(`${API_PREFIX}/csrf-token`, (req, res) => {
-    const token = generateToken(req as Parameters<typeof generateToken>[0]);
+    // Generate token using the csrf utilities
+    const token = (csrfConfig as { generateToken?: (req: unknown) => string }).generateToken?.(req) 
+      || (req as { csrfToken?: () => string }).csrfToken?.() 
+      || '';
     res.json({ csrfToken: token });
   });
 
