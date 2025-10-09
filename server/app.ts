@@ -250,6 +250,25 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   app.use(createSessionMiddleware());
   app.set('sessionConfigured', true);
 
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  // Set up routes BEFORE applying CSRF protection
+  if (app.get('authRoutesConfigured') !== true) {
+    await setupAuth(app, API_PREFIX);
+    app.set('authRoutesConfigured', true);
+  }
+
+  if (app.get('socialAuthConfigured') !== true) {
+    setupSocialAuth(app, API_PREFIX);
+    app.set('socialAuthConfigured', true);
+  }
+
+  if (app.get('billingRoutesConfigured') !== true) {
+    mountBillingRoutes(app, API_PREFIX);
+    app.set('billingRoutesConfigured', true);
+  }
+
   const isProd = process.env.NODE_ENV === 'production';
   
   // Modern CSRF protection using csrf-csrf (maintained alternative to csurf)
@@ -270,7 +289,7 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   const csrfProtection: RequestHandler = doubleCsrfProtection;
 
   app.get(`${API_PREFIX}/csrf-token`, (req, res) => {
-    const token = generateCsrfToken(req);
+    const token = generateCsrfToken(req, res);
     res.json({ csrfToken: token });
   });
 
@@ -294,24 +313,6 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   });
 
   app.set('csrfProtectionConfigured', true);
-
-  app.use(passport.initialize());
-  app.use(passport.session());
-
-  if (app.get('authRoutesConfigured') !== true) {
-    await setupAuth(app, API_PREFIX);
-    app.set('authRoutesConfigured', true);
-  }
-
-  if (app.get('socialAuthConfigured') !== true) {
-    setupSocialAuth(app, API_PREFIX);
-    app.set('socialAuthConfigured', true);
-  }
-
-  if (app.get('billingRoutesConfigured') !== true) {
-    mountBillingRoutes(app, API_PREFIX);
-    app.set('billingRoutesConfigured', true);
-  }
 
   applyRequestLogging(app);
 
