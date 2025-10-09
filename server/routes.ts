@@ -546,6 +546,9 @@ import { createLead, confirmLead } from "./api/leads.js";
 import { getLeads } from './api/admin-leads.js';
 import { complianceStatusRouter } from './api/compliance-status.js';
 import { captionRouter } from "./routes/caption.js";
+import { subredditLintRouter } from "./routes/subreddit-lint.js";
+import { subredditRecommenderRouter } from "./routes/subreddit-recommender.js";
+import { scheduledPostsRouter } from "./routes/scheduled-posts.js";
 import { registerSocialMediaRoutes } from "./social-media-routes.js";
 
 
@@ -1406,6 +1409,15 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
 
   // Register Caption Routes (2-pass Gemini pipeline) - MOVED UP to get routing priority
   app.use('/api/caption', captionRouter);
+
+  // Register Subreddit Linting Routes (for one-click posting validation)
+  app.use('/api/subreddit-lint', subredditLintRouter);
+
+  // Register Subreddit Recommender Routes (for optimal subreddit suggestions)
+  app.use('/api/subreddit-recommender', subredditRecommenderRouter);
+
+  // Register Scheduled Posts Routes (for scheduling Reddit posts)
+  app.use('/api/scheduled-posts', scheduledPostsRouter);
 
   // Register Dashboard Routes
   try {

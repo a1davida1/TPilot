@@ -7,6 +7,7 @@ import { authenticateToken, type AuthRequest } from '../middleware/auth';
 import { type CaptionObject } from '@shared/types/caption';
 import { z } from 'zod';
 import { logger } from '../bootstrap/logger';
+import { generateCaptionsWithFallback } from '../lib/openrouter';
 
 // Local validation schema to prevent import issues
 const captionObjectSchema = z.object({
@@ -237,6 +238,53 @@ router.post('/rewrite', authenticateToken, async (req: AuthRequest, res: Respons
     if (e instanceof InvalidImageError) {
       return res.status(422).json({ error: message });
     }
+    return res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * One-click caption generation with Grok4 Fast (primary) / Claude 3 Opus (fallback)
+ * Returns two caption styles: Flirty and Slutty
+ * Ephemeral processing: image base64 in memory only, never written to disk
+ */
+const oneClickCaptionSchema = z.object({
+  image_base64: z.string(),
+  user_profile: z.record(z.unknown()).optional()
+});
+
+router.post('/one-click-captions', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { image_base64 } = oneClickCaptionSchema.parse(req.body ?? {});
+
+    // Generate two-caption variants using OpenRouter (Grok4 Fast → Claude 3 Opus fallback)
+    const result = await generateCaptionsWithFallback(image_base64, {
+      primaryModel: 'x-ai/grok-4-fast',
+      fallbackModel: 'anthropic/claude-3-opus'
+    });
+
+    // Format response for two-caption picker
+    const captions = [
+      {
+        id: `flirty_${Date.now()}`,
+        text: result.captions.flirty,
+        style: 'flirty'
+      },
+      {
+        id: `slutty_${Date.now() + 1}`,
+        text: result.captions.slutty,
+        style: 'slutty'
+      }
+    ];
+
+    return res.status(200).json({
+      captions,
+      category: result.category,
+      tags: result.tags
+    });
+
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Caption generation failed';
+    logger.error('One-click caption generation error', { error: message });
     return res.status(500).json({ error: message });
   }
 });

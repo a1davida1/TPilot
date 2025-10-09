@@ -1,0 +1,177 @@
+/**
+ * Scheduled posts management API
+ * Handles creating, updating, and executing scheduled Reddit posts
+ */
+
+import { Router, type Response } from 'express';
+import { authenticateToken, type AuthRequest } from '../middleware/auth';
+import { getOptimalPostingTimes, getNextOptimalTime } from '../lib/schedule-optimizer.js';
+import { z } from 'zod';
+import { logger } from '../bootstrap/logger.js';
+
+const router = Router();
+
+const createScheduledPostSchema = z.object({
+  subreddit: z.string(),
+  title: z.string(),
+  imageUrl: z.string().url(), // Imgur URL (already uploaded)
+  nsfw: z.boolean().default(true),
+  flair: z.string().optional(),
+  scheduledFor: z.string().datetime(), // ISO timestamp
+  captionId: z.string().optional(),
+  pairId: z.string().optional(),
+  protectionMetrics: z.object({
+    ssim: z.number(),
+    phashDelta: z.number(),
+    preset: z.string()
+  }).optional()
+});
+
+const getOptimalTimesSchema = z.object({
+  subreddit: z.string(),
+  timezone: z.string().optional(),
+  daysAhead: z.number().min(1).max(14).default(7)
+});
+
+/**
+ * POST /api/scheduled-posts
+ * Create a new scheduled post
+ */
+router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const data = createScheduledPostSchema.parse(req.body ?? {});
+
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // TODO: Insert into posts table with scheduled_for timestamp
+    // For now, return mock response
+    const scheduledPost = {
+      post_id: Math.floor(Math.random() * 10000),
+      creator_id: req.user.id,
+      subreddit: data.subreddit,
+      title: data.title,
+      image_url: data.imageUrl,
+      nsfw_flag: data.nsfw,
+      flair: data.flair,
+      scheduled_for: data.scheduledFor,
+      caption_id: data.captionId,
+      pair_id: data.pairId,
+      status: 'scheduled',
+      created_at: new Date().toISOString()
+    };
+
+    logger.info('Scheduled post created', {
+      postId: scheduledPost.post_id,
+      userId: req.user.id,
+      subreddit: data.subreddit,
+      scheduledFor: data.scheduledFor
+    });
+
+    return res.status(201).json(scheduledPost);
+
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Failed to create scheduled post';
+    logger.error('Scheduled post creation error', { error: message });
+    return res.status(400).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/scheduled-posts
+ * Get all scheduled posts for the authenticated user
+ */
+router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // TODO: Query posts table WHERE creator_id = user.id AND scheduled_for IS NOT NULL AND posted_at IS NULL
+    // For now, return empty array
+    const scheduledPosts: unknown[] = [];
+
+    return res.status(200).json({ scheduledPosts });
+
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Failed to get scheduled posts';
+    logger.error('Get scheduled posts error', { error: message });
+    return res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * DELETE /api/scheduled-posts/:postId
+ * Cancel a scheduled post
+ */
+router.delete('/:postId', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const postId = parseInt(req.params.postId, 10);
+
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // TODO: Delete from posts table WHERE post_id = postId AND creator_id = user.id AND posted_at IS NULL
+
+    logger.info('Scheduled post cancelled', { postId, userId: req.user.id });
+
+    return res.status(200).json({ success: true });
+
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Failed to cancel scheduled post';
+    logger.error('Cancel scheduled post error', { error: message });
+    return res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/scheduled-posts/optimal-times
+ * Get optimal posting times for a subreddit
+ */
+router.post('/optimal-times', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { subreddit, timezone, daysAhead } = getOptimalTimesSchema.parse(req.body ?? {});
+
+    const timeSlots = await getOptimalPostingTimes({
+      subreddit,
+      userId: req.user?.id,
+      timezone,
+      daysAhead
+    });
+
+    return res.status(200).json({ timeSlots });
+
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Failed to get optimal times';
+    logger.error('Get optimal times error', { error: message });
+    return res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/scheduled-posts/next-optimal
+ * Get the single next optimal posting time
+ */
+router.post('/next-optimal', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { subreddit, timezone } = getOptimalTimesSchema.partial().parse(req.body ?? {});
+
+    const nextTime = await getNextOptimalTime({
+      subreddit: subreddit ?? 'gonewild',
+      userId: req.user?.id,
+      timezone,
+      daysAhead: 7
+    });
+
+    return res.status(200).json({ nextOptimalTime: nextTime });
+
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Failed to get next optimal time';
+    logger.error('Get next optimal time error', { error: message });
+    return res.status(500).json({ error: message });
+  }
+});
+
+export { router as scheduledPostsRouter };
