@@ -294,6 +294,15 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   });
 
   app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+    // Phase 1: Exempt Bearer token requests from CSRF (CSRF doesn't apply to JWT)
+    if (req.headers.authorization?.startsWith('Bearer ')) {
+      logger.debug('CSRF exemption: Bearer token detected', { 
+        path: req.path,
+        method: req.method 
+      });
+      return next();
+    }
+
     const exemptPaths = [
       `${API_PREFIX}/auth/login`,
       `${API_PREFIX}/auth/signup`,
