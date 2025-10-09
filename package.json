@@ -5,6 +5,8 @@
   "license": "MIT",
   "scripts": {
     "dev": "NODE_ENV=development tsx --import=server/instrumentation.ts server/index.ts",
+    "dev:full": "NODE_ENV=development concurrently \"npm run dev\" \"npm run dev:client\"",
+    "dev:client": "vite --open",
     "start": "NODE_ENV=production node --import=./dist/server/instrumentation.js dist/server/index.js",
     "build": "bash build-production.sh",
     "build:server": "tsc -p tsconfig.server.json",
@@ -205,6 +207,7 @@
     "@vitejs/plugin-react": "^4.3.2",
     "@vitest/coverage-v8": "^3.2.4",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^9.2.1",
     "drizzle-kit": "^0.31.4",
     "esbuild": "^0.25.0",
     "eslint-formatter-compact": "^8.40.0",
