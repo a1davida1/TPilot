@@ -1,3 +1,4 @@
 {
-    "files.autoSave": "afterDelay"
+    "files.autoSave": "afterDelay",
+    "typescript.tsserver.web.projectWideIntellisense.enabled": true
 }

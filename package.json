@@ -3,6 +3,13 @@
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",
+  "overrides": {
+    "snoowrap": {
+      "form-data": "^4.0.0",
+      "tough-cookie": "^4.1.3",
+      "ws": "^8.0.0"
+    }
+  },
   "scripts": {
     "dev": "NODE_ENV=development tsx --import=server/instrumentation.ts server/index.ts",
     "dev:full": "NODE_ENV=development concurrently \"npm run dev\" \"npm run dev:client\"",
