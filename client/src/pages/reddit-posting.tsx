@@ -469,12 +469,12 @@ export default function RedditPostingPage() {
       ? 'border-success/20 text-success hover:bg-success/5'
       : 'border-primary/20 text-primary hover:bg-primary/5';
 
-  const lastShadowbanCheck = shadowbanStatus?.evidence.checkedAt
+  const lastShadowbanCheck = shadowbanStatus?.evidence?.checkedAt
     ? new Date(shadowbanStatus.evidence.checkedAt).toLocaleString()
     : undefined;
 
   const hiddenSubmissions = useMemo<ShadowbanSubmissionSummary[]>(() => {
-    if (!shadowbanStatus) {
+    if (!shadowbanStatus?.evidence) {
       return [];
     }
 
@@ -973,16 +973,18 @@ export default function RedditPostingPage() {
                           <p className="text-xs text-gray-600">{shadowbanStatus.reason}</p>
                         )}
 
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="bg-gray-50 p-2 rounded">
-                            <p className="font-medium">Private submissions</p>
-                            <p className="text-gray-600">{shadowbanStatus.evidence.privateCount}</p>
+                        {shadowbanStatus.evidence && (
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="bg-gray-50 p-2 rounded">
+                              <p className="font-medium">Private submissions</p>
+                              <p className="text-gray-600">{shadowbanStatus.evidence.privateCount}</p>
+                            </div>
+                            <div className="bg-gray-50 p-2 rounded">
+                              <p className="font-medium">Public submissions</p>
+                              <p className="text-gray-600">{shadowbanStatus.evidence.publicCount}</p>
+                            </div>
                           </div>
-                          <div className="bg-gray-50 p-2 rounded">
-                            <p className="font-medium">Public submissions</p>
-                            <p className="text-gray-600">{shadowbanStatus.evidence.publicCount}</p>
-                          </div>
-                        </div>
+                        )}
 
                         {lastShadowbanCheck && (
                           <p className="text-xs text-gray-500">Last checked: {lastShadowbanCheck}</p>
