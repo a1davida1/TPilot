@@ -207,21 +207,31 @@ export async function apiRequest(
   if (typeof window !== "undefined") {
     try {
       // Try memory first (new), fallback to localStorage (backwards compat)
-      const { getAccessToken, refreshAccessToken } = await import('@/lib/auth');
+      const {
+        getAccessToken,
+        refreshAccessToken,
+        hasValidToken,
+        hasRefreshableToken,
+      } = await import('@/lib/auth');
       let token = getAccessToken();
       
-      // If no token in memory, try localStorage for backwards compatibility
-      if (!token) {
-        token = window.localStorage?.getItem("authToken");
-        if (token) {
+      // If no token in memory, try localStorage for backwards compatibility (one-time migration)
+      if (!token && window.localStorage?.getItem("authToken")) {
+        const oldToken = window.localStorage.getItem("authToken");
+        if (oldToken) {
           // Migrate to memory
           const { setAccessToken } = await import('@/lib/auth');
-          setAccessToken(token);
+          setAccessToken(oldToken);
+          token = getAccessToken(); // Get it again (might be expired)
+          
+          // Clear from localStorage after migration
+          window.localStorage.removeItem("authToken");
         }
       }
       
-      // If token expired, try refresh
-      if (!token) {
+      // Only attempt refresh if we previously had a token (even if expired)
+      // Don't refresh on initial page load when user never logged in
+      if (!token && hasRefreshableToken()) {
         token = await refreshAccessToken();
       }
       

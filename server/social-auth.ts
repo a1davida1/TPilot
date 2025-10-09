@@ -167,12 +167,14 @@ export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
       name?: string;
       icon_img?: string;
     }
-    passport.use(new RedditStrategy({
+    passport.use(new (RedditStrategy as any)({
       clientID: process.env.REDDIT_CLIENT_ID,
       clientSecret: process.env.REDDIT_CLIENT_SECRET,
       callbackURL: prefixApiPath('/auth/reddit/callback', apiPrefix),
-      scope: ['identity']
+      scope: ['identity'],
+      passReqToCallback: true
     }, async (
+      req: Express.Request,
       accessToken: string,
       refreshToken: string,
       profile: RedditProfile,
@@ -186,25 +188,38 @@ export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
         let user = await storage.getUserByProviderId('reddit', profile.id);
         
         if (user) {
-          // Update avatar and username if changed
-          if (avatar && user.avatar !== avatar || user.username !== username) {
-            await storage.updateUser(user.id, { avatar, username });
+          // Update avatar if changed
+          if (avatar && user.avatar !== avatar) {
+            await storage.updateUser(user.id, { avatar });
             user = await storage.getUserById(user.id);
           }
         } else {
-          // SECURITY: Never auto-link by username - this allows account takeover
-          // Reddit provides no email, so we can only match by provider ID
-          // If no match, create new user
-          user = await storage.createUser({
-            email: '', // Reddit doesn't provide email
-            username,
-            password: '',
-            provider: 'reddit',
-            providerId: profile.id,
-            avatar,
-            tier: 'free',
-            emailVerified: true // Reddit has no email, mark verified to allow login
-          });
+          // Check if user is already logged in (linking flow)
+          const existingUser = req?.user as User | undefined;
+          
+          if (existingUser?.id) {
+            // Link Reddit to existing logged-in user
+            await storage.updateUser(existingUser.id, {
+              provider: 'reddit',
+              providerId: profile.id,
+              avatar: avatar || existingUser.avatar
+            });
+            user = await storage.getUserById(existingUser.id);
+          } else {
+            // SECURITY: Never auto-link by username - this allows account takeover
+            // Reddit provides no email, so we can only match by provider ID
+            // If no match and not logged in, create new user (signup flow)
+            user = await storage.createUser({
+              email: '', // Reddit doesn't provide email
+              username,
+              password: '',
+              provider: 'reddit',
+              providerId: profile.id,
+              avatar,
+              tier: 'free',
+              emailVerified: true // Reddit has no email, mark verified to allow login
+            });
+          }
         }
         
         return done(null, user);

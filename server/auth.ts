@@ -280,6 +280,12 @@ export async function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
         path: '/api/auth/refresh'
       });
       
+      // CRITICAL FIX: Also set access token in authToken cookie for immediate access
+      res.cookie(cfg.authName, accessToken, {
+        ...cfg.options,
+        maxAge: 1 * 60 * 60 * 1000, // 1 hour to match JWT expiry
+      });
+      
       res.json({
         token: accessToken, // Keep 'token' for backwards compatibility
         accessToken, // New field for Phase 3
@@ -379,6 +385,12 @@ export async function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
         sameSite: 'lax', // CSRF protection
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         path: '/api/auth/refresh' // Only sent to this endpoint
+      });
+      
+      // CRITICAL FIX: Also update the access token cookie
+      res.cookie(cfg.authName, newAccessToken, {
+        ...cfg.options,
+        maxAge: 1 * 60 * 60 * 1000, // 1 hour to match JWT expiry
       });
       
       // Update last used (for activity tracking)

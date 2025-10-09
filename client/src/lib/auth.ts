@@ -4,6 +4,7 @@
 
 let accessToken: string | null = null;
 let tokenExpiry: number | null = null;
+let hadToken = false;
 
 /**
  * Set the access token in memory
@@ -11,6 +12,7 @@ let tokenExpiry: number | null = null;
  */
 export function setAccessToken(token: string): void {
   accessToken = token;
+  hadToken = true;
   
   // Decode to get expiry (don't verify signature client-side)
   try {
@@ -31,6 +33,7 @@ export function getAccessToken(): string | null {
   if (tokenExpiry && Date.now() >= tokenExpiry) {
     console.log('Access token expired, clearing');
     accessToken = null;
+    // Preserve hadToken flag so we can attempt refresh
     return null;
   }
   
@@ -43,13 +46,30 @@ export function getAccessToken(): string | null {
 export function clearAccessToken(): void {
   accessToken = null;
   tokenExpiry = null;
+  hadToken = false;
 }
 
 /**
  * Check if we have a valid access token
  */
 export function hasValidToken(): boolean {
-  return getAccessToken() !== null;
+  if (!accessToken) {
+    return false;
+  }
+
+  if (tokenExpiry && Date.now() >= tokenExpiry) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Check if we previously obtained a token (even if it expired)
+ * Useful to decide whether we should attempt a refresh.
+ */
+export function hasRefreshableToken(): boolean {
+  return hadToken;
 }
 
 /**
@@ -64,10 +84,13 @@ export async function refreshAccessToken(): Promise<string | null> {
     });
     
     if (!res.ok) {
-      console.warn('Token refresh failed, logging out');
+      console.warn('Token refresh failed:', res.status);
       clearAccessToken();
-      // Redirect to login
-      window.location.href = '/login?session=expired';
+      
+      // Only redirect if we're not already on login page
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login?session=expired';
+      }
       return null;
     }
     

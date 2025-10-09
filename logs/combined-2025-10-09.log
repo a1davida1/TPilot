@@ -1,0 +1,464 @@
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-09T05:00:36.709Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-09T05:00:37.846Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-09T05:00:37.847Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-09T05:00:37.847Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-09T05:00:38.158Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-09T05:00:38.159Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-09T05:00:38.159Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-09T05:00:38.159Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-09T05:00:38.159Z"}
+{"level":"warn","message":"Using in-memory session store. Configure REDIS_URL or set USE_PG_QUEUE=true for production.","timestamp":"2025-10-09T05:00:38.162Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-09T05:00:38.164Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:00:38.504Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-09T05:00:38.504Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:00:38.554Z"}
+{"level":"info","message":"🔄 Initializing queue system...","timestamp":"2025-10-09T05:00:38.558Z"}
+{"level":"info","message":"✅ Queue system initialized","timestamp":"2025-10-09T05:00:38.559Z"}
+{"level":"info","message":"✅ Background workers initialized","timestamp":"2025-10-09T05:00:39.212Z"}
+{"level":"info","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-09T05:00:39.213Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-09T05:00:39.216Z"}
+{"level":"warn","message":"Environment configuration issue detected: REDIS_URL: Invalid url","timestamp":"2025-10-09T05:00:39.219Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-09T05:00:39.235Z"}
+{"level":"info","message":"GET /api/metrics 200 in 190ms :: {\"creators\":\"105\",\"posts\":\"0\",\"engagement\":0}","requestId":"129e4e40-30aa-4c67-beef-18df027dc274","timestamp":"2025-10-09T05:00:39.813Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-09T05:00:39.934Z"}
+{"level":"info","message":"GET /api/metrics 200 in 191ms :: {\"creators\":\"105\",\"posts\":\"0\",\"engagement\":0}","requestId":"a3dd2089-8ce5-4e2c-9617-e5bc984bfef4","timestamp":"2025-10-09T05:00:53.562Z"}
+{"level":"info","message":"GET /api/metrics 200 in 41ms :: {\"creators\":\"105\",\"posts\":\"0\",\"engagement\":0}","requestId":"fb94ca8a-cb2e-40cc-866c-37b4a04a9341","timestamp":"2025-10-09T05:01:00.783Z"}
+{"level":"info","message":"GET /api/metrics 200 in 227ms :: {\"creators\":\"105\",\"posts\":\"0\",\"engagement\":0}","requestId":"7e89454b-1cfc-4b43-8cac-f14eaa5b2ac9","timestamp":"2025-10-09T05:01:46.669Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-09T05:02:14.998Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-09T05:02:16.185Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-09T05:02:16.186Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-09T05:02:16.186Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-09T05:02:16.429Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-09T05:02:16.429Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-09T05:02:16.429Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-09T05:02:16.429Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-09T05:02:16.429Z"}
+{"level":"warn","message":"Using in-memory session store. Configure REDIS_URL or set USE_PG_QUEUE=true for production.","timestamp":"2025-10-09T05:02:16.431Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-09T05:02:16.432Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:02:16.710Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-09T05:02:16.710Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:02:16.752Z"}
+{"level":"info","message":"🔄 Initializing queue system...","timestamp":"2025-10-09T05:02:16.755Z"}
+{"level":"info","message":"✅ Queue system initialized","timestamp":"2025-10-09T05:02:16.756Z"}
+{"level":"info","message":"✅ Background workers initialized","timestamp":"2025-10-09T05:02:17.407Z"}
+{"level":"info","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-09T05:02:17.408Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-09T05:02:17.411Z"}
+{"level":"warn","message":"Environment configuration issue detected: REDIS_URL: Invalid url","timestamp":"2025-10-09T05:02:17.413Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-09T05:02:17.426Z"}
+{"level":"info","message":"GET /api/metrics 200 in 194ms :: {\"creators\":\"105\",\"posts\":\"0\",\"engagement\":0}","requestId":"b0295598-0687-46d5-9cd6-e687fe7a5531","timestamp":"2025-10-09T05:02:17.740Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-09T05:02:18.220Z"}
+{"level":"info","message":"GET /api/metrics 200 in 202ms :: {\"creators\":\"105\",\"posts\":\"0\",\"engagement\":0}","requestId":"eadfc04d-f62d-4236-8783-941470378a9c","timestamp":"2025-10-09T05:02:28.062Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-09T05:17:05.288Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-09T05:17:06.436Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-09T05:17:06.436Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-09T05:17:06.437Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-09T05:17:06.670Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-09T05:17:06.670Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-09T05:17:06.670Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-09T05:17:06.671Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-09T05:17:06.671Z"}
+{"level":"warn","message":"Using in-memory session store. Configure REDIS_URL or set USE_PG_QUEUE=true for production.","timestamp":"2025-10-09T05:17:06.673Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-09T05:17:06.675Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:17:07.153Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-09T05:17:07.154Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:17:07.196Z"}
+{"level":"info","message":"🔄 Initializing queue system...","timestamp":"2025-10-09T05:17:07.198Z"}
+{"level":"info","message":"✅ Queue system initialized","timestamp":"2025-10-09T05:17:07.199Z"}
+{"level":"info","message":"GET /api/metrics 200 in 199ms :: {\"creators\":\"105\",\"posts\":\"0\",\"engagement\":0}","requestId":"503167a7-9074-4e28-bde2-2ee25b34c2d8","timestamp":"2025-10-09T05:17:08.053Z"}
+{"level":"info","message":"✅ Background workers initialized","timestamp":"2025-10-09T05:17:08.261Z"}
+{"level":"info","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-09T05:17:08.262Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-09T05:17:08.265Z"}
+{"level":"warn","message":"Environment configuration issue detected: REDIS_URL: Invalid url","timestamp":"2025-10-09T05:17:08.267Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-09T05:17:08.280Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-09T05:17:08.959Z"}
+{"level":"info","message":"GET /api/metrics 200 in 591ms :: {\"creators\":\"105\",\"posts\":\"0\",\"engagement\":0}","requestId":"c6859e0c-108c-4374-97af-40d177021033","timestamp":"2025-10-09T05:17:19.155Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-09T05:22:18.663Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-09T05:22:19.704Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-09T05:22:19.705Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-09T05:22:19.705Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-09T05:22:19.936Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-09T05:22:19.936Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-09T05:22:19.936Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-09T05:22:19.939Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-09T05:22:19.939Z"}
+{"level":"warn","message":"Using in-memory session store. Configure REDIS_URL or set USE_PG_QUEUE=true for production.","timestamp":"2025-10-09T05:22:19.941Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-09T05:22:19.942Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:22:20.342Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-09T05:22:20.343Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:22:20.382Z"}
+{"level":"info","message":"🔄 Initializing queue system...","timestamp":"2025-10-09T05:22:20.385Z"}
+{"level":"info","message":"✅ Queue system initialized","timestamp":"2025-10-09T05:22:20.386Z"}
+{"level":"info","message":"✅ Background workers initialized","timestamp":"2025-10-09T05:22:21.542Z"}
+{"level":"info","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-09T05:22:21.543Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-09T05:22:21.547Z"}
+{"level":"warn","message":"Environment configuration issue detected: REDIS_URL: Invalid url","timestamp":"2025-10-09T05:22:21.550Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-09T05:22:21.564Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-09T05:22:22.393Z"}
+{"level":"info","message":"GET /api/metrics 200 in 194ms :: {\"creators\":\"105\",\"posts\":\"0\",\"engagement\":0}","requestId":"0bbcfd13-6468-4d5c-a9cb-88dbf000da7e","timestamp":"2025-10-09T05:22:22.860Z"}
+{"level":"info","message":"GET /api/metrics 200 in 187ms :: {\"creators\":\"105\",\"posts\":\"0\",\"engagement\":0}","requestId":"f531e6c1-1a9b-4904-95ac-242d00627569","timestamp":"2025-10-09T05:22:38.903Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-09T05:29:16.085Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-09T05:29:17.195Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-09T05:29:17.196Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-09T05:29:17.196Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-09T05:29:17.431Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-09T05:29:17.431Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-09T05:29:17.432Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-09T05:29:17.432Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-09T05:29:17.432Z"}
+{"level":"warn","message":"Using in-memory session store. Configure REDIS_URL or set USE_PG_QUEUE=true for production.","timestamp":"2025-10-09T05:29:17.434Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-09T05:29:17.435Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:29:17.998Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-09T05:29:17.998Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:29:18.099Z"}
+{"level":"info","message":"🔄 Initializing queue system...","timestamp":"2025-10-09T05:29:18.101Z"}
+{"level":"info","message":"✅ Queue system initialized","timestamp":"2025-10-09T05:29:18.102Z"}
+{"level":"info","message":"GET /api/metrics 200 in 225ms :: {\"creators\":\"105\",\"posts\":\"0\",\"engagement\":0}","requestId":"d113da0a-636f-4e6e-a8e7-91efcffd1344","timestamp":"2025-10-09T05:29:18.835Z"}
+{"level":"info","message":"✅ Background workers initialized","timestamp":"2025-10-09T05:29:19.822Z"}
+{"level":"info","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-09T05:29:19.822Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-09T05:29:19.826Z"}
+{"level":"warn","message":"Environment configuration issue detected: REDIS_URL: Invalid url","timestamp":"2025-10-09T05:29:19.829Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-09T05:29:19.845Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-09T05:29:20.527Z"}
+{"level":"info","message":"GET /api/metrics 200 in 44ms :: {\"creators\":\"105\",\"posts\":\"0\",\"engagement\":0}","requestId":"b95d17b3-9e88-45db-832d-5a99d4680a43","timestamp":"2025-10-09T05:29:20.899Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-09T05:33:00.088Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-09T05:33:01.097Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-09T05:33:01.098Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-09T05:33:01.099Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-09T05:33:01.339Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-09T05:33:01.340Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-09T05:33:01.340Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-09T05:33:01.340Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-09T05:33:01.340Z"}
+{"level":"warn","message":"Using in-memory session store. Configure REDIS_URL or set USE_PG_QUEUE=true for production.","timestamp":"2025-10-09T05:33:01.342Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-09T05:33:01.344Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:33:02.047Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-09T05:33:02.048Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:33:02.092Z"}
+{"level":"info","message":"🔄 Initializing queue system...","timestamp":"2025-10-09T05:33:02.094Z"}
+{"level":"info","message":"✅ Queue system initialized","timestamp":"2025-10-09T05:33:02.095Z"}
+{"level":"info","message":"✅ Background workers initialized","timestamp":"2025-10-09T05:33:02.838Z"}
+{"level":"info","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-09T05:33:02.838Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-09T05:33:02.841Z"}
+{"level":"warn","message":"Environment configuration issue detected: REDIS_URL: Invalid url","timestamp":"2025-10-09T05:33:02.843Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-09T05:33:02.857Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-09T05:33:03.382Z"}
+{"level":"info","message":"[HEALTH] Express app created successfully in 2042ms","timestamp":"2025-10-09T05:33:03.382Z"}
+{"level":"info","message":"[HEALTH] Target port from environment: 5000","timestamp":"2025-10-09T05:33:03.382Z"}
+{"level":"info","message":"[HEALTH] Starting server on 0.0.0.0:5000","timestamp":"2025-10-09T05:33:03.382Z"}
+{"level":"info","message":"[HEALTH] ✅ Server started successfully on port 5000 in 2043ms","timestamp":"2025-10-09T05:33:03.383Z"}
+{"level":"info","message":"serving on port 5000","timestamp":"2025-10-09T05:33:03.383Z"}
+{"isAdmin":true,"level":"info","message":"Dashboard stats retrieved for user 316","stats":{"engagementRate":0,"estimatedTaxSavings":0,"postsToday":0,"takedownsFound":0},"timestamp":"2025-10-09T05:34:19.650Z","userId":316}
+{"level":"info","message":"GET /api/dashboard/stats 200 in 229ms :: {\"postsToday\":0,\"engagementRate\":0,\"takedownsFound\":0,\"estimatedTaxSavings\":0}","requestId":"672767a8-f994-4424-a59c-18b6e324b6ed","timestamp":"2025-10-09T05:34:19.652Z"}
+{"isAdmin":true,"level":"info","mediaCount":0,"message":"Dashboard activity retrieved for user 316","timestamp":"2025-10-09T05:34:19.726Z","userId":316}
+{"level":"info","message":"GET /api/dashboard/activity 200 in 300ms :: {\"recentMedia\":[]}","requestId":"f2696e11-e0a4-469f-b26d-01c1b84d2a9e","timestamp":"2025-10-09T05:34:19.727Z"}
+{"level":"info","message":"GET /api/media 200 in 88ms :: []","requestId":"1894f830-55c3-4506-882b-691f4f74bf65","timestamp":"2025-10-09T05:34:37.851Z"}
+{"level":"info","message":"GET /api/reddit/accounts 200 in 281ms :: []","requestId":"f8df4122-789b-4844-ac3e-d0654adad518","timestamp":"2025-10-09T05:34:38.038Z"}
+{"level":"info","message":"GET /api/reddit/communities 200 in 355ms :: [{\"id\":\"fitness\",\"name\":\"fitness\",\"displayName\":\"Fitness\",\"members\":10000000,\"engagementRate\":7,\"category\":\"fitness\",\"verificationRequired\":true,\"promotionAllowed\":\"strict\",\"postingLimits\":{\"daily\":2},\"rules\":{\"eligibility\":{\"minKarma\":null,\"minAccountAgeDays\":null,\"verificationRequired\":false,\"requiresApproval\":false},\"content\":{\"sellingPolicy\":\"not_allowed\",\"watermarksAllowed\":null,\"promotionalLinks\":null,\"requiresOriginalContent\":false,\"nsfwRequired\":false,\"titleGuidelines\":[],\"contentGuidelines\":[\"No self-promotion\",\"Stay on topic\"],\"linkRestrictions\":[],\"bannedContent\":[],\"formattingRequirements\":[]},\"posting\":{\"maxPostsPerDay\":null,\"cooldownHours\":null},\"notes\":null},\"bestPostingTimes\":[\"afternoon\"],\"averageUpvotes\":250,\"successProbability\":70,\"growthTrend\":\"stable\",\"modActivity\":\"medium\",\"description\":\"Workout tips and discussion.\",\"tags\":[\"fitness\",\"health\"],\"competitionLevel\":\"high\"},{\"id\":\"photography\",\"name\":\"photography\",\"displayName\":\"Photography\",\"members\":50… (truncated)","requestId":"c425144f-b45f-4af7-bb89-124f28243491","timestamp":"2025-10-09T05:34:38.122Z"}
+{"intent":"posting","level":"info","message":"Reddit OAuth initiated","queue":"reddit-posting","requestIP":"127.0.0.1","statePreview":"posting:...","timestamp":"2025-10-09T05:34:40.767Z","userId":316}
+{"level":"info","message":"GET /api/reddit/connect 200 in 48ms :: {\"authUrl\":\"https://www.reddit.com/api/v1/authorize?client_id=ByrMwubDSmQvi9OFhuQI6g&response_type=code&state=posting%3A4cf23b930528c392580cc51482bef44dccb1c9120e64e6a5840cb1b15fda299f&redirect_uri=https%3A%2F%2Fthottopilot.com%2Fapi%2Freddit%2Fcallback&duration=permanent&scope=identity+submit+edit+read+vote+save+history+mysubreddits\"}","requestId":"237ee966-d407-4e4c-822e-74cae386958b","timestamp":"2025-10-09T05:34:40.768Z"}
+{"level":"info","message":"GET /api/subscription 200 in 1038ms :: {\"subscription\":{\"plan\":\"admin\"},\"isPro\":true,\"tier\":\"admin\"}","requestId":"29404942-178d-4e54-ac16-b471286e4721","timestamp":"2025-10-09T05:35:49.891Z"}
+{"level":"info","message":"GET /api/user/settings 200 in 1097ms :: {\"theme\":\"light\",\"notifications\":true,\"emailUpdates\":true,\"autoSave\":true,\"defaultPlatform\":\"reddit\",\"defaultStyle\":\"playful\",\"watermarkPosition\":\"bottom-right\"}","requestId":"556510fe-7abc-4a40-b725-8d5cb610e54f","timestamp":"2025-10-09T05:35:49.947Z"}
+{"intent":"posting","level":"info","message":"Reddit OAuth initiated","queue":"reddit-posting","requestIP":"127.0.0.1","statePreview":"posting:...","timestamp":"2025-10-09T05:36:01.567Z","userId":316}
+{"level":"info","message":"GET /api/reddit/connect 200 in 516ms :: {\"authUrl\":\"https://www.reddit.com/api/v1/authorize?client_id=ByrMwubDSmQvi9OFhuQI6g&response_type=code&state=posting%3Adaf105f874adb7d29e09f917aedf4feb69dc40a984f3acf8c13678d74d9f43a5&redirect_uri=https%3A%2F%2Fthottopilot.com%2Fapi%2Freddit%2Fcallback&duration=permanent&scope=identity+submit+edit+read+vote+save+history+mysubreddits\"}","requestId":"8315f7d6-e6bb-4366-a5a2-9d8da3cc3c3d","timestamp":"2025-10-09T05:36:01.567Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-09T05:41:53.426Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-09T05:41:54.389Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-09T05:41:54.389Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-09T05:41:54.390Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-09T05:41:54.619Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-09T05:41:54.620Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-09T05:41:54.620Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-09T05:41:54.620Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-09T05:41:54.620Z"}
+{"level":"warn","message":"Using in-memory session store. Configure REDIS_URL or set USE_PG_QUEUE=true for production.","timestamp":"2025-10-09T05:41:54.622Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-09T05:41:54.623Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:41:55.649Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-09T05:41:55.650Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:41:55.850Z"}
+{"level":"info","message":"🔄 Initializing queue system...","timestamp":"2025-10-09T05:41:55.857Z"}
+{"level":"info","message":"✅ Queue system initialized","timestamp":"2025-10-09T05:41:55.859Z"}
+{"isAdmin":true,"level":"info","message":"Dashboard stats retrieved for user 316","stats":{"engagementRate":0,"estimatedTaxSavings":0,"postsToday":0,"takedownsFound":0},"timestamp":"2025-10-09T05:41:56.340Z","userId":316}
+{"level":"info","message":"GET /api/dashboard/stats 200 in 215ms :: {\"postsToday\":0,\"engagementRate\":0,\"takedownsFound\":0,\"estimatedTaxSavings\":0}","requestId":"2016b0c3-bde1-4147-89d7-d8c149b5964d","timestamp":"2025-10-09T05:41:56.341Z"}
+{"isAdmin":true,"level":"info","mediaCount":0,"message":"Dashboard activity retrieved for user 316","timestamp":"2025-10-09T05:41:56.358Z","userId":316}
+{"level":"info","message":"GET /api/dashboard/activity 200 in 230ms :: {\"recentMedia\":[]}","requestId":"296c664d-6d3b-4dc9-9607-b2e1e9577676","timestamp":"2025-10-09T05:41:56.359Z"}
+{"level":"info","message":"✅ Background workers initialized","timestamp":"2025-10-09T05:41:56.521Z"}
+{"level":"info","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-09T05:41:56.522Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-09T05:41:56.525Z"}
+{"level":"warn","message":"Environment configuration issue detected: REDIS_URL: Invalid url","timestamp":"2025-10-09T05:41:56.527Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-09T05:41:56.539Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-09T05:41:57.497Z"}
+{"level":"info","message":"GET /api/reddit/accounts 200 in 246ms :: []","requestId":"fbbeb9fd-4582-4ab3-abef-a968067f3447","timestamp":"2025-10-09T05:42:16.326Z"}
+{"level":"info","message":"GET /api/media 200 in 620ms :: []","requestId":"ef578012-227d-4d8f-a29e-ace62962d8fd","timestamp":"2025-10-09T05:42:16.704Z"}
+{"level":"info","message":"GET /api/reddit/communities 200 in 669ms :: [{\"id\":\"fitness\",\"name\":\"fitness\",\"displayName\":\"Fitness\",\"members\":10000000,\"engagementRate\":7,\"category\":\"fitness\",\"verificationRequired\":true,\"promotionAllowed\":\"strict\",\"postingLimits\":{\"daily\":2},\"rules\":{\"eligibility\":{\"minKarma\":null,\"minAccountAgeDays\":null,\"verificationRequired\":false,\"requiresApproval\":false},\"content\":{\"sellingPolicy\":\"not_allowed\",\"watermarksAllowed\":null,\"promotionalLinks\":null,\"requiresOriginalContent\":false,\"nsfwRequired\":false,\"titleGuidelines\":[],\"contentGuidelines\":[\"No self-promotion\",\"Stay on topic\"],\"linkRestrictions\":[],\"bannedContent\":[],\"formattingRequirements\":[]},\"posting\":{\"maxPostsPerDay\":null,\"cooldownHours\":null},\"notes\":null},\"bestPostingTimes\":[\"afternoon\"],\"averageUpvotes\":250,\"successProbability\":70,\"growthTrend\":\"stable\",\"modActivity\":\"medium\",\"description\":\"Workout tips and discussion.\",\"tags\":[\"fitness\",\"health\"],\"competitionLevel\":\"high\"},{\"id\":\"photography\",\"name\":\"photography\",\"displayName\":\"Photography\",\"members\":50… (truncated)","requestId":"04105201-fc6e-42d3-abe0-fd7a7f5c695a","timestamp":"2025-10-09T05:42:16.760Z"}
+{"intent":"posting","level":"info","message":"Reddit OAuth initiated","queue":"reddit-posting","requestIP":"127.0.0.1","statePreview":"posting:...","timestamp":"2025-10-09T05:42:17.965Z","userId":316}
+{"level":"info","message":"GET /api/reddit/connect 200 in 232ms :: {\"authUrl\":\"https://www.reddit.com/api/v1/authorize?client_id=ByrMwubDSmQvi9OFhuQI6g&response_type=code&state=posting%3A0c3fc46c1dee65ae55194c8e072d34ac73315128a38f6584f3c20c68bae05943&redirect_uri=https%3A%2F%2Fthottopilot.com%2Fapi%2Freddit%2Fcallback&duration=permanent&scope=identity+submit+edit+read+vote+save+history+mysubreddits\"}","requestId":"cc01aa4d-fec6-4333-b982-a1a4d1114c71","timestamp":"2025-10-09T05:42:17.965Z"}
+{"level":"info","message":"GET /api/reddit/accounts 200 in 82ms :: []","requestId":"75dda095-16c8-4f70-bfca-ac32c0253813","timestamp":"2025-10-09T05:42:27.969Z"}
+{"level":"info","message":"GET /api/reddit/communities 200 in 138ms :: [{\"id\":\"fitness\",\"name\":\"fitness\",\"displayName\":\"Fitness\",\"members\":10000000,\"engagementRate\":7,\"category\":\"fitness\",\"verificationRequired\":true,\"promotionAllowed\":\"strict\",\"postingLimits\":{\"daily\":2},\"rules\":{\"eligibility\":{\"minKarma\":null,\"minAccountAgeDays\":null,\"verificationRequired\":false,\"requiresApproval\":false},\"content\":{\"sellingPolicy\":\"not_allowed\",\"watermarksAllowed\":null,\"promotionalLinks\":null,\"requiresOriginalContent\":false,\"nsfwRequired\":false,\"titleGuidelines\":[],\"contentGuidelines\":[\"No self-promotion\",\"Stay on topic\"],\"linkRestrictions\":[],\"bannedContent\":[],\"formattingRequirements\":[]},\"posting\":{\"maxPostsPerDay\":null,\"cooldownHours\":null},\"notes\":null},\"bestPostingTimes\":[\"afternoon\"],\"averageUpvotes\":250,\"successProbability\":70,\"growthTrend\":\"stable\",\"modActivity\":\"medium\",\"description\":\"Workout tips and discussion.\",\"tags\":[\"fitness\",\"health\"],\"competitionLevel\":\"high\"},{\"id\":\"photography\",\"name\":\"photography\",\"displayName\":\"Photography\",\"members\":50… (truncated)","requestId":"b983ffa9-a4bc-4c4c-8818-f1fecd9c6958","timestamp":"2025-10-09T05:42:28.036Z"}
+{"level":"info","message":"GET /api/media 200 in 245ms :: []","requestId":"58e0e2c3-e21f-455c-892a-ada392eff095","timestamp":"2025-10-09T05:42:28.136Z"}
+{"intent":"posting","level":"info","message":"Reddit OAuth initiated","queue":"reddit-posting","requestIP":"127.0.0.1","statePreview":"posting:...","timestamp":"2025-10-09T05:42:29.951Z","userId":316}
+{"level":"info","message":"GET /api/reddit/connect 200 in 45ms :: {\"authUrl\":\"https://www.reddit.com/api/v1/authorize?client_id=ByrMwubDSmQvi9OFhuQI6g&response_type=code&state=posting%3Aa1d07dabf06001638325856fb92a5277d3180cc4c4ebf0ab3d7dcf1c34633712&redirect_uri=https%3A%2F%2Fthottopilot.com%2Fapi%2Freddit%2Fcallback&duration=permanent&scope=identity+submit+edit+read+vote+save+history+mysubreddits\"}","requestId":"41c02df8-a362-4eaf-83af-d1d44aa04cb6","timestamp":"2025-10-09T05:42:29.952Z"}
+{"level":"info","message":"GET /api/reddit/accounts 200 in 130ms :: []","requestId":"c15d27b5-3240-43aa-b675-6ef4830c5c1d","timestamp":"2025-10-09T05:42:37.700Z"}
+{"level":"info","message":"GET /api/media 200 in 128ms :: []","requestId":"5d6ef443-ac1b-48d5-bb5d-f3fed7d3d238","timestamp":"2025-10-09T05:42:37.701Z"}
+{"level":"info","message":"GET /api/reddit/communities 200 in 262ms :: [{\"id\":\"fitness\",\"name\":\"fitness\",\"displayName\":\"Fitness\",\"members\":10000000,\"engagementRate\":7,\"category\":\"fitness\",\"verificationRequired\":true,\"promotionAllowed\":\"strict\",\"postingLimits\":{\"daily\":2},\"rules\":{\"eligibility\":{\"minKarma\":null,\"minAccountAgeDays\":null,\"verificationRequired\":false,\"requiresApproval\":false},\"content\":{\"sellingPolicy\":\"not_allowed\",\"watermarksAllowed\":null,\"promotionalLinks\":null,\"requiresOriginalContent\":false,\"nsfwRequired\":false,\"titleGuidelines\":[],\"contentGuidelines\":[\"No self-promotion\",\"Stay on topic\"],\"linkRestrictions\":[],\"bannedContent\":[],\"formattingRequirements\":[]},\"posting\":{\"maxPostsPerDay\":null,\"cooldownHours\":null},\"notes\":null},\"bestPostingTimes\":[\"afternoon\"],\"averageUpvotes\":250,\"successProbability\":70,\"growthTrend\":\"stable\",\"modActivity\":\"medium\",\"description\":\"Workout tips and discussion.\",\"tags\":[\"fitness\",\"health\"],\"competitionLevel\":\"high\"},{\"id\":\"photography\",\"name\":\"photography\",\"displayName\":\"Photography\",\"members\":50… (truncated)","requestId":"a9d4edfb-560f-4db6-a82d-3fc9c80bcb2f","timestamp":"2025-10-09T05:42:37.839Z"}
+{"isAdmin":true,"level":"info","mediaCount":0,"message":"Dashboard activity retrieved for user 316","timestamp":"2025-10-09T05:42:39.976Z","userId":316}
+{"level":"info","message":"GET /api/dashboard/activity 200 in 110ms :: {\"recentMedia\":[]}","requestId":"7209c3d2-d5c0-465a-9f9e-734947247a69","timestamp":"2025-10-09T05:42:39.977Z"}
+{"isAdmin":true,"level":"info","message":"Dashboard stats retrieved for user 316","stats":{"engagementRate":0,"estimatedTaxSavings":0,"postsToday":0,"takedownsFound":0},"timestamp":"2025-10-09T05:42:40.278Z","userId":316}
+{"level":"info","message":"GET /api/dashboard/stats 200 in 414ms :: {\"postsToday\":0,\"engagementRate\":0,\"takedownsFound\":0,\"estimatedTaxSavings\":0}","requestId":"4b407872-dbf2-4334-afff-afc5b988eb11","timestamp":"2025-10-09T05:42:40.279Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-09T05:43:39.533Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-09T05:43:40.541Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-09T05:43:40.541Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-09T05:43:40.542Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-09T05:43:40.770Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-09T05:43:40.770Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-09T05:43:40.770Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-09T05:43:40.770Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-09T05:43:40.771Z"}
+{"level":"warn","message":"Using in-memory session store. Configure REDIS_URL or set USE_PG_QUEUE=true for production.","timestamp":"2025-10-09T05:43:40.775Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-09T05:43:40.776Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:43:41.581Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-09T05:43:41.581Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:43:41.624Z"}
+{"level":"info","message":"🔄 Initializing queue system...","timestamp":"2025-10-09T05:43:41.626Z"}
+{"level":"info","message":"✅ Queue system initialized","timestamp":"2025-10-09T05:43:41.627Z"}
+{"level":"info","message":"✅ Background workers initialized","timestamp":"2025-10-09T05:43:42.482Z"}
+{"level":"info","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-09T05:43:42.483Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-09T05:43:42.491Z"}
+{"level":"warn","message":"Environment configuration issue detected: REDIS_URL: Invalid url","timestamp":"2025-10-09T05:43:42.496Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-09T05:43:42.515Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-09T05:43:42.908Z"}
+{"level":"info","message":"[HEALTH] Express app created successfully in 2139ms","timestamp":"2025-10-09T05:43:42.909Z"}
+{"level":"info","message":"[HEALTH] Target port from environment: 5000","timestamp":"2025-10-09T05:43:42.909Z"}
+{"level":"info","message":"[HEALTH] Starting server on 0.0.0.0:5000","timestamp":"2025-10-09T05:43:42.909Z"}
+{"level":"info","message":"[HEALTH] ✅ Server started successfully on port 5000 in 2140ms","timestamp":"2025-10-09T05:43:42.910Z"}
+{"level":"info","message":"serving on port 5000","timestamp":"2025-10-09T05:43:42.910Z"}
+{"level":"info","message":"GET /api/reddit/accounts 200 in 202ms :: []","requestId":"f30066a5-431d-406f-ac62-20447b81c9a7","timestamp":"2025-10-09T05:46:56.646Z"}
+{"level":"info","message":"GET /api/reddit/communities 200 in 256ms :: [{\"id\":\"fitness\",\"name\":\"fitness\",\"displayName\":\"Fitness\",\"members\":10000000,\"engagementRate\":7,\"category\":\"fitness\",\"verificationRequired\":true,\"promotionAllowed\":\"strict\",\"postingLimits\":{\"daily\":2},\"rules\":{\"eligibility\":{\"minKarma\":null,\"minAccountAgeDays\":null,\"verificationRequired\":false,\"requiresApproval\":false},\"content\":{\"sellingPolicy\":\"not_allowed\",\"watermarksAllowed\":null,\"promotionalLinks\":null,\"requiresOriginalContent\":false,\"nsfwRequired\":false,\"titleGuidelines\":[],\"contentGuidelines\":[\"No self-promotion\",\"Stay on topic\"],\"linkRestrictions\":[],\"bannedContent\":[],\"formattingRequirements\":[]},\"posting\":{\"maxPostsPerDay\":null,\"cooldownHours\":null},\"notes\":null},\"bestPostingTimes\":[\"afternoon\"],\"averageUpvotes\":250,\"successProbability\":70,\"growthTrend\":\"stable\",\"modActivity\":\"medium\",\"description\":\"Workout tips and discussion.\",\"tags\":[\"fitness\",\"health\"],\"competitionLevel\":\"high\"},{\"id\":\"photography\",\"name\":\"photography\",\"displayName\":\"Photography\",\"members\":50… (truncated)","requestId":"3c1b5d8d-3b5b-407d-a74e-ac1eee45b23e","timestamp":"2025-10-09T05:46:56.713Z"}
+{"level":"info","message":"GET /api/media 200 in 496ms :: []","requestId":"02e17889-8073-4e48-87b3-ab0fae8fb3bb","timestamp":"2025-10-09T05:46:56.951Z"}
+{"intent":"posting","level":"info","message":"Reddit OAuth initiated","queue":"reddit-posting","requestIP":"127.0.0.1","statePreview":"posting:...","timestamp":"2025-10-09T05:46:58.070Z","userId":316}
+{"level":"info","message":"GET /api/reddit/connect 200 in 49ms :: {\"authUrl\":\"https://www.reddit.com/api/v1/authorize?client_id=ByrMwubDSmQvi9OFhuQI6g&response_type=code&state=posting%3A16bfc988157fc6bcecc54b5294d42e73e31ff014f6d46eae8d7ad131f17fc400&redirect_uri=https%3A%2F%2Fthottopilot.com%2Fapi%2Freddit%2Fcallback&duration=permanent&scope=identity+submit+edit+read+vote+save+history+mysubreddits\"}","requestId":"7dd79852-661b-4714-8470-082c4fbd77f1","timestamp":"2025-10-09T05:46:58.071Z"}
+{"isAdmin":true,"level":"info","message":"Dashboard stats retrieved for user 316","stats":{"engagementRate":0,"estimatedTaxSavings":0,"postsToday":0,"takedownsFound":0},"timestamp":"2025-10-09T05:47:07.889Z","userId":316}
+{"level":"info","message":"GET /api/dashboard/stats 200 in 264ms :: {\"postsToday\":0,\"engagementRate\":0,\"takedownsFound\":0,\"estimatedTaxSavings\":0}","requestId":"7f6d6527-b2b1-445b-b227-cdcba9284124","timestamp":"2025-10-09T05:47:07.890Z"}
+{"isAdmin":true,"level":"info","mediaCount":0,"message":"Dashboard activity retrieved for user 316","timestamp":"2025-10-09T05:47:07.963Z","userId":316}
+{"level":"info","message":"GET /api/dashboard/activity 200 in 337ms :: {\"recentMedia\":[]}","requestId":"22a5cd60-7f6f-4626-bc75-bcc53b0b784d","timestamp":"2025-10-09T05:47:07.967Z"}
+{"intent":"posting","level":"info","message":"Reddit OAuth initiated","queue":"modern-dashboard","requestIP":"127.0.0.1","statePreview":"posting:...","timestamp":"2025-10-09T05:47:09.748Z","userId":316}
+{"level":"info","message":"GET /api/reddit/connect 200 in 46ms :: {\"authUrl\":\"https://www.reddit.com/api/v1/authorize?client_id=ByrMwubDSmQvi9OFhuQI6g&response_type=code&state=posting%3Acc783e7a35dede4c19c351a0a6efc1ad8f12240996e025a7c9cf49fe43b05473&redirect_uri=https%3A%2F%2Fthottopilot.com%2Fapi%2Freddit%2Fcallback&duration=permanent&scope=identity+submit+edit+read+vote+save+history+mysubreddits\"}","requestId":"e63f10fe-05bf-4ddd-9047-68d9d9915527","timestamp":"2025-10-09T05:47:09.749Z"}
+{"isAdmin":true,"level":"info","mediaCount":0,"message":"Dashboard activity retrieved for user 316","timestamp":"2025-10-09T05:48:03.224Z","userId":316}
+{"level":"info","message":"GET /api/dashboard/activity 200 in 265ms :: {\"recentMedia\":[]}","requestId":"b93656c0-9c7e-4c11-b00a-1d035a46f707","timestamp":"2025-10-09T05:48:03.225Z"}
+{"isAdmin":true,"level":"info","message":"Dashboard stats retrieved for user 316","stats":{"engagementRate":0,"estimatedTaxSavings":0,"postsToday":0,"takedownsFound":0},"timestamp":"2025-10-09T05:48:03.373Z","userId":316}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-09T05:48:18.725Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-09T05:48:19.725Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-09T05:48:19.726Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-09T05:48:19.726Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-09T05:48:19.952Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-09T05:48:19.952Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-09T05:48:19.952Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-09T05:48:19.952Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-09T05:48:19.952Z"}
+{"level":"warn","message":"Using in-memory session store. Configure REDIS_URL or set USE_PG_QUEUE=true for production.","timestamp":"2025-10-09T05:48:19.954Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-09T05:48:19.955Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:48:20.635Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-09T05:48:20.636Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:48:20.761Z"}
+{"level":"info","message":"🔄 Initializing queue system...","timestamp":"2025-10-09T05:48:20.763Z"}
+{"level":"info","message":"✅ Queue system initialized","timestamp":"2025-10-09T05:48:20.764Z"}
+{"isAdmin":true,"level":"info","mediaCount":0,"message":"Dashboard activity retrieved for user 316","timestamp":"2025-10-09T05:48:21.492Z","userId":316}
+{"level":"info","message":"GET /api/dashboard/activity 200 in 142ms :: {\"recentMedia\":[]}","requestId":"c6c88e8f-9b08-4da5-9187-9b33d4f3fe18","timestamp":"2025-10-09T05:48:21.493Z"}
+{"isAdmin":true,"level":"info","message":"Dashboard stats retrieved for user 316","stats":{"engagementRate":0,"estimatedTaxSavings":0,"postsToday":0,"takedownsFound":0},"timestamp":"2025-10-09T05:48:21.947Z","userId":316}
+{"level":"info","message":"GET /api/dashboard/stats 200 in 600ms :: {\"postsToday\":0,\"engagementRate\":0,\"takedownsFound\":0,\"estimatedTaxSavings\":0}","requestId":"7ddf631f-f9d5-49db-b5c5-6316a4b760d1","timestamp":"2025-10-09T05:48:21.948Z"}
+{"level":"info","message":"✅ Background workers initialized","timestamp":"2025-10-09T05:48:22.032Z"}
+{"level":"info","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-09T05:48:22.035Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-09T05:48:22.055Z"}
+{"level":"warn","message":"Environment configuration issue detected: REDIS_URL: Invalid url","timestamp":"2025-10-09T05:48:22.065Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-09T05:48:22.092Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-09T05:48:22.649Z"}
+{"level":"info","message":"GET /api/reddit/accounts 200 in 94ms :: []","requestId":"40a2352e-4197-4af5-bf2f-26232b4a25c9","timestamp":"2025-10-09T05:48:25.603Z"}
+{"level":"info","message":"GET /api/reddit/communities 200 in 137ms :: [{\"id\":\"fitness\",\"name\":\"fitness\",\"displayName\":\"Fitness\",\"members\":10000000,\"engagementRate\":7,\"category\":\"fitness\",\"verificationRequired\":true,\"promotionAllowed\":\"strict\",\"postingLimits\":{\"daily\":2},\"rules\":{\"eligibility\":{\"minKarma\":null,\"minAccountAgeDays\":null,\"verificationRequired\":false,\"requiresApproval\":false},\"content\":{\"sellingPolicy\":\"not_allowed\",\"watermarksAllowed\":null,\"promotionalLinks\":null,\"requiresOriginalContent\":false,\"nsfwRequired\":false,\"titleGuidelines\":[],\"contentGuidelines\":[\"No self-promotion\",\"Stay on topic\"],\"linkRestrictions\":[],\"bannedContent\":[],\"formattingRequirements\":[]},\"posting\":{\"maxPostsPerDay\":null,\"cooldownHours\":null},\"notes\":null},\"bestPostingTimes\":[\"afternoon\"],\"averageUpvotes\":250,\"successProbability\":70,\"growthTrend\":\"stable\",\"modActivity\":\"medium\",\"description\":\"Workout tips and discussion.\",\"tags\":[\"fitness\",\"health\"],\"competitionLevel\":\"high\"},{\"id\":\"photography\",\"name\":\"photography\",\"displayName\":\"Photography\",\"members\":50… (truncated)","requestId":"b3633711-6939-4519-85d0-9cb3a68a4692","timestamp":"2025-10-09T05:48:25.658Z"}
+{"level":"info","message":"GET /api/media 200 in 232ms :: []","requestId":"3ce0a287-b3cd-46ce-900d-1db65fc3bff8","timestamp":"2025-10-09T05:48:25.744Z"}
+{"intent":"posting","level":"info","message":"Reddit OAuth initiated","queue":"reddit-posting","requestIP":"127.0.0.1","statePreview":"posting:...","timestamp":"2025-10-09T05:48:27.305Z","userId":316}
+{"level":"info","message":"GET /api/reddit/connect 200 in 44ms :: {\"authUrl\":\"https://www.reddit.com/api/v1/authorize?client_id=ByrMwubDSmQvi9OFhuQI6g&response_type=code&state=posting%3A3d0e73448f6e17eb5af19978685dc97fa28426c59a425e806de42c7c1b76c684&redirect_uri=https%3A%2F%2Fthottopilot.com%2Fapi%2Freddit%2Fcallback&duration=permanent&scope=identity+submit+edit+read+vote+save+history+mysubreddits\"}","requestId":"e30db0fb-7b20-4045-8c18-407727ee9a40","timestamp":"2025-10-09T05:48:27.306Z"}
+{"level":"info","message":"GET /api/metrics 200 in 183ms :: {\"creators\":\"105\",\"posts\":\"0\",\"engagement\":0}","requestId":"96d39037-db18-4d0a-8b55-1f07cd728993","timestamp":"2025-10-09T05:50:38.196Z"}
+{"isAdmin":true,"level":"info","message":"Dashboard stats retrieved for user 316","stats":{"engagementRate":0,"estimatedTaxSavings":0,"postsToday":0,"takedownsFound":0},"timestamp":"2025-10-09T05:51:13.211Z","userId":316}
+{"level":"info","message":"GET /api/dashboard/stats 200 in 229ms :: {\"postsToday\":0,\"engagementRate\":0,\"takedownsFound\":0,\"estimatedTaxSavings\":0}","requestId":"cb958b41-cc12-464b-8563-a3251e0824c4","timestamp":"2025-10-09T05:51:13.212Z"}
+{"isAdmin":true,"level":"info","mediaCount":0,"message":"Dashboard activity retrieved for user 316","timestamp":"2025-10-09T05:51:13.212Z","userId":316}
+{"level":"info","message":"GET /api/dashboard/activity 200 in 227ms :: {\"recentMedia\":[]}","requestId":"1647f65b-3265-44cf-a928-cb8bd6a68de5","timestamp":"2025-10-09T05:51:13.212Z"}
+{"level":"info","message":"GET /api/reddit/accounts 200 in 316ms :: []","requestId":"e7aa9b94-db02-4d5f-8684-9fd489b6791b","timestamp":"2025-10-09T05:51:17.672Z"}
+{"level":"info","message":"GET /api/media 200 in 313ms :: []","requestId":"9472989d-4eef-4a26-afd6-af9a02cbafb9","timestamp":"2025-10-09T05:51:17.672Z"}
+{"level":"info","message":"GET /api/reddit/communities 200 in 364ms :: [{\"id\":\"fitness\",\"name\":\"fitness\",\"displayName\":\"Fitness\",\"members\":10000000,\"engagementRate\":7,\"category\":\"fitness\",\"verificationRequired\":true,\"promotionAllowed\":\"strict\",\"postingLimits\":{\"daily\":2},\"rules\":{\"eligibility\":{\"minKarma\":null,\"minAccountAgeDays\":null,\"verificationRequired\":false,\"requiresApproval\":false},\"content\":{\"sellingPolicy\":\"not_allowed\",\"watermarksAllowed\":null,\"promotionalLinks\":null,\"requiresOriginalContent\":false,\"nsfwRequired\":false,\"titleGuidelines\":[],\"contentGuidelines\":[\"No self-promotion\",\"Stay on topic\"],\"linkRestrictions\":[],\"bannedContent\":[],\"formattingRequirements\":[]},\"posting\":{\"maxPostsPerDay\":null,\"cooldownHours\":null},\"notes\":null},\"bestPostingTimes\":[\"afternoon\"],\"averageUpvotes\":250,\"successProbability\":70,\"growthTrend\":\"stable\",\"modActivity\":\"medium\",\"description\":\"Workout tips and discussion.\",\"tags\":[\"fitness\",\"health\"],\"competitionLevel\":\"high\"},{\"id\":\"photography\",\"name\":\"photography\",\"displayName\":\"Photography\",\"members\":50… (truncated)","requestId":"d2f02d2d-6351-4497-9a86-971503cb3a68","timestamp":"2025-10-09T05:51:17.728Z"}
+{"intent":"posting","level":"info","message":"Reddit OAuth initiated","queue":"reddit-posting","requestIP":"127.0.0.1","statePreview":"posting:...","timestamp":"2025-10-09T05:51:18.845Z","userId":316}
+{"level":"info","message":"GET /api/reddit/connect 200 in 41ms :: {\"authUrl\":\"https://www.reddit.com/api/v1/authorize?client_id=ByrMwubDSmQvi9OFhuQI6g&response_type=code&state=posting%3Aa1310349e84cb7eff1685382800f447fa3645455921907b12b804c73fd68aa68&redirect_uri=https%3A%2F%2Fthottopilot.com%2Fapi%2Freddit%2Fcallback&duration=permanent&scope=identity+submit+edit+read+vote+save+history+mysubreddits\"}","requestId":"8f25fa29-5a61-452f-a00f-f8ae98bfe68e","timestamp":"2025-10-09T05:51:18.846Z"}
+{"intent":"posting","level":"info","message":"Reddit OAuth initiated","queue":"reddit-posting","requestIP":"127.0.0.1","statePreview":"posting:...","timestamp":"2025-10-09T05:52:17.675Z","userId":316}
+{"level":"info","message":"GET /api/reddit/connect 200 in 131ms :: {\"authUrl\":\"https://www.reddit.com/api/v1/authorize?client_id=ByrMwubDSmQvi9OFhuQI6g&response_type=code&state=posting%3A13fbc831025d1332136ddc3bd2fe64a42a9e28f2a4f532503369ab43ea1c14c5&redirect_uri=https%3A%2F%2Fthottopilot.com%2Fapi%2Freddit%2Fcallback&duration=permanent&scope=identity+submit+edit+read+vote+save+history+mysubreddits\"}","requestId":"5c0be7aa-e167-413d-b2bc-60473832cf16","timestamp":"2025-10-09T05:52:17.676Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-09T05:57:00.573Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-09T05:57:01.674Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-09T05:57:01.674Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-09T05:57:01.675Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-09T05:57:01.889Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-09T05:57:01.890Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-09T05:57:01.890Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-09T05:57:01.890Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-09T05:57:01.890Z"}
+{"level":"warn","message":"Using in-memory session store. Configure REDIS_URL or set USE_PG_QUEUE=true for production.","timestamp":"2025-10-09T05:57:01.892Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-09T05:57:01.893Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:57:02.174Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-09T05:57:02.174Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:57:02.227Z"}
+{"level":"info","message":"🔄 Initializing queue system...","timestamp":"2025-10-09T05:57:02.230Z"}
+{"level":"info","message":"✅ Queue system initialized","timestamp":"2025-10-09T05:57:02.231Z"}
+{"level":"info","message":"✅ Background workers initialized","timestamp":"2025-10-09T05:57:02.949Z"}
+{"level":"info","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-09T05:57:02.949Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-09T05:57:02.953Z"}
+{"level":"warn","message":"Environment configuration issue detected: REDIS_URL: Invalid url","timestamp":"2025-10-09T05:57:02.954Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-09T05:57:02.969Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-09T05:57:03.685Z"}
+{"level":"info","message":"[HEALTH] Express app created successfully in 1795ms","timestamp":"2025-10-09T05:57:03.685Z"}
+{"level":"info","message":"[HEALTH] Target port from environment: 5000","timestamp":"2025-10-09T05:57:03.685Z"}
+{"level":"info","message":"[HEALTH] Starting server on 0.0.0.0:5000","timestamp":"2025-10-09T05:57:03.686Z"}
+{"level":"info","message":"[HEALTH] ✅ Server started successfully on port 5000 in 1797ms","timestamp":"2025-10-09T05:57:03.687Z"}
+{"level":"info","message":"serving on port 5000","timestamp":"2025-10-09T05:57:03.687Z"}
+{"isAdmin":true,"level":"info","mediaCount":0,"message":"Dashboard activity retrieved for user 316","timestamp":"2025-10-09T05:57:15.395Z","userId":316}
+{"level":"info","message":"GET /api/dashboard/activity 200 in 134ms :: {\"recentMedia\":[]}","requestId":"2eab6245-e076-4662-a219-0e51e83616f7","timestamp":"2025-10-09T05:57:15.397Z"}
+{"isAdmin":true,"level":"info","message":"Dashboard stats retrieved for user 316","stats":{"engagementRate":0,"estimatedTaxSavings":0,"postsToday":0,"takedownsFound":0},"timestamp":"2025-10-09T05:57:15.521Z","userId":316}
+{"level":"info","message":"GET /api/dashboard/stats 200 in 265ms :: {\"postsToday\":0,\"engagementRate\":0,\"takedownsFound\":0,\"estimatedTaxSavings\":0}","requestId":"9c09fcbc-da38-4269-a752-916d3c853247","timestamp":"2025-10-09T05:57:15.522Z"}
+{"level":"info","message":"GET /api/reddit/accounts 200 in 450ms :: []","requestId":"5f010c01-7973-4749-80ef-32210d25863c","timestamp":"2025-10-09T05:57:21.592Z"}
+{"level":"info","message":"GET /api/media 200 in 821ms :: []","requestId":"edae263a-89d0-45a9-969e-3bb10dc404af","timestamp":"2025-10-09T05:57:21.968Z"}
+{"level":"info","message":"GET /api/reddit/communities 200 in 871ms :: [{\"id\":\"fitness\",\"name\":\"fitness\",\"displayName\":\"Fitness\",\"members\":10000000,\"engagementRate\":7,\"category\":\"fitness\",\"verificationRequired\":true,\"promotionAllowed\":\"strict\",\"postingLimits\":{\"daily\":2},\"rules\":{\"eligibility\":{\"minKarma\":null,\"minAccountAgeDays\":null,\"verificationRequired\":false,\"requiresApproval\":false},\"content\":{\"sellingPolicy\":\"not_allowed\",\"watermarksAllowed\":null,\"promotionalLinks\":null,\"requiresOriginalContent\":false,\"nsfwRequired\":false,\"titleGuidelines\":[],\"contentGuidelines\":[\"No self-promotion\",\"Stay on topic\"],\"linkRestrictions\":[],\"bannedContent\":[],\"formattingRequirements\":[]},\"posting\":{\"maxPostsPerDay\":null,\"cooldownHours\":null},\"notes\":null},\"bestPostingTimes\":[\"afternoon\"],\"averageUpvotes\":250,\"successProbability\":70,\"growthTrend\":\"stable\",\"modActivity\":\"medium\",\"description\":\"Workout tips and discussion.\",\"tags\":[\"fitness\",\"health\"],\"competitionLevel\":\"high\"},{\"id\":\"photography\",\"name\":\"photography\",\"displayName\":\"Photography\",\"members\":50… (truncated)","requestId":"f8e55be0-e10e-4d44-98a8-d15b4bdf26e8","timestamp":"2025-10-09T05:57:22.023Z"}
+{"intent":"posting","level":"info","message":"Reddit OAuth initiated","queue":"reddit-posting","requestIP":"127.0.0.1","statePreview":"posting:...","timestamp":"2025-10-09T05:57:22.795Z","userId":316}
+{"level":"info","message":"GET /api/reddit/connect 200 in 43ms :: {\"authUrl\":\"https://www.reddit.com/api/v1/authorize?client_id=ByrMwubDSmQvi9OFhuQI6g&response_type=code&state=posting%3Ab3d530b7ac511412da17ff6841bcbbb846d4b76befce9e0cd9d3589b9026e891&redirect_uri=http%3A%2F%2Flocalhost%3A5178%2Fapi%2Freddit%2Fcallback&duration=permanent&scope=identity+submit+edit+read+vote+save+history+mysubreddits\"}","requestId":"a134832b-a56a-4719-ac4b-b37439c1241f","timestamp":"2025-10-09T05:57:22.796Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-09T05:58:51.089Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-09T05:58:51.464Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-09T05:58:51.478Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-09T05:58:52.600Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-09T05:58:52.923Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-09T05:58:52.970Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-09T05:58:52.600Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-09T05:58:52.601Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-09T05:58:52.920Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-09T05:58:52.921Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-09T05:58:52.921Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-09T05:58:52.921Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-09T05:58:52.922Z"}
+{"level":"warn","message":"Using in-memory session store. Configure REDIS_URL or set USE_PG_QUEUE=true for production.","timestamp":"2025-10-09T05:58:52.925Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-09T05:58:52.927Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:58:53.173Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-09T05:58:53.174Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:58:53.213Z"}
+{"level":"info","message":"🔄 Initializing queue system...","timestamp":"2025-10-09T05:58:53.215Z"}
+{"level":"info","message":"✅ Queue system initialized","timestamp":"2025-10-09T05:58:53.216Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-09T05:58:52.923Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-09T05:58:52.924Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-09T05:58:53.204Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-09T05:58:53.205Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-09T05:58:53.205Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-09T05:58:53.205Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-09T05:58:53.205Z"}
+{"level":"warn","message":"Using in-memory session store. Configure REDIS_URL or set USE_PG_QUEUE=true for production.","timestamp":"2025-10-09T05:58:53.208Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-09T05:58:53.209Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-09T05:58:52.971Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-09T05:58:52.971Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-09T05:58:53.233Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-09T05:58:53.233Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-09T05:58:53.234Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-09T05:58:53.234Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-09T05:58:53.234Z"}
+{"level":"warn","message":"Using in-memory session store. Configure REDIS_URL or set USE_PG_QUEUE=true for production.","timestamp":"2025-10-09T05:58:53.236Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-09T05:58:53.238Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:58:53.449Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-09T05:58:53.449Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:58:53.465Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-09T05:58:53.466Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:58:53.491Z"}
+{"level":"info","message":"🔄 Initializing queue system...","timestamp":"2025-10-09T05:58:53.495Z"}
+{"level":"info","message":"✅ Queue system initialized","timestamp":"2025-10-09T05:58:53.497Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:58:53.506Z"}
+{"level":"info","message":"🔄 Initializing queue system...","timestamp":"2025-10-09T05:58:53.510Z"}
+{"level":"info","message":"✅ Queue system initialized","timestamp":"2025-10-09T05:58:53.512Z"}
+{"level":"info","message":"✅ Background workers initialized","timestamp":"2025-10-09T05:58:53.884Z"}
+{"level":"info","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-09T05:58:53.885Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-09T05:58:53.888Z"}
+{"level":"warn","message":"Environment configuration issue detected: REDIS_URL: Invalid url","timestamp":"2025-10-09T05:58:53.891Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-09T05:58:53.906Z"}
+{"level":"info","message":"✅ Background workers initialized","timestamp":"2025-10-09T05:58:54.171Z"}
+{"level":"info","message":"✅ Background workers initialized","timestamp":"2025-10-09T05:58:54.172Z"}
+{"level":"info","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-09T05:58:54.172Z"}
+{"level":"info","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-09T05:58:54.172Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-09T05:58:54.176Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-09T05:58:54.176Z"}
+{"level":"warn","message":"Environment configuration issue detected: REDIS_URL: Invalid url","timestamp":"2025-10-09T05:58:54.179Z"}
+{"level":"warn","message":"Environment configuration issue detected: REDIS_URL: Invalid url","timestamp":"2025-10-09T05:58:54.179Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-09T05:58:54.196Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-09T05:58:54.196Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-09T05:58:54.441Z"}
+{"level":"info","message":"[HEALTH] Express app created successfully in 1520ms","timestamp":"2025-10-09T05:58:54.441Z"}
+{"level":"info","message":"[HEALTH] Target port from environment: 5000","timestamp":"2025-10-09T05:58:54.441Z"}
+{"level":"info","message":"[HEALTH] Starting server on 0.0.0.0:5000","timestamp":"2025-10-09T05:58:54.442Z"}
+{"level":"info","message":"[HEALTH] ✅ Server started successfully on port 5000 in 1522ms","timestamp":"2025-10-09T05:58:54.443Z"}
+{"level":"info","message":"serving on port 5000","timestamp":"2025-10-09T05:58:54.443Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-09T05:58:54.653Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-09T05:58:54.681Z"}
+{"level":"info","message":"GET /api/metrics 200 in 210ms :: {\"creators\":\"105\",\"posts\":\"0\",\"engagement\":0}","requestId":"55b12206-b6af-401b-bef6-28489fdd7b52","timestamp":"2025-10-09T05:58:55.446Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-09T05:59:02.832Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-09T05:59:03.809Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-09T05:59:03.810Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-09T05:59:03.810Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-09T05:59:04.039Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-09T05:59:04.039Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-09T05:59:04.039Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-09T05:59:04.040Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-09T05:59:04.040Z"}
+{"level":"warn","message":"Using in-memory session store. Configure REDIS_URL or set USE_PG_QUEUE=true for production.","timestamp":"2025-10-09T05:59:04.042Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-09T05:59:04.043Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:59:04.832Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-09T05:59:04.832Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:59:04.905Z"}
+{"level":"info","message":"🔄 Initializing queue system...","timestamp":"2025-10-09T05:59:04.907Z"}
+{"level":"info","message":"✅ Queue system initialized","timestamp":"2025-10-09T05:59:04.908Z"}
+{"isAdmin":true,"level":"info","mediaCount":0,"message":"Dashboard activity retrieved for user 316","timestamp":"2025-10-09T05:59:05.626Z","userId":316}
+{"level":"info","message":"GET /api/dashboard/activity 200 in 439ms :: {\"recentMedia\":[]}","requestId":"2750fec1-bbe3-403c-bd5b-8e8630a992d6","timestamp":"2025-10-09T05:59:05.627Z"}
+{"isAdmin":true,"level":"info","message":"Dashboard stats retrieved for user 316","stats":{"engagementRate":0,"estimatedTaxSavings":0,"postsToday":0,"takedownsFound":0},"timestamp":"2025-10-09T05:59:05.914Z","userId":316}
+{"level":"info","message":"GET /api/dashboard/stats 200 in 731ms :: {\"postsToday\":0,\"engagementRate\":0,\"takedownsFound\":0,\"estimatedTaxSavings\":0}","requestId":"1f4f331f-c6e2-49cd-952d-e2557358fd1d","timestamp":"2025-10-09T05:59:05.915Z"}
+{"level":"info","message":"✅ Background workers initialized","timestamp":"2025-10-09T05:59:06.274Z"}
+{"level":"info","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-09T05:59:06.276Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-09T05:59:06.285Z"}
+{"level":"warn","message":"Environment configuration issue detected: REDIS_URL: Invalid url","timestamp":"2025-10-09T05:59:06.289Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-09T05:59:06.309Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-09T05:59:06.711Z"}
+{"level":"info","message":"GET /api/reddit/accounts 200 in 236ms :: []","requestId":"97415e9f-b5da-4f15-a2d6-2c54f93e7ef7","timestamp":"2025-10-09T06:00:15.821Z"}
+{"level":"info","message":"GET /api/media 200 in 241ms :: []","requestId":"1ab89395-a625-4ef2-9b2e-cf264ce9de86","timestamp":"2025-10-09T06:00:15.834Z"}
+{"level":"info","message":"GET /api/reddit/communities 200 in 299ms :: [{\"id\":\"fitness\",\"name\":\"fitness\",\"displayName\":\"Fitness\",\"members\":10000000,\"engagementRate\":7,\"category\":\"fitness\",\"verificationRequired\":true,\"promotionAllowed\":\"strict\",\"postingLimits\":{\"daily\":2},\"rules\":{\"eligibility\":{\"minKarma\":null,\"minAccountAgeDays\":null,\"verificationRequired\":false,\"requiresApproval\":false},\"content\":{\"sellingPolicy\":\"not_allowed\",\"watermarksAllowed\":null,\"promotionalLinks\":null,\"requiresOriginalContent\":false,\"nsfwRequired\":false,\"titleGuidelines\":[],\"contentGuidelines\":[\"No self-promotion\",\"Stay on topic\"],\"linkRestrictions\":[],\"bannedContent\":[],\"formattingRequirements\":[]},\"posting\":{\"maxPostsPerDay\":null,\"cooldownHours\":null},\"notes\":null},\"bestPostingTimes\":[\"afternoon\"],\"averageUpvotes\":250,\"successProbability\":70,\"growthTrend\":\"stable\",\"modActivity\":\"medium\",\"description\":\"Workout tips and discussion.\",\"tags\":[\"fitness\",\"health\"],\"competitionLevel\":\"high\"},{\"id\":\"photography\",\"name\":\"photography\",\"displayName\":\"Photography\",\"members\":50… (truncated)","requestId":"641b5692-c64e-485b-abbc-4930dd470895","timestamp":"2025-10-09T06:00:15.901Z"}
+{"intent":"posting","level":"info","message":"Reddit OAuth initiated","queue":"reddit-posting","requestIP":"127.0.0.1","statePreview":"posting:...","timestamp":"2025-10-09T06:00:17.303Z","userId":316}
+{"level":"info","message":"GET /api/reddit/connect 200 in 44ms :: {\"authUrl\":\"https://www.reddit.com/api/v1/authorize?client_id=ByrMwubDSmQvi9OFhuQI6g&response_type=code&state=posting%3A8704706fb655fa3accd1efec0f42bbff9237de5c020c8975211fc7530c7fb5ab&redirect_uri=http%3A%2F%2Flocalhost%3A5178%2Fapi%2Freddit%2Fcallback&duration=permanent&scope=identity+submit+edit+read+vote+save+history+mysubreddits\"}","requestId":"aa456615-55e8-4404-bffb-50103ba77070","timestamp":"2025-10-09T06:00:17.304Z"}
+{"intent":"posting","level":"info","message":"Reddit OAuth initiated","queue":"reddit-posting","requestIP":"127.0.0.1","statePreview":"posting:...","timestamp":"2025-10-09T06:00:59.084Z","userId":316}
+{"level":"info","message":"GET /api/reddit/connect 200 in 156ms :: {\"authUrl\":\"https://www.reddit.com/api/v1/authorize?client_id=ByrMwubDSmQvi9OFhuQI6g&response_type=code&state=posting%3A64b1356d237d13c4741ad51bd40c58b0a173808bddc4063cf783609343c5be89&redirect_uri=http%3A%2F%2Flocalhost%3A5178%2Fapi%2Freddit%2Fcallback&duration=permanent&scope=identity+submit+edit+read+vote+save+history+mysubreddits\"}","requestId":"65418675-7ca1-4c76-b9e4-f0717a341ee2","timestamp":"2025-10-09T06:00:59.085Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-09T06:01:21.365Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-09T06:01:22.396Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-09T06:01:22.396Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-09T06:01:22.397Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-09T06:01:22.611Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-09T06:01:22.611Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-09T06:01:22.611Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-09T06:01:22.612Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-09T06:01:22.612Z"}
+{"level":"warn","message":"Using in-memory session store. Configure REDIS_URL or set USE_PG_QUEUE=true for production.","timestamp":"2025-10-09T06:01:22.614Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-09T06:01:22.615Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T06:01:23.150Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-09T06:01:23.150Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T06:01:23.202Z"}
+{"level":"info","message":"🔄 Initializing queue system...","timestamp":"2025-10-09T06:01:23.205Z"}
+{"level":"info","message":"✅ Queue system initialized","timestamp":"2025-10-09T06:01:23.206Z"}
+{"level":"info","message":"✅ Background workers initialized","timestamp":"2025-10-09T06:01:24.111Z"}
+{"level":"info","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-09T06:01:24.111Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-09T06:01:24.114Z"}
+{"level":"warn","message":"Environment configuration issue detected: REDIS_URL: Invalid url","timestamp":"2025-10-09T06:01:24.116Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-09T06:01:24.129Z"}
+{"isAdmin":true,"level":"info","mediaCount":0,"message":"Dashboard activity retrieved for user 316","timestamp":"2025-10-09T06:01:24.154Z","userId":316}
+{"level":"info","message":"GET /api/dashboard/activity 200 in 224ms :: {\"recentMedia\":[]}","requestId":"49d97d65-c4fa-42e2-8665-f7fd3769e20d","timestamp":"2025-10-09T06:01:24.155Z"}
+{"isAdmin":true,"level":"info","message":"Dashboard stats retrieved for user 316","stats":{"engagementRate":0,"estimatedTaxSavings":0,"postsToday":0,"takedownsFound":0},"timestamp":"2025-10-09T06:01:24.287Z","userId":316}
+{"level":"info","message":"GET /api/dashboard/stats 200 in 359ms :: {\"postsToday\":0,\"engagementRate\":0,\"takedownsFound\":0,\"estimatedTaxSavings\":0}","requestId":"c9f4a185-bb37-49cf-832c-b972d5699f06","timestamp":"2025-10-09T06:01:24.287Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-09T06:01:24.537Z"}
+{"level":"info","message":"GET /api/reddit/accounts 200 in 94ms :: []","requestId":"e6a8ba33-4064-42f6-a3d7-c155d41ff842","timestamp":"2025-10-09T06:03:11.918Z"}
+{"level":"info","message":"GET /api/media 200 in 297ms :: []","requestId":"2e8953ba-05fe-43e4-addc-bd199d8c18c6","timestamp":"2025-10-09T06:03:12.125Z"}
+{"level":"info","message":"GET /api/reddit/communities 200 in 344ms :: [{\"id\":\"fitness\",\"name\":\"fitness\",\"displayName\":\"Fitness\",\"members\":10000000,\"engagementRate\":7,\"category\":\"fitness\",\"verificationRequired\":true,\"promotionAllowed\":\"strict\",\"postingLimits\":{\"daily\":2},\"rules\":{\"eligibility\":{\"minKarma\":null,\"minAccountAgeDays\":null,\"verificationRequired\":false,\"requiresApproval\":false},\"content\":{\"sellingPolicy\":\"not_allowed\",\"watermarksAllowed\":null,\"promotionalLinks\":null,\"requiresOriginalContent\":false,\"nsfwRequired\":false,\"titleGuidelines\":[],\"contentGuidelines\":[\"No self-promotion\",\"Stay on topic\"],\"linkRestrictions\":[],\"bannedContent\":[],\"formattingRequirements\":[]},\"posting\":{\"maxPostsPerDay\":null,\"cooldownHours\":null},\"notes\":null},\"bestPostingTimes\":[\"afternoon\"],\"averageUpvotes\":250,\"successProbability\":70,\"growthTrend\":\"stable\",\"modActivity\":\"medium\",\"description\":\"Workout tips and discussion.\",\"tags\":[\"fitness\",\"health\"],\"competitionLevel\":\"high\"},{\"id\":\"photography\",\"name\":\"photography\",\"displayName\":\"Photography\",\"members\":50… (truncated)","requestId":"3264d3bf-2421-4373-b4a6-a77c75ccdaff","timestamp":"2025-10-09T06:03:12.177Z"}
+{"level":"info","message":"GET /api/reddit/accounts 200 in 79ms :: []","requestId":"d607c919-49cd-4888-add8-02a15b91b7cc","timestamp":"2025-10-09T06:03:14.325Z"}
+{"level":"info","message":"GET /api/media 200 in 82ms :: []","requestId":"1ffbf420-83ca-4cc6-bcf7-815c243cbc1c","timestamp":"2025-10-09T06:03:14.332Z"}
+{"level":"info","message":"GET /api/reddit/communities 200 in 124ms :: [{\"id\":\"fitness\",\"name\":\"fitness\",\"displayName\":\"Fitness\",\"members\":10000000,\"engagementRate\":7,\"category\":\"fitness\",\"verificationRequired\":true,\"promotionAllowed\":\"strict\",\"postingLimits\":{\"daily\":2},\"rules\":{\"eligibility\":{\"minKarma\":null,\"minAccountAgeDays\":null,\"verificationRequired\":false,\"requiresApproval\":false},\"content\":{\"sellingPolicy\":\"not_allowed\",\"watermarksAllowed\":null,\"promotionalLinks\":null,\"requiresOriginalContent\":false,\"nsfwRequired\":false,\"titleGuidelines\":[],\"contentGuidelines\":[\"No self-promotion\",\"Stay on topic\"],\"linkRestrictions\":[],\"bannedContent\":[],\"formattingRequirements\":[]},\"posting\":{\"maxPostsPerDay\":null,\"cooldownHours\":null},\"notes\":null},\"bestPostingTimes\":[\"afternoon\"],\"averageUpvotes\":250,\"successProbability\":70,\"growthTrend\":\"stable\",\"modActivity\":\"medium\",\"description\":\"Workout tips and discussion.\",\"tags\":[\"fitness\",\"health\"],\"competitionLevel\":\"high\"},{\"id\":\"photography\",\"name\":\"photography\",\"displayName\":\"Photography\",\"members\":50… (truncated)","requestId":"6086b679-a7ca-4a8f-9215-8bedefcad4e9","timestamp":"2025-10-09T06:03:14.378Z"}
+{"intent":"posting","level":"info","message":"Reddit OAuth initiated","queue":"reddit-posting","requestIP":"127.0.0.1","statePreview":"posting:...","timestamp":"2025-10-09T06:03:16.003Z","userId":316}
+{"level":"info","message":"GET /api/reddit/connect 200 in 55ms :: {\"authUrl\":\"https://www.reddit.com/api/v1/authorize?client_id=ByrMwubDSmQvi9OFhuQI6g&response_type=code&state=posting%3Aa387ece38053a0d42d9854783f51bc3bce2c89dc22e9ac26e1337baeee4d1c17&redirect_uri=http%3A%2F%2Flocalhost%3A5178%2Fapi%2Freddit%2Fcallback&duration=permanent&scope=identity+submit+edit+read+vote+save+history+mysubreddits\"}","requestId":"28433fa8-d5db-462e-95de-7de1d9f2d34e","timestamp":"2025-10-09T06:03:16.006Z"}

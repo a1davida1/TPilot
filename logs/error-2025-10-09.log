@@ -1,0 +1,41 @@
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:00:38.504Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:00:38.554Z"}
+{"code":"EADDRINUSE","level":"error","message":"[HEALTH] ❌ Server startup failed: listen EADDRINUSE: address already in use 0.0.0.0:5000","port":5000,"timestamp":"2025-10-09T05:00:39.935Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:02:16.710Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:02:16.752Z"}
+{"code":"EADDRINUSE","level":"error","message":"[HEALTH] ❌ Server startup failed: listen EADDRINUSE: address already in use 0.0.0.0:5000","port":5000,"timestamp":"2025-10-09T05:02:18.222Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:17:07.153Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:17:07.196Z"}
+{"code":"EADDRINUSE","level":"error","message":"[HEALTH] ❌ Server startup failed: listen EADDRINUSE: address already in use 0.0.0.0:5000","port":5000,"timestamp":"2025-10-09T05:17:08.961Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:22:20.342Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:22:20.382Z"}
+{"code":"EADDRINUSE","level":"error","message":"[HEALTH] ❌ Server startup failed: listen EADDRINUSE: address already in use 0.0.0.0:5000","port":5000,"timestamp":"2025-10-09T05:22:22.395Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:29:17.998Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:29:18.099Z"}
+{"code":"EADDRINUSE","level":"error","message":"[HEALTH] ❌ Server startup failed: listen EADDRINUSE: address already in use 0.0.0.0:5000","port":5000,"timestamp":"2025-10-09T05:29:20.528Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:33:02.047Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:33:02.092Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:41:55.649Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:41:55.850Z"}
+{"code":"EADDRINUSE","level":"error","message":"[HEALTH] ❌ Server startup failed: listen EADDRINUSE: address already in use 0.0.0.0:5000","port":5000,"timestamp":"2025-10-09T05:41:57.498Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:43:41.581Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:43:41.624Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:48:20.635Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:48:20.761Z"}
+{"code":"EADDRINUSE","level":"error","message":"[HEALTH] ❌ Server startup failed: listen EADDRINUSE: address already in use 0.0.0.0:5000","port":5000,"timestamp":"2025-10-09T05:48:22.650Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:57:02.174Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:57:02.227Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:58:53.173Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:58:53.213Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:58:53.449Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:58:53.465Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:58:53.491Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:58:53.506Z"}
+{"code":"EADDRINUSE","level":"error","message":"[HEALTH] ❌ Server startup failed: listen EADDRINUSE: address already in use 0.0.0.0:5000","port":5000,"timestamp":"2025-10-09T05:58:54.655Z"}
+{"code":"EADDRINUSE","level":"error","message":"[HEALTH] ❌ Server startup failed: listen EADDRINUSE: address already in use 0.0.0.0:5000","port":5000,"timestamp":"2025-10-09T05:58:54.683Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T05:59:04.832Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T05:59:04.905Z"}
+{"code":"EADDRINUSE","level":"error","message":"[HEALTH] ❌ Server startup failed: listen EADDRINUSE: address already in use 0.0.0.0:5000","port":5000,"timestamp":"2025-10-09T05:59:06.712Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T06:01:23.150Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T06:01:23.202Z"}
+{"code":"EADDRINUSE","level":"error","message":"[HEALTH] ❌ Server startup failed: listen EADDRINUSE: address already in use 0.0.0.0:5000","port":5000,"timestamp":"2025-10-09T06:01:24.539Z"}

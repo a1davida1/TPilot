@@ -1,3 +1,0 @@
-{"level":"info","message":"GET /api/auth/login 404 in 3ms :: {\"message\":\"API endpoint not found: /api/auth/login\"}","requestId":"7c4f3bea-f55e-4f51-8afe-72c45ac238fc","timestamp":"2025-10-09T03:59:52.069Z"}
-{"level":"info","message":"GET /api/metrics 200 in 200ms :: {\"creators\":\"105\",\"posts\":\"0\",\"engagement\":0}","requestId":"e9dc1649-1ca8-423e-b330-e327e138bb20","timestamp":"2025-10-09T04:42:43.660Z"}
-{"level":"info","message":"GET /api/health 200 in 1ms :: {\"status\":\"ok\"}","requestId":"19275f48-81d7-4ee6-bd31-20e0241dd7de","timestamp":"2025-10-09T04:42:56.575Z"}
