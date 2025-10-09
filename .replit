@@ -35,8 +35,9 @@ externalPort = 8000
 localPort = 39875
 externalPort = 3000
 
+# PORT is set dynamically by Replit Deployments
+# For local dev, it defaults to 5000 in the code
 [env]
-PORT = "5000"
 
 [workflows]
 runButton = "Project"
