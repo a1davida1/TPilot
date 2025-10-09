@@ -549,6 +549,7 @@ import { captionRouter } from "./routes/caption.js";
 import { subredditLintRouter } from "./routes/subreddit-lint.js";
 import { subredditRecommenderRouter } from "./routes/subreddit-recommender.js";
 import { scheduledPostsRouter } from "./routes/scheduled-posts.js";
+import { captionAnalyticsRouter } from "./routes/caption-analytics.js";
 import { registerSocialMediaRoutes } from "./social-media-routes.js";
 
 
@@ -1418,6 +1419,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
 
   // Register Scheduled Posts Routes (for scheduling Reddit posts)
   app.use('/api/scheduled-posts', scheduledPostsRouter);
+
+  // Register Caption Analytics Routes (for A/B testing and performance tracking)
+  app.use('/api/caption-analytics', captionAnalyticsRouter);
 
   // Register Dashboard Routes
   try {

@@ -119,7 +119,11 @@ export function OneClickPostWizard() {
       trackCaptionShown({
         pairId: newPairId,
         captionIds: [captionPair[0].id, captionPair[1].id],
+        captionTexts: [captionPair[0].text, captionPair[1].text],
         styles: [captionPair[0].style, captionPair[1].style],
+        model: captionData.model || 'unknown',
+        category: captionData.category,
+        tags: captionData.tags,
         protectionPreset: 'medium',
         deviceBucket: getDeviceBucket()
       });
@@ -216,9 +220,14 @@ export function OneClickPostWizard() {
 
       // Track post submission
       trackPostSubmit({
-        postKind: 'image',
+        redditPostId: result.postId || result.url,
         subreddit: selectedSubreddit,
+        captionId: caption.id,
+        pairId,
         nsfwFlag: true,
+        protectionPreset: 'medium',
+        metricsSSIM: metrics?.ssim || 0,
+        metricsPhashDelta: metrics?.phashDelta || 0,
         uploadLatencyMs: uploadLatency
       });
 

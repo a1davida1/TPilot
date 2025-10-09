@@ -312,7 +312,7 @@ async function addSubtleWatermark(canvas: OffscreenCanvas): Promise<OffscreenCan
 
 async function calculateMetrics(
   original: OffscreenCanvas,
-  protected: OffscreenCanvas
+  protectedCanvas: OffscreenCanvas
 ): Promise<{ ssim: number; phashDelta: number }> {
   // Stub: SSIM and pHash require dedicated implementations
   // For now, return estimates based on operation strength
