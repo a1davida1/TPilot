@@ -149,3 +149,5 @@
 {"level":"info","message":"[2025-10-09T04:42:43.460Z] GET /api/metrics - IP: 127.0.0.1","timestamp":"2025-10-09T04:42:43.460Z"}
 {"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-09T04:42:50.834Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
 {"level":"info","message":"[2025-10-09T04:42:56.574Z] GET /api/health - IP: 127.0.0.1","timestamp":"2025-10-09T04:42:56.574Z"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-09T04:47:41.655Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-09T04:47:41.798Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}

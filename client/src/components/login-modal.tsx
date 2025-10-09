@@ -54,7 +54,11 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
 
       const data = await response.json();
 
-      localStorage.setItem("authToken", data.token);
+      // Phase 3: Store access token in memory only
+      const { setAccessToken } = await import('@/lib/auth');
+      setAccessToken(data.accessToken || data.token);
+      
+      // Keep user data in localStorage for now (non-sensitive)
       localStorage.setItem("user", JSON.stringify(data.user));
       
       toast({
@@ -103,7 +107,11 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
       });
       const data = await response.json();
 
-      localStorage.setItem("authToken", data.token);
+      // Phase 3: Store access token in memory only
+      const { setAccessToken } = await import('@/lib/auth');
+      setAccessToken(data.accessToken || data.token);
+      
+      // Keep user data in localStorage for now (non-sensitive)
       localStorage.setItem("user", JSON.stringify(data.user));
       
       toast({

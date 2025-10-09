@@ -203,29 +203,37 @@ export async function apiRequest(
   const headers: Record<string, string> = {};
   let body: BodyInit | undefined;
 
+  // Phase 3: Use in-memory token with auto-refresh
   if (typeof window !== "undefined") {
     try {
-      const storedToken = window.localStorage?.getItem("authToken");
-      if (storedToken && !headers["Authorization"]) {
-        headers["Authorization"] = `Bearer ${storedToken}`;
+      // Try memory first (new), fallback to localStorage (backwards compat)
+      const { getAccessToken, refreshAccessToken } = await import('@/lib/auth');
+      let token = getAccessToken();
+      
+      // If no token in memory, try localStorage for backwards compatibility
+      if (!token) {
+        token = window.localStorage?.getItem("authToken");
+        if (token) {
+          // Migrate to memory
+          const { setAccessToken } = await import('@/lib/auth');
+          setAccessToken(token);
+        }
+      }
+      
+      // If token expired, try refresh
+      if (!token) {
+        token = await refreshAccessToken();
+      }
+      
+      if (token && !headers["Authorization"]) {
+        headers["Authorization"] = `Bearer ${token}`;
       }
     } catch (error) {
-      console.warn("Unable to access auth token from localStorage", error);
+      console.warn("Unable to access auth token", error);
     }
   }
 
-  // Get CSRF token for state-changing requests
-  if (method !== 'GET' && method !== 'HEAD') {
-    try {
-      const token = await getCsrfToken();
-      if (token) {
-        headers['X-CSRF-Token'] = token;
-      }
-    } catch (error) {
-      console.warn('Failed to get CSRF token:', error);
-      // Continue without CSRF token - the server will reject if needed
-    }
-  }
+  // Phase 1: CSRF not needed for Bearer tokens (server exempts them)
 
   if (data instanceof FormData) {
     body = data;
