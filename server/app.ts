@@ -276,6 +276,8 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
 
   app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
     const exemptPaths = [
+      `${API_PREFIX}/auth/login`,
+      `${API_PREFIX}/auth/signup`,
       `${API_PREFIX}/auth/reddit/callback`,
       `${API_PREFIX}/auth/google/callback`,
       `${API_PREFIX}/auth/facebook/callback`,
