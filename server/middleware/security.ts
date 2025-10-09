@@ -369,8 +369,8 @@ export const securityMiddleware = [
         defaultSrc: ["'self'"],
         scriptSrc: [
           "'self'",
-          // Only allow unsafe-eval in development for Vite HMR
-          process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : "",
+          // Vite 5.x no longer requires 'unsafe-eval' for HMR (uses WebSocket)
+          // Removed 'unsafe-eval' - Phase 0 security hardening
           // Specific trusted domains
           "https://js.stripe.com",
           "https://checkout.stripe.com",
