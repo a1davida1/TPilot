@@ -393,13 +393,14 @@ export default function RedditPostingPage() {
   });
 
   // Fetch subreddit communities data
+  // Changed from hasFullAccess to isAuthenticated to show communities to all logged-in users
   const {
     data: communities = [],
     error: communitiesError,
   } = useQuery<SubredditCommunity[]>({
     queryKey: ['/api/reddit/communities'],
     retry: false,
-    enabled: hasFullAccess,
+    enabled: isAuthenticated, // Allow all authenticated users to view communities
   });
 
   const communityAccessState = getCommunityAccessState({

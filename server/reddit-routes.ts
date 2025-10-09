@@ -338,8 +338,8 @@ export function registerRedditRoutes(app: Express) {
     }
   });
 
-  // Reddit communities listing
-  app.get('/api/reddit/communities', authenticateToken(true), async (req: AuthRequest, res) => {
+  // Reddit communities listing - Available to all users (auth optional for personalization)
+  app.get('/api/reddit/communities', authenticateToken(), async (req: AuthRequest, res) => {
     try {
       const { category, search } = req.query;
       let communities = search
