@@ -33,3 +33,58 @@
 {"level":"info","message":"[HEALTH] ✅ Server started successfully on port 5000 in 2118ms","timestamp":"2025-10-09T03:59:17.434Z"}
 {"level":"info","message":"serving on port 5000","timestamp":"2025-10-09T03:59:17.434Z"}
 {"level":"info","message":"GET /api/auth/login 404 in 3ms :: {\"message\":\"API endpoint not found: /api/auth/login\"}","requestId":"7c4f3bea-f55e-4f51-8afe-72c45ac238fc","timestamp":"2025-10-09T03:59:52.069Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-09T04:42:34.690Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-09T04:42:35.908Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-09T04:42:35.909Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-09T04:42:35.909Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-09T04:42:36.164Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-09T04:42:36.165Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-09T04:42:36.165Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-09T04:42:36.165Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-09T04:42:36.166Z"}
+{"level":"warn","message":"Using in-memory session store. Configure REDIS_URL or set USE_PG_QUEUE=true for production.","timestamp":"2025-10-09T04:42:36.168Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-09T04:42:36.169Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T04:42:36.468Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-09T04:42:36.473Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T04:42:36.515Z"}
+{"level":"info","message":"🔄 Initializing queue system...","timestamp":"2025-10-09T04:42:36.518Z"}
+{"level":"info","message":"✅ Queue system initialized","timestamp":"2025-10-09T04:42:36.519Z"}
+{"level":"info","message":"✅ Background workers initialized","timestamp":"2025-10-09T04:42:37.232Z"}
+{"level":"info","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-09T04:42:37.233Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-09T04:42:37.236Z"}
+{"level":"warn","message":"Environment configuration issue detected: REDIS_URL: Invalid url","timestamp":"2025-10-09T04:42:37.238Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/dist/client/index.html","timestamp":"2025-10-09T04:42:37.252Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/client/dist/index.html","timestamp":"2025-10-09T04:42:37.252Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-09T04:42:37.252Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-09T04:42:38.056Z"}
+{"level":"info","message":"[HEALTH] Express app created successfully in 1891ms","timestamp":"2025-10-09T04:42:38.056Z"}
+{"level":"info","message":"[HEALTH] Target port from environment: 5000","timestamp":"2025-10-09T04:42:38.056Z"}
+{"level":"info","message":"[HEALTH] Starting server on 0.0.0.0:5000","timestamp":"2025-10-09T04:42:38.056Z"}
+{"level":"info","message":"[HEALTH] ✅ Server started successfully on port 5000 in 1892ms","timestamp":"2025-10-09T04:42:38.057Z"}
+{"level":"info","message":"serving on port 5000","timestamp":"2025-10-09T04:42:38.057Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-09T04:42:41.122Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-09T04:42:42.249Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-09T04:42:42.250Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-09T04:42:42.250Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-09T04:42:42.494Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-09T04:42:42.494Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-09T04:42:42.494Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-09T04:42:42.494Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-09T04:42:42.495Z"}
+{"level":"warn","message":"Using in-memory session store. Configure REDIS_URL or set USE_PG_QUEUE=true for production.","timestamp":"2025-10-09T04:42:42.497Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-09T04:42:42.498Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T04:42:42.721Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-09T04:42:42.721Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T04:42:42.765Z"}
+{"level":"info","message":"🔄 Initializing queue system...","timestamp":"2025-10-09T04:42:42.768Z"}
+{"level":"info","message":"✅ Queue system initialized","timestamp":"2025-10-09T04:42:42.769Z"}
+{"level":"info","message":"✅ Background workers initialized","timestamp":"2025-10-09T04:42:43.445Z"}
+{"level":"info","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-09T04:42:43.445Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-09T04:42:43.448Z"}
+{"level":"warn","message":"Environment configuration issue detected: REDIS_URL: Invalid url","timestamp":"2025-10-09T04:42:43.451Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/dist/client/index.html","timestamp":"2025-10-09T04:42:43.465Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/client/dist/index.html","timestamp":"2025-10-09T04:42:43.465Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-09T04:42:43.465Z"}
+{"level":"info","message":"GET /api/metrics 200 in 200ms :: {\"creators\":\"105\",\"posts\":\"0\",\"engagement\":0}","requestId":"e9dc1649-1ca8-423e-b330-e327e138bb20","timestamp":"2025-10-09T04:42:43.660Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-09T04:42:43.894Z"}
+{"level":"info","message":"GET /api/health 200 in 1ms :: {\"status\":\"ok\"}","requestId":"19275f48-81d7-4ee6-bd31-20e0241dd7de","timestamp":"2025-10-09T04:42:56.575Z"}

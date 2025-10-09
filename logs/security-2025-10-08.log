@@ -6,3 +6,12 @@
 {"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T03:59:15.747Z"}
 {"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T03:59:15.791Z"}
 {"level":"warn","message":"Environment configuration issue detected: REDIS_URL: Invalid url","timestamp":"2025-10-09T03:59:16.479Z"}
+{"level":"warn","message":"Using in-memory session store. Configure REDIS_URL or set USE_PG_QUEUE=true for production.","timestamp":"2025-10-09T04:42:36.168Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T04:42:36.468Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T04:42:36.515Z"}
+{"level":"warn","message":"Environment configuration issue detected: REDIS_URL: Invalid url","timestamp":"2025-10-09T04:42:37.238Z"}
+{"level":"warn","message":"Using in-memory session store. Configure REDIS_URL or set USE_PG_QUEUE=true for production.","timestamp":"2025-10-09T04:42:42.497Z"}
+{"err":{},"level":"error","message":"Failed to ensure admin account exists","timestamp":"2025-10-09T04:42:42.721Z"}
+{"error":{},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-09T04:42:42.765Z"}
+{"level":"warn","message":"Environment configuration issue detected: REDIS_URL: Invalid url","timestamp":"2025-10-09T04:42:43.451Z"}
+{"code":"EADDRINUSE","level":"error","message":"[HEALTH] ❌ Server startup failed: listen EADDRINUSE: address already in use 0.0.0.0:5000","port":5000,"timestamp":"2025-10-09T04:42:43.895Z"}

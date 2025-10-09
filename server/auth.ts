@@ -245,7 +245,9 @@ export async function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
       // Update last login time for auditing and session management
       await storage.updateUserLastLogin(user.id, new Date());
 
-      const token = jwt.sign(
+      // Phase 2: Issue short-lived access token + long-lived refresh token
+      const jti = crypto.randomUUID();
+      const accessToken = jwt.sign(
         {
           id: user.id,
           userId: user.id,
@@ -254,17 +256,33 @@ export async function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
           role: user.role
         },
         JWT_SECRET_VALIDATED,
-        { expiresIn: '24h' }
+        { expiresIn: '1h', jwtid: jti } // Short-lived (was 24h)
       );
 
-      // Set JWT in HttpOnly cookie
+      const refreshToken = jwt.sign(
+        {
+          id: user.id,
+          type: 'refresh',
+          version: (user as any).tokenVersion || 0,
+          jti: crypto.randomUUID()
+        },
+        JWT_SECRET_VALIDATED,
+        { expiresIn: '7d' }
+      );
+
+      // Set refresh token in HttpOnly cookie
       const cfg = getCookieConfig();
-      res.cookie(cfg.authName, token, {
-        ...cfg.options,
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours (86400000 ms)
+      res.cookie('refresh_token', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        path: '/api/auth/refresh'
       });
+      
       res.json({
-        token,
+        token: accessToken, // Keep 'token' for backwards compatibility
+        accessToken, // New field for Phase 3
         user: {
           id: user.id,
           username: user.username,
@@ -285,6 +303,110 @@ export async function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
       authMetrics.track('login', false, Date.now() - startTime, (error as Error).message);
 
       res.status(500).json({ message: 'Error logging in' });
+    }
+  });
+
+  // Phase 2: Refresh token endpoint (uses httpOnly cookie)
+  app.post(route('/auth/refresh'), async (req, res) => {
+    const startTime = Date.now();
+    
+    try {
+      const refreshToken = req.cookies.refresh_token;
+      
+      if (!refreshToken) {
+        return res.status(401).json({ error: 'No refresh token provided' });
+      }
+      
+      // Verify refresh token
+      const decoded = jwt.verify(refreshToken, JWT_SECRET_VALIDATED) as {
+        id: number;
+        type: string;
+        version: number;
+        jti: string; // JWT ID for tracking
+      };
+      
+      if (decoded.type !== 'refresh') {
+        logger.warn('Invalid token type in refresh', { type: decoded.type });
+        return res.status(401).json({ error: 'Invalid token type' });
+      }
+      
+      // Get user and verify token version
+      const user = await storage.getUserById(decoded.id);
+      
+      if (!user || user.isDeleted) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+      
+      if ((user as any).tokenVersion !== decoded.version) {
+        logger.warn('Token version mismatch - token revoked', {
+          userId: user.id,
+          tokenVersion: decoded.version,
+          currentVersion: (user as any).tokenVersion
+        });
+        return res.status(401).json({ error: 'Token revoked' });
+      }
+      
+      // Generate new tokens (rotation)
+      const jti = crypto.randomUUID();
+      const newAccessToken = jwt.sign(
+        {
+          id: user.id,
+          userId: user.id,
+          username: user.username,
+          isAdmin: user.isAdmin,
+          role: user.role
+        },
+        JWT_SECRET_VALIDATED,
+        { expiresIn: '1h', jwtid: jti } // Short-lived
+      );
+      
+      const newRefreshToken = jwt.sign(
+        {
+          id: user.id,
+          type: 'refresh',
+          version: (user as any).tokenVersion || 0,
+          jti: crypto.randomUUID()
+        },
+        JWT_SECRET_VALIDATED,
+        { expiresIn: '7d' }
+      );
+      
+      // Set new refresh token in cookie (rotation)
+      const cfg = getCookieConfig();
+      res.cookie('refresh_token', newRefreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax', // CSRF protection
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        path: '/api/auth/refresh' // Only sent to this endpoint
+      });
+      
+      // Update last used (for activity tracking)
+      await storage.updateUserLastLogin(user.id, new Date());
+      
+      authMetrics.track('refresh', true, Date.now() - startTime);
+      
+      res.json({
+        accessToken: newAccessToken,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          tier: user.tier,
+          isAdmin: user.isAdmin,
+          role: user.role
+        }
+      });
+      
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.warn('Refresh token failed', { error: message });
+      authMetrics.track('refresh', false, Date.now() - startTime, message);
+      
+      // Clear invalid cookie
+      res.clearCookie('refresh_token', { path: '/api/auth/refresh' });
+      
+      return res.status(401).json({ error: 'Invalid refresh token' });
     }
   });
 
