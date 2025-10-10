@@ -434,3 +434,8 @@
 {"error":"Storage quota exceeded. Used: 100MB, Quota: 100MB","level":"error","message":"Upload error","timestamp":"2025-10-10T02:32:30.691Z"}
 {"error":"Upload failed","level":"error","message":"Upload error","timestamp":"2025-10-10T02:32:30.698Z"}
 
+{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-10T04:35:16.344Z"}
+{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-10T04:35:16.949Z"}
+{"filename":"test.jpg","level":"info","message":"File uploaded successfully","size":15,"timestamp":"2025-10-10T04:35:25.687Z","userId":1}
+{"error":"Storage quota exceeded. Used: 100MB, Quota: 100MB","level":"error","message":"Upload error","timestamp":"2025-10-10T04:35:25.704Z"}
+{"error":"Upload failed","level":"error","message":"Upload error","timestamp":"2025-10-10T04:35:25.714Z"}
