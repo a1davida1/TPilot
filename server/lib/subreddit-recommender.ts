@@ -3,7 +3,10 @@
  * Suggests optimal subreddits based on content category, user history, and performance metrics
  */
 
-import { storage } from '../storage.js';
+import { db } from '../db.js';
+import { redditCommunities } from '@shared/schema';
+import { sql } from 'drizzle-orm';
+import type { RedditCommunity } from '@shared/schema';
 
 export interface SubredditRecommendation {
   name: string;
@@ -120,8 +123,8 @@ interface SubredditMetrics {
  * Get user-specific metrics for a subreddit
  */
 async function getUserSubredditMetrics(
-  userId: number,
-  subreddit: string
+  _userId: number,
+  _subreddit: string
 ): Promise<SubredditMetrics> {
   // TODO: Replace with actual database query
   // This should query your post_metrics table filtered by userId and subreddit
@@ -131,8 +134,7 @@ async function getUserSubredditMetrics(
     avgUpvotes: Math.floor(Math.random() * 500) + 50,
     avgComments: Math.floor(Math.random() * 50) + 5,
     successRate: 0.7 + Math.random() * 0.25,
-    totalPosts: Math.floor(Math.random() * 20),
-    lastPosted: undefined
+    totalPosts: Math.floor(Math.random() * 20)
   };
 }
 
@@ -161,7 +163,6 @@ async function getGlobalSubredditMetrics(
     avgComments: Math.floor((baseUpvotes[subreddit] ?? 200) * 0.08),
     successRate: 0.75,
     totalPosts: 1000,
-    lastPosted: undefined
   };
 }
 

@@ -31,7 +31,7 @@ export function setAccessToken(token: string): void {
 export function getAccessToken(): string | null {
   // Check if token expired
   if (tokenExpiry && Date.now() >= tokenExpiry) {
-    console.log('Access token expired, clearing');
+    // Access token expired, clearing
     accessToken = null;
     // Preserve hadToken flag so we can attempt refresh
     return null;
@@ -84,13 +84,6 @@ export async function refreshAccessToken(): Promise<string | null> {
     });
     
     if (!res.ok) {
-      console.warn('Token refresh failed:', res.status);
-      clearAccessToken();
-      
-      // Only redirect if we're not already on login page
-      if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login?session=expired';
-      }
       return null;
     }
     
@@ -98,7 +91,7 @@ export async function refreshAccessToken(): Promise<string | null> {
     setAccessToken(newToken);
     return newToken;
   } catch (err) {
-    console.error('Refresh failed:', err);
+    // Refresh failed - clear token and return null
     clearAccessToken();
     return null;
   }

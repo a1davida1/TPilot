@@ -124,22 +124,22 @@ export async function getOptimalPostingTimes(
 interface SubredditMetrics {
   avgUpvotes: number;
   avgComments: number;
-  successRate: number;
+  successRate?: number;
 }
 
 /**
  * Get user-specific historical metrics for a subreddit
  */
 async function getUserSubredditHistory(
-  userId: number,
-  subreddit: string
+  _userId: number,
+  _subreddit: string
 ): Promise<SubredditMetrics> {
   // TODO: Implement database query
   // Query post_metrics table filtered by userId and subreddit
   // Calculate avg upvotes, comments, and success rate (not removed)
 
   return {
-    avgUpvotes: 250,
+    avgUpvotes: 100,
     avgComments: 20,
     successRate: 0.8
   };
