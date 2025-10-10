@@ -39,13 +39,9 @@ export default defineConfig({
     testTimeout: 10000,
     hookTimeout: 30000, // Force cleanup hooks to timeout after 30s
     teardownTimeout: 10000, // Force teardown to complete within 10s
-    // Run tests sequentially to prevent handle accumulation
+    // Force tests to exit even with open handles
+    pool: 'forks',
     poolOptions: {
-      threads: {
-        singleThread: true,
-        minThreads: 1,
-        maxThreads: 1,
-      },
       forks: {
         singleFork: true,
       },
