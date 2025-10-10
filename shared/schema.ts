@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, integer, timestamp, jsonb, boolean, unique, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, text, integer, timestamp, jsonb, boolean, unique, index, doublePrecision, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -1151,6 +1151,32 @@ export const analyticsMetrics = pgTable("analytics_metrics", {
   userDateIdx: unique("analytics_metrics_user_date_idx").on(table.userId, table.date, table.metricType),
 }));
 
+export const postMetrics = pgTable('post_metrics', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  subreddit: varchar('subreddit', { length: 100 }).notNull(),
+  title: varchar('title', { length: 255 }),
+  score: doublePrecision('score').default(0),
+  comments: integer('comments').default(0),
+  contentType: varchar('content_type', { length: 100 }),
+  postedAt: timestamp('posted_at').notNull(),
+  nsfwFlagged: boolean('nsfw_flagged').default(false).notNull()
+}, (table) => ({
+  subredditIdx: index('post_metrics_subreddit_idx').on(table.subreddit),
+  postedAtIdx: index('post_metrics_posted_at_idx').on(table.postedAt)
+}));
+
+export const trendingTopics = pgTable('trending_topics', {
+  subreddit: varchar('subreddit', { length: 100 }).notNull(),
+  topic: varchar('topic', { length: 255 }).notNull(),
+  mentions: integer('mentions').notNull().default(0),
+  trendScore: doublePrecision('trend_score').notNull().default(0),
+  detectedAt: timestamp('detected_at').notNull().defaultNow()
+}, (table) => ({
+  pk: primaryKey({ columns: [table.subreddit, table.topic] }),
+  detectedAtIdx: index('trending_topics_detected_at_idx').on(table.detectedAt)
+}));
+
 // Relations
 export const expenseCategoriesRelations = relations(expenseCategories, ({ many }) => ({
   expenses: many(expenses),
@@ -1169,6 +1195,8 @@ export const insertPlatformEngagementSchema = createInsertSchema(platformEngagem
 export const insertPostScheduleSchema = createInsertSchema(postSchedule);
 
 // PHASE 1: Analytics Schema Validation
+export const insertPostMetricsSchema = createInsertSchema(postMetrics);
+export const insertTrendingTopicSchema = createInsertSchema(trendingTopics);
 export const insertUserSessionSchema = createInsertSchema(userSessions);
 export const insertPageViewSchema = createInsertSchema(pageViews);
 export const insertContentViewSchema = createInsertSchema(contentViews);
@@ -1182,6 +1210,10 @@ export const insertExpenseSchema = createInsertSchema(expenses);
 export const insertTaxDeductionInfoSchema = createInsertSchema(taxDeductionInfo);
 
 // PHASE 1: Analytics Types
+export type PostMetric = typeof postMetrics.$inferSelect;
+export type InsertPostMetric = z.infer<typeof insertPostMetricsSchema>;
+export type TrendingTopic = typeof trendingTopics.$inferSelect;
+export type InsertTrendingTopic = z.infer<typeof insertTrendingTopicSchema>;
 export type UserSession = typeof userSessions.$inferSelect;
 export type InsertUserSession = z.infer<typeof insertUserSessionSchema>;
 export type PageView = typeof pageViews.$inferSelect;
