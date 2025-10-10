@@ -1,17 +1,19 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const googleGenAIModels = vi.hoisted(() => ({
-  generateContent: vi.fn()
-}));
+const {
+  geminiModel,
+  googleGenerativeAIConstructor
+} = vi.hoisted(() => {
+  const geminiModel = {
+    generateContent: vi.fn()
+  };
+  const googleGenerativeAIConstructor = vi.fn(() => ({
+    getGenerativeModel: vi.fn().mockReturnValue(geminiModel)
+  }));
 
-const googleGenAIConstructor = vi.hoisted(() =>
-  vi.fn(() => ({
-    models: {
-      generateContent: googleGenAIModels.generateContent
-    }
-  }))
-);
+  return { geminiModel, googleGenerativeAIConstructor };
+});
 
 const mockAnthropic = vi.hoisted(() => ({
   messages: {
@@ -32,8 +34,12 @@ const mockSafeLog = vi.hoisted(() => vi.fn());
 const openAIConstructor = vi.hoisted(() => vi.fn(() => mockOpenAI));
 const anthropicConstructor = vi.hoisted(() => vi.fn(() => mockAnthropic));
 
+vi.mock('@google/generative-ai', () => ({
+  GoogleGenerativeAI: googleGenerativeAIConstructor
+}));
+
 vi.mock('@google/genai', () => ({
-  GoogleGenAI: googleGenAIConstructor
+  GoogleGenAI: googleGenerativeAIConstructor
 }));
 
 vi.mock('openai', () => ({ default: openAIConstructor }));
@@ -62,8 +68,8 @@ const originalEnv: Record<EnvKey, string | undefined> = {
 describe('generateWithMultiProvider provider selection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    googleGenAIModels.generateContent.mockReset();
-    googleGenAIConstructor.mockReset();
+    geminiModel.generateContent.mockReset();
+    googleGenerativeAIConstructor.mockReset();
     mockAnthropic.messages.create.mockReset();
     mockOpenAI.chat.completions.create.mockReset();
     openAIConstructor.mockReset();
@@ -95,7 +101,7 @@ describe('generateWithMultiProvider provider selection', () => {
     vi.resetModules();
     const { generateWithMultiProvider } = await import('../../../../server/services/multi-ai-provider');
 
-    googleGenAIModels.generateContent.mockResolvedValueOnce({
+    geminiModel.generateContent.mockResolvedValueOnce({
       text: JSON.stringify({
         titles: ['Gemini wins'],
         content: 'Gemini content that clearly exceeds the fallback length requirement.',
@@ -117,10 +123,10 @@ describe('generateWithMultiProvider provider selection', () => {
     });
 
     expect(response.provider).toBe('gemini-flash');
-    expect(googleGenAIConstructor).toHaveBeenCalledTimes(1);
-    expect(googleGenAIConstructor).toHaveBeenCalledWith(expect.objectContaining({ apiKey: 'genai-key' }));
-    expect(googleGenAIModels.generateContent).toHaveBeenCalledTimes(1);
-    const [geminiRequest] = googleGenAIModels.generateContent.mock.calls[0] ?? [];
+    expect(googleGenerativeAIConstructor).toHaveBeenCalledTimes(1);
+    expect(googleGenerativeAIConstructor).toHaveBeenCalledWith(expect.objectContaining({ apiKey: 'genai-key' }));
+    expect(geminiModel.generateContent).toHaveBeenCalledTimes(1);
+    const [geminiRequest] = geminiModel.generateContent.mock.calls[0] ?? [];
     expect(geminiRequest?.model).toBe('models/gemini-test');
     expect(geminiRequest?.contents?.[0]?.parts?.[0]?.text).toContain('instagram');
     expect(mockAnthropic.messages.create).not.toHaveBeenCalled();
@@ -136,7 +142,7 @@ describe('generateWithMultiProvider provider selection', () => {
     vi.resetModules();
     const { generateWithMultiProvider } = await import('../../../../server/services/multi-ai-provider');
 
-    googleGenAIModels.generateContent.mockResolvedValueOnce({
+    geminiModel.generateContent.mockResolvedValueOnce({
       text: JSON.stringify({
         titles: ['Direct model name'],
         content: 'Gemini uses the model name directly from environment variable without any normalization.',
@@ -157,8 +163,8 @@ describe('generateWithMultiProvider provider selection', () => {
       allowsPromotion: 'no'
     });
 
-    expect(googleGenAIModels.generateContent).toHaveBeenCalledTimes(1);
-    const [geminiRequest] = googleGenAIModels.generateContent.mock.calls[0] ?? [];
+    expect(geminiModel.generateContent).toHaveBeenCalledTimes(1);
+    const [geminiRequest] = geminiModel.generateContent.mock.calls[0] ?? [];
     expect(geminiRequest?.model).toBe('gemini-2.5-flash');
   });
 
@@ -198,8 +204,8 @@ describe('generateWithMultiProvider provider selection', () => {
     });
 
     expect(result.provider).toBe('claude-haiku');
-    expect(googleGenAIConstructor).not.toHaveBeenCalled();
-    expect(googleGenAIModels.generateContent).not.toHaveBeenCalled();
+    expect(googleGenerativeAIConstructor).not.toHaveBeenCalled();
+    expect(geminiModel.generateContent).not.toHaveBeenCalled();
     expect(mockAnthropic.messages.create).toHaveBeenCalledTimes(1);
     expect(mockOpenAI.chat.completions.create).not.toHaveBeenCalled();
   });
@@ -242,8 +248,8 @@ describe('generateWithMultiProvider provider selection', () => {
     });
 
     expect(response.provider).toBe('openai-gpt4o');
-    expect(googleGenAIConstructor).not.toHaveBeenCalled();
-    expect(googleGenAIModels.generateContent).not.toHaveBeenCalled();
+    expect(googleGenerativeAIConstructor).not.toHaveBeenCalled();
+    expect(geminiModel.generateContent).not.toHaveBeenCalled();
     expect(mockAnthropic.messages.create).toHaveBeenCalledTimes(1);
     expect(mockOpenAI.chat.completions.create).toHaveBeenCalledTimes(1);
 

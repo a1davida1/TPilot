@@ -2,20 +2,26 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import type { GeminiGenerateContentInput } from '../../../../server/lib/gemini-client';
 
-const googleGenAIModels = vi.hoisted(() => ({
-  generateContent: vi.fn()
+const {
+  geminiModel,
+  googleGenerativeAIConstructor
+} = vi.hoisted(() => {
+  const geminiModel = {
+    generateContent: vi.fn()
+  };
+  const googleGenerativeAIConstructor = vi.fn(() => ({
+    getGenerativeModel: vi.fn().mockReturnValue(geminiModel)
+  }));
+
+  return { geminiModel, googleGenerativeAIConstructor };
+});
+
+vi.mock('@google/generative-ai', () => ({
+  GoogleGenerativeAI: googleGenerativeAIConstructor
 }));
 
-const googleGenAIConstructor = vi.hoisted(() =>
-  vi.fn(() => ({
-    models: {
-      generateContent: googleGenAIModels.generateContent
-    }
-  }))
-);
-
 vi.mock('@google/genai', () => ({
-  GoogleGenAI: googleGenAIConstructor
+  GoogleGenAI: googleGenerativeAIConstructor
 }));
 
 let originalGeminiKey: string | undefined;
@@ -24,8 +30,8 @@ describe('Gemini client model adapter', () => {
   beforeEach(() => {
     originalGeminiKey = process.env.GOOGLE_GENAI_API_KEY;
     vi.clearAllMocks();
-    googleGenAIModels.generateContent.mockReset();
-    googleGenAIConstructor.mockReset();
+    geminiModel.generateContent.mockReset();
+    googleGenerativeAIConstructor.mockReset();
     process.env.GOOGLE_GENAI_API_KEY = 'unit-test-gemini-key';
     vi.resetModules();
   });
@@ -56,7 +62,7 @@ describe('Gemini client model adapter', () => {
       usageMetadata: { totalTokenCount: 42 }
     };
 
-    googleGenAIModels.generateContent.mockResolvedValueOnce(nestedResponse);
+    geminiModel.generateContent.mockResolvedValueOnce(nestedResponse);
 
     const { getTextModel } = await import('../../../../server/lib/gemini-client.ts');
     const textModel = getTextModel();

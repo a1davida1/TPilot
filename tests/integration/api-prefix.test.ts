@@ -3,7 +3,34 @@ import type { Server } from 'http';
 import type Stripe from 'stripe';
 import request from 'supertest';
 import { beforeAll, afterAll, describe, expect, it, vi } from 'vitest';
-import { stripe } from '../../server/lib/billing/stripe.ts';
+
+const stripeMock = vi.hoisted(() => {
+  const constructEvent = vi.fn().mockReturnValue({
+    type: 'checkout.session.completed',
+    data: { object: { customer: 'cus_test123' } }
+  });
+  const generateTestHeaderString = vi.fn().mockReturnValue('stripe-test-signature');
+
+  return {
+    constructEvent,
+    generateTestHeaderString,
+    client: {
+      webhooks: {
+        constructEvent,
+        generateTestHeaderString
+      }
+    }
+  };
+});
+
+const stripeConstructor = vi.hoisted(() => vi.fn(() => stripeMock.client));
+
+vi.mock('stripe', () => ({
+  default: stripeConstructor
+}));
+
+let stripeModule: typeof import('../../server/lib/billing/stripe.ts');
+let stripe: typeof stripeModule['stripe'];
 
 vi.mock('../../server/storage.ts', () => ({
   storage: {
@@ -47,6 +74,8 @@ describe('API prefix alignment', () => {
 
   beforeAll(async () => {
     ({ createApp } = await import('../../server/index.ts'));
+    stripeModule = await import('../../server/lib/billing/stripe.ts');
+    stripe = stripeModule.stripe;
     const result = await createApp({
       startQueue: false,
       configureStaticAssets: false,
@@ -83,6 +112,9 @@ describe('API prefix alignment', () => {
   });
 
   it('delivers Stripe webhooks using the shared API prefix', async () => {
+    if (!stripe) {
+      throw new Error('Stripe module not loaded');
+    }
     const constructSpy = vi
       .spyOn(stripe.webhooks, 'constructEvent')
       .mockImplementation(() => ({

@@ -6,6 +6,40 @@ import { describe, it, beforeAll, beforeEach, afterEach, expect, vi } from 'vite
 import { subscriptions, invoices, users } from '../../shared/schema.ts';
 import type { db as DbType } from '../../server/db.ts';
 
+const stripeMock = vi.hoisted(() => {
+  const constructEvent = vi.fn().mockReturnValue({
+    type: 'checkout.session.completed',
+    data: { object: { customer: 'cus_test123' } },
+    livemode: false,
+    created: Date.now() / 1000,
+    api_version: process.env.STRIPE_API_VERSION,
+    object: 'event',
+    pending_webhooks: 0,
+    request: { id: null, idempotency_key: null }
+  });
+  const generateTestHeaderString = vi.fn().mockReturnValue('stripe-test-signature');
+
+  return {
+    constructEvent,
+    generateTestHeaderString,
+    client: {
+      webhooks: {
+        constructEvent,
+        generateTestHeaderString
+      }
+    }
+  };
+});
+
+const stripeConstructor = vi.hoisted(() => vi.fn(() => stripeMock.client));
+
+vi.mock('stripe', () => ({
+  default: stripeConstructor
+}));
+
+let stripeModule: typeof import('../../server/lib/billing/stripe.ts');
+let stripeInstance: typeof import('../../server/lib/billing/stripe.ts')['stripe'];
+
 interface InsertCall {
   table: unknown;
   values: unknown;
@@ -93,8 +127,7 @@ vi.mock('../../server/db.ts', () => {
 });
 
 let createApp: typeof import('../../server/index.ts')['createApp'];
-let apiPrefix: typeof import('../../server/app.ts')['API_PREFIX'];
-let stripeInstance: typeof import('../../server/lib/billing/stripe.ts')['stripe'];
+let apiPrefix: string;
 
 async function closeServer(server: Server | undefined): Promise<void> {
   if (!server || !server.listening) {
@@ -120,7 +153,8 @@ beforeAll(async () => {
   process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? 'webhook-test-session';
 
   ({ createApp, API_PREFIX: apiPrefix } = await import('../../server/index.ts'));
-  ({ stripe: stripeInstance } = await import('../../server/lib/billing/stripe.ts'));
+  stripeModule = await import('../../server/lib/billing/stripe.ts');
+  stripeInstance = stripeModule.stripe;
 });
 
 beforeEach(() => {
@@ -128,6 +162,9 @@ beforeEach(() => {
   conflictCalls.length = 0;
   updateSetCalls.length = 0;
   updateWhereCalls.length = 0;
+  stripeMock.constructEvent.mockClear();
+  stripeMock.generateTestHeaderString.mockClear();
+  stripeConstructor.mockClear();
 });
 
 afterEach(async () => {

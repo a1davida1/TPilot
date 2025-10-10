@@ -441,6 +441,7 @@ describe('Gemini model adapter resilience', () => {
       process.env.GOOGLE_GENAI_API_KEY = originalGoogleKey;
     }
     vi.doUnmock('@google/genai');
+    vi.doUnmock('@google/generative-ai');
     vi.clearAllMocks();
     vi.restoreAllMocks();
     vi.resetModules();
