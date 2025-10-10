@@ -3,11 +3,6 @@
  * Suggests optimal subreddits based on content category, user history, and performance metrics
  */
 
-import { db } from '../db.js';
-import { redditCommunities } from '@shared/schema';
-import { sql } from 'drizzle-orm';
-import type { RedditCommunity } from '@shared/schema';
-
 export interface SubredditRecommendation {
   name: string;
   score: number;
