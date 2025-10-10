@@ -7,8 +7,6 @@ import { Queue, Worker, QueueEvents } from 'bullmq';
 import IORedis from 'ioredis';
 import type { IQueue, QueueJobHandler, QueueJobOptions, QueueFailureStats } from './queue-interface';
 
-import { logger } from './../bootstrap/logger.js';
-import { formatLogArgs } from './logger-utils.js';
 export class RedisBullQueue implements IQueue {
   private redis: IORedis;
   private queues = new Map<string, Queue>();
@@ -22,7 +20,7 @@ export class RedisBullQueue implements IQueue {
   }
 
   async initialize(): Promise<void> {
-    logger.error(...formatLogArgs('🚀 Initializing Redis BullMQ Queue backend'));
+    console.error('🚀 Initializing Redis BullMQ Queue backend');
     // Test Redis connection
     await this.redis.ping();
   }
@@ -42,7 +40,7 @@ export class RedisBullQueue implements IQueue {
     }
 
     await this.redis.quit();
-    logger.error(...formatLogArgs('📦 Redis BullMQ Queue backend closed'));
+    console.error('📦 Redis BullMQ Queue backend closed');
   }
 
   async enqueue<T = unknown>(
@@ -87,11 +85,11 @@ export class RedisBullQueue implements IQueue {
 
     // Handle worker events
     worker.on('completed', (job) => {
-      logger.error(...formatLogArgs(`✅ Job ${job.id} completed in queue ${queueName}`));
+      console.error(`✅ Job ${job.id} completed in queue ${queueName}`);
     });
 
     worker.on('failed', (job, err) => {
-      logger.error(...formatLogArgs(`❌ Job ${job?.id} failed in queue ${queueName}:`, err));
+      console.error(`❌ Job ${job?.id} failed in queue ${queueName}:`, err);
     });
   }
 

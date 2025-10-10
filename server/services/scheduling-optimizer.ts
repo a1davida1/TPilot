@@ -3,8 +3,6 @@ import { socialMediaPosts } from '@shared/schema';
 import { and, eq, desc } from 'drizzle-orm';
 import { redditIntelligenceService } from './reddit-intelligence.js';
 
-import { logger } from './../bootstrap/logger.js';
-import { formatLogArgs } from './../lib/logger-utils.js';
 interface ContentSuggestion {
   topic: string;
   platform: string;
@@ -84,7 +82,7 @@ class SchedulingOptimizer {
       // Fall back to platform defaults
       return this.getDefaultBestTime(platform);
     } catch (error) {
-      logger.error(...formatLogArgs('Error calculating best post time:', error));
+      console.error('Error calculating best post time:', error);
       return this.getDefaultBestTime(platform);
     }
   }
@@ -122,7 +120,7 @@ class SchedulingOptimizer {
         platform: p.platform
       }));
     } catch (error) {
-      logger.error(...formatLogArgs('Error fetching post history:', error));
+      console.error('Error fetching post history:', error);
       return [];
     }
   }
@@ -226,7 +224,7 @@ class SchedulingOptimizer {
           bestPostTime: this.getDefaultBestTime(trend.platform)
         }));
     } catch (error) {
-      logger.error(...formatLogArgs('Error suggesting content:', error));
+      console.error('Error suggesting content:', error);
       return [];
     }
   }
@@ -243,7 +241,7 @@ class SchedulingOptimizer {
         }));
       }
     } catch (error) {
-      logger.error(...formatLogArgs('Failed to load Reddit intelligence trends:', error));
+      console.error('Failed to load Reddit intelligence trends:', error);
     }
 
     return this.getFallbackTrendingTopics();

@@ -2,8 +2,6 @@ import { db } from "../db.js";
 import { postPreviews } from "@shared/schema";
 import { eq, and, gte } from "drizzle-orm";
 
-import { logger } from './../bootstrap/logger.js';
-import { formatLogArgs } from './logger-utils.js';
 export interface PreviewStats {
   okCount14d: number;
   totalPreviews14d: number;
@@ -52,7 +50,7 @@ export async function getPreviewStats(userId: number): Promise<PreviewStats> {
     };
 
   } catch (error) {
-    logger.error(...formatLogArgs("Preview stats error:", error));
+    console.error("Preview stats error:", error);
     // Fail safe - if stats fail, don't block user
     return {
       okCount14d: 0,

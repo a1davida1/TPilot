@@ -6,8 +6,6 @@
 import { env } from './config';
 import crypto from 'crypto';
 
-import { logger } from './../bootstrap/logger.js';
-import { formatLogArgs } from './logger-utils.js';
 export interface PaymentProvider {
   name: string;
   isConfigured: boolean;
@@ -367,7 +365,7 @@ export class PaymentProviderManager {
           return result;
         }
       } catch (error) {
-        logger.error(...formatLogArgs(`Payment provider ${provider.name} failed:`, error));
+        console.error(`Payment provider ${provider.name} failed:`, error);
         continue;
       }
     }

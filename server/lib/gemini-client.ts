@@ -2,10 +2,9 @@ import { GoogleGenAI, type GoogleGenAIOptions } from "@google/genai";
 import { logger } from "../bootstrap/logger.js";
 import { env } from "./config.js";
 
-import { formatLogArgs } from './logger-utils.js';
 // Debug helper
 const dbg = (...a: unknown[]) =>
-  process.env.CAPTION_DEBUG ? logger.error(...formatLogArgs("[gemini]", ...a)) : undefined;
+  process.env.CAPTION_DEBUG ? console.error("[gemini]", ...a) : undefined;
 
 // Flatten @google/genai candidates → single text
 export const extractTextFromCandidates = (resp: any): string | undefined => {
@@ -111,9 +110,9 @@ let warnedMissingKey = false;
 
 const warnMissingKey = () => {
   if (!warnedMissingKey) {
-    logger.warn(...formatLogArgs(
+    console.warn(
       "GEMINI_API_KEY or GOOGLE_GENAI_API_KEY environment variable is not set. Gemini AI features will fall back to OpenAI."
-    ));
+    );
     warnedMissingKey = true;
   }
 };

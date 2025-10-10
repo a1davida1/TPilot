@@ -2,10 +2,8 @@
 import { db } from './db.js';
 import { sql } from 'drizzle-orm';
 
-import { logger } from './bootstrap/logger.js';
-import { formatLogArgs } from './lib/logger-utils.js';
 async function fixSubscriptionStatus() {
-  logger.error(...formatLogArgs('🔧 Fixing subscription_status values in database...'));
+  console.error('🔧 Fixing subscription_status values in database...');
   
   try {
     // First, check what values exist
@@ -16,8 +14,8 @@ async function fixSubscriptionStatus() {
       ORDER BY count DESC
     `);
     
-    logger.error(...formatLogArgs('Current subscription_status values:'));
-    logger.error(...formatLogArgs(result.rows));
+    console.error('Current subscription_status values:');
+    console.error(result.rows);
     
     // Fix any invalid values
     const updateResult = await db.execute(sql`
@@ -30,7 +28,7 @@ async function fixSubscriptionStatus() {
          OR subscription_status NOT IN ('active', 'inactive', 'cancelled', 'past_due')
     `);
     
-    logger.error(...formatLogArgs(`✅ Updated ${updateResult.rowCount} users with invalid subscription_status`));
+    console.error(`✅ Updated ${updateResult.rowCount} users with invalid subscription_status`);
     
     // Verify the fix
     const verifyResult = await db.execute(sql`
@@ -40,14 +38,14 @@ async function fixSubscriptionStatus() {
       ORDER BY count DESC
     `);
     
-    logger.error(...formatLogArgs('\nUpdated subscription_status values:'));
-    logger.error(...formatLogArgs(verifyResult.rows));
+    console.error('\nUpdated subscription_status values:');
+    console.error(verifyResult.rows);
     
-    logger.error(...formatLogArgs('✅ Database fixed successfully!'));
-    logger.error(...formatLogArgs('You can now retry your deployment.'));
+    console.error('✅ Database fixed successfully!');
+    console.error('You can now retry your deployment.');
     
   } catch (error) {
-    logger.error(...formatLogArgs('❌ Error fixing database:', error));
+    console.error('❌ Error fixing database:', error);
     process.exit(1);
   }
   

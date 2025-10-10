@@ -19,8 +19,6 @@ import { getGrowthTrendLabel } from '@shared/growth-trends';
 import { eq, ilike, desc, or } from 'drizzle-orm';
 import { lintCaption } from './lib/policy-linter.js';
 
-import { logger } from './bootstrap/logger.js';
-import { formatLogArgs } from './lib/logger-utils.js';
 async function loadSeedCommunities(): Promise<InsertRedditCommunity[]> {
   // Prefer the larger dataset when available so production environments stay populated.
   try {
@@ -28,7 +26,7 @@ async function loadSeedCommunities(): Promise<InsertRedditCommunity[]> {
     return insertRedditCommunitySchema.array().parse(JSON.parse(raw)) as InsertRedditCommunity[];
   } catch (fullDatasetError) {
     if ((fullDatasetError as NodeJS.ErrnoException).code !== 'ENOENT') {
-      logger.warn(...formatLogArgs('Failed to load full reddit communities dataset:', fullDatasetError));
+      console.warn('Failed to load full reddit communities dataset:', fullDatasetError);
     }
 
     const raw = await fs.readFile(new URL('./seeds/reddit-communities.json', import.meta.url), 'utf8');
@@ -127,7 +125,7 @@ export function normalizeRules(rawRules: unknown, promotionAllowed?: string, cat
     if (Array.isArray(rawRules)) {
       const defaults = createDefaultRules();
       if (!defaults || !defaults.content) {
-        logger.error(...formatLogArgs('Failed to create default rules'));
+        console.error('Failed to create default rules');
         return createDefaultRules();
       }
       
@@ -189,7 +187,7 @@ export function normalizeRules(rawRules: unknown, promotionAllowed?: string, cat
     
     return createDefaultRules();
   } catch (error) {
-    logger.warn(...formatLogArgs('Failed to parse community rules, using defaults:', error));
+    console.warn('Failed to parse community rules, using defaults:', error);
     return createDefaultRules();
   }
 }
@@ -245,14 +243,14 @@ export async function listCommunities(): Promise<NormalizedRedditCommunity[]> {
         return hydrated.map(normalizeCommunityRecord);
       }
     } catch (insertError) {
-      logger.warn(...formatLogArgs('Unable to persist seed reddit communities, returning in-memory fallback instead:', insertError));
+      console.warn('Unable to persist seed reddit communities, returning in-memory fallback instead:', insertError);
     }
 
     return seedCommunities.map(community =>
       normalizeCommunityRecord(community as unknown as RedditCommunity)
     );
   } catch (seedError) {
-    logger.error(...formatLogArgs('Failed to load seed reddit communities dataset:', seedError));
+    console.error('Failed to load seed reddit communities dataset:', seedError);
     return [];
   }
 }
@@ -354,7 +352,7 @@ export async function getCommunityInsights(communityId: string): Promise<{
       warnings.push(...ruleWarnings.slice(0, 3)); // Limit additional warnings
     }
   } catch (error) {
-    logger.warn(...formatLogArgs('Failed to get enhanced rule insights for community:', community.name, error));
+    console.warn('Failed to get enhanced rule insights for community:', community.name, error);
   }
 
   return { bestTimes: community.bestPostingTimes || [], successTips, warnings };
@@ -386,7 +384,7 @@ export async function syncCommunityRules(communityName: string) {
     await syncSubredditRules(communityName);
     return true;
   } catch (error) {
-    logger.error(...formatLogArgs('Failed to sync community rules:', error));
+    console.error('Failed to sync community rules:', error);
     return false;
   }
 }

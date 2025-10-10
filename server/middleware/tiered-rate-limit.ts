@@ -4,8 +4,6 @@ import { db } from '../db';
 import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 
-import { logger } from './../bootstrap/logger.js';
-import { formatLogArgs } from './../lib/logger-utils.js';
 // Rate limit configurations by tier
 const rateLimitConfigs = {
   free: {
@@ -96,7 +94,7 @@ async function getUserTier(userId: string | number): Promise<string> {
     
     return tier;
   } catch (error) {
-    logger.error(...formatLogArgs('Error fetching user tier:', error));
+    console.error('Error fetching user tier:', error);
     return 'free';
   }
 }

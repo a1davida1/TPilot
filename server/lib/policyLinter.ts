@@ -2,8 +2,6 @@ import { db } from "../db.js";
 import { eq } from "drizzle-orm";
 import { subredditRules } from "@shared/schema";
 
-import { logger } from './../bootstrap/logger.js';
-import { formatLogArgs } from './logger-utils.js';
 export interface PolicyWarning {
   type: 'bannedWord' | 'linkPolicy' | 'flairRequired' | 'lengthLimit' | 'imagePolicy';
   message: string;
@@ -66,7 +64,7 @@ export class PolicyLinter {
 
       return new PolicyLinter(subreddit, customRules);
     } catch (error) {
-      logger.error(...formatLogArgs(`Failed to load rules for r/${subreddit}:`, error));
+      console.error(`Failed to load rules for r/${subreddit}:`, error);
       return new PolicyLinter(subreddit);
     }
   }

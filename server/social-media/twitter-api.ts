@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-import { logger } from './../bootstrap/logger.js';
-import { formatLogArgs } from './../lib/logger-utils.js';
 // Twitter/X API v2 Integration
 export class TwitterAPI {
   private accessToken: string;
@@ -64,7 +62,7 @@ export class TwitterAPI {
         platform: 'twitter' as const,
       };
     } catch (error) {
-      logger.error(...formatLogArgs('Twitter API Error:', error));
+      console.error('Twitter API Error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -106,7 +104,7 @@ export class TwitterAPI {
         platform: 'twitter' as const,
       };
     } catch (error) {
-      logger.error(...formatLogArgs('Twitter Media Upload Error:', error));
+      console.error('Twitter Media Upload Error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -138,7 +136,7 @@ export class TwitterAPI {
         platform: 'twitter' as const,
       };
     } catch (error) {
-      logger.error(...formatLogArgs('Twitter Metrics Error:', error));
+      console.error('Twitter Metrics Error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -170,7 +168,7 @@ export class TwitterAPI {
         platform: 'twitter' as const,
       };
     } catch (error) {
-      logger.error(...formatLogArgs('Twitter User Metrics Error:', error));
+      console.error('Twitter User Metrics Error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

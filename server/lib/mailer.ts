@@ -1,7 +1,5 @@
 import { getEnvConfig } from './config';
 
-import { logger } from './../bootstrap/logger.js';
-import { formatLogArgs } from './logger-utils.js';
 interface EmailService {
   sendEmail(params: {
     to: string;
@@ -36,13 +34,13 @@ class ResendService implements EmailService {
       });
 
       if (!response.ok) {
-        logger.error(...formatLogArgs('Resend API error:', await response.text()));
+        console.error('Resend API error:', await response.text());
         return false;
       }
 
       return true;
     } catch (error) {
-      logger.error(...formatLogArgs('Resend service error:', error));
+      console.error('Resend service error:', error);
       return false;
     }
   }
@@ -77,13 +75,13 @@ class SendGridService implements EmailService {
       });
 
       if (!response.ok) {
-        logger.error(...formatLogArgs('SendGrid API error:', await response.text()));
+        console.error('SendGrid API error:', await response.text());
         return false;
       }
 
       return true;
     } catch (error) {
-      logger.error(...formatLogArgs('SendGrid service error:', error));
+      console.error('SendGrid service error:', error);
       return false;
     }
   }
@@ -100,7 +98,7 @@ function getEmailService(): EmailService | null {
     return new SendGridService(config.SENDGRID_API_KEY);
   }
 
-  logger.warn(...formatLogArgs('⚠️ No email service configured (RESEND_API_KEY or SENDGRID_API_KEY missing))');
+  console.warn('⚠️ No email service configured (RESEND_API_KEY or SENDGRID_API_KEY missing)');
   return null;
 }
 

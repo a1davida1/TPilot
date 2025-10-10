@@ -1,8 +1,6 @@
 import OpenAI from 'openai';
 import * as fs from 'fs';
 
-import { logger } from './bootstrap/logger.js';
-import { formatLogArgs } from './lib/logger-utils.js';
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export interface ImageCaptionRequest {
@@ -118,7 +116,7 @@ Keep it authentic and engaging for ${platform}.
     };
 
   } catch (error) {
-    logger.error(...formatLogArgs('Error generating image caption:', error));
+    console.error('Error generating image caption:', error);
     
     throw new Error("AI generation failed");
   }

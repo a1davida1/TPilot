@@ -1,9 +1,7 @@
 /**
  * Normalizes image input to a clean data URL or HTTPS URL for OpenAI API calls
  * Fixes issues with truncated/space-containing data URLs that cause invalid_base64 errors
- */import { logger } from './../../bootstrap/logger.js';
-import { formatLogArgs } from './../../lib/logger-utils.js';
-
+ */
 export function toOpenAIImageUrl(input: string, fallbackMime = 'image/jpeg'): string {
   if (!input) return '';
   
@@ -69,13 +67,13 @@ export function logImageInfo(imageUrl: string, requestId?: string): void {
   const prefix = requestId ? `[${requestId}] ` : '';
 
   if (!imageUrl) {
-    logger.error(...formatLogArgs(`${prefix}Image URL is empty`));
+    console.error(`${prefix}Image URL is empty`);
     return;
   }
 
   if (/^https?:\/\//i.test(imageUrl)) {
     const protocol = imageUrl.startsWith('https:') ? 'https' : 'http';
-    logger.error(...formatLogArgs(`${prefix}Using remote image URL (protocol: ${protocol}, length: ${imageUrl.length}))`);
+    console.error(`${prefix}Using remote image URL (protocol: ${protocol}, length: ${imageUrl.length})`);
     return;
   }
 
@@ -87,19 +85,19 @@ export function logImageInfo(imageUrl: string, requestId?: string): void {
       const mimeType = mimeMatch ? mimeMatch[1] : 'unknown';
       const base64Length = imageUrl.length - (commaIndex + 1);
       const approxBytes = Math.floor((base64Length * 3) / 4);
-      logger.error(...formatLogArgs(
-        `${prefix}Using data URL (mime: ${mimeType}, approxBytes: ${approxBytes}))`
+      console.error(
+        `${prefix}Using data URL (mime: ${mimeType}, approxBytes: ${approxBytes})`
       );
     } else {
-      logger.error(...formatLogArgs(`${prefix}Malformed data URL header`));
+      console.error(`${prefix}Malformed data URL header`);
     }
     return;
   }
 
   if (/^[A-Za-z0-9+/=_-]+$/.test(imageUrl)) {
-    logger.error(...formatLogArgs(`${prefix}Received raw base64 payload (length: ${imageUrl.length}))`);
+    console.error(`${prefix}Received raw base64 payload (length: ${imageUrl.length})`);
     return;
   }
 
-  logger.error(...formatLogArgs(`${prefix}Unrecognized image input (length: ${imageUrl.length}))`);
+  console.error(`${prefix}Unrecognized image input (length: ${imageUrl.length})`);
 }

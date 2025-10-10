@@ -4,8 +4,6 @@ import { TikTokAPI } from './tiktok-api.js';
 import { YouTubeAPI } from './youtube-api.js';
 import { LinkedInAPI } from './linkedin-api.js';
 
-import { logger } from './../bootstrap/logger.js';
-import { formatLogArgs } from './../lib/logger-utils.js';
 export type Platform =
   | 'instagram'
   | 'twitter'
@@ -280,7 +278,7 @@ export class SocialMediaManager {
           return null;
       }
     } catch (error) {
-      logger.error(...formatLogArgs(`Error fetching metrics for ${platform}:`, error));
+      console.error(`Error fetching metrics for ${platform}:`, error);
       return null;
     }
   }

@@ -6,8 +6,6 @@ import { syncSubredditRules } from './sync-subreddit-rules.js';
 import { logger } from '../lib/logger.js';
 import { getRedditServiceClient, registerDefaultRedditClients, REDDIT_SERVICE_CLIENT_KEYS } from '../lib/reddit.js';
 
-import { logger } from './../bootstrap/logger.js';
-import { formatLogArgs } from './../lib/logger-utils.js';
 // Sync configuration schema
 const syncConfigSchema = z.object({
   subreddits: z.array(z.string()).optional(),
@@ -309,11 +307,11 @@ export async function syncRedditCommunities(config?: { subreddits?: string[]; ru
 if (import.meta.url === `file://${process.argv[1]}`) {
   syncRedditCommunities()
     .then((result) => {
-      logger.error(...formatLogArgs('✅ Sync completed:', result));
+      console.error('✅ Sync completed:', result);
       process.exit(0);
     })
     .catch((error) => {
-      logger.error(...formatLogArgs('❌ Sync failed:', error));
+      console.error('❌ Sync failed:', error);
       process.exit(1);
     });
 }

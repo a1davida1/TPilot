@@ -1,8 +1,6 @@
 import { getQueueBackend } from "./queue-factory.js";
 import { QUEUE_NAMES } from "./queue/index.js";
 
-import { logger } from './../bootstrap/logger.js';
-import { formatLogArgs } from './logger-utils.js';
 export interface QueueMetrics {
   pending: number;
   active: number;
@@ -44,7 +42,7 @@ export class QueueMonitor {
   async startMonitoring(intervalMs: number = 30000) { // 30 seconds default
     if (this.monitoring) return;
 
-    logger.error(...formatLogArgs('🔍 Starting queue monitoring...'));
+    console.error('🔍 Starting queue monitoring...');
     this.monitoring = true;
 
     // Initial collection
@@ -55,17 +53,17 @@ export class QueueMonitor {
       try {
         await this.collectMetrics();
       } catch (error) {
-        logger.error(...formatLogArgs('Queue monitoring error:', error));
+        console.error('Queue monitoring error:', error);
       }
     }, intervalMs);
 
-    logger.error(...formatLogArgs(`✅ Queue monitoring started (interval: ${intervalMs}ms))`);
+    console.error(`✅ Queue monitoring started (interval: ${intervalMs}ms)`);
   }
 
   stopMonitoring() {
     if (!this.monitoring) return;
 
-    logger.error(...formatLogArgs('🛑 Stopping queue monitoring...'));
+    console.error('🛑 Stopping queue monitoring...');
     this.monitoring = false;
 
     if (this.intervalId) {
@@ -73,7 +71,7 @@ export class QueueMonitor {
       this.intervalId = undefined;
     }
 
-    logger.error(...formatLogArgs('✅ Queue monitoring stopped'));
+    console.error('✅ Queue monitoring stopped');
   }
 
   private async collectMetrics() {
@@ -112,7 +110,7 @@ export class QueueMonitor {
         this.metrics.set(queueName, metrics);
 
       } catch (error) {
-        logger.error(...formatLogArgs(`Failed to collect metrics for queue ${queueName}:`, error));
+        console.error(`Failed to collect metrics for queue ${queueName}:`, error);
         
         // Set error state
         this.metrics.set(queueName, {
@@ -162,7 +160,7 @@ export class QueueMonitor {
         this.workerMetrics.set(worker.name, workerMetrics);
 
       } catch (error) {
-        logger.error(...formatLogArgs(`Failed to collect worker metrics for ${worker.name}:`, error));
+        console.error(`Failed to collect worker metrics for ${worker.name}:`, error);
       }
     }
   }
@@ -206,7 +204,7 @@ export class QueueMonitor {
         lastProcessed,
       };
     } catch (error) {
-      logger.error(...formatLogArgs('Error getting processing stats:', error));
+      console.error('Error getting processing stats:', error);
       // Return basic stats if queue backend doesn't support detailed metrics
       return {
         completed: 0,
@@ -284,10 +282,10 @@ export class QueueMonitor {
     try {
       const { pauseQueue } = await import("./queue/index.js");
       await pauseQueue(queueName);
-      logger.error(...formatLogArgs(`⏸️ Queue ${queueName} paused`));
+      console.error(`⏸️ Queue ${queueName} paused`);
       return true;
     } catch (error) {
-      logger.error(...formatLogArgs(`Failed to pause queue ${queueName}:`, error));
+      console.error(`Failed to pause queue ${queueName}:`, error);
       return false;
     }
   }
@@ -296,10 +294,10 @@ export class QueueMonitor {
     try {
       const { resumeQueue } = await import("./queue/index.js");
       await resumeQueue(queueName);
-      logger.error(...formatLogArgs(`▶️ Queue ${queueName} resumed`));
+      console.error(`▶️ Queue ${queueName} resumed`);
       return true;
     } catch (error) {
-      logger.error(...formatLogArgs(`Failed to resume queue ${queueName}:`, error));
+      console.error(`Failed to resume queue ${queueName}:`, error);
       return false;
     }
   }
@@ -309,12 +307,12 @@ export class QueueMonitor {
       const queue = getQueueBackend();
       if (queue.retryFailedJobs) {
         const retried = await queue.retryFailedJobs(queueName);
-        logger.error(...formatLogArgs(`🔄 Retried ${retried} failed jobs in queue ${queueName}`));
+        console.error(`🔄 Retried ${retried} failed jobs in queue ${queueName}`);
         return retried;
       }
       return 0;
     } catch (error) {
-      logger.error(...formatLogArgs(`Failed to retry jobs in queue ${queueName}:`, error));
+      console.error(`Failed to retry jobs in queue ${queueName}:`, error);
       return 0;
     }
   }
@@ -324,12 +322,12 @@ export class QueueMonitor {
       const queue = getQueueBackend();
       if (queue.clearQueue) {
         await queue.clearQueue(queueName);
-        logger.error(...formatLogArgs(`🧹 Cleared queue ${queueName}`));
+        console.error(`🧹 Cleared queue ${queueName}`);
         return true;
       }
       return false;
     } catch (error) {
-      logger.error(...formatLogArgs(`Failed to clear queue ${queueName}:`, error));
+      console.error(`Failed to clear queue ${queueName}:`, error);
       return false;
     }
   }

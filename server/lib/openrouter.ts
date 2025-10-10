@@ -3,8 +3,6 @@
  * Primary: Grok4 Fast for NSFW-tolerant caption generation
  * Fallback: Claude 3 Opus for text-based captions
  */
-import { logger } from './../bootstrap/logger.js';
-import { formatLogArgs } from './logger-utils.js';
 
 export interface OpenRouterMessage {
   role: 'user' | 'assistant' | 'system';
@@ -116,7 +114,7 @@ Return JSON with this exact structure:
 
     return parseJSONResponse(response);
   } catch (primaryError) {
-    logger.warn(...formatLogArgs(`Primary model ${primaryModel} failed, falling back to ${fallbackModel}:`, primaryError));
+    console.warn(`Primary model ${primaryModel} failed, falling back to ${fallbackModel}:`, primaryError);
 
     try {
       // Fallback to Claude 3 Opus (text-only; use descriptors if vision unavailable)
@@ -129,7 +127,7 @@ Return JSON with this exact structure:
 
       return parseJSONResponse(response);
     } catch (fallbackError) {
-      logger.error(...formatLogArgs(`Both models failed:`, fallbackError));
+      console.error(`Both models failed:`, fallbackError);
       
       // Last-ditch local template
       return {
@@ -160,7 +158,7 @@ function parseJSONResponse(response: string): { captions: { flirty: string; slut
       tags: Array.isArray(parsed.tags) ? parsed.tags : []
     };
   } catch (error) {
-    logger.error(...formatLogArgs('Failed to parse JSON response:', error));
+    console.error('Failed to parse JSON response:', error);
     throw new Error('Invalid JSON response from model');
   }
 }

@@ -2,8 +2,6 @@ import { db } from "../db.js";
 import { eventLogs } from "@shared/schema";
 import { eq, and, gte, desc } from "drizzle-orm";
 
-import { logger } from './../bootstrap/logger.js';
-import { formatLogArgs } from './logger-utils.js';
 export interface PostingWindow {
   startHour: number; // 0-23
   endHour: number;   // 0-23
@@ -129,7 +127,7 @@ export class PostScheduler {
       };
       
     } catch (error) {
-      logger.error(...formatLogArgs(`Failed to analyze timing for r/${subreddit}:`, error));
+      console.error(`Failed to analyze timing for r/${subreddit}:`, error);
       return this.getDefaultTiming(subreddit);
     }
   }
@@ -227,7 +225,7 @@ export class PostScheduler {
         },
       });
     } catch (error) {
-      logger.error(...formatLogArgs('Failed to record engagement:', error));
+      console.error('Failed to record engagement:', error);
     }
   }
 }

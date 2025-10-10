@@ -1,7 +1,5 @@
 import { FRONTEND_URL } from '../config.js';
 
-import { logger } from './../bootstrap/logger.js';
-import { formatLogArgs } from './../lib/logger-utils.js';
 export interface PaymentProvider {
   name: "paxum" | "coinbase" | "stripe";
   enabled: boolean;
@@ -55,7 +53,7 @@ export function makePaxum(): PaymentProvider {
 
         return { url: `${paxumEndpoint}?${params.toString()}` };
       } catch (error) {
-        logger.error(...formatLogArgs('Paxum checkout creation failed:', error));
+        console.error('Paxum checkout creation failed:', error);
         throw new Error('Failed to create Paxum checkout session');
       }
     },
@@ -119,7 +117,7 @@ export function makeCoinbase(): PaymentProvider {
         
         return { url: data.data.hosted_url };
       } catch (error) {
-        logger.error(...formatLogArgs('Coinbase Commerce checkout creation failed:', error));
+        console.error('Coinbase Commerce checkout creation failed:', error);
         const message =
           error instanceof Error
             ? error.message
@@ -162,7 +160,7 @@ export function makeStripe(): PaymentProvider {
         
         return { url: `${checkoutUrl}?${params.toString()}` };
       } catch (error) {
-        logger.error(...formatLogArgs('Stripe checkout creation failed:', error));
+        console.error('Stripe checkout creation failed:', error);
         throw new Error('Failed to create Stripe checkout session');
       }
     },

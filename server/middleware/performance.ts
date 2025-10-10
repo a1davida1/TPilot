@@ -1,7 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 
-import { logger } from './../bootstrap/logger.js';
-import { formatLogArgs } from './../lib/logger-utils.js';
 declare module 'express-serve-static-core' {
   interface Response {
     monitoredEnd?: Response['end'];
@@ -85,15 +83,15 @@ class PerformanceMonitor {
     
     // Log to console in development
     if (process.env.NODE_ENV === 'development' && metric.duration > 500) {
-      logger.error(...formatLogArgs(`[PERF] ${metric.method} ${metric.path}: ${metric.duration.toFixed(2))}ms`);
+      console.error(`[PERF] ${metric.method} ${metric.path}: ${metric.duration.toFixed(2)}ms`);
     }
   }
 
   private handleSlowRequest(metric: PerformanceMetric) {
-    logger.warn(...formatLogArgs('[SLOW REQUEST]', {
+    console.warn('[SLOW REQUEST]', {
       path: metric.path,
       method: metric.method,
-      duration: `${metric.duration.toFixed(2))}ms`,
+      duration: `${metric.duration.toFixed(2)}ms`,
       statusCode: metric.statusCode,
       timestamp: metric.timestamp.toISOString()
     });
@@ -105,10 +103,10 @@ class PerformanceMonitor {
   }
 
   private handleCriticalPerformance(metric: PerformanceMetric) {
-    logger.error(...formatLogArgs('[CRITICAL PERFORMANCE]', {
+    console.error('[CRITICAL PERFORMANCE]', {
       path: metric.path,
       method: metric.method,
-      duration: `${metric.duration.toFixed(2))}ms`,
+      duration: `${metric.duration.toFixed(2)}ms`,
       statusCode: metric.statusCode,
       memoryUsage: {
         heapUsed: `${(metric.memoryUsage.heapUsed / 1024 / 1024).toFixed(2)}MB`,

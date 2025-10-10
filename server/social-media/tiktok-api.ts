@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-import { logger } from './../bootstrap/logger.js';
-import { formatLogArgs } from './../lib/logger-utils.js';
 // TikTok Creator API Integration
 export class TikTokAPI {
   private accessToken: string;
@@ -96,7 +94,7 @@ export class TikTokAPI {
         platform: 'tiktok' as const,
       };
     } catch (error) {
-      logger.error(...formatLogArgs('TikTok API Error:', error));
+      console.error('TikTok API Error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -146,7 +144,7 @@ export class TikTokAPI {
         platform: 'tiktok' as const,
       };
     } catch (error) {
-      logger.error(...formatLogArgs('TikTok Metrics Error:', error));
+      console.error('TikTok Metrics Error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -178,7 +176,7 @@ export class TikTokAPI {
         platform: 'tiktok' as const,
       };
     } catch (error) {
-      logger.error(...formatLogArgs('TikTok User Info Error:', error));
+      console.error('TikTok User Info Error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

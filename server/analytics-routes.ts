@@ -18,8 +18,6 @@ import { Reader } from '@maxmind/geoip2-node';
 import { assertIsObject } from '../helpers/assert';
 import { storage } from './storage.js';
 
-import { logger } from './bootstrap/logger.js';
-import { formatLogArgs } from './lib/logger-utils.js';
 let geoReader: Reader | null = null;
 export async function initGeoReader() {
   if (process.env.MAXMIND_DB_PATH) {
@@ -111,7 +109,7 @@ export const analyticsService = {
 
 // Error handling helper
 function handleAnalyticsError(error: unknown, res: Response, message: string) {
-  logger.error(...formatLogArgs('Analytics error:', error));
+  console.error('Analytics error:', error);
   res.status(500).json({ error: message });
 }
 
@@ -138,7 +136,7 @@ export function registerAnalyticsRoutes(app: Express) {
 
       res.json({ success: true, processed: events.length });
     } catch (error) {
-      logger.error(...formatLogArgs('Analytics events error:', error));
+      console.error('Analytics events error:', error);
       res.status(500).json({ error: 'Failed to process analytics events' });
     }
   });
@@ -251,7 +249,7 @@ export function registerAnalyticsRoutes(app: Express) {
 
       res.json(contentAnalytics);
     } catch (error) {
-      logger.error(...formatLogArgs('Content analytics error:', error));
+      console.error('Content analytics error:', error);
       handleAnalyticsError(error, res, 'Failed to fetch content analytics');
     }
   });
@@ -279,7 +277,7 @@ export function registerAnalyticsRoutes(app: Express) {
 
       res.json({ success: true });
     } catch (error) {
-      logger.error(...formatLogArgs('Content view tracking error:', error));
+      console.error('Content view tracking error:', error);
       res.status(500).json({ error: 'Failed to track content view' });
     }
   });
@@ -331,7 +329,7 @@ export function registerAnalyticsRoutes(app: Express) {
       const balance = await stripe.balance.retrieve();
       res.json({ available: balance.available[0]?.amount ?? 0 });
     } catch (error) {
-      logger.error(...formatLogArgs('Revenue endpoint error:', error));
+      console.error('Revenue endpoint error:', error);
       res.status(500).json({ error: 'Failed to fetch revenue' });
     }
   });
@@ -392,7 +390,7 @@ async function processAnalyticsEvent(event: AnalyticsEvent, ipAddress: string) {
       break;
     default:
       // Log unknown event types for debugging
-      logger.error(...formatLogArgs('Unknown analytics event type:', (event as Record<string, unknown>)).eventType);
+      console.error('Unknown analytics event type:', (event as Record<string, unknown>).eventType);
   }
 }
 

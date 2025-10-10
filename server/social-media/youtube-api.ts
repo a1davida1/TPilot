@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-import { logger } from './../bootstrap/logger.js';
-import { formatLogArgs } from './../lib/logger-utils.js';
 // YouTube Data API Integration
 export class YouTubeAPI {
   private accessToken: string;
@@ -79,7 +77,7 @@ export class YouTubeAPI {
         platform: 'youtube' as const,
       };
     } catch (error) {
-      logger.error(...formatLogArgs('YouTube API Error:', error));
+      console.error('YouTube API Error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -110,7 +108,7 @@ export class YouTubeAPI {
 
       return response.ok;
     } catch (error) {
-      logger.error(...formatLogArgs('YouTube Thumbnail Error:', error));
+      console.error('YouTube Thumbnail Error:', error);
       return false;
     }
   }
@@ -147,7 +145,7 @@ export class YouTubeAPI {
         platform: 'youtube' as const,
       };
     } catch (error) {
-      logger.error(...formatLogArgs('YouTube Metrics Error:', error));
+      console.error('YouTube Metrics Error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -191,7 +189,7 @@ export class YouTubeAPI {
         platform: 'youtube' as const,
       };
     } catch (error) {
-      logger.error(...formatLogArgs('YouTube Channel Metrics Error:', error));
+      console.error('YouTube Channel Metrics Error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -223,7 +221,7 @@ export class YouTubeAPI {
         platform: 'youtube' as const,
       };
     } catch (error) {
-      logger.error(...formatLogArgs('YouTube Search Error:', error));
+      console.error('YouTube Search Error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

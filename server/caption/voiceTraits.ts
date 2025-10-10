@@ -2,8 +2,6 @@ import { readFileSync } from "node:fs";
 import * as path from "node:path";
 import { z } from "zod";
 
-import { logger } from './../bootstrap/logger.js';
-import { formatLogArgs } from './../lib/logger-utils.js';
 const VoiceDefinitionSchema = z.object({
   persona: z.string(),
   traits: z.array(z.string()).min(1),
@@ -34,7 +32,7 @@ function loadVoiceMap(): z.infer<typeof VoiceMapSchema> | null {
     cache = VoiceMapSchema.parse(JSON.parse(raw));
     return cache;
   } catch (error) {
-    logger.error(...formatLogArgs("Failed to load voice traits:", error));
+    console.error("Failed to load voice traits:", error);
     cache = null;
     return null;
   }

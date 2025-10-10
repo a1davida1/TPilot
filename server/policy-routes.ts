@@ -7,8 +7,6 @@ import { postPreviews, featureFlags } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { logger } from './bootstrap/logger.js';
-import { formatLogArgs } from './lib/logger-utils.js';
 // Request validation schemas
 const previewRequestSchema = z.object({
   subreddit: z.string().min(1).max(100),
@@ -68,7 +66,7 @@ export function registerPolicyRoutes(app: Express) {
       });
 
     } catch (error) {
-      logger.error(...formatLogArgs("Preview endpoint error:", error));
+      console.error("Preview endpoint error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -88,7 +86,7 @@ export function registerPolicyRoutes(app: Express) {
       res.json(stats);
 
     } catch (error) {
-      logger.error(...formatLogArgs("Preview stats endpoint error:", error));
+      console.error("Preview stats endpoint error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -108,7 +106,7 @@ export function registerPolicyRoutes(app: Express) {
       res.json(gateResult);
 
     } catch (error) {
-      logger.error(...formatLogArgs("Gate check endpoint error:", error));
+      console.error("Gate check endpoint error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -129,7 +127,7 @@ export function registerPolicyRoutes(app: Express) {
       });
 
     } catch (error) {
-      logger.error(...formatLogArgs("Policy flags endpoint error:", error));
+      console.error("Policy flags endpoint error:", error);
       res.status(500).json({
         blockOnWarn: false // Fail safe
       });

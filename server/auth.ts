@@ -561,7 +561,7 @@ export async function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
               redditUsername = redditAccounts[0].platformUsername || redditAccounts[0].handle || null;
             }
           } catch (err) {
-            logger.error(...formatLogArgs('Failed to fetch Reddit connection status:', err));
+            console.error('Failed to fetch Reddit connection status:', err);
           }
           
           return res.json({

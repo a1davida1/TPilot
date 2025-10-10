@@ -3,8 +3,6 @@ import { db } from '../db';
 import { leads } from '@shared/schema';
 import { desc } from 'drizzle-orm';
 
-import { logger } from './../bootstrap/logger.js';
-import { formatLogArgs } from './../lib/logger-utils.js';
 export async function getLeads(req: Request, res: Response) {
   try {
     // In a real implementation, you'd check admin authentication here
@@ -17,7 +15,7 @@ export async function getLeads(req: Request, res: Response) {
 
     res.json(allLeads);
   } catch (error) {
-    logger.error(...formatLogArgs('Get leads error:', error));
+    console.error('Get leads error:', error);
     res.status(500).json({ error: 'Failed to fetch leads' });
   }
 }

@@ -6,8 +6,6 @@ import crypto from 'crypto';
 import { storage } from './storage';
 import { emailService } from './services/email-service';
 import { type User, systemHealthSchema, analyticsSchema, completenessSchema } from '../shared/schema.js';
-import { logger } from './bootstrap/logger.js';
-import { formatLogArgs } from './lib/logger-utils.js';
 
 // Admin route interfaces
 interface UserSession {
@@ -186,7 +184,7 @@ export function setupAdminRoutes(app: Express) {
       await storage.updateUser(userId, { mustChangePassword: true, passwordResetAt: new Date() });
       
       const adminUser = (req as AdminRequest).user as User;
-      logger.error(...formatLogArgs(`Admin ${adminUser?.username || adminUser?.id} reset password for user ${user.username} (ID: ${userId})`));
+      console.error(`Admin ${adminUser?.username || adminUser?.id} reset password for user ${user.username} (ID: ${userId})`);
       
       res.json({
         message: 'Password reset successful',
@@ -194,7 +192,7 @@ export function setupAdminRoutes(app: Express) {
         username: user.username
       });
     } catch (error) {
-      logger.error(...formatLogArgs('Error resetting user password:', error));
+      console.error('Error resetting user password:', error);
       res.status(500).json({ message: 'Error resetting user password' });
     }
   });
@@ -229,7 +227,7 @@ export function setupAdminRoutes(app: Express) {
       
       res.json(stats);
     } catch (error) {
-      logger.error(...formatLogArgs('Error fetching admin stats:', error));
+      console.error('Error fetching admin stats:', error);
       res.status(500).json({ message: 'Error fetching statistics' });
     }
   });
@@ -247,7 +245,7 @@ export function setupAdminRoutes(app: Express) {
       
       res.json(sanitizedUsers);
     } catch (error) {
-      logger.error(...formatLogArgs('Error fetching users:', error));
+      console.error('Error fetching users:', error);
       res.status(500).json({ message: 'Error fetching users' });
     }
   });
@@ -297,7 +295,7 @@ export function setupAdminRoutes(app: Express) {
         }
       });
     } catch (error) {
-      logger.error(...formatLogArgs('Error creating trial:', error));
+      console.error('Error creating trial:', error);
       res.status(500).json({ message: 'Error creating trial' });
     }
   });
@@ -324,7 +322,7 @@ export function setupAdminRoutes(app: Express) {
       
       res.json({ message: 'User upgraded successfully' });
     } catch (error) {
-      logger.error(...formatLogArgs('Error upgrading user:', error));
+      console.error('Error upgrading user:', error);
       res.status(500).json({ message: 'Error upgrading user' });
     }
   });
@@ -344,7 +342,7 @@ export function setupAdminRoutes(app: Express) {
       
       res.json({ message: 'User deleted successfully' });
     } catch (error) {
-      logger.error(...formatLogArgs('Error deleting user:', error));
+      console.error('Error deleting user:', error);
       res.status(500).json({ message: 'Error deleting user' });
     }
   });
@@ -371,7 +369,7 @@ export function setupAdminRoutes(app: Express) {
       
       res.json(providers);
     } catch (error) {
-      logger.error(...formatLogArgs('Error fetching providers:', error));
+      console.error('Error fetching providers:', error);
       res.status(500).json({ message: 'Error fetching providers' });
     }
   });
@@ -402,7 +400,7 @@ export function setupAdminRoutes(app: Express) {
       const validatedHealth = systemHealthSchema.parse(health);
       res.json(validatedHealth);
     } catch (error) {
-      logger.error(...formatLogArgs('Error fetching system health:', error));
+      console.error('Error fetching system health:', error);
       res.status(500).json({ message: 'Error fetching system health' });
     }
   });
@@ -439,7 +437,7 @@ export function setupAdminRoutes(app: Express) {
       const validatedAnalytics = analyticsSchema.parse(analytics);
       res.json(validatedAnalytics);
     } catch (error) {
-      logger.error(...formatLogArgs('Error fetching analytics:', error));
+      console.error('Error fetching analytics:', error);
       res.status(500).json({ message: 'Error fetching analytics' });
     }
   });
@@ -490,7 +488,7 @@ export function setupAdminRoutes(app: Express) {
       
       res.json(analytics);
     } catch (error) {
-      logger.error(...formatLogArgs('Error fetching analytics for period:', error));
+      console.error('Error fetching analytics for period:', error);
       res.status(500).json({ message: 'Error fetching analytics' });
     }
   });
@@ -523,7 +521,7 @@ export function setupAdminRoutes(app: Express) {
       const validatedCompleteness = completenessSchema.parse(completeness);
       res.json(validatedCompleteness);
     } catch (error) {
-      logger.error(...formatLogArgs('Error fetching completeness:', error));
+      console.error('Error fetching completeness:', error);
       res.status(500).json({ message: 'Error fetching completeness' });
     }
   });
@@ -558,7 +556,7 @@ export function setupAdminRoutes(app: Express) {
         failed
       });
     } catch (error) {
-      logger.error(...formatLogArgs('Error sending bulk email:', error));
+      console.error('Error sending bulk email:', error);
       res.status(500).json({ message: 'Error sending emails' });
     }
   });
@@ -618,7 +616,7 @@ export function setupAdminRoutes(app: Express) {
       
       res.json(metrics);
     } catch (error) {
-      logger.error(...formatLogArgs('Error fetching metrics:', error));
+      console.error('Error fetching metrics:', error);
       res.status(500).json({ message: 'Error fetching metrics' });
     }
   });
@@ -643,7 +641,7 @@ export function setupAdminRoutes(app: Express) {
       
       res.json(sessions);
     } catch (error) {
-      logger.error(...formatLogArgs('Error fetching user activity:', error));
+      console.error('Error fetching user activity:', error);
       res.status(500).json({ message: 'Error fetching user activity' });
     }
   });
@@ -654,7 +652,7 @@ export function setupAdminRoutes(app: Express) {
       const ipData: IPData[] = [];
       res.json(ipData);
     } catch (error) {
-      logger.error(...formatLogArgs('Error fetching IP data:', error));
+      console.error('Error fetching IP data:', error);
       res.status(500).json({ message: 'Error fetching IP tracking data' });
     }
   });
@@ -692,7 +690,7 @@ export function setupAdminRoutes(app: Express) {
 
       res.json(metrics);
     } catch (error) {
-      logger.error(...formatLogArgs('Error fetching system metrics:', error));
+      console.error('Error fetching system metrics:', error);
       res.status(500).json({ message: 'Error fetching system metrics' });
     }
   });
@@ -707,7 +705,7 @@ export function setupAdminRoutes(app: Express) {
 
       res.json(logs);
     } catch (error) {
-      logger.error(...formatLogArgs('Error fetching system logs:', error));
+      console.error('Error fetching system logs:', error);
       res.status(500).json({ message: 'Error fetching system logs' });
     }
   });
@@ -742,7 +740,7 @@ export function setupAdminRoutes(app: Express) {
         action: auditLogData
       });
     } catch (error) {
-      logger.error(...formatLogArgs('Error banning user:', error));
+      console.error('Error banning user:', error);
       res.status(500).json({ message: 'Error banning user' });
     }
   });
@@ -761,7 +759,7 @@ export function setupAdminRoutes(app: Express) {
 
       res.json({ message: 'User unbanned successfully' });
     } catch (error) {
-      logger.error(...formatLogArgs('Error unbanning user:', error));
+      console.error('Error unbanning user:', error);
       res.status(500).json({ message: 'Error unbanning user' });
     }
   });
@@ -784,7 +782,7 @@ export function setupAdminRoutes(app: Express) {
         suspendedUntil
       });
     } catch (error) {
-      logger.error(...formatLogArgs('Error suspending user:', error));
+      console.error('Error suspending user:', error);
       res.status(500).json({ message: 'Error suspending user' });
     }
   });
@@ -796,7 +794,7 @@ export function setupAdminRoutes(app: Express) {
       // This would normally invalidate all user sessions
       res.json({ message: 'User sessions terminated' });
     } catch (error) {
-      logger.error(...formatLogArgs('Error forcing logout:', error));
+      console.error('Error forcing logout:', error);
       res.status(500).json({ message: 'Error forcing logout' });
     }
   });
@@ -811,7 +809,7 @@ export function setupAdminRoutes(app: Express) {
 
       res.json(flags);
     } catch (error) {
-      logger.error(...formatLogArgs('Error fetching flagged content:', error));
+      console.error('Error fetching flagged content:', error);
       res.status(500).json({ message: 'Error fetching flagged content' });
     }
   });
@@ -831,7 +829,7 @@ export function setupAdminRoutes(app: Express) {
         reason
       });
     } catch (error) {
-      logger.error(...formatLogArgs('Error moderating content:', error));
+      console.error('Error moderating content:', error);
       res.status(500).json({ message: 'Error moderating content' });
     }
   });
@@ -863,7 +861,7 @@ export function setupAdminRoutes(app: Express) {
 
       res.json(liveMetrics);
     } catch (error) {
-      logger.error(...formatLogArgs('Error fetching live dashboard data:', error));
+      console.error('Error fetching live dashboard data:', error);
       res.status(500).json({ message: 'Error fetching live dashboard data' });
     }
   });
@@ -880,7 +878,7 @@ export function setupAdminRoutes(app: Express) {
         acknowledgedBy: (req as AdminRequest).user?.id
       });
     } catch (error) {
-      logger.error(...formatLogArgs('Error acknowledging alert:', error));
+      console.error('Error acknowledging alert:', error);
       res.status(500).json({ message: 'Error acknowledging alert' });
     }
   });
