@@ -1133,7 +1133,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   });
 
   // Cancel subscription
-  app.post("/api/cancel-subscription", authenticateToken, cancelSubscriptionHandler);
+  app.post("/api/cancel-subscription", authenticateToken(true), cancelSubscriptionHandler);
 
   // ==========================================
   // CONTENT GENERATION ENDPOINTS
@@ -1191,7 +1191,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   });
 
   // Unified AI generation endpoint - handles both text and image workflows
-  app.post('/api/generate-unified', generationLimiter, authenticateToken, upload.single('image'), async (req: AuthRequest, res, next) => {
+  app.post('/api/generate-unified', generationLimiter, authenticateToken(true), upload.single('image'), async (req: AuthRequest, res, next) => {
     try {
       interface GenerationRequestBody {
         mode: string;
@@ -1438,7 +1438,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // CONTENT GENERATIONS HISTORY API
   // ==========================================
 
-  app.post('/api/saved-content', authenticateToken, createSaveContentHandler());
+  app.post('/api/saved-content', authenticateToken(true), createSaveContentHandler());
 
   // Get user's content generation history
   app.get('/api/content-generations', authenticateToken(true), async (req: AuthRequest, res) => {

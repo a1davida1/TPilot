@@ -110,7 +110,7 @@ const isOAuthStateData = (value: unknown): value is RedditOAuthStateData => {
 export function registerRedditRoutes(app: Express) {
 
   // Start Reddit OAuth flow - SECURE VERSION
-  app.get('/api/reddit/connect', rateLimit, authenticateToken, async (req: AuthRequest, res) => {
+  app.get('/api/reddit/connect', rateLimit, authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       if (!process.env.REDDIT_CLIENT_ID) {
         return res.status(503).json({
@@ -177,7 +177,7 @@ export function registerRedditRoutes(app: Express) {
     }
   });
 
-  app.get('/api/reddit/intelligence', authenticateToken, async (req: AuthRequest, res) => {
+  app.get('/api/reddit/intelligence', authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
@@ -375,7 +375,7 @@ export function registerRedditRoutes(app: Express) {
   });
 
   // Get user's Reddit connections
-  app.get('/api/reddit/accounts', authenticateToken, async (req: AuthRequest, res) => {
+  app.get('/api/reddit/accounts', authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -410,7 +410,7 @@ export function registerRedditRoutes(app: Express) {
     }
   });
 
-  app.get('/api/reddit/shadowban-status', rateLimit, authenticateToken, async (req: AuthRequest, res) => {
+  app.get('/api/reddit/shadowban-status', rateLimit, authenticateToken(true), async (req: AuthRequest, res) => {
     const userId = req.user?.id;
 
     if (!userId) {
@@ -451,7 +451,7 @@ export function registerRedditRoutes(app: Express) {
   });
 
   // Disconnect Reddit account
-  app.delete('/api/reddit/accounts/:accountId', authenticateToken, async (req: AuthRequest, res) => {
+  app.delete('/api/reddit/accounts/:accountId', authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       const { accountId } = req.params;
       const userId = req.user?.id;
@@ -487,7 +487,7 @@ export function registerRedditRoutes(app: Express) {
   });
 
   // Test Reddit connection
-  app.post('/api/reddit/test', authenticateToken, async (req: AuthRequest, res) => {
+  app.post('/api/reddit/test', authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -574,7 +574,7 @@ export function registerRedditRoutes(app: Express) {
   });
 
   // Enhanced submit endpoint with image support
-  app.post('/api/reddit/submit', authenticateToken, async (req: AuthRequest, res) => {
+  app.post('/api/reddit/submit', authenticateToken(true), async (req: AuthRequest, res) => {
     const userId = req.user?.id;
     const subreddit = typeof req.body?.subreddit === 'string' ? req.body.subreddit : undefined;
 
@@ -788,7 +788,7 @@ export function registerRedditRoutes(app: Express) {
   });
 
   // Add new endpoint to check subreddit capabilities
-  app.get('/api/reddit/subreddit/:name/capabilities', authenticateToken, async (req: AuthRequest, res) => {
+  app.get('/api/reddit/subreddit/:name/capabilities', authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -815,7 +815,7 @@ export function registerRedditRoutes(app: Express) {
   });
 
   // Get eligible communities for authenticated user
-  app.get('/api/reddit/communities/eligible', authenticateToken, async (req: AuthRequest, res) => {
+  app.get('/api/reddit/communities/eligible', authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -855,7 +855,7 @@ export function registerRedditRoutes(app: Express) {
   });
 
   // Check shadowban status for authenticated user
-  app.get('/api/reddit/shadowban-status', authenticateToken, async (req: AuthRequest, res) => {
+  app.get('/api/reddit/shadowban-status', authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -907,7 +907,7 @@ export function registerRedditRoutes(app: Express) {
   });
 
   // Get compliance removal summary for authenticated user
-  app.get('/api/reddit/compliance/removal-summary', authenticateToken, async (req: AuthRequest, res) => {
+  app.get('/api/reddit/compliance/removal-summary', authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -939,7 +939,7 @@ export function registerRedditRoutes(app: Express) {
   });
 
   // Admin CRUD endpoints
-  app.post('/api/reddit/communities', authenticateToken, async (req: AuthRequest, res) => {
+  app.post('/api/reddit/communities', authenticateToken(true), async (req: AuthRequest, res) => {
     if (!req.user?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
     try {
       const community = await createCommunity(req.body);
@@ -950,7 +950,7 @@ export function registerRedditRoutes(app: Express) {
     }
   });
 
-  app.put('/api/reddit/communities/:id', authenticateToken, async (req: AuthRequest, res) => {
+  app.put('/api/reddit/communities/:id', authenticateToken(true), async (req: AuthRequest, res) => {
     if (!req.user?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
     try {
       const community = await updateCommunity(req.params.id, req.body);
@@ -961,7 +961,7 @@ export function registerRedditRoutes(app: Express) {
     }
   });
 
-  app.delete('/api/reddit/communities/:id', authenticateToken, async (req: AuthRequest, res) => {
+  app.delete('/api/reddit/communities/:id', authenticateToken(true), async (req: AuthRequest, res) => {
     if (!req.user?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
     try {
       await deleteCommunity(req.params.id);

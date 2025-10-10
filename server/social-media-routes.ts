@@ -98,7 +98,7 @@ export function registerSocialMediaRoutes(app: Express) {
   });
 
   // Get connected accounts
-  app.get("/api/social-media/accounts", authenticateToken, async (req: AuthRequest, res) => {
+  app.get("/api/social-media/accounts", authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
@@ -125,7 +125,7 @@ export function registerSocialMediaRoutes(app: Express) {
   });
 
   // Disconnect social media account
-  app.delete("/api/social-media/accounts/:accountId", authenticateToken, async (req: AuthRequest, res) => {
+  app.delete("/api/social-media/accounts/:accountId", authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
@@ -285,7 +285,7 @@ export function registerSocialMediaRoutes(app: Express) {
   });
 
   // Get post history
-  app.get("/api/social-media/posts", authenticateToken, async (req: AuthRequest, res) => {
+  app.get("/api/social-media/posts", authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
@@ -323,7 +323,7 @@ export function registerSocialMediaRoutes(app: Express) {
   });
 
   // Get engagement metrics
-  app.get("/api/social-media/metrics/:postId", authenticateToken, async (req: AuthRequest, res) => {
+  app.get("/api/social-media/metrics/:postId", authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
@@ -402,7 +402,7 @@ export function registerSocialMediaRoutes(app: Express) {
   });
 
   // Get scheduled posts
-  app.get("/api/social-media/scheduled", authenticateToken, async (req: AuthRequest, res) => {
+  app.get("/api/social-media/scheduled", authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
@@ -428,7 +428,7 @@ export function registerSocialMediaRoutes(app: Express) {
   });
 
   // Cancel scheduled post
-  app.delete("/api/social-media/scheduled/:scheduleId", authenticateToken, async (req: AuthRequest, res) => {
+  app.delete("/api/social-media/scheduled/:scheduleId", authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });

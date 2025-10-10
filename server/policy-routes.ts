@@ -18,7 +18,7 @@ const previewRequestSchema = z.object({
 
 export function registerPolicyRoutes(app: Express) {
   // POST /api/preview - Lint content and store preview
-  app.post("/api/preview", authenticateToken, async (req: AuthRequest, res: Response) => {
+  app.post("/api/preview", authenticateToken(true), async (req: AuthRequest, res: Response) => {
     try {
       // Authentication check - rely on authenticateToken to populate req.user
       const userId = req.user?.id;
@@ -73,7 +73,7 @@ export function registerPolicyRoutes(app: Express) {
   });
 
   // GET /api/user/previewStats - Get user's preview gate status
-  app.get("/api/user/previewStats", authenticateToken, async (req: AuthRequest, res: Response) => {
+  app.get("/api/user/previewStats", authenticateToken(true), async (req: AuthRequest, res: Response) => {
     try {
       // Authentication check - rely on authenticateToken to populate req.user
       const userId = req.user?.id;
@@ -93,7 +93,7 @@ export function registerPolicyRoutes(app: Express) {
   });
 
   // GET /api/policy/gate/check - Check if user can queue posts
-  app.get("/api/policy/gate/check", authenticateToken, async (req: AuthRequest, res: Response) => {
+  app.get("/api/policy/gate/check", authenticateToken(true), async (req: AuthRequest, res: Response) => {
     try {
       // Authentication check - rely on authenticateToken to populate req.user
       const userId = req.user?.id;

@@ -144,7 +144,7 @@ export function registerExpenseRoutes(app: Express) {
   });
 
   // Get user expenses
-  app.get('/api/expenses', authenticateToken, async (req: AuthRequest, res) => {
+  app.get('/api/expenses', authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: 'Authentication required' });
@@ -160,7 +160,7 @@ export function registerExpenseRoutes(app: Express) {
   });
 
   // Create new expense
-  app.post('/api/expenses', authenticateToken, async (req: AuthRequest, res) => {
+  app.post('/api/expenses', authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: 'Authentication required' });
@@ -239,7 +239,7 @@ export function registerExpenseRoutes(app: Express) {
   });
 
   // Update expense
-  app.put('/api/expenses/:id', authenticateToken, async (req: AuthRequest, res) => {
+  app.put('/api/expenses/:id', authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: 'Authentication required' });
@@ -363,7 +363,7 @@ export function registerExpenseRoutes(app: Express) {
   });
 
   // Delete expense
-  app.delete('/api/expenses/:id', authenticateToken, async (req: AuthRequest, res) => {
+  app.delete('/api/expenses/:id', authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: 'Authentication required' });
@@ -379,7 +379,7 @@ export function registerExpenseRoutes(app: Express) {
   });
 
   // Get expense totals and analytics
-  app.get('/api/expenses/totals', authenticateToken, async (req: AuthRequest, res) => {
+  app.get('/api/expenses/totals', authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: 'Authentication required' });
@@ -395,7 +395,7 @@ export function registerExpenseRoutes(app: Express) {
   });
 
   // Get expenses by date range for calendar view
-  app.get('/api/expenses/range', authenticateToken, async (req: AuthRequest, res) => {
+  app.get('/api/expenses/range', authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: 'Authentication required' });
@@ -431,7 +431,7 @@ export function registerExpenseRoutes(app: Express) {
   });
 
   // Upload receipt for an expense with ImageShield protection
-  app.post('/api/expenses/:id/receipt', authenticateToken, upload.single('receipt'), async (req: AuthRequest, res) => {
+  app.post('/api/expenses/:id/receipt', authenticateToken(true), upload.single('receipt'), async (req: AuthRequest, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: 'Authentication required' });

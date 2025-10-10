@@ -82,7 +82,7 @@ export function registerApiRoutes(app: Express, apiPrefix: string = API_PREFIX) 
   const enhancedContentBreaker = new CircuitBreaker(generateEnhancedContent);
 
   // AI Content Generation
-  app.post('/api/ai/generate', authenticateToken, async (req: Request, res, next: NextFunction) => {
+  app.post('/api/ai/generate', authenticateToken(true), async (req: Request, res, next: NextFunction) => {
     try {
       const schema = z.object({
         prompt: z.string().optional(),
@@ -110,7 +110,7 @@ export function registerApiRoutes(app: Express, apiPrefix: string = API_PREFIX) 
   });
 
   // Enhanced AI Content Generation
-  app.post('/api/ai/enhanced', authenticateToken, async (req: Request, res, next: NextFunction) => {
+  app.post('/api/ai/enhanced', authenticateToken(true), async (req: Request, res, next: NextFunction) => {
     try {
       const schema = z.object({
         mode: z.enum(['text', 'image', 'hybrid']).default('text'),
@@ -172,7 +172,7 @@ export function registerApiRoutes(app: Express, apiPrefix: string = API_PREFIX) 
   });
 
   // Schedule Post
-  app.post('/api/posts/schedule', authenticateToken, async (req: AuthRequest, res) => {
+  app.post('/api/posts/schedule', authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       const schema = z.object({
         subreddit: z.string(),
@@ -232,7 +232,7 @@ export function registerApiRoutes(app: Express, apiPrefix: string = API_PREFIX) 
   });
 
   // Get Scheduled Posts
-  app.get('/api/posts/scheduled', authenticateToken, async (req: AuthRequest, res) => {
+  app.get('/api/posts/scheduled', authenticateToken(true), async (req: AuthRequest, res) => {
     try {
       const userId = req.user?.id;
 
@@ -300,7 +300,7 @@ export function registerApiRoutes(app: Express, apiPrefix: string = API_PREFIX) 
   });
 
   // Get User Subscription
-  app.get('/api/subscription', authenticateToken, async (req: Request, res) => {
+  app.get('/api/subscription', authenticateToken(true), async (req: Request, res) => {
     try {
       const user = req.user;
 
@@ -334,7 +334,7 @@ export function registerApiRoutes(app: Express, apiPrefix: string = API_PREFIX) 
   });
 
   // Storage Usage
-  app.get('/api/storage/usage', authenticateToken, async (req: Request, res) => {
+  app.get('/api/storage/usage', authenticateToken(true), async (req: Request, res) => {
     try {
       const user = req.user;
 
@@ -353,13 +353,13 @@ export function registerApiRoutes(app: Express, apiPrefix: string = API_PREFIX) 
   });
 
   // User profile preferences
-  app.get('/api/user/profile', authenticateToken, async (req: Request, res) => {
+  app.get('/api/user/profile', authenticateToken(true), async (req: Request, res) => {
     if (!req.user?.id) return res.status(401).json({ error: 'Authentication required' });
     const prefs = await storage.getUserPreferences(req.user.id);
     res.json(prefs?.contentPreferences || {});
   });
 
-  app.put('/api/user/profile', authenticateToken, async (req: Request, res) => {
+  app.put('/api/user/profile', authenticateToken(true), async (req: Request, res) => {
     if (!req.user?.id) return res.status(401).json({ error: 'Authentication required' });
     const preferenceSchema = z.object({
       contentPreferences: z.object({
@@ -386,6 +386,6 @@ export function registerApiRoutes(app: Express, apiPrefix: string = API_PREFIX) 
   });
 
   // AI Generation History
-  app.get('/api/ai/history', authenticateToken, createAiHistoryHandler());
+  app.get('/api/ai/history', authenticateToken(true), createAiHistoryHandler());
 
 }

@@ -142,7 +142,7 @@ export function registerAnalyticsRoutes(app: Express) {
     }
   });
 
-  app.get('/api/stats', authenticateToken, async (req: AuthRequest, res: Response) => {
+  app.get('/api/stats', authenticateToken(true), async (req: AuthRequest, res: Response) => {
     try {
       const userId = getUserIdFromRequest(req);
       if (!userId) {
@@ -195,7 +195,7 @@ export function registerAnalyticsRoutes(app: Express) {
   });
 
   // GET /api/analytics/:period - Get analytics data for dashboard
-  app.get('/api/analytics/:period', authenticateToken, async (req: AuthRequest, res: Response) => {
+  app.get('/api/analytics/:period', authenticateToken(true), async (req: AuthRequest, res: Response) => {
     try {
       const { period } = req.params;
       const validation = dateRangeSchema.safeParse({ period });
@@ -217,7 +217,7 @@ export function registerAnalyticsRoutes(app: Express) {
   });
 
   // GET /api/analytics/realtime - Get real-time analytics
-  app.get('/api/analytics/realtime', authenticateToken, async (req: AuthRequest, res: Response) => {
+  app.get('/api/analytics/realtime', authenticateToken(true), async (req: AuthRequest, res: Response) => {
     try {
       const userId = getUserIdFromRequest(req);
       if (!userId) {
@@ -231,7 +231,7 @@ export function registerAnalyticsRoutes(app: Express) {
   });
 
   // GET /api/analytics/content/:contentId - Get specific content analytics
-  app.get('/api/analytics/content/:contentId', authenticateToken, async (req: AuthRequest, res: Response) => {
+  app.get('/api/analytics/content/:contentId', authenticateToken(true), async (req: AuthRequest, res: Response) => {
     try {
       const contentId = parseInt(req.params.contentId);
       if (isNaN(contentId)) {
@@ -284,7 +284,7 @@ export function registerAnalyticsRoutes(app: Express) {
   });
 
   // GET /api/analytics/sessions - Get user session analytics
-  app.get('/api/analytics/sessions', authenticateToken, async (req: AuthRequest, res: Response) => {
+  app.get('/api/analytics/sessions', authenticateToken(true), async (req: AuthRequest, res: Response) => {
     try {
       const userId = getUserIdFromRequest(req);
 
