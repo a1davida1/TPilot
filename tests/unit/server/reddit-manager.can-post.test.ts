@@ -11,20 +11,24 @@ vi.mock('../../../server/lib/safety-systems.ts', () => ({
   }
 }));
 
-// Mock database 
+// Mock database with proper query chain
+const createQueryChain = () => {
+  const chain = {
+    from: vi.fn(() => chain),
+    where: vi.fn(() => chain),
+    limit: vi.fn(() => Promise.resolve([])),
+    // Make the chain thenable so it can be awaited
+    then: vi.fn((resolve) => resolve([]))
+  };
+  return chain;
+};
+
 vi.mock('../../../server/db.ts', () => ({
   db: {
-    select: vi.fn(() => ({
-      from: vi.fn(() => ({
-        where: vi.fn(() => ({
-          limit: vi.fn(() => Promise.resolve([
-            // Mock user data
-            { id: 123, emailVerified: true }
-          ]))
-        }))
-      }))
-    }))
-  }
+    select: vi.fn(() => createQueryChain())
+  },
+  pool: {},
+  closeDatabaseConnections: vi.fn(async () => undefined)
 }));
 
 describe('RedditManager.canPostToSubreddit Safety Checks', () => {
@@ -35,19 +39,13 @@ describe('RedditManager.canPostToSubreddit Safety Checks', () => {
     mockSafetyManager = SafetyManager as typeof SafetyManager;
     
     // Mock checkSubredditEligibility to always pass
-    vi.doMock('../../../server/lib/reddit.ts', async () => {
-      const original = await vi.importActual('../../../server/lib/reddit.ts') as Record<string, unknown>;
-      return {
-        ...original,
-        RedditManager: {
-          ...(original.RedditManager as object),
-          checkSubredditEligibility: vi.fn().mockResolvedValue({
-            canPost: true,
-            reason: undefined
-          })
-        }
-      };
+    vi.spyOn(RedditManager, 'checkSubredditEligibility').mockResolvedValue({
+      canPost: true,
+      reason: undefined
     });
+    
+    // Mock RedditManager.forUser to return null (not needed for safety checks)
+    vi.spyOn(RedditManager, 'forUser').mockResolvedValue(null);
   });
 
   it('should block posting when SafetyManager reports rate limit exceeded', async () => {

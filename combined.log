@@ -428,14 +428,36 @@
 {"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-09T06:03:16.066Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
 {"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-09T06:30:13.807Z"}
 {"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-09T06:30:13.808Z"}
-{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-10T02:32:21.428Z"}
-{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-10T02:32:22.124Z"}
-{"filename":"test.jpg","level":"info","message":"File uploaded successfully","size":15,"timestamp":"2025-10-10T02:32:30.681Z","userId":1}
-{"error":"Storage quota exceeded. Used: 100MB, Quota: 100MB","level":"error","message":"Upload error","timestamp":"2025-10-10T02:32:30.691Z"}
-{"error":"Upload failed","level":"error","message":"Upload error","timestamp":"2025-10-10T02:32:30.698Z"}
+{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-10T02:38:31.931Z"}
+{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-10T02:38:32.573Z"}
+{"filename":"test.jpg","level":"info","message":"File uploaded successfully","size":15,"timestamp":"2025-10-10T02:38:40.800Z","userId":1}
+{"error":"Storage quota exceeded. Used: 100MB, Quota: 100MB","level":"error","message":"Upload error","timestamp":"2025-10-10T02:38:40.808Z"}
+{"error":"Upload failed","level":"error","message":"Upload error","timestamp":"2025-10-10T02:38:40.812Z"}
+{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-10T02:58:15.430Z"}
+{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-10T02:58:15.689Z"}
+{"filename":"test.jpg","level":"info","message":"File uploaded successfully","size":15,"timestamp":"2025-10-10T02:58:23.072Z","userId":1}
+{"error":"Storage quota exceeded. Used: 100MB, Quota: 100MB","level":"error","message":"Upload error","timestamp":"2025-10-10T02:58:23.079Z"}
+{"error":"Upload failed","level":"error","message":"Upload error","timestamp":"2025-10-10T02:58:23.083Z"}
+{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-10T04:35:22.101Z"}
+{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-10T04:35:22.371Z"}
+{"filename":"test.jpg","level":"info","message":"File uploaded successfully","size":15,"timestamp":"2025-10-10T04:35:30.910Z","userId":1}
+{"error":"Storage quota exceeded. Used: 100MB, Quota: 100MB","level":"error","message":"Upload error","timestamp":"2025-10-10T04:35:30.917Z"}
+{"error":"Upload failed","level":"error","message":"Upload error","timestamp":"2025-10-10T04:35:30.921Z"}
+{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-10T04:44:15.592Z"}
+{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-10T04:44:15.821Z"}
+{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-10T04:44:30.367Z"}
+{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-10T04:44:30.626Z"}
+{"filename":"test.jpg","level":"info","message":"File uploaded successfully","size":15,"timestamp":"2025-10-10T04:44:37.844Z","userId":1}
+{"error":"Storage quota exceeded. Used: 100MB, Quota: 100MB","level":"error","message":"Upload error","timestamp":"2025-10-10T04:44:37.850Z"}
+{"error":"Upload failed","level":"error","message":"Upload error","timestamp":"2025-10-10T04:44:37.855Z"}
+{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-10T04:46:31.703Z"}
+{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-10T04:46:31.970Z"}
+{"filename":"test.jpg","level":"info","message":"File uploaded successfully","size":15,"timestamp":"2025-10-10T04:46:39.992Z","userId":1}
+{"error":"Storage quota exceeded. Used: 100MB, Quota: 100MB","level":"error","message":"Upload error","timestamp":"2025-10-10T04:46:39.998Z"}
+{"error":"Upload failed","level":"error","message":"Upload error","timestamp":"2025-10-10T04:46:40.002Z"}
+{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-10T04:50:18.798Z"}
+{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-10T04:50:19.093Z"}
+{"filename":"test.jpg","level":"info","message":"File uploaded successfully","size":15,"timestamp":"2025-10-10T04:50:21.627Z","userId":1}
+{"error":"Storage quota exceeded. Used: 100MB, Quota: 100MB","level":"error","message":"Upload error","timestamp":"2025-10-10T04:50:21.633Z"}
+{"error":"Upload failed","level":"error","message":"Upload error","timestamp":"2025-10-10T04:50:21.637Z"}
 
-{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-10T04:35:16.344Z"}
-{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-10T04:35:16.949Z"}
-{"filename":"test.jpg","level":"info","message":"File uploaded successfully","size":15,"timestamp":"2025-10-10T04:35:25.687Z","userId":1}
-{"error":"Storage quota exceeded. Used: 100MB, Quota: 100MB","level":"error","message":"Upload error","timestamp":"2025-10-10T04:35:25.704Z"}
-{"error":"Upload failed","level":"error","message":"Upload error","timestamp":"2025-10-10T04:35:25.714Z"}
