@@ -747,7 +747,13 @@ export async function variantsRewrite(
       throw new Error("Gemini: empty response");
     }
 
-    const json = stripToJSON(rawText) as unknown;
+    let json: unknown;
+    try {
+      json = stripToJSON(rawText) as unknown;
+    } catch (parseError) {
+      logger.error("Gemini rewrite variants parsing failed:", { raw: rawText.substring(0, 100), error: parseError });
+      continue;
+    }
 
     duplicatesThisAttempt.length = 0;
 
@@ -1433,13 +1439,13 @@ async function requestGeminiRanking(
     });
   const defaultScores = [5, 4, 3, 2, 1] as const;
 
-  const fallbackResult = () => {
+  const fallbackResult = (reason?: string) => {
     const finalRecord: Record<string, unknown> = { ...defaultVariant };
     normalizeGeminiFinal(finalRecord, platform, facts);
     return {
       winner_index: 0,
       scores: [...defaultScores],
-      reason: "Gemini unavailable - using fallback ranking",
+      reason: reason || "Gemini unavailable - using fallback ranking",
       final: finalRecord,
     };
   };
@@ -1475,7 +1481,7 @@ async function requestGeminiRanking(
     json = stripToJSON(textOutput) as unknown;
   } catch (parseError) {
     logger.error("Gemini ranking parsing failed:", parseError);
-    return fallbackResult();
+    return fallbackResult("Using fallback ranking due to unparseable Gemini response");
   }
 
   if (Array.isArray(json)) {

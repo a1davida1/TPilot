@@ -19,6 +19,11 @@
             "date": 1759986036706,
             "name": "/home/dave/CascadeProjects/TPilot/logs/rejections-2025-10-09.log",
             "hash": "c400ec771f621d76359743148053f256c4c097134366cace1502056901538279"
+        },
+        {
+            "date": 1760084769423,
+            "name": "/home/dave/CascadeProjects/TPilot/logs/rejections-2025-10-10.log",
+            "hash": "c94b1d0e2b6b6131c77ebea55f4b61bab0f120452ccded9475634b686eefa677"
         }
     ],
     "hashType": "sha256"
