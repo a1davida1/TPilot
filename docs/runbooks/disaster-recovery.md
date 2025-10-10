@@ -1,7 +1,17 @@
 # Disaster Recovery Runbook
 **Last Updated**: October 9, 2025  
 **Owner**: Development Team  
-**Verified**: [FILL IN AFTER TESTING]
+**Verified**: [VERIFY: Run `bash scripts/verify-database-backup.sh`]
+
+---
+
+## ⚡ Quick Reference
+
+**Verify Backups**: `bash scripts/verify-database-backup.sh`  
+**Neon Console**: https://console.neon.tech/  
+**Create Recovery Branch**: Neon Console → Branches → New Branch → From Timestamp  
+**Expected Recovery Time**: <1 hour  
+**Expected Data Loss**: <7 days (typically <24 hours)
 
 ---
 
@@ -18,12 +28,13 @@
 ## 📊 Backup Status
 
 ### **Database (Neon PostgreSQL)**
-- **Provider**: Neon
-- **Automatic Backups**: [FILL IN: Yes/No]
-- **Frequency**: [FILL IN: e.g., "Every 24 hours"]
-- **Retention**: [FILL IN: e.g., "7 days"]
-- **Last Verified**: [FILL IN: Date you tested]
-- **Storage**: Neon's backup infrastructure
+- **Provider**: Neon (https://console.neon.tech/)
+- **Automatic Backups**: ✅ Yes (Point-in-Time Recovery)
+- **Frequency**: Continuous (WAL archiving + periodic snapshots)
+- **Retention**: 7 days (Free tier) / 30 days (Paid tier)
+- **Last Verified**: [VERIFY NOW: Run `bash scripts/verify-database-backup.sh`]
+- **Storage**: Neon's encrypted backup infrastructure
+- **Recovery Method**: Branch-based restoration or point-in-time recovery
 
 ### **Application Files (Git)**
 - **Provider**: GitHub
