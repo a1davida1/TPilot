@@ -276,7 +276,7 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
 
   const { doubleCsrfProtection, generateCsrfToken } = doubleCsrf({
     getSecret: () => process.env.SESSION_SECRET || 'fallback-secret-for-dev',
-    getSessionIdentifier: (req) => req.sessionID || (req.session as { id?: string })?.id || '',
+    getSessionIdentifier: (req: express.Request) => req.sessionID || (req.session as { id?: string })?.id || '',
     cookieName: csrfCookieName,
     cookieOptions: {
       httpOnly: true,
