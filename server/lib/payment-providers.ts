@@ -5,6 +5,7 @@
 
 import { env } from './config';
 import crypto from 'crypto';
+import { logger } from '../bootstrap/logger.js';
 
 export interface PaymentProvider {
   name: string;
@@ -365,7 +366,7 @@ export class PaymentProviderManager {
           return result;
         }
       } catch (error) {
-        console.error(`Payment provider ${provider.name} failed:`, error);
+        logger.error(`Payment provider ${provider.name} failed:`, error);
         continue;
       }
     }

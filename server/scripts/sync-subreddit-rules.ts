@@ -3,9 +3,9 @@
 import { db } from '../db.js';
 import { subredditRules, redditCommunities, createDefaultRules } from '@shared/schema';
 import { eq } from 'drizzle-orm';
-import { logger } from '../lib/logger.js';
 import type { RuleSpec, RuleSpecBase } from '../lib/policy-linter.js';
 import type { RedditCommunityRuleSet } from '@shared/schema';
+import { logger } from '../bootstrap/logger.js';
 
 // Reddit API configuration
 const REDDIT_USER_AGENT = 'ThottoPilot/1.0 (Subreddit rules sync)';
@@ -45,14 +45,14 @@ async function fetchAboutRules(subreddit: string): Promise<RedditRule[]> {
     });
 
     if (!response.ok) {
-      console.warn(`Failed to fetch rules for r/${subreddit}: ${response.status}`);
+      logger.warn(`Failed to fetch rules for r/${subreddit}: ${response.status}`);
       return [];
     }
 
     const data: RedditAboutRulesResponse = await response.json();
     return data.rules || [];
   } catch (error) {
-    console.error(`Error fetching rules for r/${subreddit}:`, error);
+    logger.error(`Error fetching rules for r/${subreddit}:`, error);
     return [];
   }
 }
@@ -71,14 +71,14 @@ async function fetchWikiRules(subreddit: string): Promise<string> {
     });
 
     if (!response.ok) {
-      console.warn(`Failed to fetch wiki rules for r/${subreddit}: ${response.status}`);
+      logger.warn(`Failed to fetch wiki rules for r/${subreddit}: ${response.status}`);
       return '';
     }
 
     const data: RedditWikiResponse = await response.json();
     return data.data?.content_md || '';
   } catch (error) {
-    console.error(`Error fetching wiki rules for r/${subreddit}:`, error);
+    logger.error(`Error fetching wiki rules for r/${subreddit}:`, error);
     return '';
   }
 }
@@ -246,7 +246,7 @@ async function applyExistingOverrides(subreddit: string, newSpec: RuleSpecBase):
       },
     };
   } catch (error) {
-    console.error(`Error applying overrides for r/${subreddit}:`, error);
+    logger.error(`Error applying overrides for r/${subreddit}:`, error);
     return {
       ...newSpec,
       source: {
@@ -379,7 +379,7 @@ export async function syncSubredditRules(subreddit: string): Promise<RuleSpec> {
 
     return finalSpec;
   } catch (error) {
-    console.error(`❌ Failed to sync rules for r/${subreddit}:`, error);
+    logger.error(`❌ Failed to sync rules for r/${subreddit}:`, error);
     throw error;
   }
 }
@@ -388,13 +388,13 @@ export async function syncSubredditRules(subreddit: string): Promise<RuleSpec> {
  * Sync rules for all known communities
  */
 async function syncAllCommunityRules(): Promise<void> {
-  console.error('🔄 Starting community rules sync...');
+  logger.error('🔄 Starting community rules sync...');
 
   try {
     // Get all communities from the database
     const communities = await db.select().from(redditCommunities);
     
-    console.error(`Found ${communities.length} communities to sync`);
+    logger.error(`Found ${communities.length} communities to sync`);
 
     // Process in batches to avoid rate limiting
     const batchSize = 5;
@@ -407,21 +407,21 @@ async function syncAllCommunityRules(): Promise<void> {
           try {
             await syncSubredditRules(community.name);
           } catch (error) {
-            console.error(`❌ Failed to sync rules for r/${community.name} in batch:`, error);
+            logger.error(`❌ Failed to sync rules for r/${community.name} in batch:`, error);
           }
         })
       );
 
       // Delay between batches to respect Reddit's rate limits
       if (i + batchSize < communities.length) {
-        console.error(`Processed ${i + batchSize}/${communities.length}, waiting...`);
+        logger.error(`Processed ${i + batchSize}/${communities.length}, waiting...`);
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
 
-    console.error('✅ Community rules sync completed');
+    logger.error('✅ Community rules sync completed');
   } catch (error) {
-    console.error('❌ Community rules sync failed:', error);
+    logger.error('❌ Community rules sync failed:', error);
     process.exit(1);
   }
 }
@@ -436,7 +436,7 @@ async function main() {
     // Sync all communities
     await syncAllCommunityRules();
   } else if (args[0] === '--help' || args[0] === '-h') {
-    console.error(`
+    logger.error(`
 Usage: tsx sync-subreddit-rules.ts [subreddit_name]
 
 Options:

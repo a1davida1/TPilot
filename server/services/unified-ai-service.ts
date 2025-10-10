@@ -1,4 +1,5 @@
 import { generateWithMultiProvider } from './multi-ai-provider';
+import { logger } from '../bootstrap/logger.js';
 
 export interface UnifiedAIRequest {
   mode: 'text' | 'image';
@@ -138,7 +139,7 @@ Create content that's perfect for ${platform}.`;
       caption: result.content.split('\n')[0] || 'Check out my new content!'
     };
   } catch (error) {
-    console.error('Unified AI generation error:', error);
+    logger.error('Unified AI generation error:', error);
     
     // Check if it's a quota/billing issue
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -168,7 +169,7 @@ export async function analyzeImage(imageBase64: string): Promise<string> {
 
     return result.content || 'Image analysis unavailable';
   } catch (error) {
-    console.error('Image analysis error:', error);
+    logger.error('Image analysis error:', error);
     return 'Unable to analyze image at this time';
   }
 }

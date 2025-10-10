@@ -3,6 +3,7 @@ import { TwitterAPI } from './twitter-api.js';
 import { TikTokAPI } from './tiktok-api.js';
 import { YouTubeAPI } from './youtube-api.js';
 import { LinkedInAPI } from './linkedin-api.js';
+import { logger } from '../bootstrap/logger.js';
 
 export type Platform =
   | 'instagram'
@@ -278,7 +279,7 @@ export class SocialMediaManager {
           return null;
       }
     } catch (error) {
-      console.error(`Error fetching metrics for ${platform}:`, error);
+      logger.error(`Error fetching metrics for ${platform}:`, error);
       return null;
     }
   }

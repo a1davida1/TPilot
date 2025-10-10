@@ -5,6 +5,7 @@
 
 import { getQueueBackend, enqueue } from "../queue-factory.js";
 import type { Platform, PostContent } from "../../social-media/social-media-manager.js";
+import { logger } from '../../bootstrap/logger.js';
 
 // Queue names for type safety
 export const QUEUE_NAMES = {
@@ -88,7 +89,7 @@ export async function pauseQueue(queueName: string): Promise<void> {
   if (backend.pause) {
     await backend.pause(queueName);
   } else {
-    console.warn(`Queue backend does not support pausing queue: ${queueName}`);
+    logger.warn(`Queue backend does not support pausing queue: ${queueName}`);
   }
 }
 
@@ -97,7 +98,7 @@ export async function resumeQueue(queueName: string): Promise<void> {
   if (backend.resume) {
     await backend.resume(queueName);
   } else {
-    console.warn(`Queue backend does not support resuming queue: ${queueName}`);
+    logger.warn(`Queue backend does not support resuming queue: ${queueName}`);
   }
 }
 

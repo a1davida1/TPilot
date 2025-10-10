@@ -11,6 +11,7 @@ import fs from "fs/promises";
 import path from "path";
 import { buildUploadUrl } from "./uploads.js";
 import { assertExists } from "../../helpers/assert";
+import { logger } from '../bootstrap/logger.js';
 
 // Check if S3 is configured
 const isS3Configured = !!(env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY && env.S3_BUCKET_MEDIA);
@@ -103,7 +104,7 @@ export class MediaManager {
           return JSON.parse(raw) as DownloadTokenPayload;
         }
       } catch (error) {
-        console.error('Failed to read download token from Redis:', error);
+        logger.error('Failed to read download token from Redis:', error);
       }
     }
 
@@ -132,7 +133,7 @@ export class MediaManager {
         await downloadRedisClient.setex(this.getDownloadTokenKey(token), ttlSeconds, JSON.stringify(payload));
         return;
       } catch (error) {
-        console.error('Failed to store download token in Redis:', error);
+        logger.error('Failed to store download token in Redis:', error);
       }
     }
 
@@ -302,7 +303,7 @@ export class MediaManager {
       
       return true;
     } catch (error) {
-      console.error('Failed to delete asset:', error);
+      logger.error('Failed to delete asset:', error);
       return false;
     }
   }
@@ -465,7 +466,7 @@ export class MediaManager {
         usedInId,
       });
     } catch (error) {
-      console.error('Failed to record media usage:', error);
+      logger.error('Failed to record media usage:', error);
     }
   }
   

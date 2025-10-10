@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { db } from '../db.js';
 import { redditCommunities, insertRedditCommunitySchema, InsertRedditCommunity } from '@shared/schema';
 import { syncSubredditRules } from './sync-subreddit-rules.js';
-import { logger } from '../lib/logger.js';
 import { getRedditServiceClient, registerDefaultRedditClients, REDDIT_SERVICE_CLIENT_KEYS } from '../lib/reddit.js';
+import { logger } from '../bootstrap/logger.js';
 
 // Sync configuration schema
 const syncConfigSchema = z.object({
@@ -307,11 +307,11 @@ export async function syncRedditCommunities(config?: { subreddits?: string[]; ru
 if (import.meta.url === `file://${process.argv[1]}`) {
   syncRedditCommunities()
     .then((result) => {
-      console.error('✅ Sync completed:', result);
+      logger.error('✅ Sync completed:', result);
       process.exit(0);
     })
     .catch((error) => {
-      console.error('❌ Sync failed:', error);
+      logger.error('❌ Sync failed:', error);
       process.exit(1);
     });
 }

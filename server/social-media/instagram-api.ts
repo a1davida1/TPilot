@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { logger } from '../bootstrap/logger.js';
 
 // Instagram Business API Integration
 export class InstagramAPI {
@@ -76,7 +77,7 @@ export class InstagramAPI {
         platform: 'instagram' as const,
       };
     } catch (error) {
-      console.error('Instagram API Error:', error);
+      logger.error('Instagram API Error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -103,7 +104,7 @@ export class InstagramAPI {
         platform: 'instagram' as const,
       };
     } catch (error) {
-      console.error('Instagram Metrics Error:', error);
+      logger.error('Instagram Metrics Error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -130,7 +131,7 @@ export class InstagramAPI {
         platform: 'instagram' as const,
       };
     } catch (error) {
-      console.error('Instagram Insights Error:', error);
+      logger.error('Instagram Insights Error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

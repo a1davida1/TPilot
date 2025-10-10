@@ -1,4 +1,5 @@
 import fetch from 'node-fetch';
+import { logger } from '../bootstrap/logger.js';
 
 export interface LinkedInPost {
   text: string;
@@ -50,7 +51,7 @@ export class LinkedInAPI {
         engagementRate: data.engagementRate ?? 0,
       };
     } catch (error) {
-      console.error('LinkedIn metrics error:', error);
+      logger.error('LinkedIn metrics error:', error);
       return { followers: 0, engagementRate: 0 };
     }
   }

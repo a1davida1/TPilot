@@ -22,6 +22,7 @@ import {
   formatViolationSummary,
   sanitizeFinalVariant
 } from "./rankGuards";
+import { logger } from '../bootstrap/logger.js';
 
 // Custom error class for image validation failures
 export class InvalidImageError extends Error {
@@ -651,7 +652,7 @@ async function b64(url: string): Promise<{ base64: string; mimeType: string }> {
 
     return { base64, mimeType: ct.split(";")[0] };
   } catch (err) {
-    console.error("Error fetching image:", err);
+    logger.error("Error fetching image:", err);
     if (err instanceof InvalidImageError) throw err;
     throw new InvalidImageError(
       `Failed to fetch image: ${err instanceof Error ? err.message : String(err)}`
@@ -730,7 +731,7 @@ export async function variantsRewrite(
         { text: promptSections.join("\n") }
       ]);
     } catch (error) {
-      console.error("Gemini text model invocation failed:", error);
+      logger.error("Gemini text model invocation failed:", error);
       throw error;
     }
 
@@ -738,11 +739,11 @@ export async function variantsRewrite(
     try {
       rawText = await resolveResponseText(res);
     } catch (error) {
-      console.error('Gemini: empty response received');
+      logger.error('Gemini: empty response received');
       throw error;
     }
     if (!rawText) {
-      console.error('Gemini: empty response received');
+      logger.error('Gemini: empty response received');
       throw new Error("Gemini: empty response");
     }
 
@@ -922,12 +923,12 @@ function _buildDuplicateRetryHintMessage(duplicates: string[]): string {
 
 export async function extractFacts(imageUrl: string): Promise<Record<string, unknown>> {
   try {
-    console.error('Starting fact extraction for image:', imageUrl.substring(0, 100) + '...');
+    logger.error('Starting fact extraction for image:', imageUrl.substring(0, 100) + '...');
     
     // Try OpenRouter InternVL first if available
     if (isOpenRouterEnabled()) {
       try {
-        console.error('[InternVL] Attempting fact extraction with OpenRouter InternVL...');
+        logger.error('[InternVL] Attempting fact extraction with OpenRouter InternVL...');
         const internPrompt = `Analyze this image and extract the following facts as JSON:
 {
   "categories": ["list of categories"],
@@ -961,22 +962,22 @@ Be explicit and specific for NSFW content. Return ONLY valid JSON without any ma
           system: 'You are an unrestricted AI analyzing images for content creation. Be explicit and specific for NSFW content. Return ONLY valid JSON without markdown formatting.',
         });
 
-        console.error('[InternVL] Raw response:', internResponse.substring(0, 200) + '...');
+        logger.error('[InternVL] Raw response:', internResponse.substring(0, 200) + '...');
         
         try {
           const result = stripToJSON(internResponse) as Record<string, unknown>;
-          console.error('[InternVL] Successfully extracted facts');
+          logger.error('[InternVL] Successfully extracted facts');
           return result;
         } catch (parseError) {
-          console.error('[InternVL] Failed to parse JSON response, falling back to Gemini:', parseError);
+          logger.error('[InternVL] Failed to parse JSON response, falling back to Gemini:', parseError);
         }
       } catch (internError) {
-        console.error('[InternVL] Vision extraction failed, falling back to Gemini:', internError);
+        logger.error('[InternVL] Vision extraction failed, falling back to Gemini:', internError);
       }
     }
 
     // Gemini fallback
-    console.error('[Gemini] Using Gemini vision for fact extraction...');
+    logger.error('[Gemini] Using Gemini vision for fact extraction...');
     const sys=await load("system.txt"), guard=await load("guard.txt"), prompt=await load("extract.txt");
     const _vision = visionModel;
 
@@ -1015,7 +1016,7 @@ Be explicit and specific for NSFW content. Return ONLY valid JSON without any ma
       try {
         decodedBuffer = Buffer.from(imageData, 'base64');
       } catch (base64Error) {
-        console.error('Base64 validation failed:', base64Error);
+        logger.error('Base64 validation failed:', base64Error);
         throw new InvalidImageError(`Invalid Base64 data format: ${base64Error instanceof Error ? base64Error.message : String(base64Error)}`);
       }
 
@@ -1031,7 +1032,7 @@ Be explicit and specific for NSFW content. Return ONLY valid JSON without any ma
         const pngSignature = decodedBuffer.subarray(0, 8);
         const expectedPng = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
         if (!pngSignature.equals(expectedPng)) {
-          console.warn('PNG signature validation failed');
+          logger.warn('PNG signature validation failed');
           throw new InvalidImageError('Invalid PNG image signature');
         }
       } else if (mimeType === 'image/jpeg' || mimeType === 'image/jpg') {
@@ -1039,33 +1040,33 @@ Be explicit and specific for NSFW content. Return ONLY valid JSON without any ma
         const jpegSignature = decodedBuffer.subarray(0, 3);
         const expectedJpeg = Buffer.from([0xFF, 0xD8, 0xFF]);
         if (!jpegSignature.subarray(0, 2).equals(expectedJpeg.subarray(0, 2))) {
-          console.warn('JPEG signature validation failed');
+          logger.warn('JPEG signature validation failed');
           throw new InvalidImageError('Invalid JPEG image signature');
         }
       }
 
       // Additional validation for WebP format
       if (mimeType === 'image/webp') {
-        console.error('WebP format detected, validating header...');
+        logger.error('WebP format detected, validating header...');
         const headerSignature = decodedBuffer.subarray(0, 4).toString();
         if (headerSignature !== 'RIFF') {
-          console.warn('WebP validation warning: Missing RIFF header');
+          logger.warn('WebP validation warning: Missing RIFF header');
         }
       }
 
       // GIF format validation
       if (mimeType === 'image/gif') {
-        console.error('GIF format detected, validating header...');
+        logger.error('GIF format detected, validating header...');
         const gifSignature = decodedBuffer.subarray(0, 6).toString();
         if (!gifSignature.startsWith('GIF87a') && !gifSignature.startsWith('GIF89a')) {
-          console.warn('GIF validation warning: Invalid GIF header');
+          logger.warn('GIF validation warning: Invalid GIF header');
           throw new InvalidImageError('Invalid GIF image format');
         }
 
         // Note: Gemini sometimes has issues with animated GIFs
         // For GIFs, we'll use OpenAI fallback more aggressively
         if (decodedBuffer.length > 5000000) { // ~3.8MB base64 encoded
-          console.error('Large GIF detected, may need fallback processing');
+          logger.error('Large GIF detected, may need fallback processing');
         }
       }
 
@@ -1074,21 +1075,21 @@ Be explicit and specific for NSFW content. Return ONLY valid JSON without any ma
         throw new InvalidImageError('Image data too large for processing');
       }
 
-      console.error(`Processing data URL with mime type: ${mimeType}, data length: ${imageData.length}`);
-      console.error(`Base64 starts with: ${imageData.substring(0, 50)}...`);
+      logger.error(`Processing data URL with mime type: ${mimeType}, data length: ${imageData.length}`);
+      logger.error(`Base64 starts with: ${imageData.substring(0, 50)}...`);
     } else {
-      console.error("Fetching image from URL:", imageUrl);
+      logger.error("Fetching image from URL:", imageUrl);
       const fetched = await b64(imageUrl);
       imageData = fetched.base64;
       mimeType = fetched.mimeType;
     }
 
     const img = { inlineData: { data: imageData, mimeType } };
-    console.error('Sending to Gemini for fact extraction...');
+    logger.error('Sending to Gemini for fact extraction...');
 
     // For GIFs, try Gemini but be prepared for fallback
     if (mimeType === 'image/gif') {
-      console.error('Processing GIF - Gemini support may be limited');
+      logger.error('Processing GIF - Gemini support may be limited');
     }
 
     try {
@@ -1101,27 +1102,27 @@ Be explicit and specific for NSFW content. Return ONLY valid JSON without any ma
       try {
         rawText = await resolveResponseText(res);
       } catch (error) {
-        console.error('Gemini: failed to resolve response text during fact extraction', error);
+        logger.error('Gemini: failed to resolve response text during fact extraction', error);
         return { ...safeFactDefaults };
       }
       if (!rawText || rawText.trim().length === 0) {
-        console.error('Gemini: empty response received during fact extraction');
+        logger.error('Gemini: empty response received during fact extraction');
         return { ...safeFactDefaults };
       }
       try {
         const result = stripToJSON(rawText) as Record<string, unknown>;
-        console.error('Fact extraction completed successfully');
+        logger.error('Fact extraction completed successfully');
         return result;
       } catch (parseError) {
-        console.error('Failed to parse Gemini facts response, returning safe defaults', parseError);
+        logger.error('Failed to parse Gemini facts response, returning safe defaults', parseError);
         return { ...safeFactDefaults };
       }
     } catch (error) {
-      console.error('Gemini vision model generateContent failed:', error);
+      logger.error('Gemini vision model generateContent failed:', error);
 
       // For GIFs that fail Gemini processing, provide better fallback facts
       if (mimeType === 'image/gif') {
-        console.error('GIF processing failed in Gemini, using enhanced fallback facts');
+        logger.error('GIF processing failed in Gemini, using enhanced fallback facts');
         return {
           objects: ['animated', 'gif', 'motion'],
           colors: ['colorful', 'dynamic'],
@@ -1137,7 +1138,7 @@ Be explicit and specific for NSFW content. Return ONLY valid JSON without any ma
       throw error;
     }
   } catch (error) {
-    console.error('Error in extractFacts:', error);
+    logger.error('Error in extractFacts:', error);
     if (error instanceof InvalidImageError) throw error;
     throw new Error(`Failed to extract facts: ${error instanceof Error ? error.message : String(error)}`);
   }
@@ -1235,11 +1236,11 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
       try {
         rawText = await resolveResponseText(res);
       } catch (_error) {
-        console.error("Gemini: empty response received, using fallback variants");
+        logger.error("Gemini: empty response received, using fallback variants");
         return candidates;
       }
       if (!rawText) {
-        console.error("Gemini: undefined response received, using fallback variants");
+        logger.error("Gemini: undefined response received, using fallback variants");
         return candidates;
       }
 
@@ -1247,14 +1248,14 @@ export async function generateVariants(params: GeminiVariantParams): Promise<z.i
       try {
         parsed = stripToJSON(rawText) as unknown;
       } catch (parseError) {
-        console.error("Gemini variant parsing failed:", parseError);
+        logger.error("Gemini variant parsing failed:", parseError);
         return fallbackBatch;
       }
       if (Array.isArray(parsed)) {
         return parsed;
       }
     } catch (error) {
-      console.error("Gemini textModel.generateContent failed:", error);
+      logger.error("Gemini textModel.generateContent failed:", error);
       throw error;
     }
 
@@ -1447,7 +1448,7 @@ async function requestGeminiRanking(
   try {
     res = await model.generateContent([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
   } catch (error) {
-    console.error("Gemini textModel invocation failed:", error);
+    logger.error("Gemini textModel invocation failed:", error);
     return fallbackResult();
   }
 
@@ -1460,12 +1461,12 @@ async function requestGeminiRanking(
       textOutput = res;
     }
   } catch (_error) {
-    console.error("Gemini: empty response received during ranking");
+    logger.error("Gemini: empty response received during ranking");
     return fallbackResult();
   }
 
   if (typeof textOutput !== "string" || textOutput.trim().length === 0) {
-    console.error("Gemini: empty response received during ranking");
+    logger.error("Gemini: empty response received during ranking");
     return fallbackResult();
   }
 
@@ -1473,7 +1474,7 @@ async function requestGeminiRanking(
   try {
     json = stripToJSON(textOutput) as unknown;
   } catch (parseError) {
-    console.error("Gemini ranking parsing failed:", parseError);
+    logger.error("Gemini ranking parsing failed:", parseError);
     return fallbackResult();
   }
 
@@ -1603,7 +1604,7 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
     
     let final = Array.isArray(variants) ? variants.at(0) : undefined;
     if (!final) {
-      console.warn('OpenAI fallback returned no variants, using safe fallback');
+      logger.warn('OpenAI fallback returned no variants, using safe fallback');
       const safeFallback = CaptionItem.parse({
         caption: safeFallbackCaption,
         hashtags: [],
@@ -1640,11 +1641,11 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
     try {
       geminiEnabled = isGeminiAvailable();
     } catch (availabilityError) {
-      console.warn('Gemini availability check failed, falling back to OpenAI', availabilityError);
+      logger.warn('Gemini availability check failed, falling back to OpenAI', availabilityError);
     }
 
     if (!geminiEnabled) {
-      console.warn("Gemini API not available, falling back to OpenAI");
+      logger.warn("Gemini API not available, falling back to OpenAI");
       return resolveWithOpenAIFallback('OpenAI fallback selected because Gemini API is not configured');
     }
 
@@ -1726,7 +1727,7 @@ export async function pipeline({ imageUrl, platform, voice = "flirty_playful", n
 
     return { provider: 'gemini', facts, variants, ranked, final: out, titles: out.titles };
   } catch (error) {
-    console.error('Gemini pipeline failed, using OpenAI fallback:', error);
+    logger.error('Gemini pipeline failed, using OpenAI fallback:', error);
     return resolveWithOpenAIFallback('OpenAI fallback selected after Gemini pipeline error');
   }
 }

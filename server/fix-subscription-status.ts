@@ -1,9 +1,10 @@
 #!/usr/bin/env tsx
 import { db } from './db.js';
 import { sql } from 'drizzle-orm';
+import { logger } from './bootstrap/logger.js';
 
 async function fixSubscriptionStatus() {
-  console.error('🔧 Fixing subscription_status values in database...');
+  logger.error('🔧 Fixing subscription_status values in database...');
   
   try {
     // First, check what values exist
@@ -14,8 +15,8 @@ async function fixSubscriptionStatus() {
       ORDER BY count DESC
     `);
     
-    console.error('Current subscription_status values:');
-    console.error(result.rows);
+    logger.error('Current subscription_status values:');
+    logger.error(result.rows);
     
     // Fix any invalid values
     const updateResult = await db.execute(sql`
@@ -28,7 +29,7 @@ async function fixSubscriptionStatus() {
          OR subscription_status NOT IN ('active', 'inactive', 'cancelled', 'past_due')
     `);
     
-    console.error(`✅ Updated ${updateResult.rowCount} users with invalid subscription_status`);
+    logger.error(`✅ Updated ${updateResult.rowCount} users with invalid subscription_status`);
     
     // Verify the fix
     const verifyResult = await db.execute(sql`
@@ -38,14 +39,14 @@ async function fixSubscriptionStatus() {
       ORDER BY count DESC
     `);
     
-    console.error('\nUpdated subscription_status values:');
-    console.error(verifyResult.rows);
+    logger.error('\nUpdated subscription_status values:');
+    logger.error(verifyResult.rows);
     
-    console.error('✅ Database fixed successfully!');
-    console.error('You can now retry your deployment.');
+    logger.error('✅ Database fixed successfully!');
+    logger.error('You can now retry your deployment.');
     
   } catch (error) {
-    console.error('❌ Error fixing database:', error);
+    logger.error('❌ Error fixing database:', error);
     process.exit(1);
   }
   

@@ -125,7 +125,7 @@ async function applyReceiptImageShieldProtection(
       .jpeg({ quality: settings.quality })
       .toBuffer();
   } catch (error) {
-    console.error('Receipt ImageShield protection failed:', error);
+    logger.error('Receipt ImageShield protection failed:', error);
     // Return original buffer if protection fails
     return inputBuffer;
   }
@@ -138,7 +138,7 @@ export function registerExpenseRoutes(app: Express) {
       const categories = await storage.getExpenseCategories();
       res.json(categories);
     } catch (error) {
-      console.error('Error fetching expense categories:', error);
+      logger.error('Error fetching expense categories:', error);
       res.status(500).json({ message: 'Failed to fetch expense categories' });
     }
   });
@@ -154,7 +154,7 @@ export function registerExpenseRoutes(app: Express) {
       const expenses = await storage.getUserExpenses(req.user.id, taxYear);
       res.json(expenses);
     } catch (error) {
-      console.error('Error fetching expenses:', error);
+      logger.error('Error fetching expenses:', error);
       res.status(500).json({ message: 'Failed to fetch expenses' });
     }
   });
@@ -233,7 +233,7 @@ export function registerExpenseRoutes(app: Express) {
       const expense = await storage.createExpense(expensePayload);
       res.status(201).json(expense);
     } catch (error) {
-      console.error('Error creating expense:', error);
+      logger.error('Error creating expense:', error);
       res.status(500).json({ message: 'Failed to create expense' });
     }
   });
@@ -357,7 +357,7 @@ export function registerExpenseRoutes(app: Express) {
       const expense = await storage.updateExpense(expenseId, req.user.id, updates);
       res.json(expense);
     } catch (error) {
-      console.error('Error updating expense:', error);
+      logger.error('Error updating expense:', error);
       res.status(500).json({ message: 'Failed to update expense' });
     }
   });
@@ -373,7 +373,7 @@ export function registerExpenseRoutes(app: Express) {
       await storage.deleteExpense(expenseId, req.user.id);
       res.status(204).send();
     } catch (error) {
-      console.error('Error deleting expense:', error);
+      logger.error('Error deleting expense:', error);
       res.status(500).json({ message: 'Failed to delete expense' });
     }
   });
@@ -389,7 +389,7 @@ export function registerExpenseRoutes(app: Express) {
       const totals = await storage.getExpenseTotals(req.user.id, taxYear);
       res.json(totals);
     } catch (error) {
-      console.error('Error fetching expense totals:', error);
+      logger.error('Error fetching expense totals:', error);
       res.status(500).json({ message: 'Failed to fetch expense totals' });
     }
   });
@@ -406,7 +406,7 @@ export function registerExpenseRoutes(app: Express) {
       const expenses = await storage.getExpensesByDateRange(req.user.id, startDate, endDate);
       res.json(expenses);
     } catch (error) {
-      console.error('Error fetching expenses by date range:', error);
+      logger.error('Error fetching expenses by date range:', error);
       res.status(500).json({ message: 'Failed to fetch expenses by date range' });
     }
   });
@@ -425,7 +425,7 @@ export function registerExpenseRoutes(app: Express) {
       
       res.json(guidance);
     } catch (error) {
-      console.error('Error fetching tax deduction guidance:', error);
+      logger.error('Error fetching tax deduction guidance:', error);
       res.status(500).json({ message: 'Failed to fetch tax deduction guidance' });
     }
   });
@@ -498,7 +498,7 @@ export function registerExpenseRoutes(app: Express) {
       logger.info(`${uploadDescriptor}: ${receiptFileName} for expense ${expenseId}`);
       res.json(expense);
     } catch (error) {
-      console.error('Error uploading receipt:', error);
+      logger.error('Error uploading receipt:', error);
       res.status(500).json({ message: 'Failed to upload receipt' });
     }
   });

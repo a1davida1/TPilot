@@ -1,5 +1,6 @@
 import { db } from "../db.js";
 import { eventLogs } from "../../shared/schema.js";
+import { logger } from '../bootstrap/logger.js';
 
 export async function trackEvent(userId: number | null, type: string, meta: Record<string, unknown> = {}) {
   try {
@@ -10,6 +11,6 @@ export async function trackEvent(userId: number | null, type: string, meta: Reco
     });
   } catch (e) {
     // swallow analytics errors
-    console.error("trackEvent failed", e);
+    logger.error("trackEvent failed", e);
   }
 }

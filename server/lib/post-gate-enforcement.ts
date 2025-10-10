@@ -1,5 +1,6 @@
 import { checkPreviewGate } from "./preview-gate.js";
 import type { Request, Response, NextFunction } from 'express';
+import { logger } from '../bootstrap/logger.js';
 
 export interface PostGateResult {
   canPost: boolean;
@@ -28,7 +29,7 @@ export async function enforcePreviewGate(userId: number): Promise<PostGateResult
     return { canPost: true };
     
   } catch (error) {
-    console.error("Post gate enforcement error:", error);
+    logger.error("Post gate enforcement error:", error);
     
     // Fail safe: if gate check fails, block posting to prevent policy violations
     return {
@@ -69,7 +70,7 @@ export function requirePreviewGate() {
       next();
       
     } catch (error) {
-      console.error("Preview gate middleware error:", error);
+      logger.error("Preview gate middleware error:", error);
       res.status(500).json({ message: "Policy check failed" });
     }
   };

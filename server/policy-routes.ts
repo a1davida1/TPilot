@@ -6,6 +6,7 @@ import { db } from "./db.js";
 import { postPreviews, featureFlags } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { logger } from './bootstrap/logger.js';
 
 // Request validation schemas
 const previewRequestSchema = z.object({
@@ -66,7 +67,7 @@ export function registerPolicyRoutes(app: Express) {
       });
 
     } catch (error) {
-      console.error("Preview endpoint error:", error);
+      logger.error("Preview endpoint error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -86,7 +87,7 @@ export function registerPolicyRoutes(app: Express) {
       res.json(stats);
 
     } catch (error) {
-      console.error("Preview stats endpoint error:", error);
+      logger.error("Preview stats endpoint error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -106,7 +107,7 @@ export function registerPolicyRoutes(app: Express) {
       res.json(gateResult);
 
     } catch (error) {
-      console.error("Gate check endpoint error:", error);
+      logger.error("Gate check endpoint error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -127,7 +128,7 @@ export function registerPolicyRoutes(app: Express) {
       });
 
     } catch (error) {
-      console.error("Policy flags endpoint error:", error);
+      logger.error("Policy flags endpoint error:", error);
       res.status(500).json({
         blockOnWarn: false // Fail safe
       });

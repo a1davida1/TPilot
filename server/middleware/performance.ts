@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { logger } from '../bootstrap/logger.js';
 
 declare module 'express-serve-static-core' {
   interface Response {
@@ -83,12 +84,12 @@ class PerformanceMonitor {
     
     // Log to console in development
     if (process.env.NODE_ENV === 'development' && metric.duration > 500) {
-      console.error(`[PERF] ${metric.method} ${metric.path}: ${metric.duration.toFixed(2)}ms`);
+      logger.error(`[PERF] ${metric.method} ${metric.path}: ${metric.duration.toFixed(2)}ms`);
     }
   }
 
   private handleSlowRequest(metric: PerformanceMetric) {
-    console.warn('[SLOW REQUEST]', {
+    logger.warn('[SLOW REQUEST]', {
       path: metric.path,
       method: metric.method,
       duration: `${metric.duration.toFixed(2)}ms`,
@@ -103,7 +104,7 @@ class PerformanceMonitor {
   }
 
   private handleCriticalPerformance(metric: PerformanceMetric) {
-    console.error('[CRITICAL PERFORMANCE]', {
+    logger.error('[CRITICAL PERFORMANCE]', {
       path: metric.path,
       method: metric.method,
       duration: `${metric.duration.toFixed(2)}ms`,

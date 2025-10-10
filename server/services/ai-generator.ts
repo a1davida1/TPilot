@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { buildMessages, type PromptConfig } from './prompt-builder';
+import { logger } from '../bootstrap/logger.js';
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -109,7 +110,7 @@ export async function generateAIContent(
     };
 
   } catch (error) {
-    console.error('AI generation error:', error);
+    logger.error('AI generation error:', error);
     
     if (error instanceof Error) {
       if (error.message.includes('quota') || error.message.includes('billing')) {
@@ -149,7 +150,7 @@ export async function analyzeImageForContent(imageBase64: string): Promise<strin
 
     return completion.choices[0]?.message?.content || 'Image analysis unavailable';
   } catch (error) {
-    console.error('Image analysis error:', error);
+    logger.error('Image analysis error:', error);
     throw new Error('Image analysis temporarily unavailable');
   }
 }
@@ -173,7 +174,7 @@ export async function generateSimpleContent(prompt: string, platform: string = '
 
     return completion.choices[0]?.message?.content || 'Content generation unavailable';
   } catch (error) {
-    console.error('Simple content generation error:', error);
+    logger.error('Simple content generation error:', error);
     throw new Error('Content generation temporarily unavailable');
   }
 }

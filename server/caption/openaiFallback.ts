@@ -6,6 +6,7 @@ import { CaptionArray, CaptionItem, type CaptionVariants, type CaptionVariant } 
 import { serializePromptField } from './promptUtils';
 import { formatVoiceContext } from './voiceTraits';
 import { validateImageUrl, logImageInfo, toOpenAIImageUrl } from './lib/images';
+import { logger } from '../bootstrap/logger.js';
 
 function isImageDiagnosticsEnabled(): boolean {
   if (process.env.NODE_ENV === 'production') {
@@ -209,7 +210,7 @@ export async function openAICaptionFallback({
 
   if (imageUrl) {
     try {
-      console.error('OpenAI fallback: Analyzing image for accurate captions');
+      logger.error('OpenAI fallback: Analyzing image for accurate captions');
       const sanitizedUrl = toOpenAIImageUrl(imageUrl);
       if (!sanitizedUrl || !validateImageUrl(sanitizedUrl)) {
         throw new Error('Invalid or too short image data');
@@ -241,7 +242,7 @@ export async function openAICaptionFallback({
         },
       ];
     } catch (error) {
-      console.warn('Image analysis failed, using text-only fallback:', error);
+      logger.warn('Image analysis failed, using text-only fallback:', error);
       messages = [
         {
           role: 'system',
@@ -282,8 +283,8 @@ export async function openAICaptionFallback({
     try {
       parsed = JSON.parse(response.choices[0].message.content || '{}');
     } catch (error) {
-      console.error('Error parsing JSON response from OpenAI:', error);
-      console.error('OpenAI response content:', response.choices[0].message.content);
+      logger.error('Error parsing JSON response from OpenAI:', error);
+      logger.error('OpenAI response content:', response.choices[0].message.content);
       parsed = { variants: [{ caption: response.choices[0].message.content || 'Fallback caption' }] };
     }
 
@@ -304,7 +305,7 @@ export async function openAICaptionFallback({
 
     return CaptionArray.parse(completed.slice(0, VARIANT_TARGET));
   } catch (error) {
-    console.error('Error calling OpenAI API:', error);
+    logger.error('Error calling OpenAI API:', error);
     return buildSafeFallbackVariants(complianceParams, voice, { nsfw });
   }
 }

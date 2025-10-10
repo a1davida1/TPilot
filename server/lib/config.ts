@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { logger } from '../bootstrap/logger.js';
 
 // Environment configuration with Zod validation
 export const envSchema = z
@@ -116,7 +117,7 @@ export function getEnvConfig() {
   try {
     return envSchema.parse(process.env);
   } catch (error) {
-    console.error('Environment validation failed:', error);
+    logger.error('Environment validation failed:', error);
     // Return a safe default configuration for development
     return {
       ...process.env,
@@ -136,11 +137,11 @@ try {
   env = envSchema.parse(process.env);
 } catch (error) {
   if (process.env.NODE_ENV === 'development') {
-    console.warn("⚠️ Development mode: Some enterprise features may be disabled");
-    console.warn("  To enable all features, configure these environment variables:");
+    logger.warn("⚠️ Development mode: Some enterprise features may be disabled");
+    logger.warn("  To enable all features, configure these environment variables:");
     if (error instanceof z.ZodError) {
       error.errors.forEach((err) => {
-        console.warn(`    ${err.path.join('.')}: ${err.message}`);
+        logger.warn(`    ${err.path.join('.')}: ${err.message}`);
       });
     }
     // Create minimal config for development
@@ -196,10 +197,10 @@ try {
       ADMIN_EMAIL_WHITELIST: process.env.ADMIN_EMAIL_WHITELIST || '',
     } as Environment;
   } else {
-    console.error("❌ Environment validation failed:");
+    logger.error("❌ Environment validation failed:");
     if (error instanceof z.ZodError) {
       error.errors.forEach((err) => {
-        console.error(`  ${err.path.join('.')}: ${err.message}`);
+        logger.error(`  ${err.path.join('.')}: ${err.message}`);
       });
     }
     process.exit(1);

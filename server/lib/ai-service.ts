@@ -6,6 +6,7 @@ import { aiGenerations, users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { assertExists } from "../../helpers/assert";
 import { getTextModel, isGeminiAvailable } from "./gemini-client.js";
+import { logger } from '../bootstrap/logger.js';
 
 // AI service initialization
 // Use Gemini as primary (checking both GOOGLE_GENAI_API_KEY and GEMINI_API_KEY), OpenAI as fallback
@@ -72,12 +73,12 @@ export class AiService {
       return { ...response, cached: false };
       
     } catch (error: unknown) {
-      console.error('Gemini generation failed:', error);
+      logger.error('Gemini generation failed:', error);
       
       // Check if Gemini has quota issues too
       const errorObj = error as Record<string, unknown>;
       if (errorObj?.status === 429 || (errorObj?.message as string)?.includes('quota')) {
-        console.error('Gemini quota exceeded, trying OpenAI fallback...');
+        logger.error('Gemini quota exceeded, trying OpenAI fallback...');
       }
       
       // Fallback to OpenAI
@@ -86,12 +87,12 @@ export class AiService {
         await this.cacheResult(userId, 'openai', inputHash, inputData, response);
         return { ...response, cached: false };
       } catch (fallbackError: unknown) {
-        console.error('OpenAI fallback failed:', fallbackError);
+        logger.error('OpenAI fallback failed:', fallbackError);
         
         // Check if it's a quota error
         const fe = fallbackError as Record<string, unknown>;
         if (fe?.code === 'insufficient_quota' || fe?.status === 429) {
-          console.error('API quota exceeded, using template fallback...');
+          logger.error('API quota exceeded, using template fallback...');
           const platforms = inputData.platforms || ['reddit'];
           const fallbackContent = this.createFallbackContent(platforms);
           return { content: fallbackContent, tokensUsed: 0, model: 'fallback', cached: false };
@@ -241,7 +242,7 @@ Return ONLY the JSON object above with actual content. No other text.`;
             return parsed.content;
           }
         } catch (parseError) {
-          console.warn('JSON parse failed, trying text extraction:', parseError);
+          logger.warn('JSON parse failed, trying text extraction:', parseError);
         }
       }
       
@@ -260,8 +261,8 @@ Return ONLY the JSON object above with actual content. No other text.`;
       }));
       
     } catch (error) {
-      console.error('Failed to parse Gemini response:', error);
-      console.error('Raw response text:', text.slice(0, 200) + '...');
+      logger.error('Failed to parse Gemini response:', error);
+      logger.error('Raw response text:', text.slice(0, 200) + '...');
       return this.createFallbackContent(platforms);
     }
   }
@@ -271,7 +272,7 @@ Return ONLY the JSON object above with actual content. No other text.`;
       const parsed = JSON.parse(text);
       return parsed.content || [];
     } catch (error) {
-      console.error('Failed to parse OpenAI response:', error);
+      logger.error('Failed to parse OpenAI response:', error);
       return this.createFallbackContent(platforms);
     }
   }
@@ -305,7 +306,7 @@ Return ONLY the JSON object above with actual content. No other text.`;
       return cached.outputJson as Omit<AiResponse, 'cached'>;
       
     } catch (error) {
-      console.error('Cache lookup failed:', error);
+      logger.error('Cache lookup failed:', error);
       return null;
     }
   }
@@ -320,7 +321,7 @@ Return ONLY the JSON object above with actual content. No other text.`;
     try {
       // Validate userId exists and is a valid number
       if (!userId || typeof userId !== 'number' || userId <= 0) {
-        console.warn('Invalid userId provided for caching, skipping cache');
+        logger.warn('Invalid userId provided for caching, skipping cache');
         return;
       }
 
@@ -332,7 +333,7 @@ Return ONLY the JSON object above with actual content. No other text.`;
         .limit(1);
 
       if (userExists.length === 0) {
-        console.warn(`User ID ${userId} not found in database, skipping cache`);
+        logger.warn(`User ID ${userId} not found in database, skipping cache`);
         return;
       }
 
@@ -345,11 +346,11 @@ Return ONLY the JSON object above with actual content. No other text.`;
         outputJson: result,
       });
     } catch (error: unknown) {
-      console.warn('Failed to cache AI result (non-fatal):', (error as Error).message);
+      logger.warn('Failed to cache AI result (non-fatal):', (error as Error).message);
       // Check for foreign key constraint violation
       const err = error as Record<string, unknown>;
       if (err?.code === '23503' && typeof err?.constraint === 'string' && err.constraint.includes('user_id')) {
-        console.warn(`User ID ${userId} not found in database, skipping cache`);
+        logger.warn(`User ID ${userId} not found in database, skipping cache`);
       }
       // Non-fatal error, continue without caching
     }
@@ -396,7 +397,7 @@ Return ONLY the JSON object above with actual content. No other text.`;
       };
       
     } catch (error) {
-      console.error('Image analysis failed:', error);
+      logger.error('Image analysis failed:', error);
       return {
         description: "Image analysis unavailable",
         mood: "authentic",
@@ -420,7 +421,7 @@ Return ONLY the JSON object above with actual content. No other text.`;
         .orderBy(aiGenerations.createdAt)
         .limit(limit);
     } catch (error) {
-      console.error('Failed to get user history:', error);
+      logger.error('Failed to get user history:', error);
       return [];
     }
   }
@@ -434,9 +435,9 @@ Return ONLY the JSON object above with actual content. No other text.`;
         .delete(aiGenerations)
         .where(eq(aiGenerations.createdAt, cutoff));
         
-      console.error(`Cleaned ${result} old AI cache entries`);
+      logger.error(`Cleaned ${result} old AI cache entries`);
     } catch (error) {
-      console.error('Cache cleanup failed:', error);
+      logger.error('Cache cleanup failed:', error);
     }
   }
 }

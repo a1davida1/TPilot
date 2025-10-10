@@ -7,7 +7,7 @@ const baseURL = "https://openrouter.ai/api/v1";
 const apiKey = process.env.OPENROUTER_API_KEY;
 
 if (!apiKey) {
-  console.warn("[OpenRouter] OPENROUTER_API_KEY not set. Provider will be disabled.");
+  logger.warn("[OpenRouter] OPENROUTER_API_KEY not set. Provider will be disabled.");
 }
 
 const site = process.env.OPENROUTER_SITE_URL || FRONTEND_URL || "https://thottopilot.com";

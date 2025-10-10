@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { logger } from '../bootstrap/logger.js';
 
 // YouTube Data API Integration
 export class YouTubeAPI {
@@ -77,7 +78,7 @@ export class YouTubeAPI {
         platform: 'youtube' as const,
       };
     } catch (error) {
-      console.error('YouTube API Error:', error);
+      logger.error('YouTube API Error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -108,7 +109,7 @@ export class YouTubeAPI {
 
       return response.ok;
     } catch (error) {
-      console.error('YouTube Thumbnail Error:', error);
+      logger.error('YouTube Thumbnail Error:', error);
       return false;
     }
   }
@@ -145,7 +146,7 @@ export class YouTubeAPI {
         platform: 'youtube' as const,
       };
     } catch (error) {
-      console.error('YouTube Metrics Error:', error);
+      logger.error('YouTube Metrics Error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -189,7 +190,7 @@ export class YouTubeAPI {
         platform: 'youtube' as const,
       };
     } catch (error) {
-      console.error('YouTube Channel Metrics Error:', error);
+      logger.error('YouTube Channel Metrics Error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -221,7 +222,7 @@ export class YouTubeAPI {
         platform: 'youtube' as const,
       };
     } catch (error) {
-      console.error('YouTube Search Error:', error);
+      logger.error('YouTube Search Error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

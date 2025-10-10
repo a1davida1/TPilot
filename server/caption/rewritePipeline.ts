@@ -19,6 +19,7 @@ import {
   safeFallbackCta,
   safeFallbackHashtags
 } from "./rankingGuards";
+import { logger } from '../bootstrap/logger.js';
 
 // CaptionResult interface for type safety
 interface CaptionResult {
@@ -154,7 +155,7 @@ export async function extractFacts(imageUrl:string){
     }
     return stripToJSON(res.response.text());
   } catch (error) {
-    console.error('Gemini vision model generateContent failed:', error);
+    logger.error('Gemini vision model generateContent failed:', error);
     throw error;
   }
 }
@@ -250,7 +251,7 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
     try {
       response = await textModel.generateContent([{ text: promptSections.join("\n") }]);
     } catch (error) {
-      console.error('Gemini textModel.generateContent failed:', error);
+      logger.error('Gemini textModel.generateContent failed:', error);
       throw error;
     }
 
@@ -266,7 +267,7 @@ export async function variantsRewrite(params: RewriteVariantsParams) {
     try {
       parsed = stripToJSON(raw);
     } catch (error) {
-      console.error("Gemini rewrite variants parsing failed:", { raw, error });
+      logger.error("Gemini rewrite variants parsing failed:", { raw, error });
       parsed = [];
       currentHint = baseHint;
     }
@@ -402,7 +403,7 @@ async function requestRewriteRanking(
   try {
     res = await model.generateContent([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
   } catch (error) {
-    console.error('Rewrite textModel.generateContent failed:', error);
+    logger.error('Rewrite textModel.generateContent failed:', error);
     throw error;
   }
   if (!res) {
@@ -453,7 +454,7 @@ async function requestRewriteRanking(
   try {
     json = stripToJSON(raw) as unknown;
   } catch (error) {
-    console.error("Gemini rewrite ranking parsing failed:", { raw, error });
+    logger.error("Gemini rewrite ranking parsing failed:", { raw, error });
     return buildFallbackRanking();
   }
 
@@ -469,12 +470,12 @@ async function requestRewriteRanking(
       };
     }
 
-    console.error("Gemini rewrite ranking returned array without valid winner:", { raw });
+    logger.error("Gemini rewrite ranking returned array without valid winner:", { raw });
     return buildFallbackRanking();
   }
 
   if (!json || typeof json !== "object") {
-    console.error("Gemini rewrite ranking returned non-object payload:", { raw, json });
+    logger.error("Gemini rewrite ranking returned non-object payload:", { raw, json });
     return buildFallbackRanking();
   }
 

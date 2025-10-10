@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { db } from '../db';
 import { leads } from '@shared/schema';
 import { desc } from 'drizzle-orm';
+import { logger } from '../bootstrap/logger.js';
 
 export async function getLeads(req: Request, res: Response) {
   try {
@@ -15,7 +16,7 @@ export async function getLeads(req: Request, res: Response) {
 
     res.json(allLeads);
   } catch (error) {
-    console.error('Get leads error:', error);
+    logger.error('Get leads error:', error);
     res.status(500).json({ error: 'Failed to fetch leads' });
   }
 }

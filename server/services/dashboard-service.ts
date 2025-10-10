@@ -11,6 +11,7 @@ import {
 } from '@shared/schema';
 import { eq, and, gte, sql, desc } from 'drizzle-orm';
 import { MediaManager } from '../lib/media.js';
+import { logger } from '../bootstrap/logger.js';
 
 export interface DashboardStats {
   postsToday: number;
@@ -87,7 +88,7 @@ export class DashboardService {
       
       return Number(result[0]?.count ?? 0);
     } catch (error) {
-      console.error('Error getting posts today:', error);
+      logger.error('Error getting posts today:', error);
       return 0;
     }
   }
@@ -158,7 +159,7 @@ export class DashboardService {
 
       return 0;
     } catch (error) {
-      console.error('Error getting engagement rate:', error);
+      logger.error('Error getting engagement rate:', error);
       return 0;
     }
   }
@@ -172,7 +173,7 @@ export class DashboardService {
       
       return Number(result[0]?.count ?? 0);
     } catch (error) {
-      console.error('Error getting takedowns found:', error);
+      logger.error('Error getting takedowns found:', error);
       return 0;
     }
   }
@@ -199,7 +200,7 @@ export class DashboardService {
       // Convert from cents to dollars
       return Math.round((totalDeductions / 100) * 0.25 * 100) / 100;
     } catch (error) {
-      console.error('Error getting estimated tax savings:', error);
+      logger.error('Error getting estimated tax savings:', error);
       return 0;
     }
   }
@@ -251,7 +252,7 @@ export class DashboardService {
         interactionsToday: Number(interactionMetrics[0]?.count ?? 0),
       };
     } catch (error) {
-      console.error('Error getting analytics metrics:', error);
+      logger.error('Error getting analytics metrics:', error);
       return {
         sessionCount: 0,
         averageSessionDuration: 0,
@@ -277,7 +278,7 @@ export class DashboardService {
 
       return this.buildActivityMediaItems(result, userId);
     } catch (error) {
-      console.error('Error getting recent media:', error);
+      logger.error('Error getting recent media:', error);
       return [];
     }
   }
@@ -322,7 +323,7 @@ export class DashboardService {
             createdAt: createdAtIso,
           } satisfies DashboardMediaItem;
         } catch (error) {
-          console.error('Error building media preview item:', error);
+          logger.error('Error building media preview item:', error);
           return null;
         }
       })
@@ -385,7 +386,7 @@ export class DashboardService {
         estimatedTaxSavings,
       };
     } catch (error) {
-      console.error('Error getting admin dashboard stats:', error);
+      logger.error('Error getting admin dashboard stats:', error);
       return {
         postsToday: 0,
         engagementRate: 0,
@@ -415,7 +416,7 @@ export class DashboardService {
         recentMedia: await this.buildActivityMediaItems(result),
       };
     } catch (error) {
-      console.error('Error getting admin dashboard activity:', error);
+      logger.error('Error getting admin dashboard activity:', error);
       return { recentMedia: [] };
     }
   }

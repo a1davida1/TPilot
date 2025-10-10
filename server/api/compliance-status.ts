@@ -2,6 +2,7 @@
 import { Router, type Request, type Response, type RequestHandler } from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { requireAdmin } from '../admin-routes.js';
+import { logger } from '../bootstrap/logger.js';
 
 /**
  * Compliance telemetry endpoint for the admin dashboard.
@@ -95,7 +96,7 @@ export async function getComplianceStatus(req: Request, res: Response) {
       }
     });
   } catch (error) {
-    console.error('Compliance status error:', error);
+    logger.error('Compliance status error:', error);
     res.status(500).json({ 
       error: 'Failed to fetch compliance status',
       details: process.env.NODE_ENV === 'development' ? error : undefined

@@ -1,3 +1,5 @@
+import { logger } from '../../bootstrap/logger.js';
+
 /**
  * Normalizes image input to a clean data URL or HTTPS URL for OpenAI API calls
  * Fixes issues with truncated/space-containing data URLs that cause invalid_base64 errors
@@ -67,13 +69,13 @@ export function logImageInfo(imageUrl: string, requestId?: string): void {
   const prefix = requestId ? `[${requestId}] ` : '';
 
   if (!imageUrl) {
-    console.error(`${prefix}Image URL is empty`);
+    logger.error(`${prefix}Image URL is empty`);
     return;
   }
 
   if (/^https?:\/\//i.test(imageUrl)) {
     const protocol = imageUrl.startsWith('https:') ? 'https' : 'http';
-    console.error(`${prefix}Using remote image URL (protocol: ${protocol}, length: ${imageUrl.length})`);
+    logger.error(`${prefix}Using remote image URL (protocol: ${protocol}, length: ${imageUrl.length})`);
     return;
   }
 
@@ -85,19 +87,19 @@ export function logImageInfo(imageUrl: string, requestId?: string): void {
       const mimeType = mimeMatch ? mimeMatch[1] : 'unknown';
       const base64Length = imageUrl.length - (commaIndex + 1);
       const approxBytes = Math.floor((base64Length * 3) / 4);
-      console.error(
+      logger.error(
         `${prefix}Using data URL (mime: ${mimeType}, approxBytes: ${approxBytes})`
       );
     } else {
-      console.error(`${prefix}Malformed data URL header`);
+      logger.error(`${prefix}Malformed data URL header`);
     }
     return;
   }
 
   if (/^[A-Za-z0-9+/=_-]+$/.test(imageUrl)) {
-    console.error(`${prefix}Received raw base64 payload (length: ${imageUrl.length})`);
+    logger.error(`${prefix}Received raw base64 payload (length: ${imageUrl.length})`);
     return;
   }
 
-  console.error(`${prefix}Unrecognized image input (length: ${imageUrl.length})`);
+  logger.error(`${prefix}Unrecognized image input (length: ${imageUrl.length})`);
 }

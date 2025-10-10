@@ -20,6 +20,7 @@ import {
   formatViolationSummary,
   sanitizeFinalVariant
 } from "./rankGuards";
+import { logger } from '../bootstrap/logger.js';
 
 type GeminiResponse = {
   text?: (() => unknown) | string;
@@ -408,7 +409,7 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
         { text: promptSections.join("\n") }
       ]);
     } catch (error) {
-      console.error("Gemini textModel.generateContent failed:", error);
+      logger.error("Gemini textModel.generateContent failed:", error);
       throw error;
     }
 
@@ -416,11 +417,11 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
     try {
       rawText = await resolveResponseText(response);
     } catch (_error) {
-      console.error("Gemini: empty response received in text-only pipeline, using fallback variants");
+      logger.error("Gemini: empty response received in text-only pipeline, using fallback variants");
       return candidates;
     }
     if (!rawText) {
-      console.error("Gemini: undefined response received in text-only pipeline, using fallback variants");
+      logger.error("Gemini: undefined response received in text-only pipeline, using fallback variants");
       return candidates;
     }
 
@@ -429,9 +430,9 @@ export async function generateVariantsTextOnly(params: TextOnlyVariantParams): P
       if (Array.isArray(json)) {
         return json;
       }
-      console.error("Gemini: variant payload was not an array in text-only pipeline");
+      logger.error("Gemini: variant payload was not an array in text-only pipeline");
     } catch (parseError) {
-      console.error("Gemini text-only variant parsing failed:", parseError);
+      logger.error("Gemini text-only variant parsing failed:", parseError);
     }
 
     return candidates;
@@ -636,7 +637,7 @@ async function requestTextOnlyRanking(
   try {
     res = await model.generateContent([{ text: `${promptBlock}${hintBlock}\n${serializedVariants}` }]);
   } catch (error) {
-    console.error("Text-only textModel.generateContent failed:", error);
+    logger.error("Text-only textModel.generateContent failed:", error);
     return fallbackResult();
   }
 
@@ -651,7 +652,7 @@ async function requestTextOnlyRanking(
         const raw = geminiRes.response.text();
         textOutput = typeof raw === "string" ? raw : null;
       } catch (invokeError) {
-        console.error("Gemini: failed to read text-only ranking response:", invokeError);
+        logger.error("Gemini: failed to read text-only ranking response:", invokeError);
       }
     }
   } else if (typeof res === "string") {
@@ -659,7 +660,7 @@ async function requestTextOnlyRanking(
   }
 
   if (typeof textOutput !== "string" || textOutput.trim().length === 0) {
-    console.error("Gemini: empty text-only ranking response");
+    logger.error("Gemini: empty text-only ranking response");
     return fallbackResult();
   }
 
@@ -667,7 +668,7 @@ async function requestTextOnlyRanking(
   try {
     json = stripToJSON(textOutput) as unknown;
   } catch (parseError) {
-    console.error("Gemini text-only ranking parsing failed:", parseError);
+    logger.error("Gemini text-only ranking parsing failed:", parseError);
     return fallbackResult();
   }
 
