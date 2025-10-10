@@ -1336,17 +1336,12 @@ export type ShadowbanStatusType = 'clear' | 'suspected' | 'unknown';
 
 export interface ShadowbanSubmissionSummary {
   id: string;
-  createdUtc: number;
-  permalink: string;
-  title?: string;
-  subreddit?: string;
+  subreddit: string;
+  title: string;
+  created: number;
 }
 
 export interface ShadowbanEvidenceResponse {
-  username: string;
-  checkedAt: string;
-  privateCount: number;
-  publicCount: number;
   privateSubmissions: ShadowbanSubmissionSummary[];
   publicSubmissions: ShadowbanSubmissionSummary[];
   missingSubmissionIds: string[];
@@ -1357,3 +1352,24 @@ export interface ShadowbanCheckApiResponse {
   reason?: string;
   evidence: ShadowbanEvidenceResponse;
 }
+
+// User storage assets for external hosting providers (Imgur, S3, etc)
+export const userStorageAssets = pgTable("user_storage_assets", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  provider: varchar("provider", { length: 50 }).notNull(), // imgur-anon, imgur-auth, s3, catbox, etc
+  url: text("url").notNull(), // Direct URL to the asset
+  deleteHash: varchar("delete_hash", { length: 255 }), // For deletion (Imgur specific)
+  sourceFilename: varchar("source_filename", { length: 500 }), // Original filename
+  width: integer("width"), // Image dimensions
+  height: integer("height"),
+  fileSize: integer("file_size"), // Size in bytes
+  mimeType: varchar("mime_type", { length: 100 }), // Content type
+  metadata: jsonb("metadata"), // Provider-specific metadata
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  deletedAt: timestamp("deleted_at"), // Soft delete
+}, (table) => ({
+  userIdIdx: index("user_storage_assets_user_id_idx").on(table.userId),
+  providerIdx: index("user_storage_assets_provider_idx").on(table.provider),
+  createdAtIdx: index("user_storage_assets_created_at_idx").on(table.createdAt),
+}))

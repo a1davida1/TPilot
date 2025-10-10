@@ -28,8 +28,8 @@ export class LinkedInAPI {
       if (!res.ok) {
         return { success: false, platform: 'linkedin', error: `HTTP ${res.status}` };
       }
-      const data = await res.json();
-      return { success: true, platform: 'linkedin', postId: data.id };
+      const data = await res.json() as { id?: string };
+      return { success: true, platform: 'linkedin', postId: data.id || '' };
     } catch (error: unknown) {
       return {
         success: false,
@@ -45,7 +45,7 @@ export class LinkedInAPI {
         headers: { 'Authorization': `Bearer ${this.accessToken}` },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await res.json() as { followersCount?: number; engagementRate?: number };
       return {
         followers: data.followersCount ?? 0,
         engagementRate: data.engagementRate ?? 0,

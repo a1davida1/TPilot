@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 // Switch component not currently used in this component
 import { CaptionPreview } from "./CaptionPreview";
+import { ImgurUploadPortal } from "./ImgurUploadPortal";
 import { Loader2, Sparkles, Upload, AlertCircle, Image as ImageIcon, Type, Edit3 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -346,69 +347,16 @@ export function GeminiCaptionGeneratorTabs() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-4">
-                <Label>Image Source</Label>
-                <div className="space-y-2">
-                  <Input
-                    type="url"
-                    placeholder="Enter image URL..."
-                    value={imageFile ? "" : imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    disabled={!!imageFile}
-                    data-testid="input-image-url"
-                  />
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span>OR</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="image-upload" className="cursor-pointer">
-                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-6 text-center hover:border-pink-400 dark:hover:border-pink-600 transition-colors">
-                      {imagePreview ? (
-                        <div className="space-y-2">
-                          <img 
-                            src={imagePreview} 
-                            alt="Preview" 
-                            className="mx-auto max-h-48 rounded-lg object-contain"
-                            data-testid="img-preview"
-                          />
-                          <p className="text-sm text-muted-foreground">
-                            {imageFile?.name}
-                          </p>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => {
-                              setImageFile(null);
-                              setImagePreview(null);
-                            }}
-                            data-testid="button-clear-image"
-                            className="mt-2"
-                          >
-                            Clear Image
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-2">
-                          <Upload className="h-8 w-8 text-muted-foreground" />
-                          <p className="text-sm text-muted-foreground">
-                            Click to upload an image
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                    <Input
-                      id="image-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleImageUpload(e, false)}
-                      className="hidden"
-                      data-testid="input-image-file"
-                    />
-                  </Label>
-                </div>
-              </div>
+              {/* Replace old upload UI with ImgurUploadPortal */}
+              <ImgurUploadPortal
+                onComplete={(result) => {
+                  setImageUrl(result.imageUrl);
+                  setImagePreview(result.imageUrl);
+                  // Clear file if using URL
+                  setImageFile(null);
+                }}
+                showPreview={false} // We'll show preview separately
+              />
 
               <PlatformVoiceSelectors />
 

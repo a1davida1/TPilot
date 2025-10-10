@@ -418,13 +418,9 @@ export function registerRedditRoutes(app: Express) {
     }
 
     const fallbackEvidence: ShadowbanCheckApiResponse['evidence'] = {
-      username: 'unknown',
-      checkedAt: new Date().toISOString(),
-      privateCount: 0,
-      publicCount: 0,
       privateSubmissions: [],
       publicSubmissions: [],
-      missingSubmissionIds: [],
+      missingSubmissionIds: []
     };
 
     try {

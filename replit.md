@@ -105,6 +105,15 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 - **Storage Layer**: Complete storage methods in `reddit-communities.ts`: listCommunities, createCommunity, updateCommunity, deleteCommunity, getCommunityInsights.
 - **Authentication**: Protected by admin authentication middleware with JWT and session support.
 
+## Imgur Integration (Zero-Storage Solution)
+- **Upload Portal**: Complete drag-and-drop UI component at `ImgurUploadPortal.tsx` with progress tracking and URL paste fallback.
+- **API Endpoints**: `/api/uploads/imgur` for upload, `/api/uploads/imgur/stats` for usage monitoring, delete capability.
+- **Rate Limit Management**: Tracks daily usage (1250/day limit) with warnings and graceful fallbacks.
+- **Database Tracking**: `user_storage_assets` table stores metadata only (URLs, delete hashes) - no actual files.
+- **Legal Compliance**: Images hosted on Imgur, never touching your servers - maintains 2257 compliance.
+- **Integration**: Seamlessly integrated into `GeminiCaptionGeneratorTabs` for one-click experience.
+- **Test Suite**: Run `node test-imgur-integration.js` to verify setup.
+
 # External Dependencies
 
 ## Database

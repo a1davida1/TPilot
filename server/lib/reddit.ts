@@ -1576,10 +1576,9 @@ export class RedditManager {
 
       return submissions.map(submission => ({
         id: submission.id,
-        createdUtc: submission.created_utc,
-        permalink: submission.permalink,
+        subreddit: submission.subreddit.display_name,
         title: submission.title,
-        subreddit: submission.subreddit.display_name
+        created: submission.created_utc
       }));
 
     } catch (error) {
@@ -1623,12 +1622,11 @@ export class RedditManager {
         };
       };
 
-      const submissions = data.data.children.map(child => ({
+      const submissions: ShadowbanSubmissionSummary[] = data.data.children.map(child => ({
         id: child.data.id,
-        createdUtc: child.data.created_utc,
-        permalink: child.data.permalink,
+        subreddit: child.data.subreddit,
         title: child.data.title,
-        subreddit: child.data.subreddit
+        created: child.data.created_utc
       }));
 
       return { submissions };
