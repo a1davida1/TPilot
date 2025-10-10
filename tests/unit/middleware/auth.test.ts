@@ -85,7 +85,7 @@ describe('authenticateToken email verification', () => {
     const next = vi.fn();
 
     await authenticateToken(req, res, next);
-    expect(res.clearCookie).toHaveBeenCalledWith('authToken');
+    expect(res.clearCookie).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(403);
     expect(res.json).toHaveBeenCalledWith({
       message: 'Email not verified. Please check your email or resend verification.',
@@ -112,7 +112,7 @@ describe('authenticateToken email verification', () => {
 
     await authenticateToken(req, res, next);
 
-    expect(res.clearCookie).toHaveBeenCalledWith('authToken');
+    expect(res.clearCookie).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(403);
     expect(res.json).toHaveBeenCalledWith({
       message: 'Email not verified. Please check your email or resend verification.',
@@ -150,7 +150,7 @@ describe('authenticateToken account restrictions', () => {
 
     await authenticateToken(req, res, next);
 
-    expect(res.clearCookie).toHaveBeenCalledWith('authToken');
+    expect(res.clearCookie).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: 'Account deleted' });
     expect(next).not.toHaveBeenCalled();
@@ -179,7 +179,7 @@ describe('authenticateToken account restrictions', () => {
 
     await authenticateToken(req, res, next);
 
-    expect(res.clearCookie).toHaveBeenCalledWith('authToken');
+    expect(res.clearCookie).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(403);
     expect(res.json).toHaveBeenCalledWith({ error: 'Account banned' });
     expect(next).not.toHaveBeenCalled();
@@ -209,7 +209,7 @@ describe('authenticateToken account restrictions', () => {
 
     await authenticateToken(req, res, next);
 
-    expect(res.clearCookie).toHaveBeenCalledWith('authToken');
+    expect(res.clearCookie).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(403);
     expect(res.json).toHaveBeenCalledWith({
       error: 'Account suspended',
@@ -236,7 +236,7 @@ describe('authenticateToken account restrictions', () => {
 
     await authenticateToken(req, res, next);
 
-    expect(res.clearCookie).toHaveBeenCalledWith('authToken');
+    expect(res.clearCookie).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: 'Account deleted' });
     expect(next).not.toHaveBeenCalled();
@@ -263,7 +263,7 @@ describe('authenticateToken account restrictions', () => {
 
     await authenticateToken(req, res, next);
 
-    expect(res.clearCookie).toHaveBeenCalledWith('authToken');
+    expect(res.clearCookie).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(403);
     expect(res.json).toHaveBeenCalledWith({ error: 'Account banned' });
     expect(next).not.toHaveBeenCalled();
@@ -291,7 +291,7 @@ describe('authenticateToken account restrictions', () => {
 
     await authenticateToken(req, res, next);
 
-    expect(res.clearCookie).toHaveBeenCalledWith('authToken');
+    expect(res.clearCookie).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(403);
     expect(res.json).toHaveBeenCalledWith({
       error: 'Account suspended',

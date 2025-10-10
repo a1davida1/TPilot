@@ -302,12 +302,18 @@ describe('fact extraction resilience', () => {
 
     const tinyPng = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAnwB9ngHKZkAAAAASUVORK5CYII=';
     const facts = await extractFacts(`data:image/png;base64,${tinyPng}`);
-
     expect(facts).toEqual({
       categories: [],
       objects: [],
       keywords: [],
-      summary: '',
+      summary: "",
+      angles: [],
+      colors: [],
+      mood: "",
+      setting: "",
+      style: "",
+      vibe: "",
+      wardrobe: []
     });
     expect(mockVisionModel.generateContent).toHaveBeenCalledTimes(1);
   });
