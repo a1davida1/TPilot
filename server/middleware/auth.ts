@@ -273,14 +273,20 @@ const createAuthenticateTokenMiddleware = (required: boolean): AuthMiddleware =>
 type AuthenticateToken = AuthMiddleware & ((required?: boolean) => AuthMiddleware);
 
 export const authenticateToken: AuthenticateToken = ((
-  reqOrRequired: boolean | AuthRequest,
+  reqOrRequired?: boolean | AuthRequest,
   res?: express.Response,
   next?: express.NextFunction
 ) => {
+  // Called as factory: authenticateToken() or authenticateToken(true/false)
   if (typeof reqOrRequired === 'boolean') {
     return createAuthenticateTokenMiddleware(reqOrRequired);
   }
+  
+  if (reqOrRequired === undefined) {
+    return createAuthenticateTokenMiddleware(false);
+  }
 
+  // Called as direct middleware: authenticateToken(req, res, next)
   if (!res || !next) {
     throw new Error('authenticateToken middleware requires req, res, and next arguments');
   }
