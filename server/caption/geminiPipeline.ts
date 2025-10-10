@@ -178,7 +178,7 @@ const LOWERCASE_WORDS = new Set([
 const safeFallbackCaption = "Check out this amazing content!";
 const safeFallbackAlt = "Detailed alt text describing the scene.";
 const safeFallbackHashtags = ["#content", "#creative", "#amazing"];
-const safeFallbackCta = "Check it out";
+const safeFallbackCta = "What do you think?";
 const safeFactDefaults: Record<string, unknown> = {
   categories: [],
   objects: [],
