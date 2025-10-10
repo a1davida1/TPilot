@@ -10,6 +10,7 @@ import { Header } from "@/components/header";
 import { useAuth } from "@/hooks/useAuth";
 import { SEOOptimization, seoConfigs } from "@/components/seo-optimization";
 import { UnifiedLanding } from "@/components/unified-landing";
+import { FeedbackWidget } from "@/components/FeedbackWidget";
 const Dashboard = React.lazy(() => import("@/pages/dashboard"));
 const Phase4Dashboard = React.lazy(() => import("@/pages/phase4"));
 import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough";
@@ -233,6 +234,7 @@ function App() {
             <div className="min-h-screen bg-background text-foreground font-poppins">
               <Toaster />
               <Router />
+              <FeedbackWidget />
             </div>
           </TooltipProvider>
         </ThemeProvider>

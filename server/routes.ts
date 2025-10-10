@@ -17,7 +17,8 @@ import { createSessionMiddleware } from "./bootstrap/session.js";
 
 // Route modules
 // import { authRoutes } from "./routes/auth.js"; // Removed - using server/auth.ts instead
-import { uploadRoutes, applyImageShieldProtection, protectionPresets } from "./routes/upload.js";
+// import { uploadRoutes, applyImageShieldProtection, protectionPresets } from "./routes/upload.js"; // REMOVED - Local storage illegal
+import uploadRedirect from "./routes/upload-redirect.js"; // Redirects to Imgur for legal compliance
 import { mediaRoutes } from "./routes/media.js";
 import { analyticsRouter } from "./routes/analytics.js";
 import { referralRouter } from "./routes/referrals.js";
@@ -25,8 +26,9 @@ import { referralRouter } from "./routes/referrals.js";
 import { registerExpenseRoutes } from "./expense-routes.js";
 import { adminCommunitiesRouter } from "./routes/admin-communities.js";
 import { createCancelSubscriptionHandler } from "./routes/subscription-management.js";
-import { createLocalDownloadRouter } from "./routes/downloads.js";
+// import { createLocalDownloadRouter } from "./routes/downloads.js"; // REMOVED - No local files
 import imgurUploadRouter from "./routes/imgur-uploads.js";
+import feedbackRouter from "./routes/feedback.js";
 
 // Core imports
 import { storage } from "./storage.js";
@@ -959,11 +961,14 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // Authentication routes - handled by setupAuth() in server/auth.ts
   // app.use('/api/auth', authRoutes); // Removed - duplicate auth system
 
-  // Upload routes
-  app.use('/api/upload', uploadRoutes);
-
-  // Imgur upload routes (for simple image hosting)
+  // LEGAL COMPLIANCE: All uploads MUST go through Imgur - no local storage
+  app.use('/api/upload', uploadRedirect); // Redirects old endpoint to Imgur
+  
+  // Imgur upload routes - ONLY allowed upload method
   app.use('/api/uploads', imgurUploadRouter);
+
+  // Feedback system routes
+  app.use('/api/feedback', feedbackRouter);
 
   // Media routes
   app.use('/api/media', mediaRoutes);
@@ -977,8 +982,8 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // Admin communities routes are exposed under a dedicated admin namespace
   app.use('/api/admin/communities', authenticateToken(true), adminCommunitiesRouter);
 
-  // Serve uploaded files through token-protected controller
-  app.use('/uploads', createLocalDownloadRouter());
+  // REMOVED: Local file serving is illegal - all images must be on Imgur
+  // app.use('/uploads', createLocalDownloadRouter());
 
   // OpenAPI specification endpoint
   // app.use(getOpenApiRouter(apiPrefix)); // Commented out - file missing

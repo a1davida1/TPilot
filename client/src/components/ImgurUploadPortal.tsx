@@ -27,6 +27,14 @@ interface UploadResult {
   provider?: string;
 }
 
+interface ImgurUploadResponse {
+  success: boolean;
+  imageUrl: string;
+  deleteHash?: string;
+  dimensions?: { width: number; height: number };
+  provider?: string;
+}
+
 interface ImgurStats {
   used: number;
   limit: number;
@@ -100,14 +108,19 @@ export function ImgurUploadPortal({
         xhr.send(formData);
       });
     },
-    onSuccess: (data: any) => {
-      setPreviewUrl(data.imageUrl);
-      onComplete({ 
-        imageUrl: data.imageUrl, 
-        deleteHash: data.deleteHash,
-        dimensions: data.dimensions,
-        provider: data.provider
-      });
+    onSuccess: (data: unknown) => {
+      // Type guard for the response data
+      const response = data as ImgurUploadResponse;
+      
+      if (response.success && response.imageUrl) {
+        setPreviewUrl(response.imageUrl);
+        onComplete({ 
+          imageUrl: response.imageUrl, 
+          deleteHash: response.deleteHash,
+          dimensions: response.dimensions,
+          provider: response.provider
+        });
+      }
       
       toast({
         title: "Upload successful",

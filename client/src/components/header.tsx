@@ -57,7 +57,7 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
     { href: '/dashboard', label: 'Dashboard', authenticated: true },
     { href: '/reddit', label: 'Reddit', authenticated: null },
     { href: '/caption-generator', label: 'Generator', authenticated: null },
-    { href: '/referral', label: 'Referral', authenticated: true, proOnly: true },
+    { href: '/referral', label: 'Referral', authenticated: true, proOnly: false },
     { href: '/history', label: 'History', authenticated: true },
     { href: '/settings', label: 'Settings', authenticated: true },
     { href: '/admin', label: 'Admin Portal', authenticated: true, adminOnly: true },
