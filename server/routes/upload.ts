@@ -209,7 +209,7 @@ function performBasicMalwareCheck(buffer: Buffer): boolean {
 }
 
 // New streaming upload endpoint with enhanced progress tracking
-router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, cleanupUploadedFiles, imageStreamingUpload, async (req: Request, res: Response) => {
+router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken(true), cleanupUploadedFiles, imageStreamingUpload, async (req: Request, res: Response) => {
   const authReq = req as UploadAuthRequest;
   let processedFilePath: string | undefined;
   
@@ -385,7 +385,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken, 
 });
 
 // Traditional upload endpoint with authentication, rate limiting, and ImageShield protection
-router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken, upload.single('image'), async (req: Request, res: Response) => {
+router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken(true), upload.single('image'), async (req: Request, res: Response) => {
   const authReq = req as UploadAuthRequest;
   let tempFilePath = '';
   let protectedFilePath = '';

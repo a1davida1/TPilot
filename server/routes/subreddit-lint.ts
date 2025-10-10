@@ -22,7 +22,7 @@ const lintSchema = z.object({
  * POST /api/subreddit-lint
  * Validate a submission against subreddit rules
  */
-router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.post('/', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const { subreddit, title, nsfw, flair } = lintSchema.parse(req.body ?? {});
 
@@ -52,7 +52,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
  * GET /api/subreddit-lint/:subreddit
  * Get cached rules for a specific subreddit
  */
-router.get('/:subreddit', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.get('/:subreddit', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const subreddit = req.params.subreddit;
     const rule = getSubredditRule(subreddit);

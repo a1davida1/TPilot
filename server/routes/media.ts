@@ -43,7 +43,7 @@ function parseWatermarkOverride(value: unknown): boolean | null {
 }
 
 // GET /api/media - Get user's media assets
-router.get('/', authenticateToken, async (req: AuthRequest, res) => {
+router.get('/', authenticateToken(true), async (req: AuthRequest, res) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ message: "Authentication required" });
@@ -61,7 +61,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
 });
 
 // POST /api/media/upload - Upload new media file
-router.post('/upload', uploadLimiter, authenticateToken, upload.single('file'), async (req: AuthRequest, res) => {
+router.post('/upload', uploadLimiter, authenticateToken(true), upload.single('file'), async (req: AuthRequest, res) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ message: "Authentication required" });
@@ -118,7 +118,7 @@ router.post('/upload', uploadLimiter, authenticateToken, upload.single('file'), 
 });
 
 // GET /api/media/:id - Get specific media asset
-router.get('/:id', authenticateToken, async (req: AuthRequest, res) => {
+router.get('/:id', authenticateToken(true), async (req: AuthRequest, res) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ message: "Authentication required" });
@@ -142,7 +142,7 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res) => {
 });
 
 // DELETE /api/media/:id - Delete media asset
-router.delete('/:id', authenticateToken, async (req: AuthRequest, res) => {
+router.delete('/:id', authenticateToken(true), async (req: AuthRequest, res) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ message: "Authentication required" });
@@ -167,7 +167,7 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res) => {
 });
 
 // GET /api/media/:id/download - Get download URL for asset
-router.get('/:id/download', authenticateToken, async (req: AuthRequest, res) => {
+router.get('/:id/download', authenticateToken(true), async (req: AuthRequest, res) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ message: "Authentication required" });

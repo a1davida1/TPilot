@@ -26,7 +26,7 @@ const recommendSchema = z.object({
  * POST /api/subreddit-recommender
  * Get recommended subreddits for content
  */
-router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.post('/', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const { category: providedCategory, tags = [], nsfw, excludeSubreddits } = recommendSchema.parse(req.body ?? {});
 

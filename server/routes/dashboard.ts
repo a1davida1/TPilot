@@ -9,7 +9,7 @@ const router = Router();
  * GET /api/dashboard/stats
  * Get dashboard statistics for the authenticated user
  */
-router.get('/stats', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.get('/stats', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ message: 'Authentication required' });
@@ -51,7 +51,7 @@ router.get('/stats', authenticateToken, async (req: AuthRequest, res: Response) 
  * GET /api/dashboard/activity  
  * Get recent activity/media for the authenticated user
  */
-router.get('/activity', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.get('/activity', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ message: 'Authentication required' });

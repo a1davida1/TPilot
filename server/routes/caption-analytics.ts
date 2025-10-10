@@ -75,7 +75,7 @@ const postMetricsSchema = z.object({
  * POST /api/caption-analytics/caption-shown
  * Track when caption pair is shown to user
  */
-router.post('/caption-shown', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.post('/caption-shown', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const data = captionShownSchema.parse(req.body ?? {});
 
@@ -121,7 +121,7 @@ router.post('/caption-shown', authenticateToken, async (req: AuthRequest, res: R
  * POST /api/caption-analytics/caption-choice
  * Track which caption user selected
  */
-router.post('/caption-choice', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.post('/caption-choice', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const data = captionChoiceSchema.parse(req.body ?? {});
 
@@ -157,7 +157,7 @@ router.post('/caption-choice', authenticateToken, async (req: AuthRequest, res: 
  * POST /api/caption-analytics/protection-metrics
  * Track ImageShield protection metrics
  */
-router.post('/protection-metrics', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.post('/protection-metrics', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const data = protectionMetricsSchema.parse(req.body ?? {});
 
@@ -194,7 +194,7 @@ router.post('/protection-metrics', authenticateToken, async (req: AuthRequest, r
  * POST /api/caption-analytics/post-submit
  * Track Reddit post submission with caption linkage
  */
-router.post('/post-submit', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.post('/post-submit', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const data = postSubmitSchema.parse(req.body ?? {});
 
@@ -236,7 +236,7 @@ router.post('/post-submit', authenticateToken, async (req: AuthRequest, res: Res
  * POST /api/caption-analytics/post-metrics
  * Track post performance metrics at specific time intervals
  */
-router.post('/post-metrics', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.post('/post-metrics', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const data = postMetricsSchema.parse(req.body ?? {});
 
@@ -280,7 +280,7 @@ router.post('/post-metrics', authenticateToken, async (req: AuthRequest, res: Re
  * GET /api/caption-analytics/caption-performance
  * Get caption style performance summary
  */
-router.get('/caption-performance', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.get('/caption-performance', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -302,7 +302,7 @@ router.get('/caption-performance', authenticateToken, async (req: AuthRequest, r
  * GET /api/caption-analytics/subreddit-performance
  * Get subreddit performance summary
  */
-router.get('/subreddit-performance', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.get('/subreddit-performance', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -348,7 +348,7 @@ router.get('/subreddit-performance', authenticateToken, async (req: AuthRequest,
  * GET /api/caption-analytics/my-preferences
  * Get user's caption style preferences
  */
-router.get('/my-preferences', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.get('/my-preferences', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -372,7 +372,7 @@ router.get('/my-preferences', authenticateToken, async (req: AuthRequest, res: R
  * GET /api/caption-analytics/dashboard
  * Get comprehensive analytics dashboard data
  */
-router.get('/dashboard', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.get('/dashboard', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Unauthorized' });

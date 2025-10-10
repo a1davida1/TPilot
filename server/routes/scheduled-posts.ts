@@ -37,7 +37,7 @@ const getOptimalTimesSchema = z.object({
  * POST /api/scheduled-posts
  * Create a new scheduled post
  */
-router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.post('/', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const data = createScheduledPostSchema.parse(req.body ?? {});
 
@@ -82,7 +82,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
  * GET /api/scheduled-posts
  * Get all scheduled posts for the authenticated user
  */
-router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.get('/', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -105,7 +105,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
  * DELETE /api/scheduled-posts/:postId
  * Cancel a scheduled post
  */
-router.delete('/:postId', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.delete('/:postId', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const postId = parseInt(req.params.postId, 10);
 
@@ -130,7 +130,7 @@ router.delete('/:postId', authenticateToken, async (req: AuthRequest, res: Respo
  * POST /api/scheduled-posts/optimal-times
  * Get optimal posting times for a subreddit
  */
-router.post('/optimal-times', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.post('/optimal-times', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const { subreddit, timezone, daysAhead } = getOptimalTimesSchema.parse(req.body ?? {});
 
@@ -154,7 +154,7 @@ router.post('/optimal-times', authenticateToken, async (req: AuthRequest, res: R
  * POST /api/scheduled-posts/next-optimal
  * Get the single next optimal posting time
  */
-router.post('/next-optimal', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.post('/next-optimal', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const { subreddit, timezone } = getOptimalTimesSchema.partial().parse(req.body ?? {});
 

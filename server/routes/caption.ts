@@ -92,7 +92,7 @@ const rewriteSchema = z.object({
   nsfw: z.boolean().optional()
 });
 
-router.post('/generate', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.post('/generate', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const { imageUrl, platform, voice, style, mood, nsfw } = generateSchema.parse(req.body ?? {});
     
@@ -142,7 +142,7 @@ router.post('/generate', authenticateToken, async (req: AuthRequest, res: Respon
   }
 });
 
-router.post('/generate-text', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.post('/generate-text', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const { platform, voice, style, mood, theme, context, nsfw } = generateTextSchema.parse(req.body ?? {});
     
@@ -192,7 +192,7 @@ router.post('/generate-text', authenticateToken, async (req: AuthRequest, res: R
   }
 });
 
-router.post('/rewrite', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.post('/rewrite', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const { platform, voice, style, mood, existingCaption, imageUrl, nsfw } = rewriteSchema.parse(req.body ?? {});
     
@@ -252,7 +252,7 @@ const oneClickCaptionSchema = z.object({
   user_profile: z.record(z.unknown()).optional()
 });
 
-router.post('/one-click-captions', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.post('/one-click-captions', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const { image_base64 } = oneClickCaptionSchema.parse(req.body ?? {});
 
