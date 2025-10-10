@@ -115,6 +115,9 @@ const mockGemini = (
     getTextModel: () => textModel,
     getVisionModel: () => resolvedVision,
     isGeminiAvailable: () => true,
+    textModel: textModel,
+    visionModel: resolvedVision,
+    genAI: null,
   }));
 };
 

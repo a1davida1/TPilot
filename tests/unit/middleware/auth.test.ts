@@ -15,6 +15,8 @@ const dbMock = vi.hoisted(() => {
 
 vi.mock('../../../server/db.ts', () => ({
   db: dbMock,
+  pool: {},
+  closeDatabaseConnections: vi.fn(async () => undefined),
 }));
 
 vi.mock('../../../server/lib/tokenBlacklist', () => ({
