@@ -96,6 +96,9 @@ describe('RedditManager shadowban detection', () => {
     // Create a test instance with mocked reddit client
     manager = new RedditManager('mock_access_token', 'mock_refresh_token', testUserId, mockReddit as unknown as snoowrap);
     
+    // Ensure the reddit property uses our mock
+    (manager as any).reddit = mockReddit;
+    
     // Mock the getProfile method
     vi.spyOn(manager, 'getProfile').mockResolvedValue({
       username: 'testuser',
