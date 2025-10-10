@@ -1,8 +1,10 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
 import { createReadStream } from 'fs';
 import { stat } from 'fs/promises';
-import { lookup as lookupMimeType } from 'mime-types';
+import mimeTypes from 'mime-types';
 import { MediaManager } from '../lib/media.js';
+
+const lookupMimeType = mimeTypes.lookup;
 
 const NOT_FOUND_RESPONSE = { message: 'Asset not found' } as const;
 
