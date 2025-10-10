@@ -47,10 +47,13 @@ export async function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
   }
 
   // Apply production database fixes (tier upgrades, email verification)
-  try {
-    await applyProductionFixes();
-  } catch (err) {
-    logger.error('Failed to apply production fixes', { err });
+  // Skip in test environment to avoid interference with test mocks
+  if (process.env.NODE_ENV !== 'test') {
+    try {
+      await applyProductionFixes();
+    } catch (err) {
+      logger.error('Failed to apply production fixes', { err });
+    }
   }
 
   // Regular signup
