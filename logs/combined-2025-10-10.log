@@ -54,3 +54,9 @@
 {"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-10T09:16:03.820Z"}
 {"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-10T09:54:13.420Z"}
 {"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-10T09:54:43.199Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-11T02:23:49.212Z"}
+{"level":"error","message":"STRIPE_API_VERSION is required when STRIPE_SECRET_KEY is set. Provide a date in YYYY-MM-DD format (e.g. 2023-10-16) or plant-release format (e.g. 2025-08-27.basil).","timestamp":"2025-10-11T02:23:50.506Z"}
+{"level":"warn","message":"Stripe configuration incomplete - payment features disabled in development","timestamp":"2025-10-11T02:23:50.507Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-11T02:23:50.593Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-11T02:23:50.594Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-11T02:23:50.594Z"}

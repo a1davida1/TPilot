@@ -1,32 +1,42 @@
-import { initializeQueue } from "../lib/queue-factory";
-import { initializeWorkers } from "../lib/workers/index";
-import { logger } from "./logger";
+import { initializeQueue } from "../lib/queue-factory.js";
+import { initializeWorkers, shutdownWorkers } from "../lib/workers/index.js";
+import { cronManager } from "../lib/scheduler/cron-manager.js";
+import { logger } from "./logger.js";
 
 // Queue system initialization
 export async function startQueue() {
   try {
-    logger.info('🔄 Initializing queue system...');
-
+    logger.info('Initializing queue system...');
 
     // Initialize Phase 5 queue system
     await initializeQueue();
-    logger.info('✅ Queue system initialized');
-
+    logger.info('Queue system initialized');
 
     // Initialize all workers
     await initializeWorkers();
-    logger.info('✅ Background workers initialized');
+    logger.info('Background workers initialized');
 
-    // Start queue monitoring
-    const { queueMonitor } = await import("../lib/queue-monitor.js");
-    await queueMonitor.startMonitoring(30000); // Monitor every 30 seconds
-    logger.info('✅ Queue monitoring started (interval: 30000ms)');
+    // Start cron manager for all scheduled tasks
+    await cronManager.start();
+    logger.info('Cron manager started');
 
-    // Start worker auto-scaling
-    const { workerScaler } = await import("../lib/worker-scaler.js");
-    await workerScaler.startScaling(60000); // Scale every minute
-    logger.info('✅ Worker auto-scaling started (interval: 60000ms)');
+    // Start queue monitoring (optional - check if module exists)
+    try {
+      const { queueMonitor } = await import("../lib/queue-monitor.js");
+      await queueMonitor.startMonitoring(30000); // Monitor every 30 seconds
+      logger.info('Queue monitoring started (interval: 30000ms)');
+    } catch (error) {
+      logger.warn('Queue monitor not available, skipping');
+    }
 
+    // Start worker auto-scaling (optional - check if module exists)
+    try {
+      const { workerScaler } = await import("../lib/worker-scaler.js");
+      await workerScaler.startScaling(60000); // Scale every minute
+      logger.info('Worker auto-scaling started (interval: 60000ms)');
+    } catch (error) {
+      logger.warn('Worker scaler not available, skipping');
+    }
 
   } catch (error) {
     if (isConfigurationError(error)) {
@@ -69,13 +79,27 @@ export async function stopQueue() {
   try {
     logger.info('🔄 Shutting down queue system...');
 
-    // Stop monitoring
-    const { queueMonitor } = await import("../lib/queue-monitor.js");
-    await queueMonitor.stopMonitoring();
+    // Stop cron manager
+    await cronManager.stop();
+    
+    // Stop monitoring (if available)
+    try {
+      const { queueMonitor } = await import("../lib/queue-monitor.js");
+      await queueMonitor.stopMonitoring();
+    } catch (error) {
+      // Monitor might not be available
+    }
 
-    // Stop worker scaling
-    const { workerScaler } = await import("../lib/worker-scaler.js");
-    await workerScaler.stopScaling();
+    // Stop worker scaling (if available)
+    try {
+      const { workerScaler } = await import("../lib/worker-scaler.js");
+      await workerScaler.stopScaling();
+    } catch (error) {
+      // Scaler might not be available
+    }
+    
+    // Shutdown workers
+    await shutdownWorkers();
 
     logger.info('✅ Queue system shutdown complete');
   } catch (error) {

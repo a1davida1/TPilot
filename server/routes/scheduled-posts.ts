@@ -8,6 +8,10 @@ import { authenticateToken, type AuthRequest } from '../middleware/auth';
 import { getOptimalPostingTimes, getNextOptimalTime } from '../lib/schedule-optimizer.js';
 import { z } from 'zod';
 import { logger } from '../bootstrap/logger.js';
+import { db } from '../db.js';
+import { scheduledPosts } from '@shared/schema';
+import { eq, and, gte, lte, desc, asc, or } from 'drizzle-orm';
+import { addDays, subDays } from 'date-fns';
 
 const router = Router();
 
@@ -40,30 +44,58 @@ const getOptimalTimesSchema = z.object({
 router.post('/', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const data = createScheduledPostSchema.parse(req.body ?? {});
-
+    
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // TODO: Insert into posts table with scheduled_for timestamp
-    // For now, return mock response
-    const scheduledPost = {
-      post_id: Math.floor(Math.random() * 10000),
-      creator_id: req.user.id,
+    // Check tier restrictions
+    const userTier = req.user.tier || 'free';
+    const scheduledDate = new Date(data.scheduledFor);
+    const now = new Date();
+    const daysAhead = Math.ceil((scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+    // Tier restrictions for scheduling
+    if (userTier === 'free' || userTier === 'starter') {
+      return res.status(403).json({ 
+        error: 'Scheduling requires Pro or Premium tier',
+        requiredTier: 'pro' 
+      });
+    }
+
+    if (userTier === 'pro' && daysAhead > 7) {
+      return res.status(403).json({ 
+        error: 'Pro tier can only schedule up to 7 days in advance',
+        maxDays: 7,
+        requestedDays: daysAhead 
+      });
+    }
+
+    if (userTier === 'premium' && daysAhead > 30) {
+      return res.status(403).json({ 
+        error: 'Premium tier can schedule up to 30 days in advance',
+        maxDays: 30,
+        requestedDays: daysAhead 
+      });
+    }
+
+    // Insert into database
+    const [scheduledPost] = await db.insert(scheduledPosts).values({
+      userId: req.user.id,
       subreddit: data.subreddit,
       title: data.title,
-      image_url: data.imageUrl,
-      nsfw_flag: data.nsfw,
-      flair: data.flair,
-      scheduled_for: data.scheduledFor,
-      caption_id: data.captionId,
-      pair_id: data.pairId,
-      status: 'scheduled',
-      created_at: new Date().toISOString()
-    };
+      content: data.captionId || '',
+      imageUrl: data.imageUrl,
+      scheduledFor: scheduledDate,
+      status: 'pending',
+      nsfw: data.nsfw,
+      flairText: data.flair,
+      createdAt: now,
+      updatedAt: now
+    }).returning();
 
     logger.info('Scheduled post created', {
-      postId: scheduledPost.post_id,
+      postId: scheduledPost.id,
       userId: req.user.id,
       subreddit: data.subreddit,
       scheduledFor: data.scheduledFor

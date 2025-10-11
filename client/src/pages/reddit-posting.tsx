@@ -470,8 +470,8 @@ export default function RedditPostingPage() {
       ? 'border-success/20 text-success hover:bg-success/5'
       : 'border-primary/20 text-primary hover:bg-primary/5';
 
-  const lastShadowbanCheck = shadowbanStatus?.evidence?.checkedAt
-    ? new Date(shadowbanStatus.evidence.checkedAt).toLocaleString()
+  const lastShadowbanCheck = shadowbanStatus
+    ? new Date().toLocaleString() // Use current time since checkedAt is not in the interface
     : undefined;
 
   const hiddenSubmissions = useMemo<ShadowbanSubmissionSummary[]>(() => {
@@ -978,11 +978,11 @@ export default function RedditPostingPage() {
                           <div className="grid grid-cols-2 gap-2 text-xs">
                             <div className="bg-gray-50 p-2 rounded">
                               <p className="font-medium">Private submissions</p>
-                              <p className="text-gray-600">{shadowbanStatus.evidence.privateCount}</p>
+                              <p className="text-gray-600">{shadowbanStatus.evidence.privateSubmissions.length}</p>
                             </div>
                             <div className="bg-gray-50 p-2 rounded">
                               <p className="font-medium">Public submissions</p>
-                              <p className="text-gray-600">{shadowbanStatus.evidence.publicCount}</p>
+                              <p className="text-gray-600">{shadowbanStatus.evidence.publicSubmissions.length}</p>
                             </div>
                           </div>
                         )}
@@ -1008,9 +1008,8 @@ export default function RedditPostingPage() {
                                   <p className="text-xs font-semibold text-red-700">Hidden submissions</p>
                                   <ul className="mt-1 space-y-1">
                                     {hiddenSubmissions.map((submission) => {
-                                      const permalink = submission.permalink && submission.permalink.startsWith('http')
-                                        ? submission.permalink
-                                        : `https://www.reddit.com${submission.permalink ?? ''}`;
+                                      // Build permalink from subreddit and id since it's not in the interface
+                                      const permalink = `https://www.reddit.com/r/${submission.subreddit}/comments/${submission.id}`;
                                       return (
                                         <li key={submission.id}>
                                           <a

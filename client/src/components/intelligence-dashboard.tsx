@@ -74,26 +74,38 @@ export function IntelligenceDashboard() {
   // Fetch trending topics
   const { data: trends, isLoading: trendsLoading, refetch: refetchTrends } = useQuery<TrendingTopic[]>({
     queryKey: ['/api/intelligence/trends', selectedSubreddit],
-    queryFn: () => apiRequest('GET', `/api/intelligence/trends/${selectedSubreddit}`),
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/intelligence/trends/${selectedSubreddit}`);
+      return response as unknown as TrendingTopic[];
+    },
     refetchInterval: 300000, // Refresh every 5 minutes
   });
 
   // Fetch optimal posting times
   const { data: optimalTimes, isLoading: timesLoading } = useQuery<OptimalTime[]>({
     queryKey: ['/api/intelligence/optimal-times', selectedSubreddit],
-    queryFn: () => apiRequest('GET', `/api/intelligence/optimal-times/${selectedSubreddit}`),
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/intelligence/optimal-times/${selectedSubreddit}`);
+      return response as unknown as OptimalTime[];
+    },
   });
 
   // Fetch content suggestions
   const { data: suggestions, isLoading: suggestionsLoading } = useQuery<ContentSuggestion[]>({
     queryKey: ['/api/intelligence/suggestions'],
-    queryFn: () => apiRequest('GET', '/api/intelligence/suggestions'),
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/intelligence/suggestions');
+      return response as unknown as ContentSuggestion[];
+    },
   });
 
   // Fetch performance metrics
   const { data: metrics, isLoading: metricsLoading } = useQuery<SubredditMetrics>({
     queryKey: ['/api/intelligence/performance', selectedSubreddit],
-    queryFn: () => apiRequest('GET', `/api/intelligence/performance?subreddit=${selectedSubreddit}`),
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/intelligence/performance?subreddit=${selectedSubreddit}`);
+      return response as unknown as SubredditMetrics;
+    },
   });
 
   const handleRefresh = async () => {

@@ -489,3 +489,5 @@
 {"error":"Storage quota exceeded. Used: 100MB, Quota: 100MB","level":"error","message":"Upload error","timestamp":"2025-10-10T07:19:35.688Z"}
 {"error":"Upload failed","level":"error","message":"Upload error","timestamp":"2025-10-10T07:19:35.692Z"}
 >>>>>>> 1569b614 (test: split test suite into unit and routes batches)
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-11T02:23:50.170Z"}
+{"level":"warn","message":"ADMIN_EMAIL environment variable is not set. Admin login is disabled.","timestamp":"2025-10-11T02:23:50.170Z"}
