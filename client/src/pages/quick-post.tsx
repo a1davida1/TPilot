@@ -13,7 +13,8 @@ import {
   Send,
   CheckCircle,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Plus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -74,10 +75,10 @@ export default function QuickPostPage() {
         })
       ];
       
-      const results = await Promise.all(promises);
+      const results = await Promise.all(promises) as any[];
       return [
-        { id: '1', text: results[0].caption, style: 'Flirty & Explicit' },
-        { id: '2', text: results[1].caption, style: 'Cozy & Poetic' }
+        { id: '1', text: results[0]?.caption || results[0]?.text || '', style: 'Flirty & Explicit' },
+        { id: '2', text: results[1]?.caption || results[1]?.text || '', style: 'Cozy & Poetic' }
       ];
     },
     onSuccess: (options) => {

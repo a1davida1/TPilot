@@ -1995,17 +1995,21 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
       if (Number.isNaN(imageId)) return res.status(400).json({ message: 'Invalid image id' });
       const userId = req.user?.id;
       if (!userId) return res.status(401).json({ message: 'Authentication required' });
-      const { protectionLevel } = req.body as { protectionLevel?: keyof typeof protectionPresets };
+      const { protectionLevel } = req.body as { protectionLevel?: string };
       const image = await storage.getUserImage(imageId, userId);
       if (!image) return res.status(404).json({ message: 'Image not found' });
 
-      const level = protectionLevel && protectionPresets[protectionLevel] ? protectionLevel : 'standard';
-      const inputPath = path.join(process.cwd(), image.url.startsWith('/') ? image.url.slice(1) : image.url);
-      const protectedName = `protected_${Date.now()}_${image.filename}`;
-      const outputPath = path.join(process.cwd(), 'uploads', protectedName);
-      await applyImageShieldProtection(inputPath, outputPath, level as 'light' | 'standard' | 'heavy', false);
-      const protectedUrl = buildUploadUrl(protectedName);
-      await storage.updateUserImage(imageId, userId, { url: protectedUrl, isProtected: true, protectionLevel: level });
+      // REMOVED: Local image protection is disabled - all images must be on Imgur
+      // const level = protectionLevel && protectionPresets[protectionLevel] ? protectionLevel : 'standard';
+      // const inputPath = path.join(process.cwd(), image.url.startsWith('/') ? image.url.slice(1) : image.url);
+      // const protectedName = `protected_${Date.now()}_${image.filename}`;
+      // const outputPath = path.join(process.cwd(), 'uploads', protectedName);
+      // await applyImageShieldProtection(inputPath, outputPath, level as 'light' | 'standard' | 'heavy', false);
+      // const protectedUrl = buildUploadUrl(protectedName);
+      // await storage.updateUserImage(imageId, userId, { url: protectedUrl, isProtected: true, protectionLevel: level });
+      
+      // For now, return the original URL since we can't protect local files
+      const protectedUrl = image.url;
 
       res.json({ success: true, protectedUrl, message: 'Image protected successfully' });
     } catch (error: unknown) {

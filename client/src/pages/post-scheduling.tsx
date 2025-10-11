@@ -103,7 +103,7 @@ export default function PostSchedulingPage() {
           style: 'explicit',
           nsfw: true
         });
-        return { imageId: image.id, caption: response.caption };
+        return { imageId: image.id, caption: (response as any).caption || '' };
       });
       return Promise.all(promises);
     },
@@ -138,8 +138,8 @@ export default function PostSchedulingPage() {
     },
     onSuccess: (protectedImages) => {
       setUploadedImages(prev => prev.map(img => {
-        const protected = protectedImages.find(p => p.id === img.id);
-        return protected ? { ...img, protected: true, protectedUrl: protected.protectedUrl } : img;
+        const protectedImg = protectedImages.find(p => p.id === img.id);
+        return protectedImg ? { ...img, protected: true, protectedUrl: protectedImg.protectedUrl } : img;
       }));
       setCurrentStep('schedule');
       toast({

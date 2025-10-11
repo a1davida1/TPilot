@@ -35,6 +35,9 @@ const ReferralPage = React.lazy(() => import("@/pages/referral"));
 const ProPerksPage = React.lazy(() => import("@/pages/pro-perks"));
 const TermsOfService = React.lazy(() => import("@/pages/terms-of-service"));
 const PrivacyPolicy = React.lazy(() => import("@/pages/privacy-policy"));
+const PostSchedulingPage = React.lazy(() => import("@/pages/post-scheduling"));
+const QuickPostPage = React.lazy(() => import("@/pages/quick-post"));
+const ScheduledPostsPage = React.lazy(() => import("@/pages/scheduled-posts"));
 import { RedditCommunities } from "@/components/reddit-communities";
 import { ImageGallery } from "@/components/image-gallery";
 // Phase 1: Real Analytics Tracking
@@ -113,6 +116,9 @@ function AuthenticatedRoutes() {
       <Route path="/phase4" component={Phase4Dashboard} />
       <Route path="/reddit" component={RedditPostingPage} />
       <Route path="/reddit/communities" component={() => <CommunitiesPage />} />
+      <Route path="/quick-post" component={QuickPostPage} />
+      <Route path="/post-scheduling" component={PostSchedulingPage} />
+      <Route path="/scheduled-posts" component={ScheduledPostsPage} />
       <Route path="/gallery" component={() => <GalleryPage />} />
       <Route path="/tax-tracker" component={() => <TaxTracker />} />
       {/* Pro-exclusive surfaces */}

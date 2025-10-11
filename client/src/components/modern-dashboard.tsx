@@ -4,35 +4,40 @@
  * Responsibilities:
  * - Render the dashboard UI (cards, actions, activity, etc.)
  * - Receive minimal typed props from the page container (`pages/dashboard.tsx`)
- * - Avoids routing/auth concerns; focuses on visual behavior and interactions
  */
 import React, { useState, useEffect, useCallback, useTransition } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import { 
-  Upload,
-  Sparkles,
+import {
+  ArrowRight,
+  CheckCircle2,
   Shield,
+  Sparkles,
   Target,
-  Scale,
+  Upload,
   BarChart3,
-  Calculator,
-  Gift,
-  X,
+  TrendingUp,
   Clock,
-  Bell,
-  Settings,
-  ChevronRight,
-  Home,
-  Brain,
   Users,
-  History,
-  ImageIcon,
+  DollarSign,
+  Calculator,
+  Star,
+  Scale,
+  FileSearch,
+  Calendar,
   Zap,
+  ImageIcon,
   ListChecks,
   Command,
-  CheckCircle2,
+  ChevronRight,
+  X,
+  Home,
+  Brain,
+  Settings,
+  Bell,
+  Gift,
+  History as HistoryIcon,
   Loader2
 } from "lucide-react";
 import { FaReddit } from "react-icons/fa";
@@ -340,13 +345,23 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     {
       id: "quick-post",
       title: "Quick Post",
-      description: "Upload a post in seconds",
-      icon: <Upload className="h-6 w-6" />,
-      color: "from-purple-500 to-purple-600",
-      route: "/reddit",
+      description: "One-click post to Reddit",
+      icon: <Zap className="h-6 w-6" />,
+      color: "from-yellow-500 to-orange-500",
+      route: "/quick-post",
       group: "core",
-      requiredMilestones: ["connectedReddit", "selectedCommunities"],
+      requiredMilestones: ["connectedReddit"],
       completeMilestone: "createdFirstPost"
+    },
+    {
+      id: "schedule-posts",
+      title: "Schedule Posts",
+      description: "Plan your content calendar",
+      icon: <Calendar className="h-6 w-6" />,
+      color: "from-purple-500 to-purple-600",
+      route: "/post-scheduling",
+      group: "core",
+      requiredMilestones: ["connectedReddit", "selectedCommunities"]
     },
     {
       id: "generate-caption",
@@ -694,9 +709,8 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     }
   };
 
-
   return (
-    <div className="min-h-screen bg-gradient-purple">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900">
       {/* Sidebar Overlay */}
       {sidebarOpen && (
         <div
@@ -792,7 +806,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
               onClick={() => setLocation('/history')}
               className="w-full flex items-center gap-3 px-3 py-2.5 text-white hover:bg-purple-600/20 rounded-lg transition-all"
             >
-              <History className="h-5 w-5" />
+              <HistoryIcon className="h-5 w-5" />
               <span>History</span>
             </button>
             <button 

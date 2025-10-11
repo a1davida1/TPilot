@@ -55,6 +55,9 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
     (location === '/dashboard' || location === '/settings');
   const navigationItems = [
     { href: '/dashboard', label: 'Dashboard', authenticated: true },
+    { href: '/quick-post', label: 'Quick Post', authenticated: true },
+    { href: '/post-scheduling', label: 'Schedule', authenticated: true },
+    { href: '/scheduled-posts', label: 'My Posts', authenticated: true },
     { href: '/reddit', label: 'Reddit', authenticated: null },
     { href: '/caption-generator', label: 'Generator', authenticated: null },
     { href: '/referral', label: 'Referral', authenticated: true, proOnly: false },

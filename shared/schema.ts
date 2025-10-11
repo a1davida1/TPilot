@@ -1312,21 +1312,56 @@ export const adminAuditLog = pgTable("admin_audit_log", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Scheduled posts for automated Reddit publishing
+export const scheduledPosts = pgTable("scheduled_posts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  title: varchar("title", { length: 300 }).notNull(),
+  content: text("content"),
+  imageUrl: text("image_url"),
+  caption: text("caption"),
+  subreddit: varchar("subreddit", { length: 100 }).notNull(),
+  scheduledFor: timestamp("scheduled_for", { withTimezone: true }).notNull(),
+  timezone: varchar("timezone", { length: 50 }).default("UTC"),
+  status: varchar("status", { length: 20 }).default("pending"), // pending, processing, completed, failed, cancelled
+  nsfw: boolean("nsfw").default(false),
+  spoiler: boolean("spoiler").default(false),
+  flairId: varchar("flair_id", { length: 100 }),
+  flairText: varchar("flair_text", { length: 100 }),
+  redditPostId: varchar("reddit_post_id", { length: 50 }),
+  redditPostUrl: text("reddit_post_url"),
+  errorMessage: text("error_message"),
+  executedAt: timestamp("executed_at", { withTimezone: true }),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  mediaUrls: text("media_urls").array(), // For gallery posts
+  sendReplies: boolean("send_replies").default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("scheduled_posts_user_id_idx").on(table.userId),
+  statusIdx: index("scheduled_posts_status_idx").on(table.status),
+  scheduledForIdx: index("scheduled_posts_scheduled_for_idx").on(table.scheduledFor),
+  subredditIdx: index("scheduled_posts_subreddit_idx").on(table.subreddit),
+}));
+
 // Insert schemas for new admin tables
 export const insertSystemLogSchema = createInsertSchema(systemLogs);
 export const insertContentFlagSchema = createInsertSchema(contentFlags);
 export const insertUserActionSchema = createInsertSchema(userActions);
 export const insertAdminAuditLogSchema = createInsertSchema(adminAuditLog);
+export const insertScheduledPostSchema = createInsertSchema(scheduledPosts);
 
 export type InsertSystemLog = z.infer<typeof insertSystemLogSchema>;
 export type InsertContentFlag = z.infer<typeof insertContentFlagSchema>;
 export type InsertUserAction = z.infer<typeof insertUserActionSchema>;
 export type InsertAdminAuditLog = z.infer<typeof insertAdminAuditLogSchema>;
+export type InsertScheduledPost = z.infer<typeof insertScheduledPostSchema>;
 
 export type SystemLog = typeof systemLogs.$inferSelect;
 export type ContentFlag = typeof contentFlags.$inferSelect;
 export type UserAction = typeof userActions.$inferSelect;
 export type AdminAuditLog = typeof adminAuditLog.$inferSelect;
+export type ScheduledPost = typeof scheduledPosts.$inferSelect;
 
 // ==========================================
 // SHADOWBAN DETECTION SCHEMAS
