@@ -58,6 +58,7 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
     { href: '/quick-post', label: 'Quick Post', authenticated: true },
     { href: '/post-scheduling', label: 'Schedule', authenticated: true },
     { href: '/scheduled-posts', label: 'My Posts', authenticated: true },
+    { href: '/analytics', label: 'Analytics', authenticated: true, proOnly: true },
     { href: '/reddit', label: 'Reddit', authenticated: null },
     { href: '/caption-generator', label: 'Generator', authenticated: null },
     { href: '/referral', label: 'Referral', authenticated: true, proOnly: false },
@@ -72,9 +73,10 @@ export function Header({ onReplayWalkthrough }: HeaderProps) {
       if (item.adminOnly) {
         return isAdmin;
       }
-      // If item requires pro access, check pro status
+      // If item requires pro access, check pro status or higher
       if (item.proOnly) {
-        return user?.tier === 'pro';
+        const tierLevel = user?.tier;
+        return tierLevel === 'pro' || tierLevel === 'premium' || tierLevel === 'admin';
       }
       return true;
     }
