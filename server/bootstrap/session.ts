@@ -145,7 +145,11 @@ export function createSessionMiddleware(): ReturnType<typeof session> {
       max: parseInteger(process.env.SESSION_MEMORY_MAX, 5_000),
     });
 
-    logger.warn('Using in-memory session store. Configure REDIS_URL or set USE_PG_QUEUE=true for production.');
+    if (process.env.NODE_ENV === 'production') {
+      logger.warn('⚠️ Using in-memory session store in PRODUCTION. Configure REDIS_URL or set USE_PG_QUEUE=true.');
+    } else {
+      logger.info('Using in-memory session store (OK for development)');
+    }
   }
 
   return session(sessionOptions);

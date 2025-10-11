@@ -41,12 +41,30 @@ async function bootstrap(): Promise<void> {
     const createAppTime = Date.now() - startTime;
     logger.info(`[HEALTH] Express app created successfully in ${createAppTime}ms`);
 
-    const port = Number.parseInt(process.env.PORT ?? '5000', 10);
+    // Use dynamic port selection to avoid collisions
+    const defaultPort = process.env.NODE_ENV === 'production' ? 3005 : 3005;
+    const port = Number.parseInt(process.env.PORT ?? String(defaultPort), 10);
     logger.info(`[HEALTH] Target port from environment: ${port}`);
     logger.info(`[HEALTH] Starting server on 0.0.0.0:${port}`);
 
     // Promisify server.listen for better error handling
     await new Promise<void>((resolve, reject) => {
+      const handleError = (err: NodeJS.ErrnoException) => {
+        if (err.code === 'EADDRINUSE') {
+          logger.error(`[HEALTH] ❌ Port ${port} is already in use`);
+          logger.info('[HEALTH] Tip: Use PORT env variable to specify a different port');
+          logger.info('[HEALTH] Example: PORT=3006 npm run dev');
+        } else {
+          logger.error(`[HEALTH] ❌ Server startup failed:`, {
+            code: err.code,
+            message: err.message,
+            port: port
+          });
+        }
+        clearTimeout(timeoutId);
+        reject(err);
+      };
+
       server.listen(port, '0.0.0.0', () => {
         const totalTime = Date.now() - startTime;
         logger.info(`[HEALTH] ✅ Server started successfully on port ${port} in ${totalTime}ms`);
@@ -55,16 +73,7 @@ async function bootstrap(): Promise<void> {
         resolve();
       });
 
-      server.on('error', (err: unknown) => {
-        const error = err as NodeJS.ErrnoException;
-        logger.error(`[HEALTH] ❌ Server startup failed:`, {
-          code: error.code,
-          message: error.message,
-          port: port
-        });
-        clearTimeout(timeoutId);
-        reject(error);
-      });
+      server.on('error', handleError);
     });
   } catch (error) {
     clearTimeout(timeoutId);

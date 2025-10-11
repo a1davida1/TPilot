@@ -67,6 +67,18 @@ export const users = pgTable("users", {
   passwordResetAt: timestamp("password_reset_at"),
   deletedAt: timestamp("deleted_at"),
   isDeleted: boolean("is_deleted").default(false),
+  // Additional profile fields
+  avatarUrl: text("avatar_url"),
+  website: varchar("website", { length: 255 }),
+  timezone: varchar("timezone", { length: 50 }),
+  language: varchar("language", { length: 10 }).default("en"),
+  twoFactorEnabled: boolean("two_factor_enabled").default(false),
+  lastLoginAt: timestamp("last_login_at"),
+  passwordHash: varchar("password_hash", { length: 255 }).notNull().default(''),
+  lastPasswordChange: timestamp("last_password_change"),
+  // Stats
+  postsCount: integer("posts_count").default(0),
+  captionsGenerated: integer("captions_generated").default(0),
 });
 
 export const contentGenerations = pgTable("content_generations", {
@@ -116,6 +128,19 @@ export const userPreferences = pgTable("user_preferences", {
   photoStyle: jsonb("photo_style"), // preferred photo instructions
   platformSettings: jsonb("platform_settings"), // platform-specific preferences
   fineTuningEnabled: boolean("fine_tuning_enabled").default(false),
+  // Notification settings
+  emailNotifications: boolean("email_notifications").default(true),
+  pushNotifications: boolean("push_notifications").default(false),
+  marketingEmails: boolean("marketing_emails").default(false),
+  // App preferences
+  showNSFWContent: boolean("show_nsfw_content").default(true),
+  autoSchedulePosts: boolean("auto_schedule_posts").default(false),
+  defaultSubreddit: varchar("default_subreddit", { length: 100 }),
+  theme: varchar("theme", { length: 20 }).default("auto"),
+  compactMode: boolean("compact_mode").default(false),
+  showOnboarding: boolean("show_onboarding").default(true),
+  captionStyle: varchar("caption_style", { length: 50 }).default("casual"),
+  watermarkPosition: varchar("watermark_position", { length: 20 }).default("bottom-right"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -1407,4 +1432,15 @@ export const userStorageAssets = pgTable("user_storage_assets", {
   userIdIdx: index("user_storage_assets_user_id_idx").on(table.userId),
   providerIdx: index("user_storage_assets_provider_idx").on(table.provider),
   createdAtIdx: index("user_storage_assets_created_at_idx").on(table.createdAt),
-}))
+}));
+
+// Deleted accounts archive for GDPR compliance
+export const deletedAccounts = pgTable("deleted_accounts", {
+  id: serial("id").primaryKey(),
+  originalUserId: integer("original_user_id").notNull(),
+  email: varchar("email", { length: 255 }),
+  username: varchar("username", { length: 50 }),
+  deletionReason: text("deletion_reason"),
+  deletedAt: timestamp("deleted_at").defaultNow().notNull(),
+  dataRetentionExpiry: timestamp("data_retention_expiry"), // When to fully purge
+});

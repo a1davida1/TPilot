@@ -1432,6 +1432,24 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // Register Caption Analytics Routes (for A/B testing and performance tracking)
   app.use('/api/caption-analytics', captionAnalyticsRouter);
 
+  // Register Intelligence Routes (for AI-powered insights)
+  const { intelligenceRouter } = await import('./routes/intelligence.js');
+  app.use('/api/intelligence', intelligenceRouter);
+
+  // Register Health Check Routes (for monitoring)
+  const { healthRouter } = await import('./routes/health-check.js');
+  app.use('/api/health', healthRouter);
+
+  // Test Sentry Route (REMOVE AFTER TESTING)
+  if (process.env.NODE_ENV !== 'production') {
+    const { testSentryRouter } = await import('./routes/test-sentry.js');
+    app.use('/api', testSentryRouter);
+  }
+
+  // Register User Profile Routes (for profile management and GDPR compliance)
+  const { userProfileRouter } = await import('./routes/user-profile.js');
+  app.use('/api/users', userProfileRouter);
+
   // Register Dashboard Routes
   try {
     const { dashboardRouter } = await import('./routes/dashboard.js');

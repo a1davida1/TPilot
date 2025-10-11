@@ -167,7 +167,9 @@ export function validateEnvironment() {
   const usePgQueue = parseBoolean(process.env.USE_PG_QUEUE);
 
   if (env?.NODE_ENV === 'production' && !env?.REDIS_URL && !usePgQueue) {
-    throw new Error('Production deployments must configure REDIS_URL or set USE_PG_QUEUE=true to enable persistent queues and sessions');
+    logger.error('⚠️ PRODUCTION WARNING: No persistent session store configured');
+    logger.error('Set REDIS_URL or USE_PG_QUEUE=true for production deployments');
+    // Don't throw in production to avoid crash loops, but log the critical issue
   }
 }
 

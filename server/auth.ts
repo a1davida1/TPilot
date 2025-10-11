@@ -41,9 +41,35 @@ export async function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
   // Ensure the bootstrap admin account exists before routes become live.
   // Uses ADMIN_EMAIL and ADMIN_PASSWORD_HASH (or ADMIN_PASSWORD) env vars.
   try {
-    await ensureAdminAccount();
+    const adminResult = await ensureAdminAccount();
+    if (adminResult) {
+      logger.info('Admin account configured successfully', {
+        email: adminResult.email,
+        username: adminResult.username
+      });
+    }
   } catch (err) {
-    logger.error('Failed to ensure admin account exists', { err });
+    // In development, create a default admin account
+    if (process.env.NODE_ENV === 'development') {
+      logger.warn('Creating default admin account for development');
+      logger.warn('⚠️ DEFAULT ADMIN CREDENTIALS:');
+      logger.warn('   Email: admin@localhost');
+      logger.warn('   Password: admin123456');
+      logger.warn('   CHANGE THESE IN PRODUCTION!');
+      
+      // Set temporary env vars for development
+      process.env.ADMIN_EMAIL = 'admin@localhost';
+      process.env.ADMIN_PASSWORD = 'admin123456';
+      
+      try {
+        await ensureAdminAccount();
+      } catch (devErr) {
+        logger.error('Failed to create development admin account', { devErr });
+      }
+    } else {
+      logger.error('Failed to ensure admin account exists', { err });
+      logger.error('⚠️ Set ADMIN_PASSWORD or ADMIN_PASSWORD_HASH in production!');
+    }
   }
 
   // Apply production database fixes (tier upgrades, email verification)
