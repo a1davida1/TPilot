@@ -9,19 +9,31 @@ import type { IQueue, QueueJobHandler, QueueJobOptions, QueueFailureStats } from
 import { logger } from '../bootstrap/logger.js';
 
 export class RedisBullQueue implements IQueue {
-  private redis: IORedis;
+  private redis: IORedis | null = null;
+  private redisUrl: string;
   private queues = new Map<string, Queue>();
   private workers = new Map<string, Worker>();
   private queueEvents = new Map<string, QueueEvents>();
 
   constructor(redisUrl: string) {
-    this.redis = new IORedis(redisUrl, {
-      maxRetriesPerRequest: 3,
-    });
+    this.redisUrl = redisUrl;
   }
 
   async initialize(): Promise<void> {
     logger.error('🚀 Initializing Redis BullMQ Queue backend');
+    // Create Redis connection during initialization, not constructor
+    this.redis = new IORedis(this.redisUrl, {
+      maxRetriesPerRequest: 3,
+      enableOfflineQueue: false,
+      retryStrategy: (times) => {
+        if (times > 3) {
+          logger.error('Redis connection failed after 3 retries');
+          return null; // Stop retrying
+        }
+        return Math.min(times * 50, 500);
+      }
+    });
+    
     // Test Redis connection
     await this.redis.ping();
   }
@@ -40,7 +52,9 @@ export class RedisBullQueue implements IQueue {
       await queue.close();
     }
 
-    await this.redis.quit();
+    if (this.redis) {
+      await this.redis.quit();
+    }
     logger.error('📦 Redis BullMQ Queue backend closed');
   }
 
@@ -71,6 +85,10 @@ export class RedisBullQueue implements IQueue {
     handler: QueueJobHandler<T>,
     options: { concurrency?: number } = {}
   ): Promise<void> {
+    if (!this.redis) {
+      throw new Error('Redis connection not initialized');
+    }
+    
     const worker = new Worker(
       queueName,
       async (job) => {
@@ -151,6 +169,10 @@ export class RedisBullQueue implements IQueue {
   }
 
   private getOrCreateQueue(queueName: string): Queue {
+    if (!this.redis) {
+      throw new Error('Redis connection not initialized');
+    }
+    
     if (!this.queues.has(queueName)) {
       const queue = new Queue(queueName, {
         connection: this.redis,
@@ -169,6 +191,10 @@ export class RedisBullQueue implements IQueue {
   }
 
   private getOrCreateQueueEvents(queueName: string): QueueEvents {
+    if (!this.redis) {
+      throw new Error('Redis connection not initialized');
+    }
+    
     if (!this.queueEvents.has(queueName)) {
       const queueEvents = new QueueEvents(queueName, {
         connection: this.redis,

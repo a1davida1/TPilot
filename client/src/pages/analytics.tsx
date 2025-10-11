@@ -101,64 +101,7 @@ export default function AnalyticsPage() {
     retry: 1,
   });
 
-  // Mock data for demo purposes (remove in production)
-  const mockAnalytics: AnalyticsData = {
-    overview: {
-      totalPosts: 142,
-      totalEngagement: 15420,
-      averageEngagementRate: 8.7,
-      growthRate: 23.5,
-      postsToday: 3,
-      postsThisWeek: 21,
-      postsThisMonth: 89
-    },
-    performance: {
-      bestPostingTimes: [
-        { hour: 20, day: 'Friday', engagement: 450 },
-        { hour: 21, day: 'Saturday', engagement: 425 },
-        { hour: 19, day: 'Thursday', engagement: 380 }
-      ],
-      topSubreddits: [
-        { name: 'gonewild', posts: 45, engagement: 5200, growth: 15.3 },
-        { name: 'RealGirls', posts: 38, engagement: 4100, growth: 12.1 },
-        { name: 'petite', posts: 29, engagement: 3500, growth: 18.7 }
-      ],
-      contentPerformance: [
-        { type: 'Gallery', count: 42, avgEngagement: 125 },
-        { type: 'Single Image', count: 78, avgEngagement: 95 },
-        { type: 'Video', count: 22, avgEngagement: 180 }
-      ]
-    },
-    trends: {
-      weeklyGrowth: [
-        { date: '2024-10-04', posts: 18, engagement: 2100 },
-        { date: '2024-10-05', posts: 22, engagement: 2450 },
-        { date: '2024-10-06', posts: 20, engagement: 2300 },
-        { date: '2024-10-07', posts: 19, engagement: 2150 },
-        { date: '2024-10-08', posts: 24, engagement: 2800 },
-        { date: '2024-10-09', posts: 21, engagement: 2400 },
-        { date: '2024-10-10', posts: 18, engagement: 2200 }
-      ],
-      monthlyGrowth: [],
-      projections: { nextWeek: 156, nextMonth: 680, confidence: 78 }
-    },
-    intelligence: {
-      recommendations: [
-        'Post more galleries on Fridays - 45% higher engagement',
-        'Try posting in r/adorableporn - similar audience, less competition',
-        'Your captions with questions get 2x more comments'
-      ],
-      warnings: [
-        'Posting frequency in r/gonewild approaching limit',
-        'Engagement dropping on Sundays - consider skipping'
-      ],
-      opportunities: [
-        { subreddit: 'adorableporn', reason: 'Growing fast, fits your content', potential: 85 },
-        { subreddit: 'PetiteGoneWild', reason: 'High engagement, low competition', potential: 78 }
-      ],
-      competitors: []
-    }
-  };
+  // Mock data removed - using real data only from API
 
   // Use real data only, no fallback to mock
   const data = analytics;

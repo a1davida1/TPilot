@@ -35,6 +35,7 @@
     "test:e2e": "tsx vendor/playwright-test/runner.ts",
     "env:audit": "tsx scripts/audit-env.ts",
     "validate:env": "tsx scripts/validate-production-env.ts",
+    "smoke:test": "tsx scripts/smoke-test.ts",
     "db:backup": "tsx scripts/validate-db-backup.ts",
     "db:backup:test": "TEST_RESTORE=true tsx scripts/validate-db-backup.ts"
   },

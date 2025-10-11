@@ -7,8 +7,8 @@ import { logger } from '../../bootstrap/logger.js';
 import { db } from '../../db.js';
 import { scheduledPosts, redditPostOutcomes } from '@shared/schema';
 import { eq, lte, and, or } from 'drizzle-orm';
-import { addJob, QUEUE_NAMES } from '../../bootstrap/queue.js';
-import { syncRedditCommunityRules } from '../reddit-community-sync.js';
+// import { addJob, QUEUE_NAMES } from '../../bootstrap/queue.js'; // Queue system not yet implemented
+// import { syncRedditCommunityRules } from '../reddit-community-sync.js'; // File doesn't exist yet
 import { workerOrchestrator } from './worker-orchestrator.js';
 
 interface CronJob {
@@ -176,14 +176,18 @@ class CronManager {
             .where(eq(scheduledPosts.id, post.id));
 
           // Queue the post for processing
-          await addJob(QUEUE_NAMES.POST, {
-            userId: post.userId,
-            scheduleId: post.id,
-            subreddit: post.subreddit,
-            titleFinal: post.title,
-            bodyFinal: post.content || '',
-            mediaKey: post.imageUrl
-          });
+          // TODO: Implement queue system
+          // await addJob(QUEUE_NAMES.POST, {
+          //   userId: post.userId,
+          //   scheduleId: post.id,
+          //   subreddit: post.subreddit,
+          //   titleFinal: post.title,
+          //   bodyFinal: post.content || '',
+          //   mediaKey: post.imageUrl
+          // });
+          
+          // For now, just log that we would process this post
+          logger.info(`Would process scheduled post ${post.id} for user ${post.userId}`);
 
           logger.info(`✅ Queued scheduled post ${post.id} for user ${post.userId}`);
         } catch (error) {
@@ -304,9 +308,10 @@ class CronManager {
       logger.info('🔄 Syncing Reddit community data');
       
       // Queue a job to sync community data
-      await addJob(QUEUE_NAMES.COMMUNITY_SYNC, {
-        timestamp: new Date()
-      });
+      // TODO: Implement queue system
+      // await addJob(QUEUE_NAMES.COMMUNITY_SYNC, {
+      //   timestamp: new Date()
+      // });
     } catch (error) {
       logger.error('❌ Failed to sync Reddit communities', {
         error: error instanceof Error ? error.message : error

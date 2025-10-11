@@ -6,9 +6,10 @@
 import { Router, type Response } from 'express';
 import { authenticateToken, type AuthRequest } from '../middleware/auth';
 import { 
-  getSubredditRecommendations, 
-  inferCategoryFromTags,
-  type RecommendationRequest
+  getRecommendations, 
+  getSubredditMetrics,
+  getTrendingTopics,
+  type SubredditRecommendation
 } from '../lib/subreddit-recommender.js';
 import { z } from 'zod';
 import { logger } from '../bootstrap/logger.js';
@@ -28,25 +29,24 @@ const recommendSchema = z.object({
  */
 router.post('/', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
-    const { category: providedCategory, tags = [], nsfw, excludeSubreddits } = recommendSchema.parse(req.body ?? {});
+    const { category, tags = [], nsfw, excludeSubreddits } = recommendSchema.parse(req.body ?? {});
 
-    // Infer category from tags if not provided
-    const category = providedCategory ?? inferCategoryFromTags(tags);
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
 
-    const request: RecommendationRequest = {
-      category,
-      tags,
-      userId: req.user?.id,
-      nsfw,
-      excludeSubreddits
-    };
+    // Get recommendations based on user history
+    const recommendations = await getRecommendations(req.user.id);
 
-    const recommendations = await getSubredditRecommendations(request);
+    // Filter by excluded subreddits if provided
+    const filtered = excludeSubreddits && excludeSubreddits.length > 0
+      ? recommendations.filter(r => !excludeSubreddits.includes(r.subreddit))
+      : recommendations;
 
     return res.status(200).json({
-      recommendations,
+      recommendations: filtered,
       category,
-      inferredFromTags: !providedCategory
+      tags
     });
 
   } catch (e: unknown) {
@@ -64,14 +64,34 @@ router.get('/quick/:category', async (req, res: Response) => {
   try {
     const category = req.params.category;
 
-    const request: RecommendationRequest = {
-      category,
-      tags: [],
-      nsfw: true,
-      excludeSubreddits: []
+    // For quick recommendations, just return static recommendations based on category
+    // In future, this could use a more sophisticated algorithm
+    const defaultMetrics = {
+      avgUpvotes: 100,
+      avgEngagement: 250,
+      successRate: 0.85,
+      postCount: 10
     };
 
-    const recommendations = await getSubredditRecommendations(request);
+    const categoryRecommendations: Record<string, SubredditRecommendation[]> = {
+      'petite': [
+        { subreddit: 'petite', score: 95, reasons: ['Perfect match for category'], metrics: defaultMetrics, tags: ['petite'] },
+        { subreddit: 'PetiteGoneWild', score: 90, reasons: ['Popular in category'], metrics: defaultMetrics, tags: ['petite', 'wild'] },
+        { subreddit: 'adorableporn', score: 85, reasons: ['Similar audience'], metrics: defaultMetrics, tags: ['cute', 'petite'] }
+      ],
+      'curvy': [
+        { subreddit: 'curvy', score: 95, reasons: ['Perfect match for category'], metrics: defaultMetrics, tags: ['curvy'] },
+        { subreddit: 'thick', score: 90, reasons: ['Popular in category'], metrics: defaultMetrics, tags: ['thick', 'curvy'] },
+        { subreddit: 'RealGirls', score: 85, reasons: ['General audience'], metrics: defaultMetrics, tags: ['amateur'] }
+      ],
+      'general': [
+        { subreddit: 'gonewild', score: 95, reasons: ['Most popular'], metrics: defaultMetrics, tags: ['general', 'wild'] },
+        { subreddit: 'RealGirls', score: 90, reasons: ['High engagement'], metrics: defaultMetrics, tags: ['amateur', 'real'] },
+        { subreddit: 'OnOff', score: 85, reasons: ['Trending'], metrics: defaultMetrics, tags: ['comparison'] }
+      ]
+    };
+
+    const recommendations = categoryRecommendations[category] || categoryRecommendations['general'];
 
     return res.status(200).json({
       recommendations: recommendations.slice(0, 3), // Top 3 for quick view

@@ -5,7 +5,9 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Shield, CheckCircle, Zap, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ArrowLeft, Shield, CheckCircle, Zap, AlertTriangle, CreditCard } from "lucide-react";
 import { Link } from "wouter";
 
 // Lazy load Stripe only when needed
@@ -24,7 +26,7 @@ interface CheckoutFormProps {
   plan: 'starter' | 'pro';
 }
 
-const CheckoutForm = ({ plan }: CheckoutFormProps) => {
+const CheckoutForm = ({ plan, disabled = false }: CheckoutFormProps & { disabled?: boolean }) => {
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
@@ -61,11 +63,16 @@ const CheckoutForm = ({ plan }: CheckoutFormProps) => {
       <PaymentElement />
       <Button
         type="submit"
-        disabled={!stripe || !elements || isProcessing}
-        className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+        disabled={!stripe || !elements || isProcessing || disabled}
+        className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isProcessing ? (
           <>Processing...</>
+        ) : disabled ? (
+          <>
+            <AlertTriangle className="mr-2 h-4 w-4" />
+            Complete verification above
+          </>
         ) : (
           <>
             <Shield className="mr-2 h-4 w-4" />
@@ -133,6 +140,8 @@ export default function Checkout() {
   const plan = (urlParams.get('plan') as 'starter' | 'pro') || 'starter';
   const [clientSecret, setClientSecret] = useState("");
   const [loading, setLoading] = useState(true);
+  const [isAdult, setIsAdult] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const { toast } = useToast();
 
   // Plan details
@@ -245,6 +254,70 @@ export default function Checkout() {
           </Button>
         </Link>
 
+        {/* Beta Notice */}
+        <Alert className="mb-6 border-yellow-200 bg-yellow-50">
+          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+          <AlertTitle className="text-yellow-900">Beta Pricing Available</AlertTitle>
+          <AlertDescription className="text-yellow-800">
+            Limited-time beta pricing! Secure payments via Stripe. 
+            Additional payment options (CCBill, Crypto) coming soon.
+          </AlertDescription>
+        </Alert>
+
+        {/* Age Verification & Terms */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Shield className="mr-2 h-5 w-5 text-red-500" />
+              Age Verification & Terms Required
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-start space-x-3">
+              <Checkbox 
+                id="age-verification"
+                checked={isAdult}
+                onCheckedChange={(checked) => setIsAdult(checked as boolean)}
+                className="mt-1"
+              />
+              <div>
+                <label htmlFor="age-verification" className="text-sm font-medium cursor-pointer">
+                  I confirm I am 18 years of age or older
+                </label>
+                <p className="text-xs text-gray-500 mt-1">
+                  This platform contains adult content and is restricted to adults only.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-start space-x-3">
+              <Checkbox 
+                id="terms-agreement"
+                checked={agreedToTerms}
+                onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
+                className="mt-1"
+              />
+              <div>
+                <label htmlFor="terms-agreement" className="text-sm font-medium cursor-pointer">
+                  I agree to the Terms of Service and understand this is an adult content platform
+                </label>
+                <p className="text-xs text-gray-500 mt-1">
+                  By subscribing, you agree to our content policies and billing terms.
+                </p>
+              </div>
+            </div>
+
+            {!isAdult || !agreedToTerms ? (
+              <Alert className="border-red-200 bg-red-50">
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+                <AlertDescription className="text-red-800 text-sm">
+                  You must verify your age and agree to the terms before proceeding with payment.
+                </AlertDescription>
+              </Alert>
+            ) : null}
+          </CardContent>
+        </Card>
+
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Plan Details */}
           <Card>
@@ -288,7 +361,7 @@ export default function Checkout() {
             <CardContent>
               {stripePromise && (
                 <Elements stripe={stripePromise} options={{ clientSecret }}>
-                  <CheckoutForm plan={plan} />
+                  <CheckoutForm plan={plan} disabled={!isAdult || !agreedToTerms} />
                 </Elements>
               )}
 
@@ -296,6 +369,15 @@ export default function Checkout() {
                 <Shield className="h-4 w-4 mr-2" />
                 Secured by Stripe
               </div>
+              
+              {(!isAdult || !agreedToTerms) && (
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <p className="text-xs text-yellow-800 text-center">
+                    <AlertTriangle className="inline h-3 w-3 mr-1" />
+                    Payment disabled until age verification and terms are accepted
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

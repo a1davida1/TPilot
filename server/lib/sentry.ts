@@ -4,7 +4,7 @@
  */
 
 import * as Sentry from '@sentry/node';
-import { nodeProfilingIntegration } from '@sentry/profiling-node';
+// import { nodeProfilingIntegration } from '@sentry/profiling-node'; // Commented out - package not installed
 import { logger } from '../bootstrap/logger.js';
 
 interface SentryConfig {
@@ -69,8 +69,8 @@ class SentryService {
           new Sentry.Integrations.Postgres(),
           // Redis integration if available
           ...(process.env.REDIS_URL ? [new Sentry.Integrations.Redis()] : []),
-          // Performance profiling
-          nodeProfilingIntegration(),
+          // Performance profiling - disabled until package installed
+          // nodeProfilingIntegration(),
         ],
 
         // Before send hook for data sanitization

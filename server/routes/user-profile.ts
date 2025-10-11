@@ -9,7 +9,7 @@ import { db } from '../db.js';
 import { users, userPreferences, deletedAccounts } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 import { logger } from '../bootstrap/logger.js';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import { z } from 'zod';
 
 const router = Router();

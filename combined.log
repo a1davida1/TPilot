@@ -491,3 +491,39 @@
 >>>>>>> 1569b614 (test: split test suite into unit and routes batches)
 {"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-11T02:23:50.170Z"}
 {"level":"warn","message":"ADMIN_EMAIL environment variable is not set. Admin login is disabled.","timestamp":"2025-10-11T02:23:50.170Z"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-11T11:45:40.524Z"}
+{"level":"warn","message":"ADMIN_EMAIL environment variable is not set. Admin login is disabled.","timestamp":"2025-10-11T11:45:40.525Z"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-11T11:45:48.620Z"}
+{"level":"warn","message":"ADMIN_EMAIL environment variable is not set. Admin login is disabled.","timestamp":"2025-10-11T11:45:48.621Z"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-11T11:48:01.212Z"}
+{"level":"warn","message":"ADMIN_EMAIL environment variable is not set. Admin login is disabled.","timestamp":"2025-10-11T11:48:01.213Z"}
+{"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-11T11:48:01.776Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-11T11:48:01.777Z"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-11T11:48:29.162Z"}
+{"level":"warn","message":"ADMIN_EMAIL environment variable is not set. Admin login is disabled.","timestamp":"2025-10-11T11:48:29.162Z"}
+{"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-11T11:48:29.713Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-11T11:48:29.714Z"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-11T11:49:37.806Z"}
+{"level":"warn","message":"ADMIN_EMAIL environment variable is not set. Admin login is disabled.","timestamp":"2025-10-11T11:49:37.806Z"}
+{"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-11T11:49:38.341Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-11T11:49:38.341Z"}
+{"level":"info","message":"[2025-10-11T11:50:09.126Z] GET /health - IP: 127.0.0.1","timestamp":"2025-10-11T11:50:09.126Z"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-11T11:51:44.960Z"}
+{"level":"warn","message":"ADMIN_EMAIL environment variable is not set. Admin login is disabled.","timestamp":"2025-10-11T11:51:44.961Z"}
+{"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-11T11:51:45.487Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-11T11:51:45.488Z"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-11T11:52:55.004Z"}
+{"level":"warn","message":"ADMIN_EMAIL environment variable is not set. Admin login is disabled.","timestamp":"2025-10-11T11:52:55.005Z"}
+{"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-11T11:52:55.551Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-11T11:52:55.552Z"}
+{"error":"Failed query: select \"id\", \"username\", \"password\", \"email\", \"role\", \"is_admin\", \"email_verified\", \"first_name\", \"last_name\", \"tier\", \"must_change_password\", \"subscription_status\", \"trial_ends_at\", \"provider\", \"provider_id\", \"avatar\", \"bio\", \"referral_code_id\", \"referred_by\", \"reddit_username\", \"reddit_access_token\", \"reddit_refresh_token\", \"reddit_id\", \"stripe_customer_id\", \"stripe_subscription_id\", \"banned_at\", \"suspended_until\", \"ban_reason\", \"suspension_reason\", \"created_at\", \"updated_at\", \"last_login\", \"password_reset_at\", \"deleted_at\", \"is_deleted\", \"avatar_url\", \"website\", \"timezone\", \"language\", \"two_factor_enabled\", \"last_login_at\", \"password_hash\", \"last_password_change\", \"posts_count\", \"captions_generated\" from \"users\" where (\"users\".\"username\" = $1 and \"users\".\"is_deleted\" = $2) limit $3\nparams: admin,false,1","level":"error","message":"Storage operation failed - getting user by username:","timestamp":"2025-10-11T11:53:17.344Z"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-11T11:55:59.555Z"}
+{"level":"warn","message":"ADMIN_EMAIL environment variable is not set. Admin login is disabled.","timestamp":"2025-10-11T11:55:59.556Z"}
+{"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-11T11:56:00.133Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-11T11:56:00.134Z"}
+{"level":"info","message":"[2025-10-11T11:56:01.319Z] GET /api/metrics - IP: 127.0.0.1","timestamp":"2025-10-11T11:56:01.319Z"}
+{"level":"info","message":"[2025-10-11T11:56:22.626Z] GET /health - IP: 127.0.0.1","timestamp":"2025-10-11T11:56:22.626Z"}
+{"level":"info","message":"[2025-10-11T11:56:29.069Z] GET /health - IP: 127.0.0.1","timestamp":"2025-10-11T11:56:29.069Z"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-11T11:56:29.464Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-11T11:56:30.964Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"level":"info","message":"[2025-10-11T11:56:37.277Z] GET /api/health - IP: 127.0.0.1","timestamp":"2025-10-11T11:56:37.277Z"}

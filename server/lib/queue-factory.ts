@@ -31,8 +31,20 @@ export function getQueueBackend(): IQueue {
 }
 
 export async function initializeQueue(): Promise<void> {
-  const queue = getQueueBackend();
-  await queue.initialize();
+  try {
+    const queue = getQueueBackend();
+    await queue.initialize();
+  } catch (error: any) {
+    // If Redis fails, fallback to PostgreSQL
+    if (error.message?.includes('ECONNREFUSED') && env.REDIS_URL) {
+      logger.warn('Redis connection failed, falling back to PostgreSQL queue backend');
+      env.USE_PG_QUEUE = true;
+      queueInstance = new PgQueue();
+      await queueInstance.initialize();
+    } else {
+      throw error;
+    }
+  }
 }
 
 export async function closeQueue(): Promise<void> {
