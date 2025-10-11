@@ -34,6 +34,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { ImgurUploadPortal } from '@/components/ImgurUploadPortal';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { SchedulingCalendar } from '@/components/SchedulingCalendar';
 
 interface UploadedImage {
   id: string;
@@ -485,61 +486,40 @@ export default function PostSchedulingPage() {
               <div>
                 <h2 className="text-xl font-semibold mb-2">Schedule Posts</h2>
                 <p className="text-muted-foreground mb-4">
-                  Set when and where to post your content.
+                  Select dates and times for your posts using the calendar below.
                 </p>
               </div>
               
-              <div className="grid gap-4">
-                <div>
-                  <Label htmlFor="subreddit">Subreddit</Label>
-                  <Input 
-                    id="subreddit"
-                    placeholder="e.g., gonewild"
-                    value={subreddit}
-                    onChange={(e) => setSubreddit(e.target.value)}
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="schedule-time">Schedule Time</Label>
-                  <Input 
-                    id="schedule-time"
-                    type="datetime-local"
-                    value={scheduledTime}
-                    onChange={(e) => setScheduledTime(e.target.value)}
-                    min={new Date().toISOString().slice(0, 16)}
-                  />
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    id="nsfw"
-                    checked={nsfw}
-                    onCheckedChange={setNsfw}
-                  />
-                  <Label htmlFor="nsfw">Mark as NSFW</Label>
-                </div>
+              <SchedulingCalendar 
+                selectedImages={selectedImages.map(img => ({
+                  id: img.id,
+                  url: img.url,
+                  caption: img.caption,
+                  subreddit: subreddit
+                }))}
+                onSchedule={(scheduleData) => {
+                  // Add nsfw flag to each post in the schedule data
+                  const scheduleDataWithNsfw = scheduleData.map(post => ({
+                    ...post,
+                    nsfw: nsfw
+                  }));
+                  schedulePosts.mutate(scheduleDataWithNsfw);
+                }}
+                userTier={user?.tier as 'free' | 'starter' | 'pro' | 'premium' || 'free'}
+              />
+              
+              <div className="flex items-center space-x-2 mt-4">
+                <Switch 
+                  id="nsfw"
+                  checked={nsfw}
+                  onCheckedChange={setNsfw}
+                />
+                <Label htmlFor="nsfw">Mark all posts as NSFW</Label>
               </div>
               
               <div className="flex justify-between">
                 <Button variant="outline" onClick={() => setCurrentStep('protect')}>
                   Back
-                </Button>
-                <Button 
-                  onClick={() => proceedToNextStep()}
-                  disabled={schedulePosts.isPending || !scheduledTime || !subreddit}
-                >
-                  {schedulePosts.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Scheduling...
-                    </>
-                  ) : (
-                    <>
-                      Schedule {selectedImages.length} Posts
-                      <CheckCircle className="ml-2 h-4 w-4" />
-                    </>
-                  )}
                 </Button>
               </div>
             </div>

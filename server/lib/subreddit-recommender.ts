@@ -1,234 +1,304 @@
 /**
- * Subreddit recommendation engine
- * Suggests optimal subreddits based on content category, user history, and performance metrics
+ * Subreddit Recommendation Engine
+ * Analyzes user history and platform trends to suggest optimal subreddits
  */
+
+import { db } from '../db.js';
+import { redditPostOutcomes, redditCommunities, users } from '@shared/schema';
+import { eq, desc, sql, and, gte } from 'drizzle-orm';
+import { logger } from '../bootstrap/logger.js';
 
 export interface SubredditRecommendation {
-  name: string;
+  subreddit: string;
   score: number;
-  avgUpvotes: number;
-  avgComments: number;
-  successRate: number;
-  lastPosted?: string;
-  reason: string;
+  reasons: string[];
+  metrics: {
+    avgUpvotes: number;
+    avgEngagement: number;
+    successRate: number;
+    postCount: number;
+  };
+  tags: string[];
 }
-
-export interface RecommendationRequest {
-  category: string;
-  tags?: string[];
-  userId?: number;
-  nsfw: boolean;
-  excludeSubreddits?: string[];
-}
-
-// Curated NSFW subreddit database with categories
-const NSFW_SUBREDDITS = [
-  { name: 'gonewild', categories: ['general', 'amateur'], minKarma: 0, nsfwRequired: true, weight: 1.0 },
-  { name: 'RealGirls', categories: ['general', 'amateur'], minKarma: 100, nsfwRequired: true, weight: 0.9 },
-  { name: 'PetiteGoneWild', categories: ['petite', 'amateur'], minKarma: 0, nsfwRequired: true, weight: 0.8 },
-  { name: 'BustyPetite', categories: ['petite', 'busty'], minKarma: 0, nsfwRequired: true, weight: 0.8 },
-  { name: 'gonewild30plus', categories: ['mature', 'amateur'], minKarma: 0, nsfwRequired: true, weight: 0.7 },
-  { name: 'AsiansGoneWild', categories: ['asian', 'amateur'], minKarma: 0, nsfwRequired: true, weight: 0.8 },
-  { name: 'LatinasGoneWild', categories: ['latina', 'amateur'], minKarma: 0, nsfwRequired: true, weight: 0.7 },
-  { name: 'OnlyFans101', categories: ['promo', 'general'], minKarma: 0, nsfwRequired: true, weight: 0.6 },
-  { name: 'OnlyFansPromotions', categories: ['promo', 'general'], minKarma: 0, nsfwRequired: true, weight: 0.6 },
-  { name: 'Onlyfans_Promo', categories: ['promo', 'general'], minKarma: 0, nsfwRequired: true, weight: 0.5 },
-  { name: 'SexSells', categories: ['selling', 'services'], minKarma: 0, nsfwRequired: true, weight: 0.7 },
-  { name: 'NSFWverifiedamateurs', categories: ['amateur', 'verified'], minKarma: 0, nsfwRequired: true, weight: 0.8 },
-  { name: 'GoneWildSmiles', categories: ['general', 'wholesome'], minKarma: 0, nsfwRequired: true, weight: 0.6 },
-  { name: 'fitgirls', categories: ['fitness', 'athletic'], minKarma: 0, nsfwRequired: true, weight: 0.7 },
-  { name: 'FitNakedGirls', categories: ['fitness', 'athletic'], minKarma: 0, nsfwRequired: true, weight: 0.7 },
-  { name: 'gothsluts', categories: ['goth', 'alt'], minKarma: 0, nsfwRequired: true, weight: 0.7 },
-  { name: 'altgonewild', categories: ['alt', 'tattoos'], minKarma: 0, nsfwRequired: true, weight: 0.7 },
-  { name: 'BigBoobsGW', categories: ['busty', 'general'], minKarma: 0, nsfwRequired: true, weight: 0.8 },
-  { name: 'boobs', categories: ['busty', 'general'], minKarma: 0, nsfwRequired: true, weight: 0.7 },
-  { name: 'Nude_Selfie', categories: ['general', 'selfie'], minKarma: 0, nsfwRequired: true, weight: 0.7 },
-  { name: 'LegalTeens', categories: ['teen', 'general'], minKarma: 0, nsfwRequired: true, weight: 0.8 },
-  { name: 'collegesluts', categories: ['college', 'amateur'], minKarma: 0, nsfwRequired: true, weight: 0.8 },
-  { name: 'Nudes', categories: ['general', 'artistic'], minKarma: 0, nsfwRequired: true, weight: 0.7 },
-  { name: 'lingerie', categories: ['lingerie', 'artistic'], minKarma: 0, nsfwRequired: true, weight: 0.6 },
-  { name: 'GoneMild', categories: ['mild', 'teasing'], minKarma: 0, nsfwRequired: false, weight: 0.5 }
-];
 
 /**
- * Get subreddit recommendations based on content and user history
+ * Get subreddit recommendations for a user based on their history
  */
-export async function getSubredditRecommendations(
-  request: RecommendationRequest
-): Promise<SubredditRecommendation[]> {
-  const { category, tags = [], userId, nsfw, excludeSubreddits = [] } = request;
+export async function getRecommendations(userId: number): Promise<SubredditRecommendation[]> {
+  try {
+    // Get user's posting history
+    const userHistory = await db
+      .select({
+        subreddit: redditPostOutcomes.subreddit,
+        avgUpvotes: sql<number>`avg(upvotes)::int`,
+        avgEngagement: sql<number>`avg(CASE WHEN views > 0 THEN (upvotes::float / views::float) * 100 ELSE 0 END)::int`,
+        successRate: sql<number>`(sum(CASE WHEN success THEN 1 ELSE 0 END)::float / count(*)::float * 100)::int`,
+        postCount: sql<number>`count(*)::int`
+      })
+      .from(redditPostOutcomes)
+      .where(
+        and(
+          eq(redditPostOutcomes.userId, userId),
+          eq(redditPostOutcomes.success, true)
+        )
+      )
+      .groupBy(redditPostOutcomes.subreddit)
+      .orderBy(desc(sql`avg(upvotes)`))
+      .limit(10);
 
-  // Filter subreddits by category/tags match
-  const matchingSubreddits = NSFW_SUBREDDITS.filter(sub => {
-    // Skip if excluded
-    if (excludeSubreddits.includes(sub.name)) return false;
+    // Get trending subreddits across platform
+    const trendingSubreddits = await db
+      .select({
+        subreddit: redditPostOutcomes.subreddit,
+        avgUpvotes: sql<number>`avg(upvotes)::int`,
+        avgEngagement: sql<number>`avg(CASE WHEN views > 0 THEN (upvotes::float / views::float) * 100 ELSE 0 END)::int`,
+        totalPosts: sql<number>`count(*)::int`,
+        uniqueUsers: sql<number>`count(distinct user_id)::int`
+      })
+      .from(redditPostOutcomes)
+      .where(
+        and(
+          eq(redditPostOutcomes.success, true),
+          gte(redditPostOutcomes.createdAt, sql`NOW() - INTERVAL '30 days'`)
+        )
+      )
+      .groupBy(redditPostOutcomes.subreddit)
+      .having(sql`count(*) > 10`) // At least 10 posts in last 30 days
+      .orderBy(desc(sql`avg(upvotes)`))
+      .limit(20);
 
-    // NSFW filter
-    if (nsfw && !sub.nsfwRequired) return false;
+    // Get subreddit metadata
+    const subredditMeta = await db
+      .select()
+      .from(redditCommunities)
+      .where(sql`over18 = true`); // Focus on NSFW subreddits for adult content
 
-    // Category match
-    const categoryMatch = sub.categories.includes(category.toLowerCase());
-    const tagMatch = tags.some(tag => sub.categories.includes(tag.toLowerCase()));
+    const recommendations: SubredditRecommendation[] = [];
 
-    return categoryMatch || tagMatch;
-  });
+    // Score and analyze each subreddit
+    for (const sub of trendingSubreddits) {
+      const meta = subredditMeta.find(m => m.name === sub.subreddit);
+      const userStats = userHistory.find(h => h.subreddit === sub.subreddit);
+      
+      let score = 0;
+      const reasons: string[] = [];
+      const tags: string[] = [];
 
-  // If no matches, fall back to general NSFW subreddits
-  const candidateSubreddits = matchingSubreddits.length > 0
-    ? matchingSubreddits
-    : NSFW_SUBREDDITS.filter(sub => sub.categories.includes('general') && !excludeSubreddits.includes(sub.name));
+      // High engagement rate
+      if (sub.avgEngagement > 5) {
+        score += 30;
+        reasons.push(`High engagement (${sub.avgEngagement}%)`);
+        tags.push('high-engagement');
+      }
 
-  // Get performance metrics for each subreddit
-  const recommendations = await Promise.all(
-    candidateSubreddits.map(async sub => {
-      const metrics = userId
-        ? await getUserSubredditMetrics(userId, sub.name)
-        : await getGlobalSubredditMetrics(sub.name);
+      // Good upvote average
+      if (sub.avgUpvotes > 500) {
+        score += 25;
+        reasons.push(`Popular content (${sub.avgUpvotes} avg upvotes)`);
+        tags.push('popular');
+      }
 
-      const score = calculateScore(sub.weight, metrics);
+      // User has history here
+      if (userStats) {
+        score += 20;
+        reasons.push('You\'ve posted here successfully');
+        tags.push('familiar');
+      }
 
-      return {
-        name: sub.name,
+      // Active community
+      if (sub.uniqueUsers > 5) {
+        score += 15;
+        reasons.push('Active creator community');
+        tags.push('active');
+      }
+
+      // Large subscriber base
+      if (meta && meta.subscribers > 100000) {
+        score += 10;
+        reasons.push(`Large audience (${(meta.subscribers / 1000000).toFixed(1)}M subscribers)`);
+        tags.push('large-audience');
+      }
+
+      recommendations.push({
+        subreddit: sub.subreddit,
         score,
-        avgUpvotes: metrics.avgUpvotes,
-        avgComments: metrics.avgComments,
-        successRate: metrics.successRate,
-        lastPosted: metrics.lastPosted,
-        reason: generateReason(sub, metrics)
-      };
-    })
-  );
+        reasons,
+        metrics: {
+          avgUpvotes: sub.avgUpvotes,
+          avgEngagement: sub.avgEngagement,
+          successRate: userStats?.successRate || 0,
+          postCount: userStats?.postCount || 0
+        },
+        tags
+      });
+    }
 
-  // Sort by score descending
-  recommendations.sort((a, b) => b.score - a.score);
+    // Sort by score and return top 10
+    recommendations.sort((a, b) => b.score - a.score);
+    return recommendations.slice(0, 10);
 
-  // Return top 5
-  return recommendations.slice(0, 5);
-}
-
-interface SubredditMetrics {
-  avgUpvotes: number;
-  avgComments: number;
-  successRate: number;
-  totalPosts: number;
-  lastPosted?: string;
-}
-
-/**
- * Get user-specific metrics for a subreddit
- */
-async function getUserSubredditMetrics(
-  _userId: number,
-  _subreddit: string
-): Promise<SubredditMetrics> {
-  // TODO: Replace with actual database query
-  // This should query your post_metrics table filtered by userId and subreddit
-  
-  // Placeholder implementation
-  return {
-    avgUpvotes: Math.floor(Math.random() * 500) + 50,
-    avgComments: Math.floor(Math.random() * 50) + 5,
-    successRate: 0.7 + Math.random() * 0.25,
-    totalPosts: Math.floor(Math.random() * 20)
-  };
-}
-
-/**
- * Get global platform metrics for a subreddit
- */
-async function getGlobalSubredditMetrics(
-  subreddit: string
-): Promise<SubredditMetrics> {
-  // TODO: Replace with actual database query
-  // This should aggregate metrics across all users for this subreddit
-  
-  // Placeholder implementation with realistic estimates
-  const baseUpvotes: Record<string, number> = {
-    'gonewild': 800,
-    'RealGirls': 600,
-    'PetiteGoneWild': 500,
-    'AsiansGoneWild': 450,
-    'gonewild30plus': 400,
-    'OnlyFansPromotions': 150,
-    'SexSells': 120
-  };
-
-  return {
-    avgUpvotes: baseUpvotes[subreddit] ?? 200,
-    avgComments: Math.floor((baseUpvotes[subreddit] ?? 200) * 0.08),
-    successRate: 0.75,
-    totalPosts: 1000,
-  };
-}
-
-/**
- * Calculate recommendation score
- */
-function calculateScore(
-  baseWeight: number,
-  metrics: SubredditMetrics
-): number {
-  // Weighted formula:
-  // - Base weight (subreddit quality/fit)
-  // - Engagement (upvotes + comments)
-  // - Success rate (not removed)
-  // - Recency penalty (if posted recently)
-
-  const engagementScore = (metrics.avgUpvotes * 0.7) + (metrics.avgComments * 10);
-  const recencyPenalty = metrics.lastPosted ? 0.5 : 1.0; // 50% penalty if posted recently
-
-  return baseWeight * engagementScore * metrics.successRate * recencyPenalty;
-}
-
-/**
- * Generate human-readable reason for recommendation
- */
-function generateReason(
-  sub: typeof NSFW_SUBREDDITS[0],
-  metrics: SubredditMetrics
-): string {
-  if (metrics.totalPosts === 0) {
-    return `New opportunity in ${sub.categories.join('/')} niche`;
+  } catch (error) {
+    logger.error('Failed to generate recommendations', { error, userId });
+    
+    // Return fallback recommendations
+    return getFallbackRecommendations();
   }
-
-  if (metrics.avgUpvotes > 500) {
-    return `High engagement (avg ${metrics.avgUpvotes} upvotes)`;
-  }
-
-  if (metrics.successRate > 0.9) {
-    return `${Math.round(metrics.successRate * 100)}% success rate`;
-  }
-
-  return `Good match for ${sub.categories[0]} content`;
 }
 
 /**
- * Get category from tags and content analysis
+ * Get performance metrics for a specific subreddit
  */
-export function inferCategoryFromTags(tags: string[]): string {
-  const categoryMap: Record<string, string> = {
-    'fitness': 'fitness',
-    'athletic': 'fitness',
-    'gym': 'fitness',
-    'yoga': 'fitness',
-    'lingerie': 'lingerie',
-    'bedroom': 'general',
-    'teasing': 'mild',
-    'cosplay': 'cosplay',
-    'asian': 'asian',
-    'latina': 'latina',
-    'goth': 'goth',
-    'tattoos': 'alt',
-    'petite': 'petite',
-    'busty': 'busty',
-    'mature': 'mature',
-    'college': 'college'
-  };
+export async function getSubredditMetrics(subreddit: string, userId?: number) {
+  try {
+    // Global metrics
+    const [globalMetrics] = await db
+      .select({
+        avgUpvotes: sql<number>`avg(upvotes)::int`,
+        avgViews: sql<number>`avg(views)::int`,
+        avgEngagement: sql<number>`avg(CASE WHEN views > 0 THEN (upvotes::float / views::float) * 100 ELSE 0 END)::int`,
+        totalPosts: sql<number>`count(*)::int`,
+        successRate: sql<number>`(sum(CASE WHEN success THEN 1 ELSE 0 END)::float / count(*)::float * 100)::int`,
+        topHour: sql<number>`mode() WITHIN GROUP (ORDER BY extract(hour from created_at))::int`
+      })
+      .from(redditPostOutcomes)
+      .where(
+        and(
+          eq(redditPostOutcomes.subreddit, subreddit),
+          gte(redditPostOutcomes.createdAt, sql`NOW() - INTERVAL '30 days'`)
+        )
+      );
 
-  for (const tag of tags) {
-    const category = categoryMap[tag.toLowerCase()];
-    if (category) return category;
+    // User-specific metrics if userId provided
+    let userMetrics = null;
+    if (userId) {
+      const [userStats] = await db
+        .select({
+          avgUpvotes: sql<number>`avg(upvotes)::int`,
+          totalPosts: sql<number>`count(*)::int`,
+          successRate: sql<number>`(sum(CASE WHEN success THEN 1 ELSE 0 END)::float / count(*)::float * 100)::int`,
+          lastPosted: sql<string>`max(created_at)::text`
+        })
+        .from(redditPostOutcomes)
+        .where(
+          and(
+            eq(redditPostOutcomes.userId, userId),
+            eq(redditPostOutcomes.subreddit, subreddit)
+          )
+        );
+      
+      userMetrics = userStats;
+    }
+
+    return {
+      global: globalMetrics || {
+        avgUpvotes: 0,
+        avgViews: 0,
+        avgEngagement: 0,
+        totalPosts: 0,
+        successRate: 0,
+        topHour: 0
+      },
+      user: userMetrics
+    };
+
+  } catch (error) {
+    logger.error('Failed to get subreddit metrics', { error, subreddit, userId });
+    throw error;
   }
+}
 
-  return 'general';
+/**
+ * Get trending topics in a subreddit
+ */
+export async function getTrendingTopics(subreddit: string) {
+  try {
+    // Analyze recent successful posts for common keywords
+    const recentPosts = await db
+      .select({
+        title: redditPostOutcomes.title,
+        upvotes: redditPostOutcomes.upvotes
+      })
+      .from(redditPostOutcomes)
+      .where(
+        and(
+          eq(redditPostOutcomes.subreddit, subreddit),
+          eq(redditPostOutcomes.success, true),
+          gte(redditPostOutcomes.createdAt, sql`NOW() - INTERVAL '7 days'`)
+        )
+      )
+      .orderBy(desc(redditPostOutcomes.upvotes))
+      .limit(100);
+
+    // Extract common keywords/themes
+    const keywords = new Map<string, number>();
+    const commonTerms = [
+      'verification', 'first post', 'oc', 'amateur', 'teen', 'milf', 
+      'petite', 'curvy', 'natural', 'pierced', 'tattooed', 'public',
+      'outdoor', 'shower', 'mirror', 'selfie', 'video', 'gif'
+    ];
+
+    for (const post of recentPosts) {
+      const title = post.title.toLowerCase();
+      for (const term of commonTerms) {
+        if (title.includes(term)) {
+          keywords.set(term, (keywords.get(term) || 0) + post.upvotes);
+        }
+      }
+    }
+
+    // Sort by weighted popularity
+    const trending = Array.from(keywords.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([term, score]) => ({ term, score }));
+
+    return trending;
+
+  } catch (error) {
+    logger.error('Failed to get trending topics', { error, subreddit });
+    return [];
+  }
+}
+
+/**
+ * Fallback recommendations when database is unavailable
+ */
+function getFallbackRecommendations(): SubredditRecommendation[] {
+  return [
+    {
+      subreddit: 'gonewild',
+      score: 90,
+      reasons: ['Most popular NSFW subreddit', 'High engagement rates'],
+      metrics: { avgUpvotes: 800, avgEngagement: 8, successRate: 75, postCount: 0 },
+      tags: ['popular', 'high-engagement']
+    },
+    {
+      subreddit: 'RealGirls',
+      score: 85,
+      reasons: ['Large active community', 'Good for amateur content'],
+      metrics: { avgUpvotes: 600, avgEngagement: 7, successRate: 70, postCount: 0 },
+      tags: ['popular', 'amateur']
+    },
+    {
+      subreddit: 'PetiteGoneWild',
+      score: 80,
+      reasons: ['Niche audience', 'High upvote potential'],
+      metrics: { avgUpvotes: 500, avgEngagement: 9, successRate: 72, postCount: 0 },
+      tags: ['niche', 'high-engagement']
+    },
+    {
+      subreddit: 'OnlyFansPromotions',
+      score: 75,
+      reasons: ['Made for promotion', 'Direct monetization'],
+      metrics: { avgUpvotes: 150, avgEngagement: 5, successRate: 90, postCount: 0 },
+      tags: ['promotional', 'monetization']
+    },
+    {
+      subreddit: 'OnOff',
+      score: 70,
+      reasons: ['Creative content format', 'Good engagement'],
+      metrics: { avgUpvotes: 400, avgEngagement: 6, successRate: 65, postCount: 0 },
+      tags: ['creative', 'engagement']
+    }
+  ];
 }

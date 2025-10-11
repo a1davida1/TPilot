@@ -12,6 +12,7 @@ import { db } from '../db.js';
 import { scheduledPosts } from '@shared/schema';
 import { eq, and, gte, lte, desc, asc, or } from 'drizzle-orm';
 import { addDays, subDays } from 'date-fns';
+import { workerOrchestrator } from '../lib/scheduler/worker-orchestrator.js';
 
 const router = Router();
 
@@ -140,12 +141,17 @@ router.get('/', authenticateToken(true), async (req: AuthRequest, res: Response)
 router.delete('/:postId', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const postId = parseInt(req.params.postId, 10);
+    const reason = req.query.reason as string | undefined;
 
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // TODO: Delete from posts table WHERE post_id = postId AND creator_id = user.id AND posted_at IS NULL
+    const success = await workerOrchestrator.cancelScheduledPost(postId, req.user.id, reason);
+
+    if (!success) {
+      return res.status(400).json({ error: 'Could not cancel post' });
+    }
 
     logger.info('Scheduled post cancelled', { postId, userId: req.user.id });
 
@@ -154,6 +160,105 @@ router.delete('/:postId', authenticateToken(true), async (req: AuthRequest, res:
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'Failed to cancel scheduled post';
     logger.error('Cancel scheduled post error', { error: message });
+    return res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/scheduled-posts/:postId/retry
+ * Force retry a failed scheduled post
+ */
+router.post('/:postId/retry', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const postId = parseInt(req.params.postId, 10);
+
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const success = await workerOrchestrator.forceRetry(postId, req.user.id);
+
+    if (!success) {
+      return res.status(400).json({ error: 'Could not retry post' });
+    }
+
+    return res.status(200).json({ success: true });
+
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Failed to retry scheduled post';
+    logger.error('Retry scheduled post error', { error: message });
+    return res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/scheduled-posts/:postId/retry-status
+ * Get retry status for a scheduled post
+ */
+router.get('/:postId/retry-status', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const postId = parseInt(req.params.postId, 10);
+
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const status = await workerOrchestrator.getRetryStatus(postId);
+
+    if (!status) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
+
+    return res.status(200).json(status);
+
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Failed to get retry status';
+    logger.error('Get retry status error', { error: message });
+    return res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/scheduled-posts/bulk-cancel
+ * Bulk cancel scheduled posts
+ */
+router.post('/bulk-cancel', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const { postIds, reason } = z.object({
+      postIds: z.array(z.number()),
+      reason: z.string().optional()
+    }).parse(req.body ?? {});
+
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const cancelledCount = await workerOrchestrator.bulkCancelPosts(postIds, req.user.id, reason);
+
+    return res.status(200).json({ 
+      success: true, 
+      cancelledCount,
+      totalRequested: postIds.length 
+    });
+
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Failed to bulk cancel posts';
+    logger.error('Bulk cancel error', { error: message });
+    return res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/scheduled-posts/worker-stats
+ * Get worker orchestration statistics
+ */
+router.get('/worker-stats', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const stats = await workerOrchestrator.getWorkerStats();
+    return res.status(200).json(stats);
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Failed to get worker stats';
+    logger.error('Get worker stats error', { error: message });
     return res.status(500).json({ error: message });
   }
 });

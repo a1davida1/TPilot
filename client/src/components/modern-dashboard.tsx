@@ -50,6 +50,7 @@ import { QuickStartModal } from "@/components/dashboard-quick-start";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { apiRequest } from "@/lib/queryClient";
 import type { ApiError } from "@/lib/queryClient";
+import { ReferralWidget } from "@/components/ReferralWidget";
 
 interface ModernDashboardProps {
   isRedditConnected?: boolean;
@@ -883,6 +884,11 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
               </CardContent>
             </Card>
           ))}
+        </div>
+
+        {/* Referral Widget - Prominent placement for all users */}
+        <div className="mb-8">
+          <ReferralWidget />
         </div>
 
         {/* Hero Onboarding Card */}

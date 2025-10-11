@@ -123,10 +123,8 @@ function AuthenticatedRoutes() {
       <Route path="/analytics" component={AnalyticsPage} />
       <Route path="/gallery" component={() => <GalleryPage />} />
       <Route path="/tax-tracker" component={() => <TaxTracker />} />
-      {/* Pro-exclusive surfaces */}
-      {userTier === 'pro' && (
-        <Route path="/referral" component={ReferralPage} />
-      )}
+      {/* Referral Program - Available to all authenticated users */}
+      <Route path="/referral" component={ReferralPage} />
       <Route path="/pro-perks" component={ProPerksPage} />
       <Route path="/history" component={History} />
       <Route path="/settings" component={Settings} />

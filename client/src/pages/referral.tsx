@@ -358,9 +358,9 @@ export default function ReferralPage() {
         <p className="text-lg text-gray-700 dark:text-gray-300 max-w-2xl mx-auto">
           Share ThottoPilot with friends and earn rewards for every successful referral. The more you share, the more you earn!
         </p>
-        <Badge className="mt-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2">
-          <Sparkles className="h-4 w-4 mr-2" />
-          Pro Member Exclusive
+        <Badge className="mt-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2">
+          <Gift className="h-4 w-4 mr-2" />
+          Available to All Users
         </Badge>
       </div>
 

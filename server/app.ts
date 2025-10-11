@@ -235,10 +235,19 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
     logger.warn('Could not apply advanced rate limiting', { error });
   }
 
+  // Apply observability middleware
+  try {
+    const { applyObservability } = await import('./middleware/observability.js');
+    applyObservability(app);
+    logger.info('Observability middleware applied');
+  } catch (error) {
+    logger.warn('Could not apply observability', { error });
+  }
+
   configureCors(app);
 
   app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-    req.id = uuidv4();
+    req.id = req.correlationId || uuidv4();
     next();
   });
 
