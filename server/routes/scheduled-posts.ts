@@ -121,11 +121,32 @@ router.get('/', authenticateToken(true), async (req: AuthRequest, res: Response)
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // TODO: Query posts table WHERE creator_id = user.id AND scheduled_for IS NOT NULL AND posted_at IS NULL
-    // For now, return empty array
-    const scheduledPosts: unknown[] = [];
+    // Query scheduled posts for the user
+    const posts = await db
+      .select({
+        id: scheduledPosts.id,
+        title: scheduledPosts.title,
+        content: scheduledPosts.content,
+        imageUrl: scheduledPosts.imageUrl,
+        caption: scheduledPosts.caption,
+        subreddit: scheduledPosts.subreddit,
+        scheduledFor: scheduledPosts.scheduledFor,
+        status: scheduledPosts.status,
+        nsfw: scheduledPosts.nsfw,
+        spoiler: scheduledPosts.spoiler,
+        flairText: scheduledPosts.flairText,
+        redditPostId: scheduledPosts.redditPostId,
+        redditPostUrl: scheduledPosts.redditPostUrl,
+        errorMessage: scheduledPosts.errorMessage,
+        executedAt: scheduledPosts.executedAt,
+        createdAt: scheduledPosts.createdAt,
+        updatedAt: scheduledPosts.updatedAt
+      })
+      .from(scheduledPosts)
+      .where(eq(scheduledPosts.userId, req.user.id))
+      .orderBy(desc(scheduledPosts.scheduledFor));
 
-    return res.status(200).json({ scheduledPosts });
+    return res.status(200).json({ scheduledPosts: posts });
 
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'Failed to get scheduled posts';

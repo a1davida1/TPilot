@@ -7,10 +7,14 @@ import {
 } from './app.js';
 import { API_PREFIX } from './lib/api-prefix.js';
 import { logger } from './bootstrap/logger.js';
+import { sentryService } from './lib/sentry.js';
 
 process.on('unhandledRejection', (err: unknown) => {
   const message = err instanceof Error ? err.message : String(err);
   logger.error('Unhandled rejection', { error: message });
+  if (err instanceof Error) {
+    sentryService.captureException(err);
+  }
   process.exit(1);
 });
 
@@ -28,6 +32,11 @@ async function bootstrap(): Promise<void> {
   logger.info(`[HEALTH] Environment: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`[HEALTH] Platform: ${process.platform}`);
   logger.info(`[HEALTH] Architecture: ${process.arch}`);
+  
+  // Initialize Sentry for error tracking
+  if (process.env.NODE_ENV === 'production') {
+    sentryService.initialize();
+  }
   
   // Set startup timeout for deployment
   const STARTUP_TIMEOUT = 30000; // 30 seconds

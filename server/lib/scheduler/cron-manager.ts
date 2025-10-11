@@ -2,13 +2,14 @@
  * Centralized Cron Job Manager
  * Handles all scheduled tasks for the platform
  */
-
-import cron from 'node-cron';
+import * as cron from 'node-cron';
 import { logger } from '../../bootstrap/logger.js';
 import { db } from '../../db.js';
 import { scheduledPosts, redditPostOutcomes } from '@shared/schema';
 import { eq, lte, and, or } from 'drizzle-orm';
-import { addJob, QUEUE_NAMES } from '../queue/index.js';
+import { addJob, QUEUE_NAMES } from '../../bootstrap/queue.js';
+import { syncRedditCommunityRules } from '../reddit-community-sync.js';
+import { workerOrchestrator } from './worker-orchestrator.js';
 
 interface CronJob {
   name: string;
@@ -16,7 +17,6 @@ interface CronJob {
   task: () => Promise<void>;
   instance?: cron.ScheduledTask;
 }
-
 class CronManager {
   private jobs: Map<string, CronJob> = new Map();
   private isRunning = false;
@@ -68,6 +68,15 @@ class CronManager {
       schedule: '0 2 * * 1', // Weekly on Monday at 2 AM
       task: async () => {
         await this.syncRedditCommunities();
+      }
+    });
+
+    // Database backup daily at 4 AM
+    this.addJob({
+      name: 'database-backup',
+      schedule: '0 4 * * *', // Daily at 4 AM
+      task: async () => {
+        await this.performDatabaseBackup();
       }
     });
   }
@@ -300,6 +309,28 @@ class CronManager {
       });
     } catch (error) {
       logger.error('❌ Failed to sync Reddit communities', {
+        error: error instanceof Error ? error.message : error
+      });
+    }
+  }
+
+  /**
+   * Perform database backup
+   */
+  private async performDatabaseBackup() {
+    try {
+      logger.info('💾 Starting database backup');
+      
+      // Run backup using child process
+      const { exec } = await import('child_process');
+      const { promisify } = await import('util');
+      const execAsync = promisify(exec);
+      
+      await execAsync('npm run db:backup');
+      
+      logger.info('✅ Database backup completed');
+    } catch (error) {
+      logger.error('❌ Failed to perform database backup', {
         error: error instanceof Error ? error.message : error
       });
     }

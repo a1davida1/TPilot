@@ -28,7 +28,7 @@ import { adminCommunitiesRouter } from "./routes/admin-communities.js";
 import { createCancelSubscriptionHandler } from "./routes/subscription-management.js";
 // import { createLocalDownloadRouter } from "./routes/downloads.js"; // REMOVED - No local files
 import imgurUploadRouter from "./routes/imgur-uploads.js";
-import feedbackRouter from "./routes/feedback.js";
+import { feedbackRouter } from "./routes/feedback.js";
 
 // Core imports
 import { storage } from "./storage.js";
@@ -1437,8 +1437,8 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   app.use('/api/intelligence', intelligenceRouter);
 
   // Register Health Check Routes (for monitoring)
-  const { healthRouter } = await import('./routes/health-check.js');
-  app.use('/api/health', healthRouter);
+  const { healthRouter } = await import('./routes/health.js');
+  app.use('/api', healthRouter);
 
   // Test Sentry Route (REMOVE AFTER TESTING)
   if (process.env.NODE_ENV !== 'production') {

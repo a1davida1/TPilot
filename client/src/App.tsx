@@ -15,15 +15,13 @@ const Dashboard = React.lazy(() => import("@/pages/dashboard"));
 const Phase4Dashboard = React.lazy(() => import("@/pages/phase4"));
 import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough";
 import { useOnboarding } from "@/hooks/useOnboarding";
-import NotFound from "@/pages/not-found";
 import ResetPasswordPage from "@/pages/reset-password";
 import ForgotPasswordPage from "@/pages/forgot-password";
 import EmailVerificationPage from "@/pages/email-verification";
 import ChangePasswordPage from "@/pages/change-password";
 import LogoutPage from "@/pages/logout";
-import History from "@/pages/history";
-import Settings from "@/pages/settings";
-import Checkout from "@/pages/checkout";
+import FeedbackPage from "@/pages/feedback";
+import { Support } from "@/pages/support";
 import Enterprise from "@/pages/enterprise";
 const AdminDashboard = React.lazy(() => import("@/pages/admin").then(module => ({ default: module.AdminDashboard })));
 const AdminLeadsPage = React.lazy(() => import("@/pages/admin-leads").then(module => ({ default: module.AdminLeadsPage })));
@@ -33,12 +31,15 @@ const ImageShieldPage = React.lazy(() => import("@/pages/imageshield"));
 const TaxTracker = React.lazy(() => import("@/pages/tax-tracker"));
 const ReferralPage = React.lazy(() => import("@/pages/referral"));
 const ProPerksPage = React.lazy(() => import("@/pages/pro-perks"));
+const AnalyticsPage = React.lazy(() => import("@/pages/analytics"));
+const PostSchedulingPage = React.lazy(() => import("@/pages/post-scheduling"));
+const ScheduledPostsPage = React.lazy(() => import("@/pages/scheduled-posts"));
+const Settings = React.lazy(() => import("@/pages/settings"));
+const Checkout = React.lazy(() => import("@/pages/checkout"));
+const NotFound = React.lazy(() => import("@/pages/not-found"));
 const TermsOfService = React.lazy(() => import("@/pages/terms-of-service"));
 const PrivacyPolicy = React.lazy(() => import("@/pages/privacy-policy"));
-const PostSchedulingPage = React.lazy(() => import("@/pages/post-scheduling"));
 const QuickPostPage = React.lazy(() => import("@/pages/quick-post"));
-const ScheduledPostsPage = React.lazy(() => import("@/pages/scheduled-posts"));
-const AnalyticsPage = React.lazy(() => import("@/pages/analytics"));
 import { RedditCommunities } from "@/components/reddit-communities";
 import { ImageGallery } from "@/components/image-gallery";
 // Phase 1: Real Analytics Tracking
@@ -121,12 +122,15 @@ function AuthenticatedRoutes() {
       <Route path="/post-scheduling" component={PostSchedulingPage} />
       <Route path="/scheduled-posts" component={ScheduledPostsPage} />
       <Route path="/analytics" component={AnalyticsPage} />
-      <Route path="/gallery" component={() => <GalleryPage />} />
+      <Route path="/gallery" component={() => <ImageGallery />} />
       <Route path="/tax-tracker" component={() => <TaxTracker />} />
       {/* Referral Program - Available to all authenticated users */}
       <Route path="/referral" component={ReferralPage} />
+      {/* Support & Feedback Pages */}
+      <Route path="/support" component={Support} />
+      <Route path="/feedback" component={FeedbackPage} />
       <Route path="/pro-perks" component={ProPerksPage} />
-      <Route path="/history" component={History} />
+      <Route path="/history" component={() => <div>History Page</div>} />
       <Route path="/settings" component={Settings} />
       <Route path="/checkout" component={Checkout} />
       <Route path="/logout" component={LogoutPage} />

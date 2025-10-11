@@ -20,7 +20,8 @@ import {
   Zap,
   ChevronRight,
   Info,
-  Sparkles
+  Sparkles,
+  AlertCircle
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -88,8 +89,13 @@ export default function AnalyticsPage() {
   const { data: analytics, isLoading, error } = useQuery<AnalyticsData>({
     queryKey: ['/api/analytics', timeRange, userTier],
     queryFn: async () => {
-      const response = await apiRequest('GET', `/api/analytics?range=${timeRange}&tier=${userTier}`);
-      return response as unknown as AnalyticsData;
+      try {
+        const response = await apiRequest('GET', `/api/analytics?range=${timeRange}&tier=${userTier}`);
+        return response as unknown as AnalyticsData;
+      } catch (err) {
+        console.error('Analytics fetch error:', err);
+        throw err;
+      }
     },
     enabled: isProOrHigher, // Only fetch for Pro and above
     retry: 1,
@@ -154,7 +160,23 @@ export default function AnalyticsPage() {
     }
   };
 
-  const data = analytics || mockAnalytics;
+  // Use real data only, no fallback to mock
+  const data = analytics;
+
+  // If data is not available and user has access, show loading or error state
+  if (isProOrHigher && !data && !isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Failed to load analytics</AlertTitle>
+          <AlertDescription>
+            Please try refreshing the page. If the problem persists, contact support.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   // Render tier upgrade prompt
   const renderUpgradePrompt = () => {
@@ -227,37 +249,41 @@ export default function AnalyticsPage() {
   };
 
   // Basic stats cards (Pro tier)
-  const renderBasicStats = () => (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-      <Card>
-        <CardHeader className="pb-3">
-          <CardDescription>Total Posts</CardDescription>
-          <CardTitle className="text-2xl">{data.overview.totalPosts}</CardTitle>
-        </CardHeader>
-      </Card>
-      <Card>
-        <CardHeader className="pb-3">
-          <CardDescription>Engagement Rate</CardDescription>
-          <CardTitle className="text-2xl">{data.overview.averageEngagementRate}%</CardTitle>
-        </CardHeader>
-      </Card>
-      <Card>
-        <CardHeader className="pb-3">
-          <CardDescription>This Week</CardDescription>
-          <CardTitle className="text-2xl">{data.overview.postsThisWeek} posts</CardTitle>
-        </CardHeader>
-      </Card>
-      <Card>
-        <CardHeader className="pb-3">
-          <CardDescription>Growth</CardDescription>
-          <CardTitle className="text-2xl flex items-center gap-1">
-            <TrendingUp className="h-4 w-4 text-green-500" />
-            {data.overview.growthRate}%
-          </CardTitle>
-        </CardHeader>
-      </Card>
-    </div>
-  );
+  const renderBasicStats = () => {
+    if (!data) return null;
+    
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription>Total Posts</CardDescription>
+            <CardTitle className="text-2xl">{data.overview.totalPosts}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription>Engagement Rate</CardDescription>
+            <CardTitle className="text-2xl">{data.overview.averageEngagementRate}%</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription>This Week</CardDescription>
+            <CardTitle className="text-2xl">{data.overview.postsThisWeek} posts</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription>Growth</CardDescription>
+            <CardTitle className="text-2xl flex items-center gap-1">
+              <TrendingUp className="h-4 w-4 text-green-500" />
+              {data.overview.growthRate}%
+            </CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  };
 
   // Advanced intelligence (Premium only)
   const renderIntelligence = () => {

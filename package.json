@@ -34,7 +34,9 @@
     "test:full": "vitest run --config vitest.config.ts",
     "test:e2e": "tsx vendor/playwright-test/runner.ts",
     "env:audit": "tsx scripts/audit-env.ts",
-    "validate:env": "tsx scripts/validate-production-env.ts"
+    "validate:env": "tsx scripts/validate-production-env.ts",
+    "db:backup": "tsx scripts/validate-db-backup.ts",
+    "db:backup:test": "TEST_RESTORE=true tsx scripts/validate-db-backup.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
