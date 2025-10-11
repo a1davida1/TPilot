@@ -31,17 +31,7 @@ export function FeedbackWidget() {
 
   const submitFeedback = useMutation({
     mutationFn: async (data: FeedbackData) => {
-      // For now, we'll just log to console and show success
-      // In production, this would POST to /api/feedback
-      console.log('Feedback submitted:', data);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // In real implementation:
-      // return apiRequest('POST', '/api/feedback', data);
-      
-      return { success: true };
+      return apiRequest('POST', '/api/feedback', data);
     },
     onSuccess: () => {
       toast({

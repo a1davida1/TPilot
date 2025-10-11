@@ -1444,3 +1444,25 @@ export const deletedAccounts = pgTable("deleted_accounts", {
   deletedAt: timestamp("deleted_at").defaultNow().notNull(),
   dataRetentionExpiry: timestamp("data_retention_expiry"), // When to fully purge
 });
+
+// User feedback table for beta testing
+export const feedback = pgTable("feedback", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  type: varchar("type", { length: 20 }).notNull(), // bug, feature, general, praise
+  message: text("message").notNull(),
+  pageUrl: varchar("page_url", { length: 500 }),
+  userAgent: text("user_agent"),
+  status: varchar("status", { length: 20 }).default("pending").notNull(), // pending, reviewed, resolved, archived
+  priority: varchar("priority", { length: 20 }).default("medium"), // low, medium, high, critical
+  adminNotes: text("admin_notes"),
+  resolvedAt: timestamp("resolved_at"),
+  resolvedBy: integer("resolved_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  statusIdx: index("feedback_status_idx").on(table.status),
+  typeIdx: index("feedback_type_idx").on(table.type),
+  userIdx: index("feedback_user_idx").on(table.userId),
+  createdIdx: index("feedback_created_idx").on(table.createdAt),
+}));

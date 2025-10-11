@@ -2,8 +2,9 @@ import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import { authenticateToken, type AuthRequest } from '../middleware/auth.js';
 import { logger } from '../bootstrap/logger.js';
-import { pool } from '../db.js';
-// import { sendEmail } from '../services/email.js'; // TODO: Add email service
+import { db } from '../db.js';
+import { feedback } from '@shared/schema';
+import { eq, desc, sql, and, gte } from 'drizzle-orm';
 
 const router = Router();
 
@@ -28,57 +29,25 @@ router.post('/', authenticateToken(false), async (req: AuthRequest, res: Respons
     const username = req.user?.username || 'Anonymous';
     
     // Store feedback in database
-    const result = await pool.query(
-      `INSERT INTO feedback (
-        user_id, 
-        type, 
-        message, 
-        page_url, 
-        user_agent, 
-        status,
-        created_at
-      ) VALUES ($1, $2, $3, $4, $5, 'pending', NOW())
-      RETURNING id`,
-      [userId, type, message, url, userAgent]
-    );
-    
-    const feedbackId = result.rows[0].id;
+    const [newFeedback] = await db.insert(feedback).values({
+      userId,
+      type,
+      message,
+      pageUrl: url,
+      userAgent,
+      status: 'pending'
+    }).returning({ id: feedback.id });
     
     logger.info('Feedback submitted', { 
-      feedbackId, 
+      feedbackId: newFeedback.id, 
       type, 
       userId,
       url 
     });
     
-    // Send email notification to admin (non-blocking)
-    // TODO: Implement email service
-    /*
-    const adminEmail = process.env.ADMIN_EMAIL || 'thottopilot@thottopilot.com';
-    
-    sendEmail({
-      to: adminEmail,
-      subject: `[ThottoPilot Beta] New ${type} feedback from ${username}`,
-      html: `
-        <h2>New Feedback Received</h2>
-        <p><strong>Type:</strong> ${type}</p>
-        <p><strong>From:</strong> ${username} (${userEmail || 'not logged in'})</p>
-        <p><strong>Page:</strong> ${url || 'Unknown'}</p>
-        <hr>
-        <p><strong>Message:</strong></p>
-        <p>${message.replace(/\n/g, '<br>')}</p>
-        <hr>
-        <p><small>Feedback ID: ${feedbackId}</small></p>
-        <p><small>User Agent: ${userAgent || 'Unknown'}</small></p>
-      `
-    }).catch((error: any) => {
-      logger.error('Failed to send feedback email notification', { error });
-    });
-    */
-    
     // For now, just log that feedback was received
     logger.info('New feedback received - email notification skipped', {
-      feedbackId,
+      feedbackId: newFeedback.id,
       type,
       username,
       adminEmail: process.env.ADMIN_EMAIL || 'not configured'
@@ -86,7 +55,7 @@ router.post('/', authenticateToken(false), async (req: AuthRequest, res: Respons
     
     res.json({
       success: true,
-      feedbackId,
+      feedbackId: newFeedback.id,
       message: 'Thank you for your feedback! We\'ll review it shortly.'
     });
     
@@ -99,7 +68,7 @@ router.post('/', authenticateToken(false), async (req: AuthRequest, res: Respons
     }
     
     logger.error('Failed to submit feedback', { error: error.message });
-    res.status(500).json({
+    res.status(500).json({ 
       error: 'Failed to submit feedback',
       message: 'Please try again or email support@thottopilot.com'
     });
@@ -116,25 +85,24 @@ router.get('/my-feedback', authenticateToken(true), async (req: AuthRequest, res
       return res.status(401).json({ error: 'Authentication required' });
     }
     
-    const result = await pool.query(
-      `SELECT 
-        id,
-        type,
-        message,
-        status,
-        admin_response,
-        created_at,
-        responded_at
-      FROM feedback
-      WHERE user_id = $1
-      ORDER BY created_at DESC
-      LIMIT 20`,
-      [req.user.id]
-    );
+    const userFeedback = await db
+      .select({
+        id: feedback.id,
+        type: feedback.type,
+        message: feedback.message,
+        status: feedback.status,
+        adminNotes: feedback.adminNotes,
+        createdAt: feedback.createdAt,
+        resolvedAt: feedback.resolvedAt
+      })
+      .from(feedback)
+      .where(eq(feedback.userId, req.user.id))
+      .orderBy(desc(feedback.createdAt))
+      .limit(20);
     
     res.json({
-      feedback: result.rows,
-      count: result.rows.length
+      feedback: userFeedback,
+      count: userFeedback.length
     });
     
   } catch (error: any) {
@@ -149,92 +117,83 @@ router.get('/my-feedback', authenticateToken(true), async (req: AuthRequest, res
  */
 router.get('/stats', async (_req: Request, res: Response) => {
   try {
-    const result = await pool.query(`
-      SELECT 
-        type,
-        COUNT(*) as count,
-        COUNT(DISTINCT user_id) as unique_users
-      FROM feedback
-      WHERE created_at > NOW() - INTERVAL '30 days'
-      GROUP BY type
-    `);
+    // Get feedback counts by type
+    const stats = await db
+      .select({
+        type: feedback.type,
+        count: sql<number>`count(*)::int`,
+        resolved: sql<number>`count(case when status = 'resolved' then 1 end)::int`
+      })
+      .from(feedback)
+      .groupBy(feedback.type);
     
-    const totalResult = await pool.query(`
-      SELECT 
-        COUNT(*) as total,
-        COUNT(CASE WHEN status = 'resolved' THEN 1 END) as resolved,
-        COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress
-      FROM feedback
-      WHERE created_at > NOW() - INTERVAL '30 days'
-    `);
+    // Get total counts
+    const [totals] = await db
+      .select({
+        total: sql<number>`count(*)::int`,
+        pending: sql<number>`count(case when status = 'pending' then 1 end)::int`,
+        resolved: sql<number>`count(case when status = 'resolved' then 1 end)::int`,
+        avgResponseTime: sql<number>`avg(extract(epoch from (resolved_at - created_at)))`
+      })
+      .from(feedback);
     
     res.json({
-      byType: result.rows,
-      totals: totalResult.rows[0] || { total: 0, resolved: 0, in_progress: 0 }
+      byType: stats,
+      totals: {
+        ...totals,
+        avgResponseTime: totals.avgResponseTime 
+          ? Math.round(totals.avgResponseTime / 3600) + ' hours'
+          : null
+      },
+      lastUpdated: new Date().toISOString()
     });
     
   } catch (error: any) {
-    logger.error('Failed to get feedback stats', { error: error.message });
+    logger.error('Failed to fetch feedback stats', { error: error.message });
     res.status(500).json({ error: 'Failed to retrieve statistics' });
   }
 });
 
 /**
- * GET /api/feedback/admin/all
- * Get all feedback (admin only)
+ * GET /api/feedback/admin
+ * Admin: Get all feedback with filters
  */
-router.get('/admin/all', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+router.get('/admin', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
-    // Check admin status
+    // Check if user is admin
     if (!req.user?.isAdmin) {
       return res.status(403).json({ error: 'Admin access required' });
     }
     
-    const { status = 'all', type = 'all', limit = 50 } = req.query;
+    const { 
+      status = 'all',
+      type = 'all',
+      limit = 50,
+      offset = 0
+    } = req.query;
     
-    let query = `
-      SELECT 
-        f.id,
-        f.user_id,
-        f.type,
-        f.message,
-        f.page_url,
-        f.user_agent,
-        f.status,
-        f.admin_response,
-        f.created_at,
-        f.responded_at,
-        u.username,
-        u.email
-      FROM feedback f
-      LEFT JOIN users u ON f.user_id = u.id
-    `;
-    
+    // Build query conditions
     const conditions = [];
-    const params = [];
-    
     if (status !== 'all') {
-      conditions.push(`f.status = $${params.length + 1}`);
-      params.push(status);
+      conditions.push(eq(feedback.status, status as string));
     }
-    
     if (type !== 'all') {
-      conditions.push(`f.type = $${params.length + 1}`);
-      params.push(type);
+      conditions.push(eq(feedback.type, type as string));
     }
     
-    if (conditions.length > 0) {
-      query += ` WHERE ${conditions.join(' AND ')}`;
-    }
-    
-    query += ` ORDER BY f.created_at DESC LIMIT $${params.length + 1}`;
-    params.push(limit);
-    
-    const result = await pool.query(query, params);
+    const allFeedback = await db
+      .select()
+      .from(feedback)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(feedback.createdAt))
+      .limit(Number(limit))
+      .offset(Number(offset));
     
     res.json({
-      feedback: result.rows,
-      count: result.rows.length
+      feedback: allFeedback,
+      count: allFeedback.length,
+      offset: Number(offset),
+      limit: Number(limit)
     });
     
   } catch (error: any) {
@@ -244,67 +203,120 @@ router.get('/admin/all', authenticateToken(true), async (req: AuthRequest, res: 
 });
 
 /**
- * PATCH /api/feedback/admin/:id
- * Update feedback status or add admin response
+ * PUT /api/feedback/:id/resolve
+ * Admin: Mark feedback as resolved
  */
-router.patch('/admin/:id', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+router.put('/:id/resolve', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
-    // Check admin status
     if (!req.user?.isAdmin) {
       return res.status(403).json({ error: 'Admin access required' });
     }
     
-    const { id } = req.params;
-    const { status, adminResponse } = req.body;
+    const feedbackId = parseInt(req.params.id);
+    const { adminNotes, priority } = req.body;
     
-    const updates = [];
-    const params = [];
+    const [updated] = await db
+      .update(feedback)
+      .set({
+        status: 'resolved',
+        adminNotes,
+        priority,
+        resolvedAt: new Date(),
+        resolvedBy: req.user.id,
+        updatedAt: new Date()
+      })
+      .where(eq(feedback.id, feedbackId))
+      .returning();
     
-    if (status) {
-      updates.push(`status = $${params.length + 1}`);
-      params.push(status);
-    }
-    
-    if (adminResponse !== undefined) {
-      updates.push(`admin_response = $${params.length + 1}`);
-      params.push(adminResponse);
-      updates.push(`responded_at = NOW()`);
-    }
-    
-    if (updates.length === 0) {
-      return res.status(400).json({ error: 'No updates provided' });
-    }
-    
-    params.push(id);
-    
-    const result = await pool.query(
-      `UPDATE feedback 
-       SET ${updates.join(', ')}
-       WHERE id = $${params.length}
-       RETURNING *`,
-      params
-    );
-    
-    if (result.rows.length === 0) {
+    if (!updated) {
       return res.status(404).json({ error: 'Feedback not found' });
     }
     
-    logger.info('Feedback updated by admin', { 
-      feedbackId: id, 
-      adminId: req.user.id,
-      status,
-      hasResponse: !!adminResponse
+    logger.info('Feedback resolved', { 
+      feedbackId,
+      resolvedBy: req.user.username 
     });
     
     res.json({
       success: true,
-      feedback: result.rows[0]
+      feedback: updated
     });
     
   } catch (error: any) {
-    logger.error('Failed to update feedback', { error: error.message });
-    res.status(500).json({ error: 'Failed to update feedback' });
+    logger.error('Failed to resolve feedback', { error: error.message });
+    res.status(500).json({ error: 'Failed to resolve feedback' });
   }
 });
 
-export default router;
+/**
+ * DELETE /api/feedback/:id
+ * Admin: Delete feedback
+ */
+router.delete('/:id', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user?.isAdmin) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    
+    const feedbackId = parseInt(req.params.id);
+    
+    const [deleted] = await db
+      .delete(feedback)
+      .where(eq(feedback.id, feedbackId))
+      .returning({ id: feedback.id });
+    
+    if (!deleted) {
+      return res.status(404).json({ error: 'Feedback not found' });
+    }
+    
+    logger.info('Feedback deleted', { 
+      feedbackId,
+      deletedBy: req.user.username 
+    });
+    
+    res.json({
+      success: true,
+      message: 'Feedback deleted successfully'
+    });
+    
+  } catch (error: any) {
+    logger.error('Failed to delete feedback', { error: error.message });
+    res.status(500).json({ error: 'Failed to delete feedback' });
+  }
+});
+
+/**
+ * GET /api/feedback/recent
+ * Get recent feedback activity (for dashboard)
+ */
+router.get('/recent', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const oneDayAgo = new Date();
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+    
+    const recentFeedback = await db
+      .select({
+        id: feedback.id,
+        type: feedback.type,
+        message: sql<string>`left(message, 100)`,
+        status: feedback.status,
+        createdAt: feedback.createdAt
+      })
+      .from(feedback)
+      .where(gte(feedback.createdAt, oneDayAgo))
+      .orderBy(desc(feedback.createdAt))
+      .limit(10);
+    
+    res.json({
+      feedback: recentFeedback,
+      count: recentFeedback.length,
+      period: '24h'
+    });
+    
+  } catch (error: any) {
+    logger.error('Failed to fetch recent feedback', { error: error.message });
+    res.status(500).json({ error: 'Failed to retrieve recent feedback' });
+  }
+});
+
+export { router as feedbackRouter };

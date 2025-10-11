@@ -222,14 +222,23 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   const app = express();
   app.set('trust proxy', 1);
 
+  // Import and apply rate limiting
+  const { generalLimiter } = await import('./middleware/security.js');
   app.use(generalLimiter);
-  app.use(sanitize);
+
+  // Apply advanced tier-based rate limiting
+  try {
+    const { applyRateLimiting } = await import('./middleware/rate-limiter.js');
+    applyRateLimiting(app);
+    logger.info('Advanced rate limiting applied');
+  } catch (error) {
+    logger.warn('Could not apply advanced rate limiting', { error });
+  }
 
   configureCors(app);
 
   app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
     req.id = uuidv4();
-    res.setHeader('X-Request-ID', req.id);
     next();
   });
 
