@@ -45,7 +45,7 @@ export async function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
     if (adminResult) {
       logger.info('Admin account configured successfully', {
         email: adminResult.email,
-        username: adminResult.username
+        username: adminResult.email || 'admin',
       });
     }
   } catch (err) {

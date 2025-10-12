@@ -74,10 +74,19 @@ export function createPostSchedulerWorker() {
 
         // Submit to Reddit - NOT IMPLEMENTED YET
         // TODO: Implement Reddit submission
-        const result = {
+        // Define proper interface
+        interface RedditResult {
+          success: boolean;
+          postId?: string | null;
+          url?: string | null;
+          error?: string;
+        }
+
+        // Mock result (temporary until Reddit API implemented)
+        const result: RedditResult = {
           success: false,
-          postUrl: null,
-          redditPostId: null,
+          postId: null,
+          url: null,
           error: 'Reddit submission not yet implemented'
         };
         
@@ -98,8 +107,8 @@ export function createPostSchedulerWorker() {
           await db.update(scheduledPosts)
             .set({
               status: 'completed',
-              redditPostId: result.postId,
-              redditPostUrl: result.url,
+              redditPostId: result.postId || null,
+              redditPostUrl: result.url || null,
               executedAt: new Date(),
               updatedAt: new Date()
             })

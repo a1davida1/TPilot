@@ -58,7 +58,8 @@ export function AnalyticsDashboard() {
 
   const fetchAnalytics = async () => {
     try {
-      const data = await apiRequest('GET', '/api/analytics/overview', { timeRange });
+      const response = await apiRequest('GET', '/api/analytics/overview', { timeRange });
+      const data = await response.json();
       setAnalyticsData(data);
     } catch (error) {
       console.error('Failed to fetch analytics:', error);

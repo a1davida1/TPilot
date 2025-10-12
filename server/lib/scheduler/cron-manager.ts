@@ -104,10 +104,10 @@ class CronManager {
               error: error instanceof Error ? error.message : error
             });
           }
-        }, {
-          scheduled: false // Don't start immediately
         });
 
+        // Stop immediately after creation, then start manually
+        job.instance.stop();
         job.instance.start();
         logger.info(`✅ Started cron job: ${name} (${job.schedule})`);
       } catch (error) {

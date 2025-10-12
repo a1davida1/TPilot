@@ -178,7 +178,7 @@ export class WorkerOrchestrator {
       }
 
       // Check if post can be cancelled
-      if (['completed', 'failed', 'cancelled'].includes(post.status)) {
+      if (post.status && ['completed', 'failed', 'cancelled'].includes(post.status)) {
         logger.warn(`Post ${postId} cannot be cancelled (status: ${post.status})`);
         return false;
       }

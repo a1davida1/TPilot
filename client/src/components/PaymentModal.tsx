@@ -35,10 +35,11 @@ function PaymentForm({ tier, onSuccess, onCancel }: PaymentFormProps) {
 
     try {
       // Create payment intent
-      const { clientSecret } = await apiRequest('POST', '/api/payments/create-intent', {
+      const response = await apiRequest('POST', '/api/payments/create-intent', {
         tier,
         priceId: TIER_PRICES[tier].priceId
       });
+      const { clientSecret } = await response.json();
 
       // Confirm payment
       const { error } = await stripe.confirmCardPayment(clientSecret, {

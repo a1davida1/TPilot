@@ -51,8 +51,12 @@ export function requestLogging(req: Request, res: Response, next: NextFunction) 
   });
   
   // Log response on finish
-  const originalEnd = res.end;
-  res.end = function(...args: any[]) {
+  const originalEnd = res.end.bind(res);
+  res.end = function(
+    chunk?: any,
+    encoding?: BufferEncoding | (() => void),
+    callback?: () => void
+  ): Response {
     const duration = performance.now() - req.startTime;
     
     logger.info('Response sent', {
@@ -73,8 +77,11 @@ export function requestLogging(req: Request, res: Response, next: NextFunction) 
       });
     }
     
-    originalEnd.apply(res, args);
-  } as any;
+    if (typeof encoding === 'function') {
+      return originalEnd(chunk, encoding);
+    }
+    return originalEnd(chunk, encoding as BufferEncoding, callback);
+  } as typeof res.end;
   
   next();
 }
