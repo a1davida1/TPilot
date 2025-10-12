@@ -716,3 +716,11 @@
 {"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:25:25.190Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
 {"level":"info","message":"[2025-10-12T00:25:29.129Z] GET /api/health - IP: 127.0.0.1","timestamp":"2025-10-12T00:25:29.129Z"}
 {"level":"info","message":"[2025-10-12T00:25:38.879Z] POST /api/uploads/imgur - IP: 127.0.0.1","timestamp":"2025-10-12T00:25:38.879Z"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T01:18:01.511Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"level":"info","message":"[2025-10-12T01:18:21.539Z] GET /api/referral/my-code - IP: 127.0.0.1","timestamp":"2025-10-12T01:18:21.539Z"}
+{"level":"warn","message":"API 404","method":"GET","originalUrl":"/api/referral/my-code","path":"/","timestamp":"2025-10-12T01:18:21.540Z","url":"/"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T01:18:50.360Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-12T02:07:21.646Z"}
+{"level":"warn","message":"ADMIN_EMAIL environment variable is not set. Admin login is disabled.","timestamp":"2025-10-12T02:07:21.646Z"}
+{"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-12T02:07:22.209Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-12T02:07:22.210Z"}

@@ -1,4 +1,7 @@
 {
     "files.autoSave": "afterDelay",
-    "typescript.tsserver.web.projectWideIntellisense.enabled": true
+    "typescript.tsserver.web.projectWideIntellisense.enabled": true,
+    "editor.fontSize": 66,
+    "editor.codeLensFontSize": 20,
+    "editor.inlayHints.fontSize": 10
 }

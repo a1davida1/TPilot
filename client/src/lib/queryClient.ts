@@ -189,7 +189,6 @@ async function throwIfResNotOk(res: Response) {
       error.userMessage = "Server error occurred. Please try again in a few moments.";
     }
   } else if (!error.userMessage) {
-    error.userMessage = `Request failed: ${fallbackText}`;
   }
 
   throw error;
