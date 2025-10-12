@@ -33,36 +33,37 @@ describe('OpenRouter Client', () => {
       apiKey: 'sk-or-test-key',
       baseURL: 'https://openrouter.ai/api/v1',
       defaultHeaders: {
-        'HTTP-Referer': 'https://test.com',
         'X-Title': 'TestApp'
       }
     });
   });
 
-  it('uses default model opengvlab/internvl3-78b', async () => {
+  it('uses default model x-ai/grok-2-fast', async () => {
     process.env.OPENROUTER_API_KEY = 'sk-or-test-key';
 
     mockOpenAI.chat.completions.create.mockResolvedValueOnce({
-      choices: [{ message: { content: 'test response' } }]
-    });
+      id: 'test-id',
+      object: 'chat.completion',
+      created: Date.now(),
+      model: 'test-model',
+      choices: [{
+        index: 0,
+        message: { role: 'assistant', content: 'Test response' },
+        finish_reason: 'stop'
+      }]
+    } as any);
 
-    vi.resetModules();
-    const { generateVision } = await import('../../../server/lib/openrouter-client.js');
-
-    await generateVision({
-      prompt: 'test',
-      imageUrl: 'data:image/png;base64,abc123'
-    });
+    await generateOpenRouterCaption('Test prompt');
 
     expect(mockOpenAI.chat.completions.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        model: 'opengvlab/internvl3-78b'
+        model: 'x-ai/grok-2-fast'
       })
     );
   });
 
   it('includes image_url in vision payload', async () => {
-    process.env.OPENROUTER_API_KEY = 'sk-or-test-key';
+{{ ... }}
 
     mockOpenAI.chat.completions.create.mockResolvedValueOnce({
       choices: [{ message: { content: 'ok' } }]

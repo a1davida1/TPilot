@@ -46,7 +46,25 @@ interface MemoryDownloadTokenPayload extends DownloadTokenPayload {
 }
 
 const DOWNLOAD_TOKEN_PREFIX = 'media:download:';
-const downloadRedisClient = env.REDIS_URL ? new Redis(env.REDIS_URL) : null;
+let downloadRedisClient: Redis | null = null;
+
+// Only create Redis connection if available and not using PG queue
+if (env.REDIS_URL && process.env.USE_PG_QUEUE !== 'true') {
+  try {
+    downloadRedisClient = new Redis(env.REDIS_URL, {
+      maxRetriesPerRequest: 1,
+      enableOfflineQueue: false,
+      lazyConnect: true,
+      retryStrategy: () => null
+    });
+    downloadRedisClient.on('error', () => {
+      // Silently handle errors - will use memory fallback
+    });
+  } catch {
+    downloadRedisClient = null;
+  }
+}
+
 const memoryDownloadTokens = new Map<string, MemoryDownloadTokenPayload>();
 
 export interface MediaUploadOptions {

@@ -12,9 +12,10 @@ if (!apiKey) {
 
 const site = process.env.OPENROUTER_SITE_URL || FRONTEND_URL || "https://thottopilot.com";
 const appName = process.env.OPENROUTER_APP_NAME || "ThottoPilot";
-const DEFAULT_MODEL = process.env.OPENROUTER_MODEL || "opengvlab/internvl3-78b";
+const DEFAULT_MODEL = process.env.OPENROUTER_MODEL || "x-ai/grok-4-fast";
 
 // Model constants for easy reference
+export const GROK_2_FAST = "x-ai/grok-2-fast";
 export const GROK_4_FAST = "x-ai/grok-4-fast";
 export const INTERNVL_78B = "opengvlab/internvl3-78b";
 

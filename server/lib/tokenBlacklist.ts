@@ -1,6 +1,23 @@
 import Redis from 'ioredis';
 
-const redis = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL) : null;
+let redis: Redis | null = null;
+
+// Only create Redis connection if available and not using PG queue
+if (process.env.REDIS_URL && process.env.USE_PG_QUEUE !== 'true') {
+  try {
+    redis = new Redis(process.env.REDIS_URL, {
+      maxRetriesPerRequest: 1,
+      enableOfflineQueue: false,
+      lazyConnect: true,
+      retryStrategy: () => null
+    });
+    redis.on('error', () => {
+      // Silently handle errors - blacklist will use memory fallback
+    });
+  } catch {
+    redis = null;
+  }
+}
 
 function signatureFromToken(token: string): string | null {
   const parts = token.split('.');

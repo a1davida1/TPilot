@@ -75,7 +75,7 @@ export function createSessionMiddleware(): ReturnType<typeof session> {
   const isProduction = process.env.NODE_ENV === 'production';
   const isTest = process.env.NODE_ENV === 'test';
   const redisUrl = process.env.REDIS_URL;
-  const usePgQueue = parseBoolean(process.env.USE_PG_QUEUE);
+  const usePgQueue = parseBoolean(process.env.USE_PG_QUEUE) || process.env.USE_PG_QUEUE === 'true';
 
   const cfg = getCookieConfig();
 
@@ -99,11 +99,20 @@ export function createSessionMiddleware(): ReturnType<typeof session> {
       max: parseInteger(process.env.SESSION_MEMORY_MAX, 5_000),
     });
     logger.info('Using in-memory session store for tests');
-  } else if (redisUrl) {
+  } else if (redisUrl && !usePgQueue) {
+    logger.info(`Session store: Redis URL found, USE_PG_QUEUE=${usePgQueue}`);
     const redisClient = new Redis(redisUrl, {
-      lazyConnect: false,
-      maxRetriesPerRequest: null,
+      lazyConnect: true,
+      maxRetriesPerRequest: 1,
       enableAutoPipelining: true,
+      enableOfflineQueue: false,
+      retryStrategy: (times) => {
+        if (times > 1) {
+          logger.warn('Redis connection failed for sessions, will use fallback');
+          return null;
+        }
+        return 100;
+      },
     });
 
     redisClient.on('error', (error) => {

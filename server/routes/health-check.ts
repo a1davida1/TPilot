@@ -125,7 +125,12 @@ router.get('/detailed', async (req: Request, res: Response) => {
   if (process.env.REDIS_URL) {
     try {
       const redisStart = Date.now();
-      const redis = new Redis(process.env.REDIS_URL);
+      const redis = new Redis(process.env.REDIS_URL, {
+        maxRetriesPerRequest: 1,
+        enableOfflineQueue: false,
+        retryStrategy: () => null,
+        connectTimeout: 1000
+      });
       await redis.ping();
       await redis.quit();
       health.checks.redis = {

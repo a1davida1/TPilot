@@ -55,7 +55,7 @@ export const envSchema = z
   MEDIA_MAX_BYTES_PRO: z.coerce.number().default(10737418240), // 10GB
   
   // Queue Configuration (Phase 5)
-  USE_PG_QUEUE: z.coerce.boolean().default(false), // Auto-enable when no REDIS_URL
+  USE_PG_QUEUE: z.coerce.boolean().optional(),
   
   // Rate Limiting (Phase 5)
   MAX_POSTS_PER_SUBREDDIT_24H: z.coerce.number().default(1),
@@ -175,7 +175,7 @@ try {
       WATERMARK_ENABLED: true,
       WATERMARK_TEXT: 'ThottoPilot',
       WATERMARK_OPACITY: 0.18,
-      USE_PG_QUEUE: !process.env.REDIS_URL, // Auto-enable when no Redis
+      USE_PG_QUEUE: process.env.USE_PG_QUEUE === 'true' || !process.env.REDIS_URL, // Auto-enable when no Redis or explicitly set
       MAX_POSTS_PER_SUBREDDIT_24H: 1,
       DAILY_GENERATIONS_FREE: 5,
       DAILY_GENERATIONS_STARTER: 50,

@@ -272,7 +272,7 @@ export default function AnalyticsPage() {
           <div>
             <h4 className="font-medium mb-2 text-green-700">📈 Recommendations</h4>
             <div className="space-y-2">
-              {data.intelligence.recommendations.map((rec, i) => (
+              {data?.intelligence?.recommendations?.map((rec, i) => (
                 <Alert key={i} className="border-green-200 bg-green-50">
                   <AlertDescription>{rec}</AlertDescription>
                 </Alert>
@@ -284,7 +284,7 @@ export default function AnalyticsPage() {
           <div>
             <h4 className="font-medium mb-2 text-blue-700">✨ Opportunities</h4>
             <div className="space-y-2">
-              {data.intelligence.opportunities.map((opp, i) => (
+              {data?.intelligence?.opportunities?.map((opp, i) => (
                 <div key={i} className="p-3 border rounded-lg">
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-medium">r/{opp.subreddit}</span>
@@ -299,11 +299,11 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Warnings */}
-          {data.intelligence.warnings.length > 0 && (
+          {(data?.intelligence?.warnings?.length ?? 0) > 0 && (
             <div>
               <h4 className="font-medium mb-2 text-amber-700">⚠️ Warnings</h4>
               <div className="space-y-2">
-                {data.intelligence.warnings.map((warning, i) => (
+                {data?.intelligence?.warnings?.map((warning, i) => (
                   <Alert key={i} className="border-amber-200 bg-amber-50">
                     <AlertDescription>{warning}</AlertDescription>
                   </Alert>
@@ -326,6 +326,40 @@ export default function AnalyticsPage() {
           </p>
         </div>
         {renderUpgradePrompt()}
+      </div>
+    );
+  }
+
+  // Show loading state
+  if (isLoading && isProOrHigher) {
+    return (
+      <div className="container mx-auto p-6 max-w-7xl">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
+          <p className="text-muted-foreground mt-2">Loading your analytics...</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i}>
+              <CardHeader className="pb-3">
+                <Skeleton className="h-4 w-20 mb-2" />
+                <Skeleton className="h-8 w-32" />
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {[1, 2].map(i => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-6 w-48" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-32 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
@@ -376,7 +410,7 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {data.performance.topSubreddits.map((sub) => (
+                  {data?.performance?.topSubreddits?.map((sub) => (
                     <div key={sub.name} className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
@@ -400,7 +434,7 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {data.performance.contentPerformance.map((content) => (
+                  {data?.performance?.contentPerformance?.map((content) => (
                     <div key={content.type}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium">{content.type}</span>
@@ -431,7 +465,7 @@ export default function AnalyticsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {data.performance.bestPostingTimes.map((time, index) => (
+                {data?.performance?.bestPostingTimes?.map((time, index) => (
                   <div 
                     key={index}
                     className="flex items-center justify-between p-4 border rounded-lg"
@@ -477,7 +511,7 @@ export default function AnalyticsPage() {
                 <div>
                   <h4 className="text-sm font-medium mb-3">Weekly Activity</h4>
                   <div className="space-y-2">
-                    {data.trends.weeklyGrowth.map((day) => (
+                    {data?.trends?.weeklyGrowth?.map((day) => (
                       <div key={day.date} className="flex items-center gap-3">
                         <span className="text-sm text-muted-foreground w-20">
                           {format(new Date(day.date), 'MMM d')}
@@ -501,15 +535,15 @@ export default function AnalyticsPage() {
                     <h4 className="text-sm font-medium mb-3">Growth Projections</h4>
                     <div className="grid grid-cols-3 gap-4">
                       <div className="text-center p-3 border rounded-lg">
-                        <p className="text-2xl font-bold">{data.trends.projections.nextWeek}</p>
+                        <p className="text-2xl font-bold">{data?.trends?.projections?.nextWeek}</p>
                         <p className="text-xs text-muted-foreground">Next Week</p>
                       </div>
                       <div className="text-center p-3 border rounded-lg">
-                        <p className="text-2xl font-bold">{data.trends.projections.nextMonth}</p>
+                        <p className="text-2xl font-bold">{data?.trends?.projections?.nextMonth}</p>
                         <p className="text-xs text-muted-foreground">Next Month</p>
                       </div>
                       <div className="text-center p-3 border rounded-lg">
-                        <p className="text-2xl font-bold">{data.trends.projections.confidence}%</p>
+                        <p className="text-2xl font-bold">{data?.trends?.projections?.confidence}%</p>
                         <p className="text-xs text-muted-foreground">Confidence</p>
                       </div>
                     </div>

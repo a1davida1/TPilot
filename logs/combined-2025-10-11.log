@@ -1113,3 +1113,494 @@
 {"correlationId":"c028b8ec-12a8-4052-a9be-5dbf8947caee","error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis session store error","timestamp":"2025-10-11T12:41:59.442Z"}
 {"correlationId":"c028b8ec-12a8-4052-a9be-5dbf8947caee","error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis session store error","timestamp":"2025-10-11T12:42:01.445Z"}
 {"correlationId":"c028b8ec-12a8-4052-a9be-5dbf8947caee","date":"Sat Oct 11 2025 07:42:02 GMT-0500 (Central Daylight Time)","error":{},"level":"error","message":"unhandledRejection: require is not defined\nReferenceError: require is not defined\n    at collectHealthMetrics (/home/dave/CascadeProjects/TPilot/server/middleware/observability.ts:134:28)\n    at Timeout._onTimeout (/home/dave/CascadeProjects/TPilot/server/middleware/observability.ts:157:27)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)","os":{"loadavg":[2.25,1.84,1.35],"uptime":263844.19},"process":{"argv":["/usr/bin/node","/home/dave/CascadeProjects/TPilot/server/index.ts"],"cwd":"/home/dave/CascadeProjects/TPilot","execPath":"/usr/bin/node","gid":1000,"memoryUsage":{"arrayBuffers":457294,"external":6533758,"heapTotal":115486720,"heapUsed":110540632,"rss":249106432},"pid":1817702,"uid":1000,"version":"v20.19.5"},"rejection":true,"stack":"ReferenceError: require is not defined\n    at collectHealthMetrics (/home/dave/CascadeProjects/TPilot/server/middleware/observability.ts:134:28)\n    at Timeout._onTimeout (/home/dave/CascadeProjects/TPilot/server/middleware/observability.ts:157:27)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)","timestamp":"2025-10-11T12:42:02.291Z","trace":[{"column":28,"file":"/home/dave/CascadeProjects/TPilot/server/middleware/observability.ts","function":"collectHealthMetrics","line":134,"method":null,"native":false},{"column":27,"file":"/home/dave/CascadeProjects/TPilot/server/middleware/observability.ts","function":"Timeout._onTimeout","line":157,"method":"_onTimeout","native":false},{"column":17,"file":"node:internal/timers","function":"listOnTimeout","line":581,"method":null,"native":false},{"column":7,"file":"node:internal/timers","function":"process.processTimers","line":519,"method":"processTimers","native":false}]}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-11T12:46:15.131Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-11T12:46:16.092Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-11T12:46:16.092Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-11T12:46:16.093Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-11T12:46:16.338Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-11T12:46:16.339Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-11T12:46:16.339Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-11T12:46:16.339Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-11T12:46:16.339Z"}
+{"error":{"code":"ERR_MODULE_NOT_FOUND"},"level":"warn","message":"Could not apply advanced rate limiting","timestamp":"2025-10-11T12:46:16.353Z"}
+{"level":"info","message":"Observability middleware configured","timestamp":"2025-10-11T12:46:16.357Z"}
+{"level":"info","message":"Observability middleware applied","timestamp":"2025-10-11T12:46:16.358Z"}
+{"level":"info","message":"Session store configured with Redis backend","timestamp":"2025-10-11T12:46:16.359Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-11T12:46:16.360Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis session store error","timestamp":"2025-10-11T12:46:16.365Z"}
+{"email":"admin@thottopilot.com","level":"info","message":"Admin account configured successfully","timestamp":"2025-10-11T12:46:16.377Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-11T12:46:16.378Z"}
+{"level":"info","message":"✅ Admin account verified: admin@thottopilot.com","timestamp":"2025-10-11T12:46:16.380Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping tier upgrade","timestamp":"2025-10-11T12:46:16.381Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping email verification","timestamp":"2025-10-11T12:46:16.382Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-11T12:48:55.193Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-11T12:48:56.211Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-11T12:48:56.212Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-11T12:48:56.212Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-11T12:48:56.440Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-11T12:48:56.440Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-11T12:48:56.441Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-11T12:48:56.441Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-11T12:48:56.441Z"}
+{"error":{"code":"ERR_MODULE_NOT_FOUND"},"level":"warn","message":"Could not apply advanced rate limiting","timestamp":"2025-10-11T12:48:56.458Z"}
+{"level":"info","message":"Observability middleware configured","timestamp":"2025-10-11T12:48:56.464Z"}
+{"level":"info","message":"Observability middleware applied","timestamp":"2025-10-11T12:48:56.464Z"}
+{"level":"info","message":"Session store configured with PostgreSQL backend","timestamp":"2025-10-11T12:48:56.466Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-11T12:48:56.467Z"}
+{"email":"admin@thottopilot.com","level":"info","message":"Admin account configured successfully","timestamp":"2025-10-11T12:48:56.490Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-11T12:48:56.491Z"}
+{"level":"info","message":"✅ Admin account verified: admin@thottopilot.com","timestamp":"2025-10-11T12:48:56.493Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping tier upgrade","timestamp":"2025-10-11T12:48:56.494Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping email verification","timestamp":"2025-10-11T12:48:56.496Z"}
+{"level":"info","message":"✅ Production database fixes completed","timestamp":"2025-10-11T12:48:56.496Z"}
+{"level":"info","message":"Initializing queue system...","timestamp":"2025-10-11T12:48:56.498Z"}
+{"level":"info","message":"🔧 Using PostgreSQL queue backend","timestamp":"2025-10-11T12:48:56.498Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-11T12:48:56.498Z"}
+{"level":"info","message":"Queue system initialized","timestamp":"2025-10-11T12:48:56.499Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-11T12:48:56.504Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-11T12:48:56.518Z"}
+{"level":"info","message":"Background workers initialized","timestamp":"2025-10-11T12:48:56.518Z"}
+{"level":"info","message":"🚀 Starting cron job manager...","timestamp":"2025-10-11T12:48:56.518Z"}
+{"level":"info","message":"✅ Started cron job: process-scheduled-posts (* * * * *)","timestamp":"2025-10-11T12:48:56.535Z"}
+{"level":"info","message":"✅ Started cron job: cleanup-old-posts (0 3 * * *)","timestamp":"2025-10-11T12:48:56.538Z"}
+{"level":"info","message":"✅ Started cron job: update-analytics (0 * * * *)","timestamp":"2025-10-11T12:48:56.540Z"}
+{"level":"info","message":"✅ Started cron job: check-stuck-jobs (*/5 * * * *)","timestamp":"2025-10-11T12:48:56.542Z"}
+{"level":"info","message":"✅ Started cron job: sync-reddit-communities (0 2 * * 1)","timestamp":"2025-10-11T12:48:56.546Z"}
+{"level":"info","message":"✅ Started cron job: database-backup (0 4 * * *)","timestamp":"2025-10-11T12:48:56.549Z"}
+{"level":"info","message":"✅ Cron job manager started successfully","timestamp":"2025-10-11T12:48:56.549Z"}
+{"level":"info","message":"Cron manager started","timestamp":"2025-10-11T12:48:56.549Z"}
+{"level":"info","message":"Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-11T12:48:56.550Z"}
+{"level":"info","message":"Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-11T12:48:56.552Z"}
+{"level":"warn","message":"Environment configuration issue detected: SENTRY_DSN: Invalid url","timestamp":"2025-10-11T12:48:56.555Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-11T12:48:56.717Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-11T12:48:57.136Z"}
+{"level":"info","message":"[HEALTH] Express app created successfully in 696ms","timestamp":"2025-10-11T12:48:57.136Z"}
+{"level":"info","message":"[HEALTH] Target port from environment: 3005","timestamp":"2025-10-11T12:48:57.136Z"}
+{"level":"info","message":"[HEALTH] Starting server on 0.0.0.0:3005","timestamp":"2025-10-11T12:48:57.136Z"}
+{"level":"info","message":"[HEALTH] ✅ Server started successfully on port 3005 in 698ms","timestamp":"2025-10-11T12:48:57.138Z"}
+{"level":"info","message":"serving on port 3005","timestamp":"2025-10-11T12:48:57.138Z"}
+{"correlationId":"6dcd9932-13b5-43fe-9c26-567f505ed7b7","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/auth/user","query":{},"timestamp":"2025-10-11T12:48:57.388Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"6dcd9932-13b5-43fe-9c26-567f505ed7b7","duration":4,"level":"info","message":"Response sent","method":"GET","path":"/api/auth/user","statusCode":401,"timestamp":"2025-10-11T12:48:57.392Z"}
+{"correlationId":"34dc3811-10f5-4d86-a047-569f0d7b8d62","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/metrics","query":{},"timestamp":"2025-10-11T12:48:57.438Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"34dc3811-10f5-4d86-a047-569f0d7b8d62","duration":14,"level":"info","message":"Response sent","method":"GET","path":"/api/metrics","statusCode":200,"timestamp":"2025-10-11T12:48:57.452Z"}
+{"correlationId":"00f166d5-c3b8-4863-9867-8d0994369e95","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/csrf-token","query":{},"timestamp":"2025-10-11T12:49:17.809Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"00f166d5-c3b8-4863-9867-8d0994369e95","duration":2,"level":"info","message":"Response sent","method":"GET","path":"/api/csrf-token","statusCode":200,"timestamp":"2025-10-11T12:49:17.810Z"}
+{"correlationId":"c6b79eff-e767-41af-9fd0-c9e1d8340acc","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-11T12:49:17.815Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"c6b79eff-e767-41af-9fd0-c9e1d8340acc","duration":8,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-11T12:49:17.823Z"}
+{"correlationId":"d904085f-a7d0-4c81-94ac-af370efb3e37","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/health","query":{},"timestamp":"2025-10-11T12:49:19.901Z","userAgent":"curl/8.5.0"}
+{"correlationId":"d904085f-a7d0-4c81-94ac-af370efb3e37","duration":2,"level":"info","message":"Response sent","method":"GET","path":"/api/health","statusCode":200,"timestamp":"2025-10-11T12:49:19.903Z"}
+{"correlationId":"f5ccfe7a-2e6f-4a94-a348-83f850077ecb","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/auth/login","query":{},"timestamp":"2025-10-11T12:49:25.373Z","userAgent":"curl/8.5.0"}
+{"correlationId":"f5ccfe7a-2e6f-4a94-a348-83f850077ecb","duration":56,"level":"info","message":"Response sent","method":"POST","path":"/api/auth/login","statusCode":200,"timestamp":"2025-10-11T12:49:25.428Z"}
+{"correlationId":"24c9428e-f252-41e8-8dc1-9ad4d0a03429","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/csrf-token","query":{},"timestamp":"2025-10-11T12:49:27.317Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"24c9428e-f252-41e8-8dc1-9ad4d0a03429","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/api/csrf-token","statusCode":200,"timestamp":"2025-10-11T12:49:27.318Z"}
+{"correlationId":"ce55ecbc-b081-4e42-89c8-8289468924f6","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-11T12:49:27.323Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"ce55ecbc-b081-4e42-89c8-8289468924f6","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-11T12:49:27.324Z"}
+{"correlationId":"2e54859c-f68a-4239-b54a-03ccdff5cf76","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/auth/login","query":{},"timestamp":"2025-10-11T12:49:40.061Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"2e54859c-f68a-4239-b54a-03ccdff5cf76","duration":49,"level":"info","message":"Response sent","method":"POST","path":"/api/auth/login","statusCode":200,"timestamp":"2025-10-11T12:49:40.111Z"}
+{"correlationId":"2e7ad6af-a546-4e2d-812f-aa880a66a96c","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-11T12:49:40.127Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"2e7ad6af-a546-4e2d-812f-aa880a66a96c","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-11T12:49:40.128Z"}
+{"correlationId":"407973c7-65df-45dd-9cbf-d94c6050b8a5","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-11T12:49:40.194Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"407973c7-65df-45dd-9cbf-d94c6050b8a5","duration":2,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-11T12:49:40.195Z"}
+{"correlationId":"ea50174b-aeda-43de-b302-cacccc071236","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/auth/user","query":{},"timestamp":"2025-10-11T12:49:40.340Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"ea50174b-aeda-43de-b302-cacccc071236","duration":9,"level":"info","message":"Response sent","method":"GET","path":"/api/auth/user","statusCode":200,"timestamp":"2025-10-11T12:49:40.349Z"}
+{"correlationId":"b87a05a7-1f24-4454-adf2-7adfcc5369b1","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/dashboard/stats","query":{},"timestamp":"2025-10-11T12:49:40.584Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"7f736e0f-7cc4-4601-b779-05b4c4a819e5","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/dashboard/activity","query":{},"timestamp":"2025-10-11T12:49:40.589Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"3b2ccdce-2fa6-42d2-8643-75234b667e68","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/referral/my-code","query":{},"timestamp":"2025-10-11T12:49:40.601Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"3b2ccdce-2fa6-42d2-8643-75234b667e68","duration":2,"level":"info","message":"Response sent","method":"GET","path":"/","statusCode":404,"timestamp":"2025-10-11T12:49:40.603Z"}
+{"correlationId":"3b2ccdce-2fa6-42d2-8643-75234b667e68","date":"Sat Oct 11 2025 07:49:56 GMT-0500 (Central Daylight Time)","error":{},"level":"error","message":"unhandledRejection: require is not defined\nReferenceError: require is not defined\n    at collectHealthMetrics (/home/dave/CascadeProjects/TPilot/server/middleware/observability.ts:134:28)\n    at Timeout._onTimeout (/home/dave/CascadeProjects/TPilot/server/middleware/observability.ts:157:27)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)","os":{"loadavg":[2.31,2.11,1.63],"uptime":264318.37},"process":{"argv":["/usr/bin/node","/home/dave/CascadeProjects/TPilot/server/index.ts"],"cwd":"/home/dave/CascadeProjects/TPilot","execPath":"/usr/bin/node","gid":1000,"memoryUsage":{"arrayBuffers":470421,"external":6546885,"heapTotal":116273152,"heapUsed":112368616,"rss":262270976},"pid":1820243,"uid":1000,"version":"v20.19.5"},"rejection":true,"stack":"ReferenceError: require is not defined\n    at collectHealthMetrics (/home/dave/CascadeProjects/TPilot/server/middleware/observability.ts:134:28)\n    at Timeout._onTimeout (/home/dave/CascadeProjects/TPilot/server/middleware/observability.ts:157:27)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)","timestamp":"2025-10-11T12:49:56.465Z","trace":[{"column":28,"file":"/home/dave/CascadeProjects/TPilot/server/middleware/observability.ts","function":"collectHealthMetrics","line":134,"method":null,"native":false},{"column":27,"file":"/home/dave/CascadeProjects/TPilot/server/middleware/observability.ts","function":"Timeout._onTimeout","line":157,"method":"_onTimeout","native":false},{"column":17,"file":"node:internal/timers","function":"listOnTimeout","line":581,"method":null,"native":false},{"column":7,"file":"node:internal/timers","function":"process.processTimers","line":519,"method":"processTimers","native":false}]}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-11T12:55:22.314Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-11T12:55:23.267Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-11T12:55:23.268Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-11T12:55:23.268Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-11T12:55:23.500Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-11T12:55:23.501Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-11T12:55:23.501Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-11T12:55:23.501Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-11T12:55:23.501Z"}
+{"error":{"code":"ERR_MODULE_NOT_FOUND"},"level":"warn","message":"Could not apply advanced rate limiting","timestamp":"2025-10-11T12:55:23.518Z"}
+{"level":"info","message":"Observability middleware configured","timestamp":"2025-10-11T12:55:23.530Z"}
+{"level":"info","message":"Observability middleware applied","timestamp":"2025-10-11T12:55:23.530Z"}
+{"level":"info","message":"Session store configured with PostgreSQL backend","timestamp":"2025-10-11T12:55:23.532Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-11T12:55:23.533Z"}
+{"email":"admin@thottopilot.com","level":"info","message":"Admin account configured successfully","timestamp":"2025-10-11T12:55:23.552Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-11T12:55:23.552Z"}
+{"level":"info","message":"✅ Admin account verified: admin@thottopilot.com","timestamp":"2025-10-11T12:55:23.555Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping tier upgrade","timestamp":"2025-10-11T12:55:23.556Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping email verification","timestamp":"2025-10-11T12:55:23.557Z"}
+{"level":"info","message":"✅ Production database fixes completed","timestamp":"2025-10-11T12:55:23.557Z"}
+{"level":"info","message":"Initializing queue system...","timestamp":"2025-10-11T12:55:23.559Z"}
+{"level":"info","message":"Queue backend selection: USE_PG_QUEUE=true, REDIS_URL=true","timestamp":"2025-10-11T12:55:23.559Z"}
+{"level":"info","message":"🔧 Using PostgreSQL queue backend","timestamp":"2025-10-11T12:55:23.559Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-11T12:55:23.559Z"}
+{"level":"info","message":"Queue system initialized","timestamp":"2025-10-11T12:55:23.560Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-11T12:55:23.565Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-11T12:55:23.577Z"}
+{"level":"info","message":"Background workers initialized","timestamp":"2025-10-11T12:55:23.578Z"}
+{"level":"info","message":"🚀 Starting cron job manager...","timestamp":"2025-10-11T12:55:23.578Z"}
+{"level":"info","message":"✅ Started cron job: process-scheduled-posts (* * * * *)","timestamp":"2025-10-11T12:55:23.594Z"}
+{"level":"info","message":"✅ Started cron job: cleanup-old-posts (0 3 * * *)","timestamp":"2025-10-11T12:55:23.596Z"}
+{"level":"info","message":"✅ Started cron job: update-analytics (0 * * * *)","timestamp":"2025-10-11T12:55:23.598Z"}
+{"level":"info","message":"✅ Started cron job: check-stuck-jobs (*/5 * * * *)","timestamp":"2025-10-11T12:55:23.600Z"}
+{"level":"info","message":"✅ Started cron job: sync-reddit-communities (0 2 * * 1)","timestamp":"2025-10-11T12:55:23.604Z"}
+{"level":"info","message":"✅ Started cron job: database-backup (0 4 * * *)","timestamp":"2025-10-11T12:55:23.607Z"}
+{"level":"info","message":"✅ Cron job manager started successfully","timestamp":"2025-10-11T12:55:23.607Z"}
+{"level":"info","message":"Cron manager started","timestamp":"2025-10-11T12:55:23.607Z"}
+{"level":"info","message":"Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-11T12:55:23.607Z"}
+{"level":"info","message":"Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-11T12:55:23.610Z"}
+{"level":"warn","message":"Environment configuration issue detected: SENTRY_DSN: Invalid url","timestamp":"2025-10-11T12:55:23.612Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-11T12:55:23.766Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-11T12:55:24.152Z"}
+{"level":"info","message":"[HEALTH] Express app created successfully in 652ms","timestamp":"2025-10-11T12:55:24.153Z"}
+{"level":"info","message":"[HEALTH] Target port from environment: 3005","timestamp":"2025-10-11T12:55:24.153Z"}
+{"level":"info","message":"[HEALTH] Starting server on 0.0.0.0:3005","timestamp":"2025-10-11T12:55:24.153Z"}
+{"level":"info","message":"[HEALTH] ✅ Server started successfully on port 3005 in 653ms","timestamp":"2025-10-11T12:55:24.154Z"}
+{"level":"info","message":"serving on port 3005","timestamp":"2025-10-11T12:55:24.154Z"}
+{"correlationId":"3ac2b899-f163-4fbc-a691-aa017c4ff8c6","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/auth/user","query":{},"timestamp":"2025-10-11T12:55:24.425Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"3ac2b899-f163-4fbc-a691-aa017c4ff8c6","duration":8,"level":"info","message":"Response sent","method":"GET","path":"/api/auth/user","statusCode":200,"timestamp":"2025-10-11T12:55:24.432Z"}
+{"correlationId":"967e73be-574f-4d52-9934-ea4d540b355d","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/dashboard/stats","query":{},"timestamp":"2025-10-11T12:55:24.784Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"7e2346e9-d47f-4c2c-89a5-838682483e76","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/dashboard/activity","query":{},"timestamp":"2025-10-11T12:55:24.789Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"9082ed28-dfe6-4831-af84-20866ba70b10","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/referral/my-code","query":{},"timestamp":"2025-10-11T12:55:24.804Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"9082ed28-dfe6-4831-af84-20866ba70b10","duration":2,"level":"info","message":"Response sent","method":"GET","path":"/","statusCode":404,"timestamp":"2025-10-11T12:55:24.806Z"}
+{"correlationId":"525e9602-ac28-400e-9f02-bc8ce8f2ae3a","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/csrf-token","query":{},"timestamp":"2025-10-11T12:55:31.156Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"525e9602-ac28-400e-9f02-bc8ce8f2ae3a","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/api/csrf-token","statusCode":200,"timestamp":"2025-10-11T12:55:31.158Z"}
+{"correlationId":"22ced01a-c017-4d0f-bd62-188c6e38b198","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-11T12:55:31.162Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"22ced01a-c017-4d0f-bd62-188c6e38b198","duration":6,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-11T12:55:31.169Z"}
+{"correlationId":"22ced01a-c017-4d0f-bd62-188c6e38b198","date":"Sat Oct 11 2025 07:55:34 GMT-0500 (Central Daylight Time)","error":{},"level":"error","message":"unhandledRejection: Reached the max retries per request limit (which is 20). Refer to \"maxRetriesPerRequest\" option for details.\nMaxRetriesPerRequestError: Reached the max retries per request limit (which is 20). Refer to \"maxRetriesPerRequest\" option for details.\n    at Socket.<anonymous> (/home/dave/CascadeProjects/TPilot/node_modules/ioredis/built/redis/event_handler.js:182:37)\n    at Object.onceWrapper (node:events:639:26)\n    at Socket.emit (node:events:524:28)\n    at TCP.<anonymous> (node:net:343:12)","os":{"loadavg":[2.12,2.21,1.83],"uptime":264656.06},"process":{"argv":["/usr/bin/node","/home/dave/CascadeProjects/TPilot/server/index.ts"],"cwd":"/home/dave/CascadeProjects/TPilot","execPath":"/usr/bin/node","gid":1000,"memoryUsage":{"arrayBuffers":585640,"external":6663544,"heapTotal":166162432,"heapUsed":132057992,"rss":415952896},"pid":1824335,"uid":1000,"version":"v20.19.5"},"rejection":true,"stack":"MaxRetriesPerRequestError: Reached the max retries per request limit (which is 20). Refer to \"maxRetriesPerRequest\" option for details.\n    at Socket.<anonymous> (/home/dave/CascadeProjects/TPilot/node_modules/ioredis/built/redis/event_handler.js:182:37)\n    at Object.onceWrapper (node:events:639:26)\n    at Socket.emit (node:events:524:28)\n    at TCP.<anonymous> (node:net:343:12)","timestamp":"2025-10-11T12:55:34.151Z","trace":[{"column":37,"file":"/home/dave/CascadeProjects/TPilot/node_modules/ioredis/built/redis/event_handler.js","function":null,"line":182,"method":null,"native":false},{"column":26,"file":"node:events","function":"Object.onceWrapper","line":639,"method":"onceWrapper","native":false},{"column":28,"file":"node:events","function":"Socket.emit","line":524,"method":"emit","native":false},{"column":12,"file":"node:net","function":null,"line":343,"method":null,"native":false}]}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-11T12:56:31.549Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-11T12:56:32.581Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-11T12:56:32.581Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-11T12:56:32.581Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-11T12:56:32.831Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-11T12:56:32.832Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-11T12:56:32.832Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-11T12:56:32.832Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-11T12:56:32.832Z"}
+{"error":{"code":"ERR_MODULE_NOT_FOUND"},"level":"warn","message":"Could not apply advanced rate limiting","timestamp":"2025-10-11T12:56:32.848Z"}
+{"level":"info","message":"Observability middleware configured","timestamp":"2025-10-11T12:56:32.853Z"}
+{"level":"info","message":"Observability middleware applied","timestamp":"2025-10-11T12:56:32.853Z"}
+{"level":"info","message":"Session store configured with PostgreSQL backend","timestamp":"2025-10-11T12:56:32.855Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-11T12:56:32.856Z"}
+{"email":"admin@thottopilot.com","level":"info","message":"Admin account configured successfully","timestamp":"2025-10-11T12:56:32.877Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-11T12:56:32.877Z"}
+{"level":"info","message":"✅ Admin account verified: admin@thottopilot.com","timestamp":"2025-10-11T12:56:32.879Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping tier upgrade","timestamp":"2025-10-11T12:56:32.881Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping email verification","timestamp":"2025-10-11T12:56:32.882Z"}
+{"level":"info","message":"✅ Production database fixes completed","timestamp":"2025-10-11T12:56:32.883Z"}
+{"level":"info","message":"Initializing queue system...","timestamp":"2025-10-11T12:56:32.884Z"}
+{"level":"info","message":"Queue backend selection: USE_PG_QUEUE=true, REDIS_URL=true","timestamp":"2025-10-11T12:56:32.884Z"}
+{"level":"info","message":"🔧 Using PostgreSQL queue backend","timestamp":"2025-10-11T12:56:32.885Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-11T12:56:32.885Z"}
+{"level":"info","message":"Queue system initialized","timestamp":"2025-10-11T12:56:32.886Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-11T12:56:32.889Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-11T12:56:32.906Z"}
+{"level":"info","message":"Background workers initialized","timestamp":"2025-10-11T12:56:32.906Z"}
+{"level":"info","message":"🚀 Starting cron job manager...","timestamp":"2025-10-11T12:56:32.906Z"}
+{"level":"info","message":"✅ Started cron job: process-scheduled-posts (* * * * *)","timestamp":"2025-10-11T12:56:32.935Z"}
+{"level":"info","message":"✅ Started cron job: cleanup-old-posts (0 3 * * *)","timestamp":"2025-10-11T12:56:32.938Z"}
+{"level":"info","message":"✅ Started cron job: update-analytics (0 * * * *)","timestamp":"2025-10-11T12:56:32.942Z"}
+{"level":"info","message":"✅ Started cron job: check-stuck-jobs (*/5 * * * *)","timestamp":"2025-10-11T12:56:32.945Z"}
+{"level":"info","message":"✅ Started cron job: sync-reddit-communities (0 2 * * 1)","timestamp":"2025-10-11T12:56:32.951Z"}
+{"level":"info","message":"✅ Started cron job: database-backup (0 4 * * *)","timestamp":"2025-10-11T12:56:32.955Z"}
+{"level":"info","message":"✅ Cron job manager started successfully","timestamp":"2025-10-11T12:56:32.955Z"}
+{"level":"info","message":"Cron manager started","timestamp":"2025-10-11T12:56:32.955Z"}
+{"level":"info","message":"Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-11T12:56:32.956Z"}
+{"level":"info","message":"Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-11T12:56:32.958Z"}
+{"level":"warn","message":"Environment configuration issue detected: SENTRY_DSN: Invalid url","timestamp":"2025-10-11T12:56:32.960Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-11T12:56:33.108Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-11T12:56:33.515Z"}
+{"level":"info","message":"[HEALTH] Express app created successfully in 683ms","timestamp":"2025-10-11T12:56:33.515Z"}
+{"level":"info","message":"[HEALTH] Target port from environment: 3005","timestamp":"2025-10-11T12:56:33.515Z"}
+{"level":"info","message":"[HEALTH] Starting server on 0.0.0.0:3005","timestamp":"2025-10-11T12:56:33.515Z"}
+{"level":"info","message":"[HEALTH] ✅ Server started successfully on port 3005 in 685ms","timestamp":"2025-10-11T12:56:33.517Z"}
+{"level":"info","message":"serving on port 3005","timestamp":"2025-10-11T12:56:33.517Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-11T13:00:19.731Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-11T13:00:20.639Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-11T13:00:20.639Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-11T13:00:20.639Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-11T13:00:20.880Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-11T13:00:20.880Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-11T13:00:20.880Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-11T13:00:20.881Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-11T13:00:20.881Z"}
+{"error":{"code":"ERR_MODULE_NOT_FOUND"},"level":"warn","message":"Could not apply advanced rate limiting","timestamp":"2025-10-11T13:00:20.894Z"}
+{"level":"info","message":"Observability middleware configured","timestamp":"2025-10-11T13:00:20.899Z"}
+{"level":"info","message":"Observability middleware applied","timestamp":"2025-10-11T13:00:20.899Z"}
+{"level":"info","message":"Session store configured with PostgreSQL backend","timestamp":"2025-10-11T13:00:20.901Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-11T13:00:20.902Z"}
+{"email":"admin@thottopilot.com","level":"info","message":"Admin account configured successfully","timestamp":"2025-10-11T13:00:20.929Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-11T13:00:20.930Z"}
+{"level":"info","message":"✅ Admin account verified: admin@thottopilot.com","timestamp":"2025-10-11T13:00:20.933Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping tier upgrade","timestamp":"2025-10-11T13:00:20.935Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping email verification","timestamp":"2025-10-11T13:00:20.937Z"}
+{"level":"info","message":"✅ Production database fixes completed","timestamp":"2025-10-11T13:00:20.938Z"}
+{"level":"info","message":"Initializing queue system...","timestamp":"2025-10-11T13:00:20.940Z"}
+{"level":"info","message":"Queue backend selection: USE_PG_QUEUE=true, REDIS_URL=true","timestamp":"2025-10-11T13:00:20.940Z"}
+{"level":"info","message":"🔧 Using PostgreSQL queue backend","timestamp":"2025-10-11T13:00:20.941Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-11T13:00:20.941Z"}
+{"level":"info","message":"Queue system initialized","timestamp":"2025-10-11T13:00:20.942Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-11T13:00:20.950Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-11T13:00:20.969Z"}
+{"level":"info","message":"Background workers initialized","timestamp":"2025-10-11T13:00:20.969Z"}
+{"level":"info","message":"🚀 Starting cron job manager...","timestamp":"2025-10-11T13:00:20.969Z"}
+{"level":"info","message":"✅ Started cron job: process-scheduled-posts (* * * * *)","timestamp":"2025-10-11T13:00:21.003Z"}
+{"level":"info","message":"✅ Started cron job: cleanup-old-posts (0 3 * * *)","timestamp":"2025-10-11T13:00:21.005Z"}
+{"level":"info","message":"✅ Started cron job: update-analytics (0 * * * *)","timestamp":"2025-10-11T13:00:21.007Z"}
+{"level":"info","message":"✅ Started cron job: check-stuck-jobs (*/5 * * * *)","timestamp":"2025-10-11T13:00:21.009Z"}
+{"level":"info","message":"✅ Started cron job: sync-reddit-communities (0 2 * * 1)","timestamp":"2025-10-11T13:00:21.014Z"}
+{"level":"info","message":"✅ Started cron job: database-backup (0 4 * * *)","timestamp":"2025-10-11T13:00:21.016Z"}
+{"level":"info","message":"✅ Cron job manager started successfully","timestamp":"2025-10-11T13:00:21.017Z"}
+{"level":"info","message":"Cron manager started","timestamp":"2025-10-11T13:00:21.017Z"}
+{"level":"info","message":"Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-11T13:00:21.017Z"}
+{"level":"info","message":"Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-11T13:00:21.020Z"}
+{"level":"warn","message":"Environment configuration issue detected: SENTRY_DSN: Invalid url","timestamp":"2025-10-11T13:00:21.022Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-11T13:00:21.171Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-11T13:00:21.546Z"}
+{"level":"info","message":"[HEALTH] Express app created successfully in 666ms","timestamp":"2025-10-11T13:00:21.546Z"}
+{"level":"info","message":"[HEALTH] Target port from environment: 3005","timestamp":"2025-10-11T13:00:21.546Z"}
+{"level":"info","message":"[HEALTH] Starting server on 0.0.0.0:3005","timestamp":"2025-10-11T13:00:21.546Z"}
+{"level":"info","message":"[HEALTH] ✅ Server started successfully on port 3005 in 667ms","timestamp":"2025-10-11T13:00:21.547Z"}
+{"level":"info","message":"serving on port 3005","timestamp":"2025-10-11T13:00:21.547Z"}
+{"correlationId":"ec428179-d6e9-4bea-aa97-4021abfbdd95","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/health","query":{},"timestamp":"2025-10-11T13:00:32.199Z","userAgent":"curl/8.5.0"}
+{"correlationId":"ec428179-d6e9-4bea-aa97-4021abfbdd95","duration":6,"level":"info","message":"Response sent","method":"GET","path":"/api/health","statusCode":200,"timestamp":"2025-10-11T13:00:32.205Z"}
+{"correlationId":"2ab87b19-00d6-494c-865f-ee63b8dc9332","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/auth/login","query":{},"timestamp":"2025-10-11T13:00:46.204Z","userAgent":"curl/8.5.0"}
+{"correlationId":"2ab87b19-00d6-494c-865f-ee63b8dc9332","duration":62,"level":"info","message":"Response sent","method":"POST","path":"/api/auth/login","statusCode":200,"timestamp":"2025-10-11T13:00:46.266Z"}
+{"correlationId":"02799c82-9c96-40e5-954a-1e21b4b12b53","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/analytics","query":{},"timestamp":"2025-10-11T13:05:11.528Z","userAgent":"curl/8.5.0"}
+{"correlationId":"02799c82-9c96-40e5-954a-1e21b4b12b53","duration":2,"level":"info","message":"Response sent","method":"GET","path":"/","statusCode":401,"timestamp":"2025-10-11T13:05:11.531Z"}
+{"correlationId":"575bfa84-9b24-44fe-b1f1-ebc644c656e4","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/auth/login","query":{},"timestamp":"2025-10-11T13:05:30.226Z","userAgent":"curl/8.5.0"}
+{"correlationId":"575bfa84-9b24-44fe-b1f1-ebc644c656e4","duration":49,"level":"info","message":"Response sent","method":"POST","path":"/api/auth/login","statusCode":200,"timestamp":"2025-10-11T13:05:30.275Z"}
+{"correlationId":"24aa06a0-3f79-4ae3-95e6-bcb0da8ad582","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/analytics","query":{},"timestamp":"2025-10-11T13:05:30.285Z","userAgent":"curl/8.5.0"}
+{"correlationId":"24aa06a0-3f79-4ae3-95e6-bcb0da8ad582","date":"Sat Oct 11 2025 08:05:58 GMT-0500 (Central Daylight Time)","error":{},"level":"error","message":"unhandledRejection: Reached the max retries per request limit (which is 20). Refer to \"maxRetriesPerRequest\" option for details.\nMaxRetriesPerRequestError: Reached the max retries per request limit (which is 20). Refer to \"maxRetriesPerRequest\" option for details.\n    at Socket.<anonymous> (/home/dave/CascadeProjects/TPilot/node_modules/ioredis/built/redis/event_handler.js:182:37)\n    at Object.onceWrapper (node:events:639:26)\n    at Socket.emit (node:events:524:28)\n    at TCP.<anonymous> (node:net:343:12)","os":{"loadavg":[1.45,2.12,2.12],"uptime":265280.21},"process":{"argv":["/usr/bin/node","/home/dave/CascadeProjects/TPilot/server/index.ts"],"cwd":"/home/dave/CascadeProjects/TPilot","execPath":"/usr/bin/node","gid":1000,"memoryUsage":{"arrayBuffers":452630,"external":6529126,"heapTotal":116011008,"heapUsed":112592856,"rss":252444672},"pid":1826486,"uid":1000,"version":"v20.19.5"},"rejection":true,"stack":"MaxRetriesPerRequestError: Reached the max retries per request limit (which is 20). Refer to \"maxRetriesPerRequest\" option for details.\n    at Socket.<anonymous> (/home/dave/CascadeProjects/TPilot/node_modules/ioredis/built/redis/event_handler.js:182:37)\n    at Object.onceWrapper (node:events:639:26)\n    at Socket.emit (node:events:524:28)\n    at TCP.<anonymous> (node:net:343:12)","timestamp":"2025-10-11T13:05:58.306Z","trace":[{"column":37,"file":"/home/dave/CascadeProjects/TPilot/node_modules/ioredis/built/redis/event_handler.js","function":null,"line":182,"method":null,"native":false},{"column":26,"file":"node:events","function":"Object.onceWrapper","line":639,"method":"onceWrapper","native":false},{"column":28,"file":"node:events","function":"Socket.emit","line":524,"method":"emit","native":false},{"column":12,"file":"node:net","function":null,"line":343,"method":null,"native":false}]}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-11T13:09:28.262Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-11T13:09:29.252Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-11T13:09:29.252Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-11T13:09:29.252Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-11T13:09:29.486Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-11T13:09:29.486Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-11T13:09:29.487Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-11T13:09:29.487Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-11T13:09:29.487Z"}
+{"error":{"code":"ERR_MODULE_NOT_FOUND"},"level":"warn","message":"Could not apply advanced rate limiting","timestamp":"2025-10-11T13:09:29.500Z"}
+{"level":"info","message":"Observability middleware configured","timestamp":"2025-10-11T13:09:29.509Z"}
+{"level":"info","message":"Observability middleware applied","timestamp":"2025-10-11T13:09:29.510Z"}
+{"level":"info","message":"Session store configured with PostgreSQL backend","timestamp":"2025-10-11T13:09:29.511Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-11T13:09:29.512Z"}
+{"email":"admin@thottopilot.com","level":"info","message":"Admin account configured successfully","timestamp":"2025-10-11T13:09:29.533Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-11T13:09:29.533Z"}
+{"level":"info","message":"✅ Admin account verified: admin@thottopilot.com","timestamp":"2025-10-11T13:09:29.535Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping tier upgrade","timestamp":"2025-10-11T13:09:29.536Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping email verification","timestamp":"2025-10-11T13:09:29.538Z"}
+{"level":"info","message":"✅ Production database fixes completed","timestamp":"2025-10-11T13:09:29.538Z"}
+{"level":"info","message":"Initializing queue system...","timestamp":"2025-10-11T13:09:29.540Z"}
+{"level":"info","message":"Queue backend selection: USE_PG_QUEUE=true, REDIS_URL=true","timestamp":"2025-10-11T13:09:29.540Z"}
+{"level":"info","message":"🔧 Using PostgreSQL queue backend","timestamp":"2025-10-11T13:09:29.541Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-11T13:09:29.541Z"}
+{"level":"info","message":"Queue system initialized","timestamp":"2025-10-11T13:09:29.542Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-11T13:09:29.545Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-11T13:09:29.559Z"}
+{"level":"info","message":"Background workers initialized","timestamp":"2025-10-11T13:09:29.559Z"}
+{"level":"info","message":"🚀 Starting cron job manager...","timestamp":"2025-10-11T13:09:29.559Z"}
+{"level":"info","message":"✅ Started cron job: process-scheduled-posts (* * * * *)","timestamp":"2025-10-11T13:09:29.577Z"}
+{"level":"info","message":"✅ Started cron job: cleanup-old-posts (0 3 * * *)","timestamp":"2025-10-11T13:09:29.580Z"}
+{"level":"info","message":"✅ Started cron job: update-analytics (0 * * * *)","timestamp":"2025-10-11T13:09:29.582Z"}
+{"level":"info","message":"✅ Started cron job: check-stuck-jobs (*/5 * * * *)","timestamp":"2025-10-11T13:09:29.584Z"}
+{"level":"info","message":"✅ Started cron job: sync-reddit-communities (0 2 * * 1)","timestamp":"2025-10-11T13:09:29.588Z"}
+{"level":"info","message":"✅ Started cron job: database-backup (0 4 * * *)","timestamp":"2025-10-11T13:09:29.591Z"}
+{"level":"info","message":"✅ Cron job manager started successfully","timestamp":"2025-10-11T13:09:29.591Z"}
+{"level":"info","message":"Cron manager started","timestamp":"2025-10-11T13:09:29.591Z"}
+{"level":"info","message":"Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-11T13:09:29.591Z"}
+{"level":"info","message":"Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-11T13:09:29.594Z"}
+{"level":"warn","message":"Environment configuration issue detected: SENTRY_DSN: Invalid url","timestamp":"2025-10-11T13:09:29.596Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-11T13:09:29.742Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-11T13:09:30.127Z"}
+{"level":"info","message":"[HEALTH] Express app created successfully in 641ms","timestamp":"2025-10-11T13:09:30.127Z"}
+{"level":"info","message":"[HEALTH] Target port from environment: 3005","timestamp":"2025-10-11T13:09:30.127Z"}
+{"level":"info","message":"[HEALTH] Starting server on 0.0.0.0:3005","timestamp":"2025-10-11T13:09:30.128Z"}
+{"level":"info","message":"[HEALTH] ✅ Server started successfully on port 3005 in 642ms","timestamp":"2025-10-11T13:09:30.128Z"}
+{"level":"info","message":"serving on port 3005","timestamp":"2025-10-11T13:09:30.129Z"}
+{"correlationId":"a8b0de39-47a8-4542-ad50-c81efa9acf8b","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/auth/user","query":{},"timestamp":"2025-10-11T13:09:30.378Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-11T13:12:02.700Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-11T13:12:03.644Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-11T13:12:03.644Z"}
+{"level":"info","message":"[OpenRouter] Default model: opengvlab/internvl3-78b","timestamp":"2025-10-11T13:12:03.645Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-11T13:12:03.891Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-11T13:12:03.892Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-11T13:12:03.892Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-11T13:12:03.892Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-11T13:12:03.892Z"}
+{"error":{"code":"ERR_MODULE_NOT_FOUND"},"level":"warn","message":"Could not apply advanced rate limiting","timestamp":"2025-10-11T13:12:03.905Z"}
+{"level":"info","message":"Observability middleware configured","timestamp":"2025-10-11T13:12:03.912Z"}
+{"level":"info","message":"Observability middleware applied","timestamp":"2025-10-11T13:12:03.912Z"}
+{"level":"info","message":"Session store configured with PostgreSQL backend","timestamp":"2025-10-11T13:12:03.914Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-11T13:12:03.915Z"}
+{"email":"admin@thottopilot.com","level":"info","message":"Admin account configured successfully","timestamp":"2025-10-11T13:12:03.947Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-11T13:12:03.948Z"}
+{"level":"info","message":"✅ Admin account verified: admin@thottopilot.com","timestamp":"2025-10-11T13:12:03.951Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping tier upgrade","timestamp":"2025-10-11T13:12:03.952Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping email verification","timestamp":"2025-10-11T13:12:03.954Z"}
+{"level":"info","message":"✅ Production database fixes completed","timestamp":"2025-10-11T13:12:03.955Z"}
+{"level":"info","message":"Initializing queue system...","timestamp":"2025-10-11T13:12:03.957Z"}
+{"level":"info","message":"Queue backend selection: USE_PG_QUEUE=true, REDIS_URL=true","timestamp":"2025-10-11T13:12:03.958Z"}
+{"level":"info","message":"🔧 Using PostgreSQL queue backend","timestamp":"2025-10-11T13:12:03.958Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-11T13:12:03.958Z"}
+{"level":"info","message":"Queue system initialized","timestamp":"2025-10-11T13:12:03.959Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-11T13:12:03.963Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-11T13:12:03.979Z"}
+{"level":"info","message":"Background workers initialized","timestamp":"2025-10-11T13:12:03.979Z"}
+{"level":"info","message":"🚀 Starting cron job manager...","timestamp":"2025-10-11T13:12:03.979Z"}
+{"level":"info","message":"✅ Started cron job: process-scheduled-posts (* * * * *)","timestamp":"2025-10-11T13:12:04.006Z"}
+{"level":"info","message":"✅ Started cron job: cleanup-old-posts (0 3 * * *)","timestamp":"2025-10-11T13:12:04.010Z"}
+{"level":"info","message":"✅ Started cron job: update-analytics (0 * * * *)","timestamp":"2025-10-11T13:12:04.014Z"}
+{"level":"info","message":"✅ Started cron job: check-stuck-jobs (*/5 * * * *)","timestamp":"2025-10-11T13:12:04.017Z"}
+{"level":"info","message":"✅ Started cron job: sync-reddit-communities (0 2 * * 1)","timestamp":"2025-10-11T13:12:04.024Z"}
+{"level":"info","message":"✅ Started cron job: database-backup (0 4 * * *)","timestamp":"2025-10-11T13:12:04.028Z"}
+{"level":"info","message":"✅ Cron job manager started successfully","timestamp":"2025-10-11T13:12:04.028Z"}
+{"level":"info","message":"Cron manager started","timestamp":"2025-10-11T13:12:04.028Z"}
+{"level":"info","message":"Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-11T13:12:04.029Z"}
+{"level":"info","message":"Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-11T13:12:04.032Z"}
+{"level":"warn","message":"Environment configuration issue detected: SENTRY_DSN: Invalid url","timestamp":"2025-10-11T13:12:04.035Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-11T13:12:04.188Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-11T13:12:04.577Z"}
+{"level":"info","message":"[HEALTH] Express app created successfully in 685ms","timestamp":"2025-10-11T13:12:04.577Z"}
+{"level":"info","message":"[HEALTH] Target port from environment: 3005","timestamp":"2025-10-11T13:12:04.577Z"}
+{"level":"info","message":"[HEALTH] Starting server on 0.0.0.0:3005","timestamp":"2025-10-11T13:12:04.577Z"}
+{"level":"info","message":"[HEALTH] ✅ Server started successfully on port 3005 in 686ms","timestamp":"2025-10-11T13:12:04.578Z"}
+{"level":"info","message":"serving on port 3005","timestamp":"2025-10-11T13:12:04.578Z"}
+{"correlationId":"97adf41a-e422-4410-8ca8-28dff5a2f35f","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/health","query":{},"timestamp":"2025-10-11T13:12:17.272Z","userAgent":"curl/8.5.0"}
+{"correlationId":"97adf41a-e422-4410-8ca8-28dff5a2f35f","duration":5,"level":"info","message":"Response sent","method":"GET","path":"/api/health","statusCode":200,"timestamp":"2025-10-11T13:12:17.278Z"}
+{"correlationId":"677665b5-cb2f-47ca-898d-d241aad548a2","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/auth/login","query":{},"timestamp":"2025-10-11T13:12:32.682Z","userAgent":"curl/8.5.0"}
+{"correlationId":"677665b5-cb2f-47ca-898d-d241aad548a2","duration":58,"level":"info","message":"Response sent","method":"POST","path":"/api/auth/login","statusCode":200,"timestamp":"2025-10-11T13:12:32.741Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-11T13:14:34.959Z"}
+{"correlationId":"9c1efbb7-ca01-4ec5-978e-294f4013a229","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/csrf-token","query":{},"timestamp":"2025-10-11T13:14:35.495Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"9c1efbb7-ca01-4ec5-978e-294f4013a229","duration":3,"level":"info","message":"Response sent","method":"GET","path":"/api/csrf-token","statusCode":200,"timestamp":"2025-10-11T13:14:35.497Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-11T13:14:35.961Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-11T13:14:35.962Z"}
+{"level":"info","message":"[OpenRouter] Default model: x-ai/grok-2-fast","timestamp":"2025-10-11T13:14:35.962Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-11T13:14:36.207Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-11T13:14:36.207Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-11T13:14:36.208Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-11T13:14:36.208Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-11T13:14:36.208Z"}
+{"error":{"code":"ERR_MODULE_NOT_FOUND"},"level":"warn","message":"Could not apply advanced rate limiting","timestamp":"2025-10-11T13:14:36.216Z"}
+{"level":"info","message":"Observability middleware configured","timestamp":"2025-10-11T13:14:36.222Z"}
+{"level":"info","message":"Observability middleware applied","timestamp":"2025-10-11T13:14:36.222Z"}
+{"level":"info","message":"Session store configured with PostgreSQL backend","timestamp":"2025-10-11T13:14:36.224Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-11T13:14:36.225Z"}
+{"email":"admin@thottopilot.com","level":"info","message":"Admin account configured successfully","timestamp":"2025-10-11T13:14:36.245Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-11T13:14:36.245Z"}
+{"level":"info","message":"✅ Admin account verified: admin@thottopilot.com","timestamp":"2025-10-11T13:14:36.247Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping tier upgrade","timestamp":"2025-10-11T13:14:36.248Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping email verification","timestamp":"2025-10-11T13:14:36.250Z"}
+{"level":"info","message":"✅ Production database fixes completed","timestamp":"2025-10-11T13:14:36.250Z"}
+{"level":"info","message":"Initializing queue system...","timestamp":"2025-10-11T13:14:36.252Z"}
+{"level":"info","message":"Queue backend selection: USE_PG_QUEUE=true, REDIS_URL=true","timestamp":"2025-10-11T13:14:36.252Z"}
+{"level":"info","message":"🔧 Using PostgreSQL queue backend","timestamp":"2025-10-11T13:14:36.252Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-11T13:14:36.252Z"}
+{"level":"info","message":"Queue system initialized","timestamp":"2025-10-11T13:14:36.253Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-11T13:14:36.256Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-11T13:14:36.269Z"}
+{"level":"info","message":"Background workers initialized","timestamp":"2025-10-11T13:14:36.269Z"}
+{"level":"info","message":"🚀 Starting cron job manager...","timestamp":"2025-10-11T13:14:36.269Z"}
+{"level":"info","message":"✅ Started cron job: process-scheduled-posts (* * * * *)","timestamp":"2025-10-11T13:14:36.285Z"}
+{"level":"info","message":"✅ Started cron job: cleanup-old-posts (0 3 * * *)","timestamp":"2025-10-11T13:14:36.287Z"}
+{"level":"info","message":"✅ Started cron job: update-analytics (0 * * * *)","timestamp":"2025-10-11T13:14:36.289Z"}
+{"level":"info","message":"✅ Started cron job: check-stuck-jobs (*/5 * * * *)","timestamp":"2025-10-11T13:14:36.291Z"}
+{"level":"info","message":"✅ Started cron job: sync-reddit-communities (0 2 * * 1)","timestamp":"2025-10-11T13:14:36.295Z"}
+{"level":"info","message":"✅ Started cron job: database-backup (0 4 * * *)","timestamp":"2025-10-11T13:14:36.297Z"}
+{"level":"info","message":"✅ Cron job manager started successfully","timestamp":"2025-10-11T13:14:36.297Z"}
+{"level":"info","message":"Cron manager started","timestamp":"2025-10-11T13:14:36.298Z"}
+{"level":"info","message":"Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-11T13:14:36.298Z"}
+{"level":"info","message":"Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-11T13:14:36.301Z"}
+{"level":"warn","message":"Environment configuration issue detected: SENTRY_DSN: Invalid url","timestamp":"2025-10-11T13:14:36.303Z"}
+{"correlationId":"b4a7e059-8298-4719-99de-059438f4c78a","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/auth/user","query":{},"timestamp":"2025-10-11T13:14:36.311Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"f18f467a-bd1b-43d6-bf69-84be7e2c3940","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/metrics","query":{},"timestamp":"2025-10-11T13:14:36.314Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"0d09a38c-6dff-453f-bb6f-7732aeb7ee7e","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-11T13:14:36.318Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"0d09a38c-6dff-453f-bb6f-7732aeb7ee7e","duration":2,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-11T13:14:36.320Z"}
+{"correlationId":"b4a7e059-8298-4719-99de-059438f4c78a","duration":11,"level":"info","message":"Response sent","method":"GET","path":"/api/auth/user","statusCode":200,"timestamp":"2025-10-11T13:14:36.322Z"}
+{"correlationId":"f18f467a-bd1b-43d6-bf69-84be7e2c3940","duration":16,"level":"info","message":"Response sent","method":"GET","path":"/api/metrics","statusCode":200,"timestamp":"2025-10-11T13:14:36.331Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-11T13:14:36.454Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-11T13:14:36.829Z"}
+{"correlationId":"8d994051-6b40-44a3-a593-fb611571fe32","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/csrf-token","query":{},"timestamp":"2025-10-11T13:14:36.914Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"8d994051-6b40-44a3-a593-fb611571fe32","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/api/csrf-token","statusCode":200,"timestamp":"2025-10-11T13:14:36.915Z"}
+{"correlationId":"bec3e918-9e6e-4d24-8035-aa8baeed428c","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-11T13:14:36.919Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"bec3e918-9e6e-4d24-8035-aa8baeed428c","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-11T13:14:36.920Z"}
+{"correlationId":"30f15027-d2c2-43b3-b42f-2aa73524135a","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/auth/user","query":{},"timestamp":"2025-10-11T13:14:36.949Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"30f15027-d2c2-43b3-b42f-2aa73524135a","duration":3,"level":"info","message":"Response sent","method":"GET","path":"/api/auth/user","statusCode":304,"timestamp":"2025-10-11T13:14:36.952Z"}
+{"correlationId":"857369e3-ca30-4619-9acc-de84bd29ca3d","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/dashboard/stats","query":{},"timestamp":"2025-10-11T13:14:37.276Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"fd11914c-dcdb-4ec1-afea-f9111db7e5af","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/dashboard/activity","query":{},"timestamp":"2025-10-11T13:14:37.281Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"fd11914c-dcdb-4ec1-afea-f9111db7e5af","isAdmin":true,"level":"info","mediaCount":0,"message":"Dashboard activity retrieved for user 1","timestamp":"2025-10-11T13:14:37.292Z","userId":1}
+{"correlationId":"fd11914c-dcdb-4ec1-afea-f9111db7e5af","duration":12,"level":"info","message":"Response sent","method":"GET","path":"/activity","statusCode":200,"timestamp":"2025-10-11T13:14:37.293Z"}
+{"correlationId":"fd11914c-dcdb-4ec1-afea-f9111db7e5af","isAdmin":true,"level":"info","message":"Dashboard stats retrieved for user 1","stats":{"engagementRate":0,"estimatedTaxSavings":0,"postsToday":0,"takedownsFound":0},"timestamp":"2025-10-11T13:14:37.295Z","userId":1}
+{"correlationId":"857369e3-ca30-4619-9acc-de84bd29ca3d","duration":20,"level":"info","message":"Response sent","method":"GET","path":"/stats","statusCode":200,"timestamp":"2025-10-11T13:14:37.296Z"}
+{"correlationId":"a796e60d-1726-4bc7-be74-8c3746bb1452","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/referral/my-code","query":{},"timestamp":"2025-10-11T13:14:37.298Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"a796e60d-1726-4bc7-be74-8c3746bb1452","duration":3,"level":"info","message":"Response sent","method":"GET","path":"/","statusCode":404,"timestamp":"2025-10-11T13:14:37.301Z"}
+{"correlationId":"f5b0826a-b9c4-4331-aa1e-d87c473f3a8c","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/dashboard/stats","query":{},"timestamp":"2025-10-11T13:14:37.958Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"2d65cb78-70f3-4480-ba6e-85cc8e6091a0","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/dashboard/activity","query":{},"timestamp":"2025-10-11T13:14:37.962Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"7314fbfa-1fbe-408f-bd8d-808aa8ff7dd5","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/referral/my-code","query":{},"timestamp":"2025-10-11T13:14:37.966Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"7314fbfa-1fbe-408f-bd8d-808aa8ff7dd5","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/","statusCode":404,"timestamp":"2025-10-11T13:14:37.967Z"}
+{"correlationId":"7314fbfa-1fbe-408f-bd8d-808aa8ff7dd5","isAdmin":true,"level":"info","mediaCount":0,"message":"Dashboard activity retrieved for user 1","timestamp":"2025-10-11T13:14:37.969Z","userId":1}
+{"correlationId":"2d65cb78-70f3-4480-ba6e-85cc8e6091a0","duration":8,"level":"info","message":"Response sent","method":"GET","path":"/activity","statusCode":304,"timestamp":"2025-10-11T13:14:37.970Z"}
+{"correlationId":"7314fbfa-1fbe-408f-bd8d-808aa8ff7dd5","isAdmin":true,"level":"info","message":"Dashboard stats retrieved for user 1","stats":{"engagementRate":0,"estimatedTaxSavings":0,"postsToday":0,"takedownsFound":0},"timestamp":"2025-10-11T13:14:37.971Z","userId":1}
+{"correlationId":"f5b0826a-b9c4-4331-aa1e-d87c473f3a8c","duration":13,"level":"info","message":"Response sent","method":"GET","path":"/stats","statusCode":304,"timestamp":"2025-10-11T13:14:37.971Z"}
+{"correlationId":"60c4318a-c365-4b43-9526-fe59f6cff8aa","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-11T13:15:06.576Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"60c4318a-c365-4b43-9526-fe59f6cff8aa","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-11T13:15:06.577Z"}
+{"correlationId":"d701c3e4-54db-45f9-b672-169832cc1d88","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/csrf-token","query":{},"timestamp":"2025-10-11T13:15:07.042Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"d701c3e4-54db-45f9-b672-169832cc1d88","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/api/csrf-token","statusCode":200,"timestamp":"2025-10-11T13:15:07.043Z"}
+{"correlationId":"bb39b201-5a25-41f2-b6da-ad90047ab370","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-11T13:15:07.047Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"bb39b201-5a25-41f2-b6da-ad90047ab370","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-11T13:15:07.048Z"}
+{"correlationId":"494b42a1-ac65-4a2e-acf5-435f85f7670d","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-11T13:17:13.764Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"494b42a1-ac65-4a2e-acf5-435f85f7670d","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-11T13:17:13.765Z"}
+{"correlationId":"c6410b51-c3af-447c-8380-7a747ff950ae","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-11T13:17:13.958Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"c6410b51-c3af-447c-8380-7a747ff950ae","duration":2,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-11T13:17:13.960Z"}
+{"correlationId":"69e68c66-0eab-4831-8603-7e742f6071b2","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/auth/user","query":{},"timestamp":"2025-10-11T13:17:14.472Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"69e68c66-0eab-4831-8603-7e742f6071b2","duration":4,"level":"info","message":"Response sent","method":"GET","path":"/api/auth/user","statusCode":304,"timestamp":"2025-10-11T13:17:14.477Z"}
+{"correlationId":"20993bf5-659c-44fc-9e5e-9a661f735631","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/admin/stats","query":{},"timestamp":"2025-10-11T13:17:14.712Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"3d7d02c0-fd0a-43bc-8811-cba1ea30db4f","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/admin/users","query":{},"timestamp":"2025-10-11T13:17:14.715Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"d85fed7f-6a28-4c24-bece-95e0ea228ddb","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/providers","query":{},"timestamp":"2025-10-11T13:17:14.718Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"d85fed7f-6a28-4c24-bece-95e0ea228ddb","duration":2,"level":"info","message":"Response sent","method":"GET","path":"/api/providers","statusCode":200,"timestamp":"2025-10-11T13:17:14.719Z"}
+{"correlationId":"4c914d6b-0604-4472-8f50-e531ad5e17e1","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/admin/system-health","query":{},"timestamp":"2025-10-11T13:17:14.722Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"4c914d6b-0604-4472-8f50-e531ad5e17e1","duration":2,"level":"info","message":"Response sent","method":"GET","path":"/api/admin/system-health","statusCode":200,"timestamp":"2025-10-11T13:17:14.724Z"}
+{"correlationId":"415f4d64-15a5-4b19-806f-2158b5d3d035","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/admin/analytics","query":{},"timestamp":"2025-10-11T13:17:14.725Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"426645fe-d74c-4401-a125-e297bcd288af","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/admin/completeness","query":{},"timestamp":"2025-10-11T13:17:14.729Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"426645fe-d74c-4401-a125-e297bcd288af","duration":2,"level":"info","message":"Response sent","method":"GET","path":"/api/admin/completeness","statusCode":200,"timestamp":"2025-10-11T13:17:14.731Z"}
+{"correlationId":"20993bf5-659c-44fc-9e5e-9a661f735631","duration":21,"level":"info","message":"Response sent","method":"GET","path":"/api/admin/stats","statusCode":200,"timestamp":"2025-10-11T13:17:14.732Z"}
+{"correlationId":"3d7d02c0-fd0a-43bc-8811-cba1ea30db4f","duration":25,"level":"info","message":"Response sent","method":"GET","path":"/api/admin/users","statusCode":200,"timestamp":"2025-10-11T13:17:14.739Z"}
+{"correlationId":"415f4d64-15a5-4b19-806f-2158b5d3d035","duration":17,"level":"info","message":"Response sent","method":"GET","path":"/api/admin/analytics","statusCode":200,"timestamp":"2025-10-11T13:17:14.742Z"}
+{"correlationId":"83f9b046-8818-4d1b-bfd1-b71fd8e711cf","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/csrf-token","query":{},"timestamp":"2025-10-11T13:17:33.501Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"83f9b046-8818-4d1b-bfd1-b71fd8e711cf","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/api/csrf-token","statusCode":200,"timestamp":"2025-10-11T13:17:33.502Z"}
+{"correlationId":"6c5ca392-f44c-492d-b897-498e43f04fb7","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-11T13:17:33.506Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"6c5ca392-f44c-492d-b897-498e43f04fb7","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-11T13:17:33.507Z"}
+{"correlationId":"de920953-e126-4ed8-99fe-e1abca051613","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/admin/communities","query":{},"timestamp":"2025-10-11T13:17:37.892Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"de920953-e126-4ed8-99fe-e1abca051613","duration":86,"level":"info","message":"Response sent","method":"GET","path":"/","statusCode":200,"timestamp":"2025-10-11T13:17:37.978Z"}
+{"correlationId":"dfff1a46-68f5-46fd-907b-200be68d0111","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-11T13:17:44.459Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"dfff1a46-68f5-46fd-907b-200be68d0111","duration":2,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-11T13:17:44.460Z"}
+{"correlationId":"a7717fc3-f3ad-4f99-8cd3-f72993903d65","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/admin/compliance/dashboard","query":{},"timestamp":"2025-10-11T13:17:55.945Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"a7717fc3-f3ad-4f99-8cd3-f72993903d65","duration":2,"level":"info","message":"Response sent","method":"GET","path":"/","statusCode":404,"timestamp":"2025-10-11T13:17:55.946Z"}
+{"correlationId":"e773e7bd-d0d0-4fdf-bbfc-49e129a1deed","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/admin/compliance/dashboard","query":{},"timestamp":"2025-10-11T13:17:59.431Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"e773e7bd-d0d0-4fdf-bbfc-49e129a1deed","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/","statusCode":404,"timestamp":"2025-10-11T13:17:59.432Z"}
+{"correlationId":"85a72bef-98e6-4005-b37a-27fe4bbcdd26","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-11T13:18:01.401Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"85a72bef-98e6-4005-b37a-27fe4bbcdd26","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-11T13:18:01.402Z"}
+{"correlationId":"222b34c6-6aca-409a-a259-a79b50a706ff","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-11T13:18:14.502Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"222b34c6-6aca-409a-a259-a79b50a706ff","duration":2,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-11T13:18:14.504Z"}
+{"correlationId":"b6c2736f-13ce-4eec-a23a-0e5cbaf23280","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/reddit/accounts","query":{},"timestamp":"2025-10-11T13:18:15.588Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"ca121086-b960-4695-baf5-e4f8d9d55e85","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/reddit/communities","query":{},"timestamp":"2025-10-11T13:18:15.591Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"54dbd6d9-965d-4208-80bb-5ae02e5ed176","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/media","query":{},"timestamp":"2025-10-11T13:18:15.593Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"b6c2736f-13ce-4eec-a23a-0e5cbaf23280","duration":8,"level":"info","message":"Response sent","method":"GET","path":"/api/reddit/accounts","statusCode":200,"timestamp":"2025-10-11T13:18:15.597Z"}
+{"correlationId":"54dbd6d9-965d-4208-80bb-5ae02e5ed176","duration":17,"level":"info","message":"Response sent","method":"GET","path":"/","statusCode":200,"timestamp":"2025-10-11T13:18:15.610Z"}
+{"correlationId":"ca121086-b960-4695-baf5-e4f8d9d55e85","duration":29,"level":"info","message":"Response sent","method":"GET","path":"/api/reddit/communities","statusCode":200,"timestamp":"2025-10-11T13:18:15.620Z"}
+{"correlationId":"80d417b3-314f-43dc-95b3-ad5ec8a37c92","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/reddit/connect","query":{"intent":"posting","queue":"reddit-posting"},"timestamp":"2025-10-11T13:18:19.572Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"80d417b3-314f-43dc-95b3-ad5ec8a37c92","intent":"posting","level":"info","message":"Reddit OAuth initiated","queue":"reddit-posting","requestIP":"127.0.0.1","statePreview":"posting:...","timestamp":"2025-10-11T13:18:19.574Z","userId":1}
+{"correlationId":"80d417b3-314f-43dc-95b3-ad5ec8a37c92","level":"error","message":"Reddit OAuth redirect URI (auth):","timestamp":"2025-10-11T13:18:19.575Z"}
+{"correlationId":"80d417b3-314f-43dc-95b3-ad5ec8a37c92","duration":4,"level":"info","message":"Response sent","method":"GET","path":"/api/reddit/connect","statusCode":200,"timestamp":"2025-10-11T13:18:19.575Z"}
+{"correlationId":"29fc2c66-191b-41b9-b387-944360ea9da6","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-11T13:18:19.902Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"29fc2c66-191b-41b9-b387-944360ea9da6","duration":3,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-11T13:18:19.905Z"}
+{"correlationId":"29fc2c66-191b-41b9-b387-944360ea9da6","level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-11T14:00:00.016Z"}
+{"correlationId":"29fc2c66-191b-41b9-b387-944360ea9da6","level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-11T15:00:00.016Z"}
+{"correlationId":"29fc2c66-191b-41b9-b387-944360ea9da6","level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-11T16:00:00.017Z"}
+{"correlationId":"29fc2c66-191b-41b9-b387-944360ea9da6","level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-11T17:00:00.011Z"}
+{"correlationId":"29fc2c66-191b-41b9-b387-944360ea9da6","level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-11T18:00:00.014Z"}
+{"correlationId":"29fc2c66-191b-41b9-b387-944360ea9da6","level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-11T19:00:00.016Z"}
+{"correlationId":"29fc2c66-191b-41b9-b387-944360ea9da6","level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-11T20:00:00.017Z"}
+{"correlationId":"29fc2c66-191b-41b9-b387-944360ea9da6","level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-11T21:00:00.020Z"}
+{"correlationId":"29fc2c66-191b-41b9-b387-944360ea9da6","level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-11T22:00:00.019Z"}
+{"correlationId":"29fc2c66-191b-41b9-b387-944360ea9da6","level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-11T23:00:00.046Z"}
+{"correlationId":"29fc2c66-191b-41b9-b387-944360ea9da6","level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-12T00:00:00.011Z"}

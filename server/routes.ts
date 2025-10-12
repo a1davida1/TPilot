@@ -881,7 +881,12 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
       if (!process.env.REDIS_URL) {
         checks.redis = { ok: true, skipped: true };
       } else {
-        const r = new Redis(process.env.REDIS_URL);
+        const r = new Redis(process.env.REDIS_URL, {
+          maxRetriesPerRequest: 1,
+          enableOfflineQueue: false,
+          retryStrategy: () => null,
+          connectTimeout: 1000
+        });
         const pong = await r.ping();
         await r.quit();
         checks.redis = { ok: pong === 'PONG' };

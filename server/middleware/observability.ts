@@ -7,6 +7,7 @@ import { Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../bootstrap/logger.js';
 import { performance } from 'perf_hooks';
+import os from 'os';
 
 declare global {
   namespace Express {
@@ -131,9 +132,9 @@ export async function collectHealthMetrics() {
       pid: process.pid
     },
     system: {
-      loadAverage: process.platform === 'linux' ? require('os').loadavg() : [0, 0, 0],
-      freeMemory: require('os').freemem() / 1048576,
-      totalMemory: require('os').totalmem() / 1048576
+      loadAverage: process.platform === 'linux' ? os.loadavg() : [0, 0, 0],
+      freeMemory: os.freemem() / 1048576,
+      totalMemory: os.totalmem() / 1048576
     }
   };
   

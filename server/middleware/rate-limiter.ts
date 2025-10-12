@@ -11,7 +11,25 @@ import { logger } from '../bootstrap/logger.js';
 import { type AuthRequest } from './auth.js';
 
 // Use Redis if available, otherwise memory store
-const redisClient = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL) : null;
+let redisClient: Redis | null = null;
+
+// Only create Redis connection if URL provided and not using PG queue
+if (process.env.REDIS_URL && process.env.USE_PG_QUEUE !== 'true') {
+  try {
+    redisClient = new Redis(process.env.REDIS_URL, {
+      maxRetriesPerRequest: 1,
+      enableOfflineQueue: false,
+      lazyConnect: true,
+      retryStrategy: () => null // Don't retry
+    });
+    redisClient.on('error', (err) => {
+      logger.debug('Rate limiter Redis error (non-fatal):', err.message);
+    });
+  } catch (err) {
+    logger.debug('Rate limiter using memory store (Redis unavailable)');
+    redisClient = null;
+  }
+}
 
 // Tier-based rate limits (requests per minute)
 const TIER_LIMITS = {

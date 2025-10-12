@@ -8,7 +8,7 @@ import { logger } from '../../bootstrap/logger.js';
 import { db } from '../../db.js';
 import { scheduledPosts, redditPostOutcomes } from '@shared/schema';
 import { eq, and, lte } from 'drizzle-orm';
-import { submitToReddit } from '../reddit.js';
+// import { submitToReddit } from '../reddit.js'; // Commented out - not implemented yet
 import Redis from 'ioredis';
 
 interface ScheduledPostJob {
@@ -23,9 +23,32 @@ interface ScheduledPostJob {
   attempt?: number;
 }
 
-const redis = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL) : null;
+let redis: Redis | null = null;
+
+// Only create Redis connection if available and not using PG queue
+if (process.env.REDIS_URL && process.env.USE_PG_QUEUE !== 'true') {
+  try {
+    redis = new Redis(process.env.REDIS_URL, {
+      maxRetriesPerRequest: 1,
+      enableOfflineQueue: false,
+      lazyConnect: true,
+      retryStrategy: () => null
+    });
+    redis.on('error', () => {
+      // Silently handle errors
+    });
+  } catch {
+    redis = null;
+  }
+}
 
 export function createPostSchedulerWorker() {
+  // Only create worker if Redis is available (BullMQ requires Redis)
+  if (!redis) {
+    logger.warn('Post scheduler worker not created - Redis unavailable');
+    return null;
+  }
+  
   const worker = new Worker<ScheduledPostJob>(
     'scheduled-posts',
     async (job: Job<ScheduledPostJob>) => {
@@ -49,7 +72,16 @@ export function createPostSchedulerWorker() {
           })
           .where(eq(scheduledPosts.id, postId));
 
-        // Submit to Reddit
+        // Submit to Reddit - NOT IMPLEMENTED YET
+        // TODO: Implement Reddit submission
+        const result = {
+          success: false,
+          postUrl: null,
+          redditPostId: null,
+          error: 'Reddit submission not yet implemented'
+        };
+        
+        /*
         const result = await submitToReddit({
           userId: userId.toString(),
           subreddit,
@@ -59,6 +91,7 @@ export function createPostSchedulerWorker() {
           flairText,
           nsfw
         });
+        */
 
         if (result.success) {
           // Update as completed
@@ -133,21 +166,9 @@ export function createPostSchedulerWorker() {
       }
     },
     {
-      connection: redis || undefined,
+      connection: redis,
       concurrency: 5,
-      defaultJobOptions: {
-        attempts: 3,
-        backoff: {
-          type: 'exponential',
-          delay: 120000 // 2 minutes base
-        },
-        removeOnComplete: {
-          age: 24 * 3600 // Keep completed jobs for 24 hours
-        },
-        removeOnFail: {
-          age: 7 * 24 * 3600 // Keep failed jobs for 7 days
-        }
-      }
+      // Default job options are set at queue level, not worker level in BullMQ
     }
   );
 

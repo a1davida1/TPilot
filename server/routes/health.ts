@@ -202,7 +202,12 @@ async function checkRedis(): Promise<ServiceHealth> {
 
   const start = Date.now();
   try {
-    const redis = new Redis(process.env.REDIS_URL);
+    const redis = new Redis(process.env.REDIS_URL, {
+      maxRetriesPerRequest: 1,
+      enableOfflineQueue: false,
+      retryStrategy: () => null,
+      connectTimeout: 1000
+    });
     await redis.ping();
     const latency = Date.now() - start;
     await redis.disconnect();

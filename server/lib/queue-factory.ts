@@ -16,14 +16,19 @@ export function getQueueBackend(): IQueue {
     return queueInstance;
   }
 
+  // Check if USE_PG_QUEUE is explicitly set via environment
+  const forceUsePg = process.env.USE_PG_QUEUE === 'true' || env.USE_PG_QUEUE;
+  
+  logger.info(`Queue backend selection: USE_PG_QUEUE=${forceUsePg}, REDIS_URL=${!!env.REDIS_URL}`);
+  
   // Determine which backend to use
-  const shouldUseRedis = !env.USE_PG_QUEUE && env.REDIS_URL;
+  const shouldUseRedis = !forceUsePg && env.REDIS_URL;
 
   if (shouldUseRedis && env.REDIS_URL) {
-    logger.error('🚀 Using Redis BullMQ queue backend');
+    logger.info('🚀 Attempting to use Redis BullMQ queue backend');
     queueInstance = new RedisBullQueue(env.REDIS_URL);
   } else {
-    logger.error('🔧 Using PostgreSQL queue backend (Redis not available)');
+    logger.info('🔧 Using PostgreSQL queue backend');
     queueInstance = new PgQueue();
   }
 
@@ -36,7 +41,7 @@ export async function initializeQueue(): Promise<void> {
     await queue.initialize();
   } catch (error: any) {
     // If Redis fails, fallback to PostgreSQL
-    if (error.message?.includes('ECONNREFUSED') && env.REDIS_URL) {
+    if ((error.message?.includes('ECONNREFUSED') || error.message?.includes("Stream isn't writeable")) && env.REDIS_URL) {
       logger.warn('Redis connection failed, falling back to PostgreSQL queue backend');
       env.USE_PG_QUEUE = true;
       queueInstance = new PgQueue();
