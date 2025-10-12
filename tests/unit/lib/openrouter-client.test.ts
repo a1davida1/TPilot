@@ -38,7 +38,7 @@ describe('OpenRouter Client', () => {
     });
   });
 
-  it('uses default model x-ai/grok-2-fast', async () => {
+  it('uses default model x-ai/grok-4-fast', async () => {
     process.env.OPENROUTER_API_KEY = 'sk-or-test-key';
 
     mockOpenAI.chat.completions.create.mockResolvedValueOnce({
@@ -57,7 +57,7 @@ describe('OpenRouter Client', () => {
 
     expect(mockOpenAI.chat.completions.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        model: 'x-ai/grok-2-fast'
+        model: 'x-ai/grok-4-fast'
       })
     );
   });

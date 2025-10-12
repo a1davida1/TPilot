@@ -3112,3 +3112,483 @@
 {"correlationId":"29fc2c66-191b-41b9-b387-944360ea9da6","level":"debug","message":"⏰ Running cron job: check-stuck-jobs","timestamp":"2025-10-12T00:10:00.008Z"}
 {"correlationId":"29fc2c66-191b-41b9-b387-944360ea9da6","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:10:00.008Z"}
 {"correlationId":"29fc2c66-191b-41b9-b387-944360ea9da6","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":29397467,"user":139614932},"memory":{"external":6.236522674560547,"heapTotal":121.38671875,"heapUsed":108.00231170654297,"rss":262.2109375},"pid":1830208,"uptime":39482.138799312},"system":{"freeMemory":19394.0625,"loadAverage":[1.44,1.23,0.8],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:10:04.262Z"}
+{"correlationId":"29fc2c66-191b-41b9-b387-944360ea9da6","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:11:00.006Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-12T00:11:00.774Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-12T00:11:01.660Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-12T00:11:01.660Z"}
+{"level":"info","message":"[OpenRouter] Default model: x-ai/grok-4-fast","timestamp":"2025-10-12T00:11:01.660Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-12T00:11:01.891Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-12T00:11:01.892Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-12T00:11:01.892Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-12T00:11:01.892Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-12T00:11:01.892Z"}
+{"error":{"code":"ERR_MODULE_NOT_FOUND"},"level":"warn","message":"Could not apply advanced rate limiting","timestamp":"2025-10-12T00:11:01.904Z"}
+{"level":"info","message":"Observability middleware configured","timestamp":"2025-10-12T00:11:01.908Z"}
+{"level":"info","message":"Observability middleware applied","timestamp":"2025-10-12T00:11:01.908Z"}
+{"level":"info","message":"Session store configured with PostgreSQL backend","timestamp":"2025-10-12T00:11:01.910Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-12T00:11:01.911Z"}
+{"email":"admin@thottopilot.com","level":"info","message":"Admin account configured successfully","timestamp":"2025-10-12T00:11:01.934Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-12T00:11:01.935Z"}
+{"level":"info","message":"✅ Admin account verified: admin@thottopilot.com","timestamp":"2025-10-12T00:11:01.937Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping tier upgrade","timestamp":"2025-10-12T00:11:01.938Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping email verification","timestamp":"2025-10-12T00:11:01.939Z"}
+{"level":"info","message":"✅ Production database fixes completed","timestamp":"2025-10-12T00:11:01.939Z"}
+{"level":"info","message":"Initializing queue system...","timestamp":"2025-10-12T00:11:01.941Z"}
+{"level":"info","message":"Queue backend selection: USE_PG_QUEUE=true, REDIS_URL=true","timestamp":"2025-10-12T00:11:01.941Z"}
+{"level":"info","message":"🔧 Using PostgreSQL queue backend","timestamp":"2025-10-12T00:11:01.942Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-12T00:11:01.942Z"}
+{"level":"info","message":"Queue system initialized","timestamp":"2025-10-12T00:11:01.943Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-12T00:11:01.946Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-12T00:11:01.959Z"}
+{"level":"info","message":"Background workers initialized","timestamp":"2025-10-12T00:11:01.959Z"}
+{"level":"info","message":"🚀 Starting cron job manager...","timestamp":"2025-10-12T00:11:01.959Z"}
+{"level":"info","message":"✅ Started cron job: process-scheduled-posts (* * * * *)","timestamp":"2025-10-12T00:11:01.976Z"}
+{"level":"info","message":"✅ Started cron job: cleanup-old-posts (0 3 * * *)","timestamp":"2025-10-12T00:11:01.978Z"}
+{"level":"info","message":"✅ Started cron job: update-analytics (0 * * * *)","timestamp":"2025-10-12T00:11:01.981Z"}
+{"level":"info","message":"✅ Started cron job: check-stuck-jobs (*/5 * * * *)","timestamp":"2025-10-12T00:11:01.982Z"}
+{"level":"info","message":"✅ Started cron job: sync-reddit-communities (0 2 * * 1)","timestamp":"2025-10-12T00:11:01.987Z"}
+{"level":"info","message":"✅ Started cron job: database-backup (0 4 * * *)","timestamp":"2025-10-12T00:11:01.990Z"}
+{"level":"info","message":"✅ Cron job manager started successfully","timestamp":"2025-10-12T00:11:01.990Z"}
+{"level":"info","message":"Cron manager started","timestamp":"2025-10-12T00:11:01.990Z"}
+{"level":"info","message":"Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-12T00:11:01.991Z"}
+{"level":"info","message":"Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-12T00:11:01.993Z"}
+{"level":"warn","message":"Environment configuration issue detected: SENTRY_DSN: Invalid url","timestamp":"2025-10-12T00:11:01.995Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/dist/client/index.html","timestamp":"2025-10-12T00:11:02.146Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/client/dist/index.html","timestamp":"2025-10-12T00:11:02.146Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-12T00:11:02.147Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-12T00:11:02.515Z"}
+{"correlationId":"29fc2c66-191b-41b9-b387-944360ea9da6","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":29411128,"user":139694058},"memory":{"external":6.2337141036987305,"heapTotal":121.38671875,"heapUsed":108.49119567871094,"rss":261.71875},"pid":1830208,"uptime":39542.139639375},"system":{"freeMemory":9418.31640625,"loadAverage":[2.07,1.41,0.88],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:11:04.262Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-12T00:11:13.218Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-12T00:11:14.235Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-12T00:11:14.236Z"}
+{"level":"info","message":"[OpenRouter] Default model: x-ai/grok-4-fast","timestamp":"2025-10-12T00:11:14.236Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-12T00:11:14.498Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-12T00:11:14.498Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-12T00:11:14.499Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-12T00:11:14.499Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-12T00:11:14.499Z"}
+{"error":{"code":"ERR_MODULE_NOT_FOUND"},"level":"warn","message":"Could not apply advanced rate limiting","timestamp":"2025-10-12T00:11:14.509Z"}
+{"level":"info","message":"Observability middleware configured","timestamp":"2025-10-12T00:11:14.515Z"}
+{"level":"info","message":"Observability middleware applied","timestamp":"2025-10-12T00:11:14.515Z"}
+{"level":"info","message":"Session store configured with PostgreSQL backend","timestamp":"2025-10-12T00:11:14.517Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-12T00:11:14.518Z"}
+{"email":"admin@thottopilot.com","level":"info","message":"Admin account configured successfully","timestamp":"2025-10-12T00:11:14.548Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-12T00:11:14.548Z"}
+{"level":"info","message":"✅ Admin account verified: admin@thottopilot.com","timestamp":"2025-10-12T00:11:14.551Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping tier upgrade","timestamp":"2025-10-12T00:11:14.552Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping email verification","timestamp":"2025-10-12T00:11:14.554Z"}
+{"level":"info","message":"✅ Production database fixes completed","timestamp":"2025-10-12T00:11:14.554Z"}
+{"level":"info","message":"Initializing queue system...","timestamp":"2025-10-12T00:11:14.557Z"}
+{"level":"info","message":"Queue backend selection: USE_PG_QUEUE=true, REDIS_URL=true","timestamp":"2025-10-12T00:11:14.557Z"}
+{"level":"info","message":"🔧 Using PostgreSQL queue backend","timestamp":"2025-10-12T00:11:14.557Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-12T00:11:14.558Z"}
+{"level":"info","message":"Queue system initialized","timestamp":"2025-10-12T00:11:14.559Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-12T00:11:14.563Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-12T00:11:14.578Z"}
+{"level":"info","message":"Background workers initialized","timestamp":"2025-10-12T00:11:14.578Z"}
+{"level":"info","message":"🚀 Starting cron job manager...","timestamp":"2025-10-12T00:11:14.578Z"}
+{"level":"info","message":"✅ Started cron job: process-scheduled-posts (* * * * *)","timestamp":"2025-10-12T00:11:14.596Z"}
+{"level":"info","message":"✅ Started cron job: cleanup-old-posts (0 3 * * *)","timestamp":"2025-10-12T00:11:14.599Z"}
+{"level":"info","message":"✅ Started cron job: update-analytics (0 * * * *)","timestamp":"2025-10-12T00:11:14.601Z"}
+{"level":"info","message":"✅ Started cron job: check-stuck-jobs (*/5 * * * *)","timestamp":"2025-10-12T00:11:14.603Z"}
+{"level":"info","message":"✅ Started cron job: sync-reddit-communities (0 2 * * 1)","timestamp":"2025-10-12T00:11:14.608Z"}
+{"level":"info","message":"✅ Started cron job: database-backup (0 4 * * *)","timestamp":"2025-10-12T00:11:14.610Z"}
+{"level":"info","message":"✅ Cron job manager started successfully","timestamp":"2025-10-12T00:11:14.610Z"}
+{"level":"info","message":"Cron manager started","timestamp":"2025-10-12T00:11:14.611Z"}
+{"level":"info","message":"Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-12T00:11:14.611Z"}
+{"level":"info","message":"Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-12T00:11:14.614Z"}
+{"level":"warn","message":"Environment configuration issue detected: SENTRY_DSN: Invalid url","timestamp":"2025-10-12T00:11:14.616Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/dist/client/index.html","timestamp":"2025-10-12T00:11:14.766Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/client/dist/index.html","timestamp":"2025-10-12T00:11:14.766Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-12T00:11:14.766Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-12T00:11:15.178Z"}
+{"correlationId":"a503c26c-d4e7-4c8f-be92-3ee5211fcda8","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/auth/user","query":{},"timestamp":"2025-10-12T00:11:15.444Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"a503c26c-d4e7-4c8f-be92-3ee5211fcda8","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/api/auth/user","statusCode":401,"timestamp":"2025-10-12T00:11:15.445Z"}
+{"correlationId":"3786b560-b15f-492e-b5f5-c47f7c1224d5","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/metrics","query":{},"timestamp":"2025-10-12T00:11:15.470Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"3786b560-b15f-492e-b5f5-c47f7c1224d5","duration":9,"level":"info","message":"Response sent","method":"GET","path":"/api/metrics","statusCode":200,"timestamp":"2025-10-12T00:11:15.479Z"}
+{"correlationId":"738faa75-36c2-466d-96fc-01abd9f93cbe","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/health","query":{},"timestamp":"2025-10-12T00:11:24.482Z","userAgent":"curl/8.5.0"}
+{"correlationId":"738faa75-36c2-466d-96fc-01abd9f93cbe","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/api/health","statusCode":200,"timestamp":"2025-10-12T00:11:24.483Z"}
+{"correlationId":"97dd5db2-d899-4a34-b491-b146ab992007","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/csrf-token","query":{},"timestamp":"2025-10-12T00:11:37.356Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"97dd5db2-d899-4a34-b491-b146ab992007","duration":2,"level":"info","message":"Response sent","method":"GET","path":"/api/csrf-token","statusCode":200,"timestamp":"2025-10-12T00:11:37.358Z"}
+{"correlationId":"0f74ce0a-f920-4aac-a4bb-369d07e4f469","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:11:37.365Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"0f74ce0a-f920-4aac-a4bb-369d07e4f469","duration":3,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:11:37.368Z"}
+{"correlationId":"59e8db93-3b1b-41f3-8302-6c730eaa52fa","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/auth/login","query":{},"timestamp":"2025-10-12T00:11:55.837Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"59e8db93-3b1b-41f3-8302-6c730eaa52fa","duration":50,"level":"info","message":"Response sent","method":"POST","path":"/api/auth/login","statusCode":200,"timestamp":"2025-10-12T00:11:55.886Z"}
+{"correlationId":"e1173a73-0996-4d72-aa60-a6d53abdc102","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:11:55.891Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"e1173a73-0996-4d72-aa60-a6d53abdc102","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:11:55.893Z"}
+{"correlationId":"26602a00-ed77-499b-b14f-7b95fe75b0e2","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:11:55.951Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"26602a00-ed77-499b-b14f-7b95fe75b0e2","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:11:55.953Z"}
+{"correlationId":"2b94ade2-4490-48fb-8207-16ac0ad156ac","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/auth/user","query":{},"timestamp":"2025-10-12T00:11:56.072Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"2b94ade2-4490-48fb-8207-16ac0ad156ac","duration":3,"level":"info","message":"Response sent","method":"GET","path":"/api/auth/user","statusCode":200,"timestamp":"2025-10-12T00:11:56.075Z"}
+{"correlationId":"f36aade7-7b6b-4505-ba8a-7af38f05a2ad","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/dashboard/stats","query":{},"timestamp":"2025-10-12T00:11:56.325Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"96b00f5e-5231-42e4-92df-9bc045631f2d","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/dashboard/activity","query":{},"timestamp":"2025-10-12T00:11:56.328Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"384659ae-9431-4248-a99a-de27146ed936","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/referral/my-code","query":{},"timestamp":"2025-10-12T00:11:56.330Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"384659ae-9431-4248-a99a-de27146ed936","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/","statusCode":404,"timestamp":"2025-10-12T00:11:56.331Z"}
+{"correlationId":"384659ae-9431-4248-a99a-de27146ed936","isAdmin":true,"level":"info","message":"Dashboard stats retrieved for user 1","stats":{"engagementRate":0,"estimatedTaxSavings":0,"postsToday":0,"takedownsFound":0},"timestamp":"2025-10-12T00:11:56.335Z","userId":1}
+{"correlationId":"f36aade7-7b6b-4505-ba8a-7af38f05a2ad","duration":10,"level":"info","message":"Response sent","method":"GET","path":"/stats","statusCode":200,"timestamp":"2025-10-12T00:11:56.335Z"}
+{"correlationId":"384659ae-9431-4248-a99a-de27146ed936","isAdmin":true,"level":"info","mediaCount":0,"message":"Dashboard activity retrieved for user 1","timestamp":"2025-10-12T00:11:56.340Z","userId":1}
+{"correlationId":"96b00f5e-5231-42e4-92df-9bc045631f2d","duration":13,"level":"info","message":"Response sent","method":"GET","path":"/activity","statusCode":200,"timestamp":"2025-10-12T00:11:56.341Z"}
+{"correlationId":"384659ae-9431-4248-a99a-de27146ed936","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:12:00.017Z"}
+{"correlationId":"384659ae-9431-4248-a99a-de27146ed936","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":29437272,"user":139927147},"memory":{"external":6.245861053466797,"heapTotal":121.38671875,"heapUsed":110.66070556640625,"rss":262.2890625},"pid":1830208,"uptime":39602.14012016},"system":{"freeMemory":9037.6484375,"loadAverage":[2.13,1.58,0.98],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:12:04.263Z"}
+{"correlationId":"37997db8-0e44-48c7-a31d-08fd0e19262b","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/csrf-token","query":{},"timestamp":"2025-10-12T00:12:07.217Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"37997db8-0e44-48c7-a31d-08fd0e19262b","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/api/csrf-token","statusCode":200,"timestamp":"2025-10-12T00:12:07.218Z"}
+{"correlationId":"c36cb222-cea0-45d6-867c-603a56bceb89","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:12:07.222Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"c36cb222-cea0-45d6-867c-603a56bceb89","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:12:07.223Z"}
+{"correlationId":"2bebf73f-c0b8-4ae8-b74b-c3eddcc65d41","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/reddit/accounts","query":{},"timestamp":"2025-10-12T00:12:07.305Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"9215329f-1aba-4ca7-adbc-5267024b81fb","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/reddit/communities","query":{},"timestamp":"2025-10-12T00:12:07.308Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"f22af5db-2181-49bd-94c1-285a210e34e6","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/media","query":{},"timestamp":"2025-10-12T00:12:07.311Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"2bebf73f-c0b8-4ae8-b74b-c3eddcc65d41","duration":9,"level":"info","message":"Response sent","method":"GET","path":"/api/reddit/accounts","statusCode":200,"timestamp":"2025-10-12T00:12:07.314Z"}
+{"correlationId":"f22af5db-2181-49bd-94c1-285a210e34e6","duration":10,"level":"info","message":"Response sent","method":"GET","path":"/","statusCode":200,"timestamp":"2025-10-12T00:12:07.321Z"}
+{"correlationId":"9215329f-1aba-4ca7-adbc-5267024b81fb","duration":43,"level":"info","message":"Response sent","method":"GET","path":"/api/reddit/communities","statusCode":200,"timestamp":"2025-10-12T00:12:07.351Z"}
+{"correlationId":"774c46e2-97c7-4f76-b7f0-d65f2f49ea29","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/reddit/connect","query":{"intent":"posting","queue":"reddit-posting"},"timestamp":"2025-10-12T00:12:08.734Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"774c46e2-97c7-4f76-b7f0-d65f2f49ea29","intent":"posting","level":"info","message":"Reddit OAuth initiated","queue":"reddit-posting","requestIP":"127.0.0.1","statePreview":"posting:...","timestamp":"2025-10-12T00:12:08.737Z","userId":1}
+{"correlationId":"774c46e2-97c7-4f76-b7f0-d65f2f49ea29","level":"error","message":"Reddit OAuth redirect URI (auth):","timestamp":"2025-10-12T00:12:08.737Z"}
+{"correlationId":"774c46e2-97c7-4f76-b7f0-d65f2f49ea29","duration":4,"level":"info","message":"Response sent","method":"GET","path":"/api/reddit/connect","statusCode":200,"timestamp":"2025-10-12T00:12:08.737Z"}
+{"correlationId":"a71acab7-2940-43c8-97f1-2dd938568498","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:12:09.055Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"a71acab7-2940-43c8-97f1-2dd938568498","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:12:09.056Z"}
+{"correlationId":"212d70e3-48e9-4d92-938f-95d4dc26054f","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:12:26.061Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"212d70e3-48e9-4d92-938f-95d4dc26054f","duration":2,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:12:26.063Z"}
+{"correlationId":"a41c48e8-a3bd-4fc3-834d-30dd3b866b8a","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/analytics","query":{"range":"7d","tier":"admin"},"timestamp":"2025-10-12T00:12:30.417Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"a41c48e8-a3bd-4fc3-834d-30dd3b866b8a","duration":12,"level":"info","message":"Response sent","method":"GET","path":"/","statusCode":200,"timestamp":"2025-10-12T00:12:30.428Z"}
+{"correlationId":"536c5400-e06b-4d74-8b2b-cda0d21af0e9","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:12:35.156Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"536c5400-e06b-4d74-8b2b-cda0d21af0e9","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:12:35.157Z"}
+{"correlationId":"b2a5a168-de7c-4a9c-bc9a-7853abcbdd4f","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:12:37.204Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"b2a5a168-de7c-4a9c-bc9a-7853abcbdd4f","duration":7,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:12:37.210Z"}
+{"correlationId":"2b468ff6-2101-4a71-a1b1-79250640bffe","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:12:37.293Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"2b468ff6-2101-4a71-a1b1-79250640bffe","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:12:37.294Z"}
+{"correlationId":"71618ac0-0ee6-47ca-94f7-413d4e252dfb","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/auth/user","query":{},"timestamp":"2025-10-12T00:12:37.413Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"71618ac0-0ee6-47ca-94f7-413d4e252dfb","duration":3,"level":"info","message":"Response sent","method":"GET","path":"/api/auth/user","statusCode":304,"timestamp":"2025-10-12T00:12:37.415Z"}
+{"correlationId":"966dd4df-4e35-49ce-92b2-338bd04885ac","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/dashboard/stats","query":{},"timestamp":"2025-10-12T00:12:37.630Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"d0a861be-85a1-4e41-925c-bf07e01bc6cd","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/dashboard/activity","query":{},"timestamp":"2025-10-12T00:12:37.632Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"0c138dbd-1b41-4117-9194-88d42a11470e","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/referral/my-code","query":{},"timestamp":"2025-10-12T00:12:37.634Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"0c138dbd-1b41-4117-9194-88d42a11470e","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/","statusCode":404,"timestamp":"2025-10-12T00:12:37.635Z"}
+{"correlationId":"0c138dbd-1b41-4117-9194-88d42a11470e","isAdmin":true,"level":"info","mediaCount":0,"message":"Dashboard activity retrieved for user 1","timestamp":"2025-10-12T00:12:37.639Z","userId":1}
+{"correlationId":"d0a861be-85a1-4e41-925c-bf07e01bc6cd","duration":7,"level":"info","message":"Response sent","method":"GET","path":"/activity","statusCode":304,"timestamp":"2025-10-12T00:12:37.639Z"}
+{"correlationId":"0c138dbd-1b41-4117-9194-88d42a11470e","isAdmin":true,"level":"info","message":"Dashboard stats retrieved for user 1","stats":{"engagementRate":0,"estimatedTaxSavings":0,"postsToday":0,"takedownsFound":0},"timestamp":"2025-10-12T00:12:37.640Z","userId":1}
+{"correlationId":"966dd4df-4e35-49ce-92b2-338bd04885ac","duration":11,"level":"info","message":"Response sent","method":"GET","path":"/stats","statusCode":304,"timestamp":"2025-10-12T00:12:37.641Z"}
+{"correlationId":"f8aeab5e-aa1e-4ee8-af0c-f5d141fb3929","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/csrf-token","query":{},"timestamp":"2025-10-12T00:12:41.688Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"f8aeab5e-aa1e-4ee8-af0c-f5d141fb3929","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/api/csrf-token","statusCode":200,"timestamp":"2025-10-12T00:12:41.689Z"}
+{"correlationId":"4463798f-7bd3-415d-8118-1218332ebed0","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:12:41.732Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"4463798f-7bd3-415d-8118-1218332ebed0","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:12:41.733Z"}
+{"correlationId":"c9739976-d045-4a81-b463-2474380ec6c7","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/referral/code","query":{},"timestamp":"2025-10-12T00:12:41.743Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"aecee27d-9468-466d-9973-a5fc4c5caa01","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/referral/summary","query":{},"timestamp":"2025-10-12T00:12:41.745Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"aecee27d-9468-466d-9973-a5fc4c5caa01","level":"info","message":"Fetching referral code","timestamp":"2025-10-12T00:12:41.746Z","userId":1}
+{"correlationId":"aecee27d-9468-466d-9973-a5fc4c5caa01","level":"info","message":"Fetching referral summary","timestamp":"2025-10-12T00:12:41.747Z","userId":1}
+{"codeLength":8,"correlationId":"aecee27d-9468-466d-9973-a5fc4c5caa01","level":"info","message":"Referral code retrieved successfully","timestamp":"2025-10-12T00:12:41.753Z","userId":1}
+{"correlationId":"c9739976-d045-4a81-b463-2474380ec6c7","duration":11,"level":"info","message":"Response sent","method":"GET","path":"/code","statusCode":200,"timestamp":"2025-10-12T00:12:41.754Z"}
+{"correlationId":"aecee27d-9468-466d-9973-a5fc4c5caa01","level":"info","message":"Referral summary retrieved successfully","timestamp":"2025-10-12T00:12:41.755Z","totalCommission":0,"totalReferrals":0,"userId":1}
+{"correlationId":"aecee27d-9468-466d-9973-a5fc4c5caa01","duration":11,"level":"info","message":"Response sent","method":"GET","path":"/summary","statusCode":200,"timestamp":"2025-10-12T00:12:41.756Z"}
+{"correlationId":"aecee27d-9468-466d-9973-a5fc4c5caa01","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:13:00.015Z"}
+{"correlationId":"aecee27d-9468-466d-9973-a5fc4c5caa01","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":29483666,"user":140265187},"memory":{"external":6.365161895751953,"heapTotal":121.38671875,"heapUsed":112.67411804199219,"rss":262.6328125},"pid":1830208,"uptime":39662.140144144},"system":{"freeMemory":9478.28515625,"loadAverage":[2.12,1.63,1.03],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:13:04.263Z"}
+{"correlationId":"0b37dd84-5af2-4d77-bf98-03c168f1497c","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:13:07.401Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"0b37dd84-5af2-4d77-bf98-03c168f1497c","duration":2,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:13:07.403Z"}
+{"correlationId":"72c93062-6708-4e2f-b42c-7381730a7444","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:13:19.002Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"72c93062-6708-4e2f-b42c-7381730a7444","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:13:19.004Z"}
+{"correlationId":"2969d62e-7e32-40d6-aa76-9dd7839fcf38","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/admin/stats","query":{},"timestamp":"2025-10-12T00:13:19.193Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"1dd912cc-bb29-4873-90f5-63f51d626713","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/admin/users","query":{},"timestamp":"2025-10-12T00:13:19.196Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"021be845-ce6e-4daf-b283-3f97accc71fe","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/providers","query":{},"timestamp":"2025-10-12T00:13:19.198Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"021be845-ce6e-4daf-b283-3f97accc71fe","duration":2,"level":"info","message":"Response sent","method":"GET","path":"/api/providers","statusCode":200,"timestamp":"2025-10-12T00:13:19.200Z"}
+{"correlationId":"f0c77602-0168-4397-b10a-63fe57e7f56b","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/admin/system-health","query":{},"timestamp":"2025-10-12T00:13:19.202Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"f0c77602-0168-4397-b10a-63fe57e7f56b","duration":2,"level":"info","message":"Response sent","method":"GET","path":"/api/admin/system-health","statusCode":200,"timestamp":"2025-10-12T00:13:19.204Z"}
+{"correlationId":"2969d62e-7e32-40d6-aa76-9dd7839fcf38","duration":12,"level":"info","message":"Response sent","method":"GET","path":"/api/admin/stats","statusCode":200,"timestamp":"2025-10-12T00:13:19.206Z"}
+{"correlationId":"5de72372-2788-4d66-8ecc-5cf1f825512b","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/admin/analytics","query":{},"timestamp":"2025-10-12T00:13:19.207Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"02c8c6ee-0e38-481e-b144-c7f682c3ad29","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/admin/completeness","query":{},"timestamp":"2025-10-12T00:13:19.209Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"02c8c6ee-0e38-481e-b144-c7f682c3ad29","duration":2,"level":"info","message":"Response sent","method":"GET","path":"/api/admin/completeness","statusCode":200,"timestamp":"2025-10-12T00:13:19.211Z"}
+{"correlationId":"5de72372-2788-4d66-8ecc-5cf1f825512b","duration":7,"level":"info","message":"Response sent","method":"GET","path":"/api/admin/analytics","statusCode":200,"timestamp":"2025-10-12T00:13:19.213Z"}
+{"correlationId":"1dd912cc-bb29-4873-90f5-63f51d626713","duration":21,"level":"info","message":"Response sent","method":"GET","path":"/api/admin/users","statusCode":200,"timestamp":"2025-10-12T00:13:19.217Z"}
+{"correlationId":"ffa228de-a0b3-4fa5-bc91-8473553faee2","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:13:27.631Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"ffa228de-a0b3-4fa5-bc91-8473553faee2","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:13:27.632Z"}
+{"correlationId":"c548f105-97d4-4aee-8766-02ecca5b4c8c","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/referral/my-code","query":{},"timestamp":"2025-10-12T00:13:29.161Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"c548f105-97d4-4aee-8766-02ecca5b4c8c","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/","statusCode":404,"timestamp":"2025-10-12T00:13:29.162Z"}
+{"correlationId":"d32b89d3-7ce1-438c-8139-d85a83c91189","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:13:37.403Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"d32b89d3-7ce1-438c-8139-d85a83c91189","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:13:37.404Z"}
+{"correlationId":"317cbad4-5eaf-4302-8a57-18ae8e81fe99","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:13:41.304Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"317cbad4-5eaf-4302-8a57-18ae8e81fe99","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:13:41.305Z"}
+{"correlationId":"19cbec60-146c-4fc7-a96e-72a5d8f37deb","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:13:41.514Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"19cbec60-146c-4fc7-a96e-72a5d8f37deb","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:13:41.515Z"}
+{"correlationId":"9301d103-4e99-4347-9657-6ff6c426f206","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/auth/user","query":{},"timestamp":"2025-10-12T00:13:42.073Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"9301d103-4e99-4347-9657-6ff6c426f206","duration":3,"level":"info","message":"Response sent","method":"GET","path":"/api/auth/user","statusCode":200,"timestamp":"2025-10-12T00:13:42.076Z"}
+{"correlationId":"e2380ad4-9c4f-4346-b189-18058f799620","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/uploads/imgur/stats","query":{},"timestamp":"2025-10-12T00:13:42.307Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"e2380ad4-9c4f-4346-b189-18058f799620","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/imgur/stats","statusCode":200,"timestamp":"2025-10-12T00:13:42.308Z"}
+{"correlationId":"351ace19-fa25-4b4e-bca7-3a1d07fdaaba","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/csrf-token","query":{},"timestamp":"2025-10-12T00:13:50.429Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"351ace19-fa25-4b4e-bca7-3a1d07fdaaba","duration":2,"level":"info","message":"Response sent","method":"GET","path":"/api/csrf-token","statusCode":200,"timestamp":"2025-10-12T00:13:50.431Z"}
+{"correlationId":"51bf3cfd-14aa-4d4b-bca1-90b0dc34c2c1","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:13:50.448Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"51bf3cfd-14aa-4d4b-bca1-90b0dc34c2c1","duration":3,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:13:50.451Z"}
+{"correlationId":"51bf3cfd-14aa-4d4b-bca1-90b0dc34c2c1","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:14:00.006Z"}
+{"correlationId":"51bf3cfd-14aa-4d4b-bca1-90b0dc34c2c1","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":29527149,"user":140551836},"memory":{"external":6.376406669616699,"heapTotal":121.63671875,"heapUsed":115.0736083984375,"rss":263.1171875},"pid":1830208,"uptime":39722.140478374},"system":{"freeMemory":8914.71875,"loadAverage":[2.05,1.71,1.1],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:14:04.263Z"}
+{"correlationId":"0d35adaf-2967-4457-91f7-04a0ca5b2591","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/uploads/imgur","query":{},"timestamp":"2025-10-12T00:14:08.111Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"0d35adaf-2967-4457-91f7-04a0ca5b2591","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/uploads/imgur","statusCode":403,"timestamp":"2025-10-12T00:14:08.112Z"}
+{"correlationId":"4d493461-53cd-438a-ba47-174e6817308c","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:14:12.066Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"4d493461-53cd-438a-ba47-174e6817308c","duration":3,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:14:12.069Z"}
+{"correlationId":"61dc1931-25e0-44d9-8a35-01866de8c969","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/uploads/imgur/stats","query":{},"timestamp":"2025-10-12T00:14:42.362Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"61dc1931-25e0-44d9-8a35-01866de8c969","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/imgur/stats","statusCode":200,"timestamp":"2025-10-12T00:14:42.363Z"}
+{"correlationId":"61dc1931-25e0-44d9-8a35-01866de8c969","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:15:00.009Z"}
+{"correlationId":"61dc1931-25e0-44d9-8a35-01866de8c969","level":"debug","message":"⏰ Running cron job: check-stuck-jobs","timestamp":"2025-10-12T00:15:00.010Z"}
+{"correlationId":"61dc1931-25e0-44d9-8a35-01866de8c969","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":29559646,"user":140737666},"memory":{"external":6.364599227905273,"heapTotal":121.63671875,"heapUsed":115.63013458251953,"rss":262.66015625},"pid":1830208,"uptime":39782.141327339},"system":{"freeMemory":12576.30859375,"loadAverage":[2.2,1.81,1.17],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:15:04.264Z"}
+{"correlationId":"83773233-f021-4eab-87b7-72fabcaf365f","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/uploads/imgur/stats","query":{},"timestamp":"2025-10-12T00:15:42.367Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"83773233-f021-4eab-87b7-72fabcaf365f","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/imgur/stats","statusCode":200,"timestamp":"2025-10-12T00:15:42.368Z"}
+{"correlationId":"d916c9b1-e153-48c7-84ae-e3695ca924f2","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/auth/login","query":{},"timestamp":"2025-10-12T00:15:55.087Z","userAgent":"curl/8.5.0"}
+{"correlationId":"d916c9b1-e153-48c7-84ae-e3695ca924f2","duration":48,"level":"info","message":"Response sent","method":"POST","path":"/api/auth/login","statusCode":200,"timestamp":"2025-10-12T00:15:55.135Z"}
+{"correlationId":"e03dd7c4-26b6-432b-9ee8-3f2a6cde3c80","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/generate/caption","query":{},"timestamp":"2025-10-12T00:15:55.144Z","userAgent":"curl/8.5.0"}
+{"correlationId":"e03dd7c4-26b6-432b-9ee8-3f2a6cde3c80","level":"debug","message":"CSRF exemption: Bearer token detected","method":"POST","path":"/api/generate/caption","timestamp":"2025-10-12T00:15:55.144Z"}
+{"correlationId":"e03dd7c4-26b6-432b-9ee8-3f2a6cde3c80","duration":2,"level":"info","message":"Response sent","method":"POST","path":"/","statusCode":404,"timestamp":"2025-10-12T00:15:55.145Z"}
+{"correlationId":"e03dd7c4-26b6-432b-9ee8-3f2a6cde3c80","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:16:00.005Z"}
+{"correlationId":"e03dd7c4-26b6-432b-9ee8-3f2a6cde3c80","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":29583910,"user":141211546},"memory":{"external":6.228987693786621,"heapTotal":111.38671875,"heapUsed":105.62366485595703,"rss":252.6953125},"pid":1830208,"uptime":39842.142368145},"system":{"freeMemory":18782.4921875,"loadAverage":[2.79,2.15,1.34],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:16:04.265Z"}
+{"correlationId":"13696f64-5130-472c-8a74-e2e3153ee073","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/uploads/imgur/stats","query":{},"timestamp":"2025-10-12T00:16:42.373Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"13696f64-5130-472c-8a74-e2e3153ee073","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/imgur/stats","statusCode":200,"timestamp":"2025-10-12T00:16:42.374Z"}
+{"correlationId":"13696f64-5130-472c-8a74-e2e3153ee073","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:17:00.009Z"}
+{"correlationId":"13696f64-5130-472c-8a74-e2e3153ee073","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":29608868,"user":141334689},"memory":{"external":6.229367256164551,"heapTotal":111.88671875,"heapUsed":106.33954620361328,"rss":252.8984375},"pid":1830208,"uptime":39902.143395014},"system":{"freeMemory":18754.90234375,"loadAverage":[2.99,2.29,1.43],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:17:04.266Z"}
+{"correlationId":"d35eb8e9-2447-4951-88d1-87db08ab7d8b","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/uploads/imgur/stats","query":{},"timestamp":"2025-10-12T00:17:42.385Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"d35eb8e9-2447-4951-88d1-87db08ab7d8b","duration":5,"level":"info","message":"Response sent","method":"GET","path":"/imgur/stats","statusCode":200,"timestamp":"2025-10-12T00:17:42.390Z"}
+{"correlationId":"d35eb8e9-2447-4951-88d1-87db08ab7d8b","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:18:00.011Z"}
+{"correlationId":"d35eb8e9-2447-4951-88d1-87db08ab7d8b","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":29653797,"user":141654483},"memory":{"external":6.253591537475586,"heapTotal":112.38671875,"heapUsed":108.13111114501953,"rss":254.08203125},"pid":1830208,"uptime":39962.144361317},"system":{"freeMemory":18559.58203125,"loadAverage":[1.98,2.12,1.43],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:18:04.267Z"}
+{"correlationId":"106177a3-d153-4220-8811-d6a5b28209aa","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/uploads/imgur/stats","query":{},"timestamp":"2025-10-12T00:18:42.405Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"106177a3-d153-4220-8811-d6a5b28209aa","duration":3,"level":"info","message":"Response sent","method":"GET","path":"/imgur/stats","statusCode":200,"timestamp":"2025-10-12T00:18:42.408Z"}
+{"correlationId":"106177a3-d153-4220-8811-d6a5b28209aa","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:19:00.007Z"}
+{"correlationId":"106177a3-d153-4220-8811-d6a5b28209aa","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":29705324,"user":141961710},"memory":{"external":6.231708526611328,"heapTotal":112.88671875,"heapUsed":107.94291687011719,"rss":253.8984375},"pid":1830208,"uptime":40022.145444717},"system":{"freeMemory":18981.3203125,"loadAverage":[1.36,1.91,1.4],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:19:04.268Z"}
+{"correlationId":"761aecd6-f50c-4c32-9877-b9e84297aee0","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/uploads/imgur/stats","query":{},"timestamp":"2025-10-12T00:19:42.423Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"761aecd6-f50c-4c32-9877-b9e84297aee0","duration":5,"level":"info","message":"Response sent","method":"GET","path":"/imgur/stats","statusCode":200,"timestamp":"2025-10-12T00:19:42.428Z"}
+{"correlationId":"761aecd6-f50c-4c32-9877-b9e84297aee0","level":"debug","message":"⏰ Running cron job: check-stuck-jobs","timestamp":"2025-10-12T00:20:00.011Z"}
+{"correlationId":"761aecd6-f50c-4c32-9877-b9e84297aee0","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:20:00.012Z"}
+{"correlationId":"761aecd6-f50c-4c32-9877-b9e84297aee0","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":29760551,"user":142297638},"memory":{"external":6.245345115661621,"heapTotal":113.63671875,"heapUsed":109.29396057128906,"rss":255.25},"pid":1830208,"uptime":40082.146449503},"system":{"freeMemory":19400.81640625,"loadAverage":[1.01,1.71,1.36],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:20:04.269Z"}
+{"correlationId":"9a74d8fc-7aaf-4878-85d9-83cdfef4407f","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/uploads/imgur/stats","query":{},"timestamp":"2025-10-12T00:20:42.440Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"9a74d8fc-7aaf-4878-85d9-83cdfef4407f","duration":3,"level":"info","message":"Response sent","method":"GET","path":"/imgur/stats","statusCode":200,"timestamp":"2025-10-12T00:20:42.442Z"}
+{"correlationId":"9a74d8fc-7aaf-4878-85d9-83cdfef4407f","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:21:00.022Z"}
+{"correlationId":"9a74d8fc-7aaf-4878-85d9-83cdfef4407f","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":29817642,"user":142610021},"memory":{"external":6.25214958190918,"heapTotal":114.13671875,"heapUsed":110.20641326904297,"rss":255.734375},"pid":1830208,"uptime":40142.147457358},"system":{"freeMemory":19348.55078125,"loadAverage":[0.92,1.55,1.33],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:21:04.270Z"}
+{"correlationId":"652a53d3-a7c0-471a-8147-7ce5df3b40f6","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/auth/user","query":{},"timestamp":"2025-10-12T00:21:28.595Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"652a53d3-a7c0-471a-8147-7ce5df3b40f6","duration":2,"level":"info","message":"Response sent","method":"GET","path":"/api/auth/user","statusCode":401,"timestamp":"2025-10-12T00:21:28.596Z"}
+{"correlationId":"a2c0f262-4b98-4e20-98ed-b51f5f75acf0","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/metrics","query":{},"timestamp":"2025-10-12T00:21:28.805Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"a2c0f262-4b98-4e20-98ed-b51f5f75acf0","duration":8,"level":"info","message":"Response sent","method":"GET","path":"/api/metrics","statusCode":200,"timestamp":"2025-10-12T00:21:28.813Z"}
+{"correlationId":"4bd6f61e-b7c3-4233-a14f-b3b36685aea9","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/auth/user","query":{},"timestamp":"2025-10-12T00:21:34.352Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"4bd6f61e-b7c3-4233-a14f-b3b36685aea9","duration":3,"level":"info","message":"Response sent","method":"GET","path":"/api/auth/user","statusCode":200,"timestamp":"2025-10-12T00:21:34.355Z"}
+{"correlationId":"eb393239-9455-463a-9aa3-c611d46f6247","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/uploads/imgur/stats","query":{},"timestamp":"2025-10-12T00:21:34.563Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"eb393239-9455-463a-9aa3-c611d46f6247","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/imgur/stats","statusCode":200,"timestamp":"2025-10-12T00:21:34.564Z"}
+{"correlationId":"280d0251-0ba7-44cd-9351-754d7c827dd5","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/csrf-token","query":{},"timestamp":"2025-10-12T00:21:38.987Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"280d0251-0ba7-44cd-9351-754d7c827dd5","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/api/csrf-token","statusCode":200,"timestamp":"2025-10-12T00:21:38.988Z"}
+{"correlationId":"5da1d66a-0713-4aa4-b82a-00dd0a7dab19","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:21:38.998Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"5da1d66a-0713-4aa4-b82a-00dd0a7dab19","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:21:38.999Z"}
+{"correlationId":"0a9a4676-8bb8-46ca-a85e-57293704e2e2","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/uploads/imgur","query":{},"timestamp":"2025-10-12T00:21:42.530Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"0a9a4676-8bb8-46ca-a85e-57293704e2e2","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/uploads/imgur","statusCode":403,"timestamp":"2025-10-12T00:21:42.531Z"}
+{"correlationId":"94005807-1229-4d72-9657-3cf246c6a046","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/uploads/imgur","query":{},"timestamp":"2025-10-12T00:21:59.319Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"94005807-1229-4d72-9657-3cf246c6a046","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/uploads/imgur","statusCode":403,"timestamp":"2025-10-12T00:21:59.320Z"}
+{"correlationId":"94005807-1229-4d72-9657-3cf246c6a046","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:22:00.008Z"}
+{"correlationId":"94005807-1229-4d72-9657-3cf246c6a046","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":29856179,"user":142820663},"memory":{"external":6.252376556396484,"heapTotal":115.13671875,"heapUsed":111.27012634277344,"rss":256.59765625},"pid":1830208,"uptime":40202.148289939},"system":{"freeMemory":19529.62890625,"loadAverage":[1.27,1.54,1.34],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:22:04.271Z"}
+{"correlationId":"ccec46ef-cf5f-47a2-af9d-ce6caa25bcb4","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:22:04.555Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"ccec46ef-cf5f-47a2-af9d-ce6caa25bcb4","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:22:04.556Z"}
+{"correlationId":"2466df3e-b7a8-463a-b15c-e24b9ba939de","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:22:34.404Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"2466df3e-b7a8-463a-b15c-e24b9ba939de","duration":4,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:22:34.408Z"}
+{"correlationId":"e6308df0-1e0c-40ac-8f5c-6364b0aec111","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/uploads/imgur/stats","query":{},"timestamp":"2025-10-12T00:22:34.621Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"e6308df0-1e0c-40ac-8f5c-6364b0aec111","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/imgur/stats","statusCode":200,"timestamp":"2025-10-12T00:22:34.622Z"}
+{"correlationId":"e6308df0-1e0c-40ac-8f5c-6364b0aec111","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:23:00.004Z"}
+{"correlationId":"e6308df0-1e0c-40ac-8f5c-6364b0aec111","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":29883551,"user":142961867},"memory":{"external":6.2441511154174805,"heapTotal":115.63671875,"heapUsed":111.97648620605469,"rss":257.51953125},"pid":1830208,"uptime":40262.148086965},"system":{"freeMemory":18582.91015625,"loadAverage":[1.25,1.5,1.34],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:23:04.271Z"}
+{"correlationId":"7f669c59-ed3a-47c1-9d06-443e83b32da3","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/uploads/imgur/stats","query":{},"timestamp":"2025-10-12T00:23:34.630Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"7f669c59-ed3a-47c1-9d06-443e83b32da3","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/imgur/stats","statusCode":200,"timestamp":"2025-10-12T00:23:34.631Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-12T00:23:40.210Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-12T00:23:41.283Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-12T00:23:41.284Z"}
+{"level":"info","message":"[OpenRouter] Default model: x-ai/grok-4-fast","timestamp":"2025-10-12T00:23:41.284Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-12T00:23:41.540Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-12T00:23:41.541Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-12T00:23:41.541Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-12T00:23:41.541Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-12T00:23:41.541Z"}
+{"error":{"code":"ERR_MODULE_NOT_FOUND"},"level":"warn","message":"Could not apply advanced rate limiting","timestamp":"2025-10-12T00:23:41.549Z"}
+{"level":"info","message":"Observability middleware configured","timestamp":"2025-10-12T00:23:41.553Z"}
+{"level":"info","message":"Observability middleware applied","timestamp":"2025-10-12T00:23:41.554Z"}
+{"level":"info","message":"Session store configured with PostgreSQL backend","timestamp":"2025-10-12T00:23:41.555Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-12T00:23:41.556Z"}
+{"email":"admin@thottopilot.com","level":"info","message":"Admin account configured successfully","timestamp":"2025-10-12T00:23:41.584Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-12T00:23:41.584Z"}
+{"level":"info","message":"✅ Admin account verified: admin@thottopilot.com","timestamp":"2025-10-12T00:23:41.588Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping tier upgrade","timestamp":"2025-10-12T00:23:41.591Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping email verification","timestamp":"2025-10-12T00:23:41.593Z"}
+{"level":"info","message":"✅ Production database fixes completed","timestamp":"2025-10-12T00:23:41.594Z"}
+{"level":"info","message":"Initializing queue system...","timestamp":"2025-10-12T00:23:41.597Z"}
+{"level":"info","message":"Queue backend selection: USE_PG_QUEUE=true, REDIS_URL=true","timestamp":"2025-10-12T00:23:41.597Z"}
+{"level":"info","message":"🔧 Using PostgreSQL queue backend","timestamp":"2025-10-12T00:23:41.597Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-12T00:23:41.597Z"}
+{"level":"info","message":"Queue system initialized","timestamp":"2025-10-12T00:23:41.599Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-12T00:23:41.604Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-12T00:23:41.624Z"}
+{"level":"info","message":"Background workers initialized","timestamp":"2025-10-12T00:23:41.624Z"}
+{"level":"info","message":"🚀 Starting cron job manager...","timestamp":"2025-10-12T00:23:41.624Z"}
+{"level":"info","message":"✅ Started cron job: process-scheduled-posts (* * * * *)","timestamp":"2025-10-12T00:23:41.654Z"}
+{"level":"info","message":"✅ Started cron job: cleanup-old-posts (0 3 * * *)","timestamp":"2025-10-12T00:23:41.657Z"}
+{"level":"info","message":"✅ Started cron job: update-analytics (0 * * * *)","timestamp":"2025-10-12T00:23:41.660Z"}
+{"level":"info","message":"✅ Started cron job: check-stuck-jobs (*/5 * * * *)","timestamp":"2025-10-12T00:23:41.662Z"}
+{"level":"info","message":"✅ Started cron job: sync-reddit-communities (0 2 * * 1)","timestamp":"2025-10-12T00:23:41.667Z"}
+{"level":"info","message":"✅ Started cron job: database-backup (0 4 * * *)","timestamp":"2025-10-12T00:23:41.670Z"}
+{"level":"info","message":"✅ Cron job manager started successfully","timestamp":"2025-10-12T00:23:41.670Z"}
+{"level":"info","message":"Cron manager started","timestamp":"2025-10-12T00:23:41.670Z"}
+{"level":"info","message":"Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-12T00:23:41.671Z"}
+{"level":"info","message":"Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-12T00:23:41.674Z"}
+{"level":"warn","message":"Environment configuration issue detected: SENTRY_DSN: Invalid url","timestamp":"2025-10-12T00:23:41.677Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/dist/client/index.html","timestamp":"2025-10-12T00:23:41.856Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/client/dist/index.html","timestamp":"2025-10-12T00:23:41.856Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-12T00:23:41.856Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-12T00:23:42.250Z"}
+{"correlationId":"dab12d73-83c1-4b6f-9add-f9b4e6124c7c","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/auth/user","query":{},"timestamp":"2025-10-12T00:23:42.558Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"dab12d73-83c1-4b6f-9add-f9b4e6124c7c","duration":3,"level":"info","message":"Response sent","method":"GET","path":"/api/auth/user","statusCode":200,"timestamp":"2025-10-12T00:23:42.560Z"}
+{"correlationId":"f7d8bf45-bf10-48ac-ae2d-83121b064563","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/dashboard/stats","query":{},"timestamp":"2025-10-12T00:23:42.805Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"70c26925-3dc7-4f6a-a55d-b967a889c265","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/dashboard/activity","query":{},"timestamp":"2025-10-12T00:23:42.810Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"6e19e070-bdba-428f-99cc-a591170c6247","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/referral/my-code","query":{},"timestamp":"2025-10-12T00:23:42.815Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"6e19e070-bdba-428f-99cc-a591170c6247","duration":2,"level":"info","message":"Response sent","method":"GET","path":"/","statusCode":404,"timestamp":"2025-10-12T00:23:42.817Z"}
+{"correlationId":"6e19e070-bdba-428f-99cc-a591170c6247","isAdmin":true,"level":"info","message":"Dashboard stats retrieved for user 1","stats":{"engagementRate":0,"estimatedTaxSavings":0,"postsToday":0,"takedownsFound":0},"timestamp":"2025-10-12T00:23:42.821Z","userId":1}
+{"correlationId":"f7d8bf45-bf10-48ac-ae2d-83121b064563","duration":17,"level":"info","message":"Response sent","method":"GET","path":"/stats","statusCode":200,"timestamp":"2025-10-12T00:23:42.822Z"}
+{"correlationId":"6e19e070-bdba-428f-99cc-a591170c6247","isAdmin":true,"level":"info","mediaCount":0,"message":"Dashboard activity retrieved for user 1","timestamp":"2025-10-12T00:23:42.827Z","userId":1}
+{"correlationId":"70c26925-3dc7-4f6a-a55d-b967a889c265","duration":18,"level":"info","message":"Response sent","method":"GET","path":"/activity","statusCode":200,"timestamp":"2025-10-12T00:23:42.828Z"}
+{"correlationId":"6e19e070-bdba-428f-99cc-a591170c6247","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:24:00.008Z"}
+{"correlationId":"6e19e070-bdba-428f-99cc-a591170c6247","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":29900428,"user":143134754},"memory":{"external":6.231752395629883,"heapTotal":118.13671875,"heapUsed":112.94573211669922,"rss":258.70703125},"pid":1830208,"uptime":40322.148115946},"system":{"freeMemory":17919.59765625,"loadAverage":[1.75,1.6,1.38],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:24:04.271Z"}
+{"correlationId":"0a565398-e02e-4eb4-b97d-0cee62476d66","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/csrf-token","query":{},"timestamp":"2025-10-12T00:24:12.541Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"0a565398-e02e-4eb4-b97d-0cee62476d66","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/api/csrf-token","statusCode":200,"timestamp":"2025-10-12T00:24:12.542Z"}
+{"correlationId":"7544457d-f297-43e7-b999-0aca66ad5455","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:24:12.546Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"7544457d-f297-43e7-b999-0aca66ad5455","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:24:12.547Z"}
+{"correlationId":"534aa098-2769-4e8a-8cc5-b6cc11b9d179","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/uploads/imgur","query":{},"timestamp":"2025-10-12T00:24:13.042Z","userAgent":"curl/8.5.0"}
+{"correlationId":"534aa098-2769-4e8a-8cc5-b6cc11b9d179","duration":2,"level":"info","message":"Response sent","method":"POST","path":"/api/uploads/imgur","statusCode":403,"timestamp":"2025-10-12T00:24:13.044Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-12T00:24:46.769Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-12T00:24:47.792Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-12T00:24:47.792Z"}
+{"level":"info","message":"[OpenRouter] Default model: x-ai/grok-4-fast","timestamp":"2025-10-12T00:24:47.793Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-12T00:24:48.032Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-12T00:24:48.032Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-12T00:24:48.032Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-12T00:24:48.032Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-12T00:24:48.033Z"}
+{"error":{"code":"ERR_MODULE_NOT_FOUND"},"level":"warn","message":"Could not apply advanced rate limiting","timestamp":"2025-10-12T00:24:48.040Z"}
+{"level":"info","message":"Observability middleware configured","timestamp":"2025-10-12T00:24:48.044Z"}
+{"level":"info","message":"Observability middleware applied","timestamp":"2025-10-12T00:24:48.045Z"}
+{"level":"info","message":"Session store configured with PostgreSQL backend","timestamp":"2025-10-12T00:24:48.046Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-12T00:24:48.047Z"}
+{"email":"admin@thottopilot.com","level":"info","message":"Admin account configured successfully","timestamp":"2025-10-12T00:24:48.067Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-12T00:24:48.068Z"}
+{"level":"info","message":"✅ Admin account verified: admin@thottopilot.com","timestamp":"2025-10-12T00:24:48.070Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping tier upgrade","timestamp":"2025-10-12T00:24:48.071Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping email verification","timestamp":"2025-10-12T00:24:48.072Z"}
+{"level":"info","message":"✅ Production database fixes completed","timestamp":"2025-10-12T00:24:48.073Z"}
+{"level":"info","message":"Initializing queue system...","timestamp":"2025-10-12T00:24:48.075Z"}
+{"level":"info","message":"Queue backend selection: USE_PG_QUEUE=true, REDIS_URL=true","timestamp":"2025-10-12T00:24:48.075Z"}
+{"level":"info","message":"🔧 Using PostgreSQL queue backend","timestamp":"2025-10-12T00:24:48.075Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-12T00:24:48.075Z"}
+{"level":"info","message":"Queue system initialized","timestamp":"2025-10-12T00:24:48.076Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-12T00:24:48.080Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-12T00:24:48.094Z"}
+{"level":"info","message":"Background workers initialized","timestamp":"2025-10-12T00:24:48.095Z"}
+{"level":"info","message":"🚀 Starting cron job manager...","timestamp":"2025-10-12T00:24:48.095Z"}
+{"level":"info","message":"✅ Started cron job: process-scheduled-posts (* * * * *)","timestamp":"2025-10-12T00:24:48.111Z"}
+{"level":"info","message":"✅ Started cron job: cleanup-old-posts (0 3 * * *)","timestamp":"2025-10-12T00:24:48.113Z"}
+{"level":"info","message":"✅ Started cron job: update-analytics (0 * * * *)","timestamp":"2025-10-12T00:24:48.116Z"}
+{"level":"info","message":"✅ Started cron job: check-stuck-jobs (*/5 * * * *)","timestamp":"2025-10-12T00:24:48.118Z"}
+{"level":"info","message":"✅ Started cron job: sync-reddit-communities (0 2 * * 1)","timestamp":"2025-10-12T00:24:48.122Z"}
+{"level":"info","message":"✅ Started cron job: database-backup (0 4 * * *)","timestamp":"2025-10-12T00:24:48.125Z"}
+{"level":"info","message":"✅ Cron job manager started successfully","timestamp":"2025-10-12T00:24:48.125Z"}
+{"level":"info","message":"Cron manager started","timestamp":"2025-10-12T00:24:48.125Z"}
+{"level":"info","message":"Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-12T00:24:48.126Z"}
+{"level":"info","message":"Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-12T00:24:48.129Z"}
+{"level":"warn","message":"Environment configuration issue detected: SENTRY_DSN: Invalid url","timestamp":"2025-10-12T00:24:48.131Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/dist/client/index.html","timestamp":"2025-10-12T00:24:48.286Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/client/dist/index.html","timestamp":"2025-10-12T00:24:48.286Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-12T00:24:48.286Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-12T00:24:48.670Z"}
+{"correlationId":"6a75ffac-d814-4c00-838a-016770e9370d","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/auth/user","query":{},"timestamp":"2025-10-12T00:24:48.829Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"6a75ffac-d814-4c00-838a-016770e9370d","duration":3,"level":"info","message":"Response sent","method":"GET","path":"/api/auth/user","statusCode":200,"timestamp":"2025-10-12T00:24:48.831Z"}
+{"correlationId":"830dbf42-e029-4ee1-bf67-8fd2cf3b59fc","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/dashboard/stats","query":{},"timestamp":"2025-10-12T00:24:49.117Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"d6a6c67f-07c6-4b61-87df-35202ceaf733","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/dashboard/activity","query":{},"timestamp":"2025-10-12T00:24:49.120Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"aa74b1a2-0c2c-47ea-bade-1ba54f12f6ce","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/referral/my-code","query":{},"timestamp":"2025-10-12T00:24:49.124Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"aa74b1a2-0c2c-47ea-bade-1ba54f12f6ce","duration":2,"level":"info","message":"Response sent","method":"GET","path":"/","statusCode":404,"timestamp":"2025-10-12T00:24:49.126Z"}
+{"correlationId":"aa74b1a2-0c2c-47ea-bade-1ba54f12f6ce","isAdmin":true,"level":"info","message":"Dashboard stats retrieved for user 1","stats":{"engagementRate":0,"estimatedTaxSavings":0,"postsToday":0,"takedownsFound":0},"timestamp":"2025-10-12T00:24:49.128Z","userId":1}
+{"correlationId":"830dbf42-e029-4ee1-bf67-8fd2cf3b59fc","duration":12,"level":"info","message":"Response sent","method":"GET","path":"/stats","statusCode":200,"timestamp":"2025-10-12T00:24:49.129Z"}
+{"correlationId":"aa74b1a2-0c2c-47ea-bade-1ba54f12f6ce","isAdmin":true,"level":"info","mediaCount":0,"message":"Dashboard activity retrieved for user 1","timestamp":"2025-10-12T00:24:49.134Z","userId":1}
+{"correlationId":"d6a6c67f-07c6-4b61-87df-35202ceaf733","duration":14,"level":"info","message":"Response sent","method":"GET","path":"/activity","statusCode":200,"timestamp":"2025-10-12T00:24:49.134Z"}
+{"correlationId":"aa74b1a2-0c2c-47ea-bade-1ba54f12f6ce","level":"debug","message":"⏰ Running cron job: check-stuck-jobs","timestamp":"2025-10-12T00:25:00.008Z"}
+{"correlationId":"aa74b1a2-0c2c-47ea-bade-1ba54f12f6ce","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:25:00.009Z"}
+{"correlationId":"07582dc5-f3b5-4cc7-9bf7-2a1a89fb8181","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/uploads/imgur","query":{},"timestamp":"2025-10-12T00:25:00.347Z","userAgent":"curl/8.5.0"}
+{"correlationId":"07582dc5-f3b5-4cc7-9bf7-2a1a89fb8181","duration":1,"level":"info","message":"Response sent","method":"POST","path":"/api/uploads/imgur","statusCode":403,"timestamp":"2025-10-12T00:25:00.348Z"}
+{"correlationId":"07582dc5-f3b5-4cc7-9bf7-2a1a89fb8181","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":29928902,"user":143272621},"memory":{"external":6.252908706665039,"heapTotal":118.13671875,"heapUsed":114.53209686279297,"rss":259.34375},"pid":1830208,"uptime":40382.148442768},"system":{"freeMemory":17656.83203125,"loadAverage":[2.11,1.72,1.44],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:25:04.271Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-12T00:25:14.804Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-12T00:25:15.857Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-12T00:25:15.857Z"}
+{"level":"info","message":"[OpenRouter] Default model: x-ai/grok-4-fast","timestamp":"2025-10-12T00:25:15.858Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-12T00:25:16.087Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-12T00:25:16.088Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-12T00:25:16.088Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-12T00:25:16.088Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-12T00:25:16.088Z"}
+{"error":{"code":"ERR_MODULE_NOT_FOUND"},"level":"warn","message":"Could not apply advanced rate limiting","timestamp":"2025-10-12T00:25:16.098Z"}
+{"level":"info","message":"Observability middleware configured","timestamp":"2025-10-12T00:25:16.103Z"}
+{"level":"info","message":"Observability middleware applied","timestamp":"2025-10-12T00:25:16.103Z"}
+{"level":"info","message":"Session store configured with PostgreSQL backend","timestamp":"2025-10-12T00:25:16.105Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-12T00:25:16.106Z"}
+{"email":"admin@thottopilot.com","level":"info","message":"Admin account configured successfully","timestamp":"2025-10-12T00:25:16.133Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-12T00:25:16.133Z"}
+{"level":"info","message":"✅ Admin account verified: admin@thottopilot.com","timestamp":"2025-10-12T00:25:16.135Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping tier upgrade","timestamp":"2025-10-12T00:25:16.136Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping email verification","timestamp":"2025-10-12T00:25:16.138Z"}
+{"level":"info","message":"✅ Production database fixes completed","timestamp":"2025-10-12T00:25:16.138Z"}
+{"level":"info","message":"Initializing queue system...","timestamp":"2025-10-12T00:25:16.140Z"}
+{"level":"info","message":"Queue backend selection: USE_PG_QUEUE=true, REDIS_URL=true","timestamp":"2025-10-12T00:25:16.141Z"}
+{"level":"info","message":"🔧 Using PostgreSQL queue backend","timestamp":"2025-10-12T00:25:16.141Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-12T00:25:16.141Z"}
+{"level":"info","message":"Queue system initialized","timestamp":"2025-10-12T00:25:16.142Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-12T00:25:16.146Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-12T00:25:16.159Z"}
+{"level":"info","message":"Background workers initialized","timestamp":"2025-10-12T00:25:16.159Z"}
+{"level":"info","message":"🚀 Starting cron job manager...","timestamp":"2025-10-12T00:25:16.160Z"}
+{"level":"info","message":"✅ Started cron job: process-scheduled-posts (* * * * *)","timestamp":"2025-10-12T00:25:16.178Z"}
+{"level":"info","message":"✅ Started cron job: cleanup-old-posts (0 3 * * *)","timestamp":"2025-10-12T00:25:16.180Z"}
+{"level":"info","message":"✅ Started cron job: update-analytics (0 * * * *)","timestamp":"2025-10-12T00:25:16.182Z"}
+{"level":"info","message":"✅ Started cron job: check-stuck-jobs (*/5 * * * *)","timestamp":"2025-10-12T00:25:16.185Z"}
+{"level":"info","message":"✅ Started cron job: sync-reddit-communities (0 2 * * 1)","timestamp":"2025-10-12T00:25:16.190Z"}
+{"level":"info","message":"✅ Started cron job: database-backup (0 4 * * *)","timestamp":"2025-10-12T00:25:16.193Z"}
+{"level":"info","message":"✅ Cron job manager started successfully","timestamp":"2025-10-12T00:25:16.193Z"}
+{"level":"info","message":"Cron manager started","timestamp":"2025-10-12T00:25:16.193Z"}
+{"level":"info","message":"Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-12T00:25:16.193Z"}
+{"level":"info","message":"Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-12T00:25:16.196Z"}
+{"level":"warn","message":"Environment configuration issue detected: SENTRY_DSN: Invalid url","timestamp":"2025-10-12T00:25:16.198Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/dist/client/index.html","timestamp":"2025-10-12T00:25:16.365Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/client/dist/index.html","timestamp":"2025-10-12T00:25:16.365Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-12T00:25:16.365Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-12T00:25:16.757Z"}
+{"level":"info","message":"[HEALTH] Express app created successfully in 669ms","timestamp":"2025-10-12T00:25:16.757Z"}
+{"level":"info","message":"[HEALTH] Target port from environment: 3005","timestamp":"2025-10-12T00:25:16.757Z"}
+{"level":"info","message":"[HEALTH] Starting server on 0.0.0.0:3005","timestamp":"2025-10-12T00:25:16.757Z"}
+{"level":"info","message":"[HEALTH] ✅ Server started successfully on port 3005 in 670ms","timestamp":"2025-10-12T00:25:16.758Z"}
+{"level":"info","message":"serving on port 3005","timestamp":"2025-10-12T00:25:16.759Z"}
+{"correlationId":"9fa821ae-a3e4-40c4-bda5-03309d952d4f","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/auth/user","query":{},"timestamp":"2025-10-12T00:25:17.055Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"9fa821ae-a3e4-40c4-bda5-03309d952d4f","duration":8,"level":"info","message":"Response sent","method":"GET","path":"/api/auth/user","statusCode":304,"timestamp":"2025-10-12T00:25:17.063Z"}
+{"correlationId":"3a8f1054-1d7a-4996-9131-20c493aa0d7c","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/dashboard/stats","query":{},"timestamp":"2025-10-12T00:25:17.314Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"9f419d19-5e05-43f1-9918-671d085c0196","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/dashboard/activity","query":{},"timestamp":"2025-10-12T00:25:17.321Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"e5406e1f-af30-4245-8638-f01b515752d2","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/referral/my-code","query":{},"timestamp":"2025-10-12T00:25:17.329Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"e5406e1f-af30-4245-8638-f01b515752d2","duration":2,"level":"info","message":"Response sent","method":"GET","path":"/","statusCode":404,"timestamp":"2025-10-12T00:25:17.331Z"}
+{"correlationId":"e5406e1f-af30-4245-8638-f01b515752d2","isAdmin":true,"level":"info","mediaCount":0,"message":"Dashboard activity retrieved for user 1","timestamp":"2025-10-12T00:25:17.333Z","userId":1}
+{"correlationId":"9f419d19-5e05-43f1-9918-671d085c0196","duration":13,"level":"info","message":"Response sent","method":"GET","path":"/activity","statusCode":304,"timestamp":"2025-10-12T00:25:17.334Z"}
+{"correlationId":"e5406e1f-af30-4245-8638-f01b515752d2","isAdmin":true,"level":"info","message":"Dashboard stats retrieved for user 1","stats":{"engagementRate":0,"estimatedTaxSavings":0,"postsToday":0,"takedownsFound":0},"timestamp":"2025-10-12T00:25:17.336Z","userId":1}
+{"correlationId":"3a8f1054-1d7a-4996-9131-20c493aa0d7c","duration":23,"level":"info","message":"Response sent","method":"GET","path":"/stats","statusCode":304,"timestamp":"2025-10-12T00:25:17.336Z"}
+{"correlationId":"d30a5718-7df3-4a2b-8a74-839a1c063a43","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/csrf-token","query":{},"timestamp":"2025-10-12T00:25:25.178Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"d30a5718-7df3-4a2b-8a74-839a1c063a43","duration":1,"level":"info","message":"Response sent","method":"GET","path":"/api/csrf-token","statusCode":200,"timestamp":"2025-10-12T00:25:25.179Z"}
+{"correlationId":"f5b005da-8cdf-48c7-97bf-a0ee5ad255c3","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/analytics/events","query":{},"timestamp":"2025-10-12T00:25:25.183Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"correlationId":"f5b005da-8cdf-48c7-97bf-a0ee5ad255c3","duration":7,"level":"info","message":"Response sent","method":"POST","path":"/api/analytics/events","statusCode":403,"timestamp":"2025-10-12T00:25:25.190Z"}
+{"correlationId":"e4d466d0-b66c-4f35-989a-332d9667e18c","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/health","query":{},"timestamp":"2025-10-12T00:25:29.128Z","userAgent":"curl/8.5.0"}
+{"correlationId":"e4d466d0-b66c-4f35-989a-332d9667e18c","duration":2,"level":"info","message":"Response sent","method":"GET","path":"/api/health","statusCode":200,"timestamp":"2025-10-12T00:25:29.130Z"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/uploads/imgur","query":{},"timestamp":"2025-10-12T00:25:38.879Z","userAgent":"curl/8.5.0"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","duration":2,"level":"info","message":"Response sent","method":"POST","path":"/imgur","statusCode":400,"timestamp":"2025-10-12T00:25:38.880Z"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:26:00.007Z"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":462372,"user":5893809},"memory":{"external":6.243596076965332,"heapTotal":109.38671875,"heapUsed":105.89564514160156,"rss":245.9609375},"pid":1919882,"uptime":61.979845463},"system":{"freeMemory":17412.8515625,"loadAverage":[2.08,1.88,1.52],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:26:16.105Z"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:27:00.022Z"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":511243,"user":6471036},"memory":{"external":6.247163772583008,"heapTotal":110.13671875,"heapUsed":107.1934585571289,"rss":248.8125},"pid":1919882,"uptime":121.979044201},"system":{"freeMemory":18722.625,"loadAverage":[1.44,1.72,1.49],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:27:16.104Z"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:28:00.009Z"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":553202,"user":6751289},"memory":{"external":6.242621421813965,"heapTotal":111.38671875,"heapUsed":107.3678207397461,"rss":249.66796875},"pid":1919882,"uptime":181.979522863},"system":{"freeMemory":18867.015625,"loadAverage":[1.31,1.62,1.47],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:28:16.104Z"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:29:00.023Z"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":582332,"user":7015241},"memory":{"external":6.223049163818359,"heapTotal":110.88671875,"heapUsed":107.6844253540039,"rss":249.1484375},"pid":1919882,"uptime":241.980450632},"system":{"freeMemory":18778.3984375,"loadAverage":[0.91,1.48,1.43],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:29:16.105Z"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","level":"debug","message":"⏰ Running cron job: check-stuck-jobs","timestamp":"2025-10-12T00:30:00.033Z"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:30:00.035Z"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":613598,"user":7267310},"memory":{"external":6.235100746154785,"heapTotal":111.88671875,"heapUsed":108.78547668457031,"rss":249.96875},"pid":1919882,"uptime":301.981020512},"system":{"freeMemory":18057.5390625,"loadAverage":[1.23,1.47,1.43],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:30:16.106Z"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:31:00.006Z"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":642741,"user":7411198},"memory":{"external":6.246101379394531,"heapTotal":112.88671875,"heapUsed":109.97782135009766,"rss":250.84765625},"pid":1919882,"uptime":361.98080314},"system":{"freeMemory":18061.25,"loadAverage":[1.3,1.43,1.42],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:31:16.106Z"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:32:00.005Z"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":663524,"user":7555297},"memory":{"external":6.25505256652832,"heapTotal":113.38671875,"heapUsed":110.84349060058594,"rss":251.828125},"pid":1919882,"uptime":421.980742827},"system":{"freeMemory":18213.8828125,"loadAverage":[1.18,1.38,1.4],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:32:16.106Z"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:33:00.008Z"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":686481,"user":7699912},"memory":{"external":6.233333587646484,"heapTotal":114.38671875,"heapUsed":110.85247802734375,"rss":251.953125},"pid":1919882,"uptime":481.981126},"system":{"freeMemory":16913.58984375,"loadAverage":[2.25,1.65,1.49],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:33:16.106Z"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:34:00.020Z"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":720155,"user":7936900},"memory":{"external":6.2454729080200195,"heapTotal":114.88671875,"heapUsed":111.98497772216797,"rss":252.8671875},"pid":1919882,"uptime":541.980821852},"system":{"freeMemory":16786.359375,"loadAverage":[1.86,1.63,1.49],"totalMemory":32039.33203125},"timestamp":"2025-10-12T00:34:16.106Z"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","level":"debug","message":"⏰ Running cron job: check-stuck-jobs","timestamp":"2025-10-12T00:35:00.037Z"}
+{"correlationId":"7ecbafdd-4c63-425c-a12f-c77cb1b4ce90","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-12T00:35:00.040Z"}

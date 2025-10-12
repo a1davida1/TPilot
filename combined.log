@@ -619,3 +619,100 @@
 {"level":"info","message":"Retrieved 0 media assets for user 1","timestamp":"2025-10-11T13:18:15.610Z"}
 {"level":"info","message":"[2025-10-11T13:18:19.572Z] GET /api/reddit/connect - IP: 127.0.0.1","timestamp":"2025-10-11T13:18:19.572Z"}
 {"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-11T13:18:19.904Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-12T00:11:01.456Z"}
+{"level":"warn","message":"ADMIN_EMAIL environment variable is not set. Admin login is disabled.","timestamp":"2025-10-12T00:11:01.456Z"}
+{"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-12T00:11:01.993Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-12T00:11:01.993Z"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-12T00:11:13.992Z"}
+{"level":"warn","message":"ADMIN_EMAIL environment variable is not set. Admin login is disabled.","timestamp":"2025-10-12T00:11:13.992Z"}
+{"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-12T00:11:14.613Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-12T00:11:14.614Z"}
+{"level":"info","message":"[2025-10-12T00:11:15.471Z] GET /api/metrics - IP: 127.0.0.1","timestamp":"2025-10-12T00:11:15.471Z"}
+{"level":"info","message":"[2025-10-12T00:11:24.482Z] GET /api/health - IP: 127.0.0.1","timestamp":"2025-10-12T00:11:24.482Z"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:11:37.368Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:11:55.892Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:11:55.952Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"level":"info","message":"[2025-10-12T00:11:56.326Z] GET /api/dashboard/stats - IP: 127.0.0.1","timestamp":"2025-10-12T00:11:56.326Z"}
+{"level":"info","message":"[2025-10-12T00:11:56.328Z] GET /api/dashboard/activity - IP: 127.0.0.1","timestamp":"2025-10-12T00:11:56.328Z"}
+{"level":"info","message":"[2025-10-12T00:11:56.330Z] GET /api/referral/my-code - IP: 127.0.0.1","timestamp":"2025-10-12T00:11:56.330Z"}
+{"level":"warn","message":"API 404","method":"GET","originalUrl":"/api/referral/my-code","path":"/","timestamp":"2025-10-12T00:11:56.331Z","url":"/"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:12:07.222Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"level":"info","message":"[2025-10-12T00:12:07.305Z] GET /api/reddit/accounts - IP: 127.0.0.1","timestamp":"2025-10-12T00:12:07.305Z"}
+{"level":"info","message":"[2025-10-12T00:12:07.308Z] GET /api/reddit/communities - IP: 127.0.0.1","timestamp":"2025-10-12T00:12:07.308Z"}
+{"level":"info","message":"[2025-10-12T00:12:07.311Z] GET /api/media - IP: 127.0.0.1","timestamp":"2025-10-12T00:12:07.311Z"}
+{"level":"info","message":"Retrieved 0 media assets for user 1","timestamp":"2025-10-12T00:12:07.320Z"}
+{"level":"info","message":"[2025-10-12T00:12:08.734Z] GET /api/reddit/connect - IP: 127.0.0.1","timestamp":"2025-10-12T00:12:08.734Z"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:12:09.056Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:12:26.063Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"level":"info","message":"[2025-10-12T00:12:30.417Z] GET /api/analytics - IP: 127.0.0.1","timestamp":"2025-10-12T00:12:30.417Z"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:12:35.157Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:12:37.209Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:12:37.294Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"level":"info","message":"[2025-10-12T00:12:37.630Z] GET /api/dashboard/stats - IP: 127.0.0.1","timestamp":"2025-10-12T00:12:37.630Z"}
+{"level":"info","message":"[2025-10-12T00:12:37.633Z] GET /api/dashboard/activity - IP: 127.0.0.1","timestamp":"2025-10-12T00:12:37.633Z"}
+{"level":"info","message":"[2025-10-12T00:12:37.635Z] GET /api/referral/my-code - IP: 127.0.0.1","timestamp":"2025-10-12T00:12:37.635Z"}
+{"level":"warn","message":"API 404","method":"GET","originalUrl":"/api/referral/my-code","path":"/","timestamp":"2025-10-12T00:12:37.635Z","url":"/"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:12:41.732Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"level":"info","message":"[2025-10-12T00:12:41.743Z] GET /api/referral/code - IP: 127.0.0.1","timestamp":"2025-10-12T00:12:41.743Z"}
+{"level":"info","message":"[2025-10-12T00:12:41.745Z] GET /api/referral/summary - IP: 127.0.0.1","timestamp":"2025-10-12T00:12:41.745Z"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:13:07.402Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:13:19.003Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"level":"info","message":"[2025-10-12T00:13:19.199Z] GET /api/providers - IP: 127.0.0.1","timestamp":"2025-10-12T00:13:19.199Z"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:13:27.632Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"level":"info","message":"[2025-10-12T00:13:29.161Z] GET /api/referral/my-code - IP: 127.0.0.1","timestamp":"2025-10-12T00:13:29.161Z"}
+{"level":"warn","message":"API 404","method":"GET","originalUrl":"/api/referral/my-code","path":"/","timestamp":"2025-10-12T00:13:29.162Z","url":"/"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:13:37.404Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:13:41.305Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:13:41.515Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"level":"info","message":"[2025-10-12T00:13:42.307Z] GET /api/uploads/imgur/stats - IP: 127.0.0.1","timestamp":"2025-10-12T00:13:42.307Z"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:13:50.450Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/uploads/imgur","timestamp":"2025-10-12T00:14:08.112Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:14:12.069Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"level":"info","message":"[2025-10-12T00:14:42.362Z] GET /api/uploads/imgur/stats - IP: 127.0.0.1","timestamp":"2025-10-12T00:14:42.362Z"}
+{"level":"info","message":"[2025-10-12T00:15:42.368Z] GET /api/uploads/imgur/stats - IP: 127.0.0.1","timestamp":"2025-10-12T00:15:42.368Z"}
+{"level":"info","message":"[2025-10-12T00:15:55.144Z] POST /api/generate/caption - IP: 127.0.0.1","timestamp":"2025-10-12T00:15:55.144Z"}
+{"level":"warn","message":"API 404","method":"POST","originalUrl":"/api/generate/caption","path":"/","timestamp":"2025-10-12T00:15:55.145Z","url":"/"}
+{"level":"info","message":"[2025-10-12T00:16:42.374Z] GET /api/uploads/imgur/stats - IP: 127.0.0.1","timestamp":"2025-10-12T00:16:42.374Z"}
+{"level":"info","message":"[2025-10-12T00:17:42.388Z] GET /api/uploads/imgur/stats - IP: 127.0.0.1","timestamp":"2025-10-12T00:17:42.388Z"}
+{"level":"info","message":"[2025-10-12T00:18:42.407Z] GET /api/uploads/imgur/stats - IP: 127.0.0.1","timestamp":"2025-10-12T00:18:42.407Z"}
+{"level":"info","message":"[2025-10-12T00:19:42.426Z] GET /api/uploads/imgur/stats - IP: 127.0.0.1","timestamp":"2025-10-12T00:19:42.426Z"}
+{"level":"info","message":"[2025-10-12T00:20:42.441Z] GET /api/uploads/imgur/stats - IP: 127.0.0.1","timestamp":"2025-10-12T00:20:42.441Z"}
+{"level":"info","message":"[2025-10-12T00:21:28.806Z] GET /api/metrics - IP: 127.0.0.1","timestamp":"2025-10-12T00:21:28.806Z"}
+{"level":"info","message":"[2025-10-12T00:21:34.563Z] GET /api/uploads/imgur/stats - IP: 127.0.0.1","timestamp":"2025-10-12T00:21:34.563Z"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:21:38.999Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/uploads/imgur","timestamp":"2025-10-12T00:21:42.531Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/uploads/imgur","timestamp":"2025-10-12T00:21:59.320Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:22:04.555Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:22:34.407Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"level":"info","message":"[2025-10-12T00:22:34.622Z] GET /api/uploads/imgur/stats - IP: 127.0.0.1","timestamp":"2025-10-12T00:22:34.622Z"}
+{"level":"info","message":"[2025-10-12T00:23:34.631Z] GET /api/uploads/imgur/stats - IP: 127.0.0.1","timestamp":"2025-10-12T00:23:34.631Z"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-12T00:23:41.038Z"}
+{"level":"warn","message":"ADMIN_EMAIL environment variable is not set. Admin login is disabled.","timestamp":"2025-10-12T00:23:41.039Z"}
+{"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-12T00:23:41.674Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-12T00:23:41.674Z"}
+{"level":"info","message":"[2025-10-12T00:23:42.806Z] GET /api/dashboard/stats - IP: 127.0.0.1","timestamp":"2025-10-12T00:23:42.806Z"}
+{"level":"info","message":"[2025-10-12T00:23:42.811Z] GET /api/dashboard/activity - IP: 127.0.0.1","timestamp":"2025-10-12T00:23:42.811Z"}
+{"level":"info","message":"[2025-10-12T00:23:42.816Z] GET /api/referral/my-code - IP: 127.0.0.1","timestamp":"2025-10-12T00:23:42.816Z"}
+{"level":"warn","message":"API 404","method":"GET","originalUrl":"/api/referral/my-code","path":"/","timestamp":"2025-10-12T00:23:42.817Z","url":"/"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:24:12.547Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/uploads/imgur","timestamp":"2025-10-12T00:24:13.043Z","userAgent":"curl/8.5.0"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-12T00:24:47.543Z"}
+{"level":"warn","message":"ADMIN_EMAIL environment variable is not set. Admin login is disabled.","timestamp":"2025-10-12T00:24:47.543Z"}
+{"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-12T00:24:48.128Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-12T00:24:48.129Z"}
+{"level":"info","message":"[2025-10-12T00:24:49.118Z] GET /api/dashboard/stats - IP: 127.0.0.1","timestamp":"2025-10-12T00:24:49.118Z"}
+{"level":"info","message":"[2025-10-12T00:24:49.121Z] GET /api/dashboard/activity - IP: 127.0.0.1","timestamp":"2025-10-12T00:24:49.121Z"}
+{"level":"info","message":"[2025-10-12T00:24:49.125Z] GET /api/referral/my-code - IP: 127.0.0.1","timestamp":"2025-10-12T00:24:49.125Z"}
+{"level":"warn","message":"API 404","method":"GET","originalUrl":"/api/referral/my-code","path":"/","timestamp":"2025-10-12T00:24:49.125Z","url":"/"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/uploads/imgur","timestamp":"2025-10-12T00:25:00.348Z","userAgent":"curl/8.5.0"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-12T00:25:15.610Z"}
+{"level":"warn","message":"ADMIN_EMAIL environment variable is not set. Admin login is disabled.","timestamp":"2025-10-12T00:25:15.611Z"}
+{"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-12T00:25:16.195Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-12T00:25:16.196Z"}
+{"level":"info","message":"[2025-10-12T00:25:17.315Z] GET /api/dashboard/stats - IP: 127.0.0.1","timestamp":"2025-10-12T00:25:17.315Z"}
+{"level":"info","message":"[2025-10-12T00:25:17.322Z] GET /api/dashboard/activity - IP: 127.0.0.1","timestamp":"2025-10-12T00:25:17.322Z"}
+{"level":"info","message":"[2025-10-12T00:25:17.330Z] GET /api/referral/my-code - IP: 127.0.0.1","timestamp":"2025-10-12T00:25:17.330Z"}
+{"level":"warn","message":"API 404","method":"GET","originalUrl":"/api/referral/my-code","path":"/","timestamp":"2025-10-12T00:25:17.331Z","url":"/"}
+{"hasSession":true,"ip":"127.0.0.1","level":"warn","message":"CSRF token validation failed","method":"POST","path":"/api/analytics/events","timestamp":"2025-10-12T00:25:25.190Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0"}
+{"level":"info","message":"[2025-10-12T00:25:29.129Z] GET /api/health - IP: 127.0.0.1","timestamp":"2025-10-12T00:25:29.129Z"}
+{"level":"info","message":"[2025-10-12T00:25:38.879Z] POST /api/uploads/imgur - IP: 127.0.0.1","timestamp":"2025-10-12T00:25:38.879Z"}

@@ -40,10 +40,10 @@ Compliance: Phased approach - base features without ID verification, gate advanc
 - **API Design**: RESTful API.
 - **Data Storage**: PostgreSQL.
 - **AI Models**: 
-  - **Primary**: OpenRouter Grok-2-Fast (x-ai/grok-2-fast) - fast, uncensored model
+  - **Primary**: OpenRouter Grok-4-Fast (x-ai/grok-4-fast) - ultra-fast, uncensored model
   - **Alternative Vision**: OpenRouter InternVL3-78B (opengvlab/internvl3-78b) - specialized NSFW vision model
   - **Fallback**: Google Gemini 2.5 Flash via v1 API
-  - **Text Generation**: Grok-2-Fast with Gemini fallback
+  - **Text Generation**: Grok-4-Fast with Gemini fallback
   - **Model Settings**: temp=1.4, frequency_penalty=0.7, presence_penalty=1.5, unrestricted system prompts
 - **Content Generation**: Advanced template-based content generator with enhanced features:
   - Timing-based optimization (morning, evening, late) with sessionStorage persistence

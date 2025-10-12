@@ -819,3 +819,43 @@
 {"level":"warn","message":"Environment configuration issue detected: SENTRY_DSN: Invalid url","timestamp":"2025-10-11T13:14:36.303Z"}
 {"level":"error","message":"[HEALTH] ❌ Port 3005 is already in use","timestamp":"2025-10-11T13:14:36.831Z"}
 {"correlationId":"80d417b3-314f-43dc-95b3-ad5ec8a37c92","level":"error","message":"Reddit OAuth redirect URI (auth):","timestamp":"2025-10-11T13:18:19.575Z"}
+{"error":{"code":"ERR_MODULE_NOT_FOUND"},"level":"warn","message":"Could not apply advanced rate limiting","timestamp":"2025-10-12T00:11:01.904Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping tier upgrade","timestamp":"2025-10-12T00:11:01.938Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping email verification","timestamp":"2025-10-12T00:11:01.939Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-12T00:11:01.942Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-12T00:11:01.946Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-12T00:11:01.959Z"}
+{"level":"warn","message":"Environment configuration issue detected: SENTRY_DSN: Invalid url","timestamp":"2025-10-12T00:11:01.995Z"}
+{"level":"error","message":"[HEALTH] ❌ Port 3005 is already in use","timestamp":"2025-10-12T00:11:02.516Z"}
+{"error":{"code":"ERR_MODULE_NOT_FOUND"},"level":"warn","message":"Could not apply advanced rate limiting","timestamp":"2025-10-12T00:11:14.509Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping tier upgrade","timestamp":"2025-10-12T00:11:14.552Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping email verification","timestamp":"2025-10-12T00:11:14.554Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-12T00:11:14.558Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-12T00:11:14.563Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-12T00:11:14.578Z"}
+{"level":"warn","message":"Environment configuration issue detected: SENTRY_DSN: Invalid url","timestamp":"2025-10-12T00:11:14.616Z"}
+{"level":"error","message":"[HEALTH] ❌ Port 3005 is already in use","timestamp":"2025-10-12T00:11:15.179Z"}
+{"correlationId":"774c46e2-97c7-4f76-b7f0-d65f2f49ea29","level":"error","message":"Reddit OAuth redirect URI (auth):","timestamp":"2025-10-12T00:12:08.737Z"}
+{"error":{"code":"ERR_MODULE_NOT_FOUND"},"level":"warn","message":"Could not apply advanced rate limiting","timestamp":"2025-10-12T00:23:41.549Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping tier upgrade","timestamp":"2025-10-12T00:23:41.591Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping email verification","timestamp":"2025-10-12T00:23:41.593Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-12T00:23:41.597Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-12T00:23:41.604Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-12T00:23:41.624Z"}
+{"level":"warn","message":"Environment configuration issue detected: SENTRY_DSN: Invalid url","timestamp":"2025-10-12T00:23:41.677Z"}
+{"level":"error","message":"[HEALTH] ❌ Port 3005 is already in use","timestamp":"2025-10-12T00:23:42.252Z"}
+{"error":{"code":"ERR_MODULE_NOT_FOUND"},"level":"warn","message":"Could not apply advanced rate limiting","timestamp":"2025-10-12T00:24:48.040Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping tier upgrade","timestamp":"2025-10-12T00:24:48.071Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping email verification","timestamp":"2025-10-12T00:24:48.072Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-12T00:24:48.075Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-12T00:24:48.080Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-12T00:24:48.094Z"}
+{"level":"warn","message":"Environment configuration issue detected: SENTRY_DSN: Invalid url","timestamp":"2025-10-12T00:24:48.131Z"}
+{"level":"error","message":"[HEALTH] ❌ Port 3005 is already in use","timestamp":"2025-10-12T00:24:48.672Z"}
+{"error":{"code":"ERR_MODULE_NOT_FOUND"},"level":"warn","message":"Could not apply advanced rate limiting","timestamp":"2025-10-12T00:25:16.098Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping tier upgrade","timestamp":"2025-10-12T00:25:16.136Z"}
+{"level":"warn","message":"User a1davida1 not found, skipping email verification","timestamp":"2025-10-12T00:25:16.138Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-12T00:25:16.141Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-12T00:25:16.146Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-12T00:25:16.159Z"}
+{"level":"warn","message":"Environment configuration issue detected: SENTRY_DSN: Invalid url","timestamp":"2025-10-12T00:25:16.198Z"}

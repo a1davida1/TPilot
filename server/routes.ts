@@ -910,7 +910,8 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
       const exemptPaths = [
         prefixApiPath('/auth/login', apiPrefix),
         prefixApiPath('/auth/logout', apiPrefix),
-        prefixApiPath('/auth/signup', apiPrefix)
+        prefixApiPath('/auth/signup', apiPrefix),
+        prefixApiPath('/uploads/imgur', apiPrefix)  // Exempt Imgur uploads from CSRF
       ];
       
       if (exemptPaths.some(path => fullPath === path || fullPath.startsWith(path + '/'))) {
