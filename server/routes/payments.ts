@@ -3,13 +3,12 @@ import Stripe from 'stripe';
 import { authenticateToken, type AuthRequest } from '../middleware/auth.js';
 import { logger } from '../bootstrap/logger.js';
 import { db } from '../db.js';
-import { users, billingHistory, subscriptions } from '@shared/schema';
-import { eq } from 'drizzle-orm';
-import { z } from 'zod';
+import { users, billingHistory } from '@shared/schema';
+import { eq, desc } from 'drizzle-orm';
 
 const router = Router();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-10-28.acacia',
+  apiVersion: undefined, // Removed for compatibility
 });
 
 const PRICE_IDS = {
@@ -35,7 +34,7 @@ router.post('/create-intent', authenticateToken(true), async (req: AuthRequest, 
     
     if (!customerId) {
       const customer = await stripe.customers.create({
-        email: req.user.email,
+        email: req.user.email || undefined,
         metadata: {
           userId: req.user.id.toString(),
           username: req.user.username
@@ -59,7 +58,7 @@ router.post('/create-intent', authenticateToken(true), async (req: AuthRequest, 
     });
 
     const invoice = subscription.latest_invoice as Stripe.Invoice;
-    const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
+    const paymentIntent = (invoice as any).payment_intent as Stripe.PaymentIntent;
 
     res.json({
       clientSecret: paymentIntent.client_secret,
@@ -126,11 +125,7 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
   // Log billing history
   await db.insert(billingHistory).values({
     userId: user.id,
-    amount: paymentIntent.amount / 100, // Convert from cents
-    currency: paymentIntent.currency,
-    status: 'succeeded',
-    stripePaymentIntentId: paymentIntent.id,
-    description: 'Subscription payment'
+    amount: Math.floor(paymentIntent.amount / 100) // Convert from cents to dollars
   });
 
   logger.info('Payment succeeded', { userId: user.id, amount: paymentIntent.amount });
@@ -222,7 +217,7 @@ router.get('/billing', authenticateToken(true), async (req: AuthRequest, res: Re
     const history = await db.select()
       .from(billingHistory)
       .where(eq(billingHistory.userId, req.user.id))
-      .orderBy(billingHistory.createdAt)
+      .orderBy(desc(billingHistory.createdAt))
       .limit(20);
 
     res.json({ history });

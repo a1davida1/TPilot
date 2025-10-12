@@ -4,7 +4,7 @@
  */
 
 import { db } from '../db.js';
-import { redditPostOutcomes, redditCommunities, users } from '@shared/schema';
+import { redditCommunities, redditPostOutcomes } from '@shared/schema';
 import { eq, desc, sql, and, gte } from 'drizzle-orm';
 import { logger } from '../bootstrap/logger.js';
 
@@ -59,7 +59,7 @@ export async function getRecommendations(userId: number): Promise<SubredditRecom
       .where(
         and(
           eq(redditPostOutcomes.success, true),
-          gte(redditPostOutcomes.createdAt, sql`NOW() - INTERVAL '30 days'`)
+          gte(redditPostOutcomes.occurredAt, sql`NOW() - INTERVAL '30 days'`)
         )
       )
       .groupBy(redditPostOutcomes.subreddit)
@@ -112,10 +112,11 @@ export async function getRecommendations(userId: number): Promise<SubredditRecom
         tags.push('active');
       }
 
-      // Large subscriber base
-      if (meta && meta.subscribers > 100000) {
+      // Large subscriber base (use subscribers or members)
+      const audienceSize = meta?.subscribers || meta?.members || 0;
+      if (audienceSize > 100000) {
         score += 10;
-        reasons.push(`Large audience (${(meta.subscribers / 1000000).toFixed(1)}M subscribers)`);
+        reasons.push(`Large audience (${(audienceSize / 1000000).toFixed(1)}M members)`);
         tags.push('large-audience');
       }
 
@@ -164,7 +165,7 @@ export async function getSubredditMetrics(subreddit: string, userId?: number) {
       .where(
         and(
           eq(redditPostOutcomes.subreddit, subreddit),
-          gte(redditPostOutcomes.createdAt, sql`NOW() - INTERVAL '30 days'`)
+          gte(redditPostOutcomes.occurredAt, sql`NOW() - INTERVAL '30 days'`)
         )
       );
 
@@ -223,7 +224,7 @@ export async function getTrendingTopics(subreddit: string) {
         and(
           eq(redditPostOutcomes.subreddit, subreddit),
           eq(redditPostOutcomes.success, true),
-          gte(redditPostOutcomes.createdAt, sql`NOW() - INTERVAL '7 days'`)
+          gte(redditPostOutcomes.occurredAt, sql`NOW() - INTERVAL '7 days'`)
         )
       )
       .orderBy(desc(redditPostOutcomes.upvotes))
@@ -238,6 +239,7 @@ export async function getTrendingTopics(subreddit: string) {
     ];
 
     for (const post of recentPosts) {
+      if (!post.title) continue;
       const title = post.title.toLowerCase();
       for (const term of commonTerms) {
         if (title.includes(term)) {
