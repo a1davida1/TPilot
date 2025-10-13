@@ -3,7 +3,7 @@
  * Implements tier-based limits, endpoint-specific rules, and abuse prevention
  */
 
-import rateLimit, { type Options, ipKeyGenerator } from 'express-rate-limit';
+import rateLimit, { type Options } from 'express-rate-limit';
 // Redis disabled for beta
 // import RedisStore from 'rate-limit-redis';
 // import Redis from 'ioredis';
@@ -62,8 +62,8 @@ const keyGenerator = (req: Request): string => {
   if (authReq.user?.id) {
     return `user-${authReq.user.id}`;
   }
-  // Use the built-in IP key generator for proper IPv6 support
-  return ipKeyGenerator(req);
+  // Fall back to IP address for unauthenticated users
+  return req.ip || 'unknown';
 };
 
 // Create rate limiter with tier-based limits
