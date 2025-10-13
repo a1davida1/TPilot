@@ -58,6 +58,10 @@ export function requestLogging(req: Request, res: Response, next: NextFunction) 
     callback?: () => void
   ): Response {
     const duration = performance.now() - req.startTime;
+
+    if (!res.headersSent) {
+      res.setHeader('X-Response-Time', `${duration.toFixed(2)}ms`);
+    }
     
     logger.info('Response sent', {
       correlationId: req.correlationId,
@@ -110,15 +114,7 @@ export function performanceMetrics(req: Request, res: Response, next: NextFuncti
   
   // Add metrics to response headers for monitoring
   res.setHeader('X-Memory-Used', Math.round(metrics.memoryUsage.heapUsed / 1048576) + 'MB');
-  res.setHeader('X-Response-Time', '0ms'); // Will be updated when response ends
-  
-  // Update response time on finish
-  const startTime = process.hrtime();
-  res.on('finish', () => {
-    const elapsed = process.hrtime(startTime);
-    const responseTime = (elapsed[0] * 1000 + elapsed[1] / 1000000).toFixed(2);
-    res.setHeader('X-Response-Time', responseTime + 'ms');
-  });
+  res.setHeader('X-Response-Time', '0ms');
   
   next();
 }
