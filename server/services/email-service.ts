@@ -30,7 +30,7 @@ async function sendMail(msg: sgMail.MailDataRequired) {
 
 async function sendVerificationEmail(to: string, username: string, token: string) {
   if (!isEmailServiceConfigured) return;
-  const verifyUrl = `${FRONTEND_URL}/verify-email?token=${token}`;
+  const verifyUrl = `${FRONTEND_URL}/api/auth/verify-email?token=${token}`;
   const msg: sgMail.MailDataRequired = {
     to,
     from: FROM_EMAIL,
