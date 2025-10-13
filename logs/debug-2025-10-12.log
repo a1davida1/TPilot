@@ -1,0 +1,16 @@
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-12T19:38:52.991Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-12T19:38:54.419Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-12T19:38:54.419Z"}
+{"level":"info","message":"[OpenRouter] Default model: x-ai/grok-4-fast","timestamp":"2025-10-12T19:38:54.419Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-12T19:38:54.793Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-12T19:38:54.793Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-12T19:38:54.793Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-12T19:38:54.793Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-12T19:38:54.793Z"}
+{"level":"info","message":"Using memory store for rate limiting (Redis disabled for beta)","timestamp":"2025-10-12T19:38:54.804Z"}
+{"level":"info","message":"Rate limiter using memory store for api","timestamp":"2025-10-12T19:38:54.805Z"}
+{"level":"info","message":"Rate limiter using memory store for posts","timestamp":"2025-10-12T19:38:54.810Z"}
+{"level":"info","message":"Rate limiter using memory store for captions","timestamp":"2025-10-12T19:38:54.811Z"}
+{"level":"info","message":"Rate limiter using memory store for default","timestamp":"2025-10-12T19:38:54.812Z"}
+{"endpoints":["api","auth","posting","captions","upload","feedback","passwordReset"],"level":"info","message":"Rate limiting middleware configured","redisAvailable":false,"timestamp":"2025-10-12T19:38:54.812Z"}
+{"level":"info","message":"Advanced rate limiting applied","timestamp":"2025-10-12T19:38:54.813Z"}

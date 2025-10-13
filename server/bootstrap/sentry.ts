@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/node';
-import type { ErrorEvent } from '@sentry/node';
+// Sentry v7 types
 import { logger } from './logger.js';
 
 let sentryInitialized = false;
@@ -21,8 +21,9 @@ export function initializeSentry(): typeof Sentry | null {
       environment: process.env.NODE_ENV || 'development',
       tracesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0.1'),
       profilesSampleRate: parseFloat(process.env.SENTRY_PROFILES_SAMPLE_RATE || '0.1'),
-      integrations: [Sentry.httpIntegration(), Sentry.expressIntegration()],
-        beforeSend(event: ErrorEvent, _hint) {
+      // Sentry v7 integrations (auto-included)
+      // integrations: [],  
+        beforeSend(event: any, _hint: any) {
         const err = event.exception?.values?.[0];
         if (err?.type === 'ValidationError' || err?.type === 'AuthenticationError') {
           return null;

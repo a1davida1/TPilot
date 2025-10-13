@@ -52,7 +52,15 @@ export function createPostSchedulerWorker() {
   const worker = new Worker<ScheduledPostJob>(
     'scheduled-posts',
     async (job: Job<ScheduledPostJob>) => {
-      const { postId, userId, subreddit, title, content, imageUrl, flairText, nsfw } = job.data;
+      const [post] = await db.select().from(scheduledPosts).where(eq(scheduledPosts.id, job.data.postId));
+      if (!post) {
+        throw new Error('Scheduled post not found');
+      }
+
+      const { id: postId, userId } = post;
+      const { subreddit } = post;
+      // These will be used when Reddit API is implemented
+      // const { title, content, imageUrl, flairText, nsfw } = post;
       const attempt = job.data.attempt || 1;
 
       logger.info('Processing scheduled post', {
@@ -75,18 +83,18 @@ export function createPostSchedulerWorker() {
         // Submit to Reddit - NOT IMPLEMENTED YET
         // TODO: Implement Reddit submission
         // Define proper interface
-        interface RedditResult {
+        interface RedditSubmissionResult {
           success: boolean;
-          postId?: string | null;
-          url?: string | null;
+          redditPostId?: string | null;
+          postUrl?: string | null;
           error?: string;
         }
 
         // Mock result (temporary until Reddit API implemented)
-        const result: RedditResult = {
+        const result: RedditSubmissionResult = {
           success: false,
-          postId: null,
-          url: null,
+          redditPostId: null,
+          postUrl: null,
           error: 'Reddit submission not yet implemented'
         };
         
@@ -102,13 +110,13 @@ export function createPostSchedulerWorker() {
         });
         */
 
-        if (result.success) {
+        if (result.success && result.redditPostId) {
           // Update as completed
           await db.update(scheduledPosts)
             .set({
               status: 'completed',
-              redditPostId: result.postId || null,
-              redditPostUrl: result.url || null,
+              redditPostId: result.redditPostId,
+              redditPostUrl: result.postUrl,
               executedAt: new Date(),
               updatedAt: new Date()
             })
@@ -125,38 +133,39 @@ export function createPostSchedulerWorker() {
 
           logger.info('Scheduled post completed successfully', {
             postId,
-            redditPostId: result.postId,
-            url: result.url
+            redditPostId: result.redditPostId,
+            url: result.postUrl
           });
 
-          return { success: true, postId: result.postId, url: result.url };
+          return { success: true, postId: result.redditPostId, url: result.postUrl };
         } else {
           throw new Error(result.error || 'Failed to submit to Reddit');
         }
-      } catch (error: any) {
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('Failed to process scheduled post', {
           postId,
-          error: error.message,
+          error: errorMessage,
           attempt
         });
 
         // Check if we should retry
         if (attempt < 3) {
           // Schedule retry with exponential backoff
-          const delay = Math.pow(2, attempt) * 60000; // 2min, 4min, 8min
+          // const delay = Math.pow(2, attempt) * 60000; // 2min, 4min, 8min - BullMQ handles retry delays
           
           await job.updateData({
             ...job.data,
             attempt: attempt + 1
           });
 
-          throw new Error(`Retry attempt ${attempt} failed: ${error.message}`);
+          throw new Error(`Retry attempt ${attempt} failed: ${errorMessage}`);
         } else {
           // Final failure - update status
           await db.update(scheduledPosts)
             .set({
               status: 'failed',
-              errorMessage: error.message,
+              errorMessage: errorMessage,
               updatedAt: new Date()
             })
             .where(eq(scheduledPosts.id, postId));
@@ -166,7 +175,7 @@ export function createPostSchedulerWorker() {
             userId,
             subreddit,
             status: 'failed',
-            reason: error.message,
+            reason: errorMessage,
             occurredAt: new Date()
           });
 

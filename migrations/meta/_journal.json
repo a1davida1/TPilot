@@ -99,6 +99,13 @@
       "when": 1760185251665,
       "tag": "0013_dusty_shriek",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1760274521896,
+      "tag": "0014_yellow_green_goblin",
+      "breakpoints": true
     }
   ]
 }

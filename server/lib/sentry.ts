@@ -56,27 +56,13 @@ class SentryService {
         tracesSampleRate: this.config.tracesSampleRate,
         profilesSampleRate: this.config.profilesSampleRate,
         
-        integrations: [
-          // HTTP integration
-          new Sentry.Integrations.Http({ tracing: true }),
-          // Express integration
-          new Sentry.Integrations.Express({
-            app: true,
-            router: true,
-            transaction: true
-          }),
-          // Postgres integration
-          new Sentry.Integrations.Postgres(),
-          // Redis integration if available
-          ...(process.env.REDIS_URL ? [new Sentry.Integrations.Redis()] : []),
-          // Performance profiling - disabled until package installed
-          // nodeProfilingIntegration(),
-        ],
+        // Sentry v7 integrations are auto-included
+        integrations: [],  
 
         // Before send hook for data sanitization
-        beforeSend: (event, hint) => {
+        beforeSend: (event: any, hint: any) => {
           // Sanitize sensitive data
-          if (event.request) {
+          if (event && event.request) {
             // Remove auth headers
             if (event.request.headers) {
               delete event.request.headers['authorization'];
@@ -118,14 +104,14 @@ class SentryService {
         },
 
         // Breadcrumb filtering
-        beforeBreadcrumb: (breadcrumb) => {
+        beforeBreadcrumb: (breadcrumb: any) => {
           // Filter out noisy breadcrumbs
           if (breadcrumb.category === 'console' && breadcrumb.level === 'debug') {
             return null;
           }
           
           // Sanitize data in breadcrumbs
-          if (breadcrumb.data) {
+          if (breadcrumb && breadcrumb.data) {
             const sensitiveKeys = ['password', 'token', 'apiKey'];
             sensitiveKeys.forEach(key => {
               if (key in breadcrumb.data) {
@@ -151,7 +137,7 @@ class SentryService {
         ],
 
         // Transaction naming
-        beforeTransaction: (context) => {
+        beforeSendTransaction: (context: any) => {
           // Normalize transaction names
           if (context.name?.startsWith('GET /api/')) {
             // Remove IDs from URLs
@@ -291,9 +277,9 @@ class SentryService {
    */
   errorHandler() {
     return Sentry.Handlers.errorHandler({
-      shouldHandleError: (error) => {
+      shouldHandleError: (error: any) => {
         // Capture all 500 errors
-        if (error.status && error.status >= 500) {
+        if (error.status && typeof error.status === 'number' && error.status >= 500) {
           return true;
         }
         // Capture specific error types

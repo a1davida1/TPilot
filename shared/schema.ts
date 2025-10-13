@@ -271,6 +271,11 @@ export const redditPostOutcomes = pgTable("reddit_post_outcomes", {
   status: varchar("status", { length: 20 }).notNull(),
   reason: text("reason"),
   occurredAt: timestamp("occurred_at").defaultNow().notNull(),
+  // New columns for compatibility
+  success: boolean("success").default(false).notNull(),
+  title: text("title"),
+  upvotes: integer("upvotes").default(0).notNull(),
+  views: integer("views").default(0).notNull(),
 }, (table) => ({
   userIndex: index("reddit_post_outcomes_user_idx").on(table.userId, table.occurredAt),
   statusIndex: index("reddit_post_outcomes_status_idx").on(table.status),
@@ -608,7 +613,10 @@ export const redditCommunities = pgTable("reddit_communities", {
   modActivity: varchar("mod_activity", { length: 20 }),
   description: text("description"),
   tags: jsonb("tags").$type<string[]>(),
-  competitionLevel: varchar("competition_level", { length: 20 })
+  competitionLevel: varchar("competition_level", { length: 20 }),
+  // New columns for compatibility
+  over18: boolean("over18").default(false).notNull(),
+  subscribers: integer("subscribers").default(0).notNull()
 });
 export type RedditCommunity = typeof redditCommunities.$inferSelect;
 export type InsertRedditCommunity = typeof redditCommunities.$inferInsert;
@@ -672,6 +680,14 @@ export const invoices = pgTable("invoices", {
   processor: varchar("processor", { length: 20 }).notNull(),
   processorRef: varchar("processor_ref", { length: 255 }),
   referralCodeId: integer("referral_code_id").references(() => referralCodes.id), // Phase 5: Referral simplification
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Billing history table for payment tracking
+export const billingHistory = pgTable("billing_history", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  amount: integer("amount"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -794,6 +810,7 @@ export const insertPostJobSchema = createInsertSchema(postJobs);
 export const insertRedditPostOutcomeSchema = createInsertSchema(redditPostOutcomes);
 export const insertSubscriptionSchema = createInsertSchema(subscriptions);
 export const insertInvoiceSchema = createInsertSchema(invoices);
+export const insertBillingHistorySchema = createInsertSchema(billingHistory);
 export const insertReferralCodeSchema = createInsertSchema(referralCodes);
 export const insertReferralSchema = createInsertSchema(referrals);
 export const insertEventLogSchema = createInsertSchema(eventLogs);
@@ -874,6 +891,9 @@ export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
 
 export type Invoice = typeof invoices.$inferSelect;
 export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
+
+export type BillingHistory = typeof billingHistory.$inferSelect;
+export type InsertBillingHistory = z.infer<typeof insertBillingHistorySchema>;
 
 export type ReferralCode = typeof referralCodes.$inferSelect;
 export type InsertReferralCode = z.infer<typeof insertReferralCodeSchema>;

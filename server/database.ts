@@ -1,3 +1,2 @@
-import { db, pool, closeDatabaseConnections } from './db.js';
-
-export { db, pool, closeDatabaseConnections };
+// Re-export the already configured database from db.ts
+export { db, pool } from './db.js';

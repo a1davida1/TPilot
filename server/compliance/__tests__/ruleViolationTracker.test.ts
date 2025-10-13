@@ -81,6 +81,11 @@ vi.mock('../../storage.js', () => {
         status: record.status,
         reason: record.reason,
         occurredAt: new Date(record.occurredAt),
+        // New required fields
+        success: record.status === 'completed',
+        title: null,
+        upvotes: 0,
+        views: 0,
       }));
   };
 

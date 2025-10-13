@@ -3,33 +3,17 @@
  * Implements tier-based limits, endpoint-specific rules, and abuse prevention
  */
 
-import { rateLimit, type Options } from 'express-rate-limit';
-import RedisStore from 'rate-limit-redis';
-import Redis from 'ioredis';
+import rateLimit, { type Options } from 'express-rate-limit';
+// Redis disabled for beta
+// import RedisStore from 'rate-limit-redis';
+// import Redis from 'ioredis';
 import { Request, Response } from 'express';
 import { logger } from '../bootstrap/logger.js';
 import { type AuthRequest } from './auth.js';
 
-// Use Redis if available, otherwise memory store
-let redisClient: Redis | null = null;
-
-// Only create Redis connection if URL provided and not using PG queue
-if (process.env.REDIS_URL && process.env.USE_PG_QUEUE !== 'true') {
-  try {
-    redisClient = new Redis(process.env.REDIS_URL, {
-      maxRetriesPerRequest: 1,
-      enableOfflineQueue: false,
-      lazyConnect: true,
-      retryStrategy: () => null // Don't retry
-    });
-    redisClient.on('error', (err) => {
-      logger.debug('Rate limiter Redis error (non-fatal):', err.message);
-    });
-  } catch (err) {
-    logger.debug('Rate limiter using memory store (Redis unavailable)');
-    redisClient = null;
-  }
-}
+// Redis disabled for beta - using memory store
+const redisClient = null;
+logger.info('Using memory store for rate limiting (Redis disabled for beta)');
 
 // Tier-based rate limits (requests per minute)
 const TIER_LIMITS = {
@@ -72,13 +56,15 @@ const getUserTier = (req: AuthRequest): keyof typeof TIER_LIMITS => {
   return (req.user.tier as keyof typeof TIER_LIMITS) || 'free';
 };
 
-// Custom key generator for user-based rate limiting
-const keyGenerator = (req: AuthRequest): string => {
-  if (req.user?.id) {
-    return `user:${req.user.id}`;
+// Custom key generator function that prioritizes authenticated user ID over IP
+const keyGenerator = (req: Request): string => {
+  const authReq = req as AuthRequest;
+  if (authReq.user?.id) {
+    return `user-${authReq.user.id}`;
   }
-  // Fall back to IP for non-authenticated requests
-  return `ip:${req.ip || req.socket.remoteAddress || 'unknown'}`;
+  // Use the built-in IP key generator for proper IPv6 support
+  const { ipKeyGenerator } = require('express-rate-limit');
+  return ipKeyGenerator(req);
 };
 
 // Create rate limiter with tier-based limits
@@ -124,16 +110,8 @@ const createRateLimiter = (
     }
   };
 
-  // Use Redis store if available
-  if (redisClient) {
-    options.store = new RedisStore({
-      client: redisClient,
-      prefix: `rl:${endpoint}:`,
-    });
-    logger.info(`Rate limiter using Redis for ${endpoint}`);
-  } else {
-    logger.warn(`Rate limiter using memory store for ${endpoint} (Redis not available)`);
-  }
+  // Using memory store for beta (Redis disabled)
+  logger.info(`Rate limiter using memory store for ${endpoint}`);
 
   return rateLimit(options);
 };
@@ -161,10 +139,7 @@ export const rateLimiters = {
         retryAfter: '15 minutes'
       });
     },
-    store: redisClient ? new RedisStore({
-      client: redisClient,
-      prefix: 'rl:auth:',
-    }) : undefined
+    // Memory store for beta (Redis disabled)
   }),
   
   // Reddit posting (daily limits based on tier)
@@ -189,10 +164,7 @@ export const rateLimiters = {
         retryAfter: '1 minute'
       });
     },
-    store: redisClient ? new RedisStore({
-      client: redisClient,
-      prefix: 'rl:upload:',
-    }) : undefined
+    // Memory store for beta
   }),
 
   // Feedback submission (prevent spam)
@@ -208,10 +180,7 @@ export const rateLimiters = {
         retryAfter: '1 hour'
       });
     },
-    store: redisClient ? new RedisStore({
-      client: redisClient,
-      prefix: 'rl:feedback:',
-    }) : undefined
+    // Memory store for beta
   }),
 
   // Password reset (prevent abuse)
@@ -230,10 +199,7 @@ export const rateLimiters = {
         retryAfter: '1 hour'
       });
     },
-    store: redisClient ? new RedisStore({
-      client: redisClient,
-      prefix: 'rl:pwreset:',
-    }) : undefined
+    // Memory store for beta
   })
 };
 
@@ -241,12 +207,12 @@ export const rateLimiters = {
 export const globalRateLimiter = createRateLimiter('default', 60000);
 
 // Abuse detection middleware
-export const detectAbuse = (req: AuthRequest, res: Response, next: Function) => {
+export const detectAbuse = (req: AuthRequest, res: Response, next: () => void) => {
   const suspicious = [
     // Multiple failed auth attempts
     req.path.includes('/auth') && res.statusCode === 401,
     // Rapid API calls from same IP
-    req.rateLimit && req.rateLimit.remaining === 0,
+    (req as any).rateLimit?.remaining === 0,
     // Suspicious user agents
     req.headers['user-agent']?.includes('bot') && !req.headers['user-agent']?.includes('googlebot'),
   ].filter(Boolean).length;

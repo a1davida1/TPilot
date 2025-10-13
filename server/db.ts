@@ -34,7 +34,14 @@ if (isNeonDb) {
   dbInstance = drizzleNeon({ client: neonPool, schema });
 } else {
   // Use regular PostgreSQL pool for local/standard databases
-  const pgPool = new PostgresPool({ connectionString });
+  // Remove SSL parameters from URL as we'll configure them separately
+  const cleanUrl = connectionString.split('?')[0];
+  const needsSSL = connectionString.includes('ssl=') || connectionString.includes('sslmode=');
+  
+  const pgPool = new PostgresPool({ 
+    connectionString: cleanUrl,
+    ssl: needsSSL ? { rejectUnauthorized: false } : undefined
+  });
   poolInstance = pgPool;
   dbInstance = drizzlePostgres({ client: pgPool, schema });
 }

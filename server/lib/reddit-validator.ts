@@ -4,10 +4,38 @@
  */
 
 import { logger } from '../bootstrap/logger.js';
-import { db } from '../db.js';
-import { subredditRules, redditCommunities, redditPostOutcomes } from '@shared/schema';
-import { eq, and, gte } from 'drizzle-orm';
-import snoowrap from 'snoowrap';
+import { db } from '../database.js';
+import { redditCommunities, redditPostOutcomes } from '@shared/schema';
+import { and, eq, gte } from 'drizzle-orm';
+
+// Extended interface for community with optional fields
+interface ExtendedCommunity {
+  id: string;
+  name: string;
+  displayName: string;
+  members: number;
+  engagementRate: number;
+  category: string;
+  verificationRequired: boolean;
+  promotionAllowed: string;
+  postingLimits: unknown;
+  rules: unknown;
+  bestPostingTimes: string[] | null;
+  averageUpvotes: number | null;
+  successProbability: number | null;
+  growthTrend: string | null;
+  modActivity: string | null;
+  description: string | null;
+  tags: string[] | null;
+  competitionLevel: string | null;
+  over18: boolean;
+  subscribers: number;
+  allowImages?: boolean;
+  postFlairRequired?: boolean;
+  postFlairs?: string[] | unknown;
+  minAccountAge?: number;
+  minKarma?: number;
+}
 
 interface ValidationResult {
   valid: boolean;
@@ -105,52 +133,59 @@ export class RedditValidator {
         .limit(1);
 
       if (community) {
+        const extCommunity = community as ExtendedCommunity;
         // Check NSFW requirements
-        if (community.over18 && !post.nsfw) {
+        if (extCommunity.over18 && !post.nsfw) {
           result.errors.push(`r/${post.subreddit} requires posts to be marked NSFW`);
         }
 
-        if (!community.over18 && post.nsfw) {
+        if (!extCommunity.over18 && post.nsfw) {
           result.warnings.push(`r/${post.subreddit} is not an NSFW subreddit`);
         }
 
         // Check if images are allowed
-        if (!community.allowImages && post.imageUrl) {
+        if (!extCommunity.allowImages && post.imageUrl) {
           result.errors.push(`r/${post.subreddit} does not allow image posts`);
         }
 
         // Check flair requirements
-        if (community.postFlairRequired && !post.flairText) {
+        if (extCommunity.postFlairRequired && !post.flairText) {
           result.errors.push(`r/${post.subreddit} requires post flair`);
-          
-          // Suggest common flairs
-          const flairs = community.postFlairs as any;
+        }
+
+        if (post.flairText && extCommunity.postFlairs) {
+          const flairs = extCommunity.postFlairs;
           if (flairs && Array.isArray(flairs)) {
+            if (!flairs.includes(post.flairText)) {
+              result.errors.push(`Invalid flair: "${post.flairText}"`);
+            }
             result.suggestions.push(`Available flairs: ${flairs.slice(0, 5).join(', ')}`);
           }
         }
 
         // Check title requirements
-        const titleRules = community.rules as any;
-        if (titleRules?.titleFormat) {
-          const format = titleRules.titleFormat;
+        const titleRules = extCommunity.rules;
+        if (titleRules && typeof titleRules === 'object' && 'titleFormat' in titleRules) {
+          const format = (titleRules as {titleFormat: unknown}).titleFormat;
           
           // Common title format checks
-          if (format.includes('[F]') && !post.title.includes('[F]')) {
-            result.warnings.push(`r/${post.subreddit} usually requires [F] tag in title`);
-          }
-          
-          if (format.includes('[OC]') && !post.title.includes('[OC]')) {
-            result.suggestions.push('Consider adding [OC] tag for original content');
-          }
-          
-          if (format.includes('[verification]') && post.title.toLowerCase().includes('verif')) {
-            result.suggestions.push('Use [verification] tag for verification posts');
+          if (typeof format === 'string') {
+            if (format.includes('[F]') && !post.title.includes('[F]')) {
+              result.warnings.push(`r/${post.subreddit} usually requires [F] tag in title`);
+            }
+            
+            if (format.includes('[OC]') && !post.title.includes('[OC]')) {
+              result.suggestions.push('Consider adding [OC] tag for original content');
+            }
+            
+            if (format.includes('[verification]') && post.title.toLowerCase().includes('verif')) {
+              result.suggestions.push('Use [verification] tag for verification posts');
+            }
           }
         }
 
         // Minimum karma/age requirements
-        if (community.minAccountAge || community.minKarma) {
+        if (extCommunity.minAccountAge || extCommunity.minKarma) {
           result.warnings.push(`r/${post.subreddit} has account requirements - ensure your account meets them`);
         }
       } else {
@@ -212,9 +247,9 @@ export class RedditValidator {
         .from(redditPostOutcomes)
         .where(
           and(
-            eq(redditPostOutcomes.userId, userId),
+            eq(redditPostOutcomes.userId, Number(userId)),
             eq(redditPostOutcomes.subreddit, subreddit),
-            gte(redditPostOutcomes.createdAt, oneDayAgo)
+            gte(redditPostOutcomes.occurredAt, oneDayAgo)
           )
         );
 
@@ -229,7 +264,7 @@ export class RedditValidator {
       // Check if last post was too recent (spam prevention)
       if (recentPosts.length > 0) {
         const lastPost = recentPosts[recentPosts.length - 1];
-        const minutesSinceLastPost = (Date.now() - lastPost.createdAt.getTime()) / 60000;
+        const minutesSinceLastPost = (Date.now() - lastPost.occurredAt.getTime()) / 60000;
         
         if (minutesSinceLastPost < 10) {
           result.errors.push('Please wait at least 10 minutes between posts to the same subreddit');

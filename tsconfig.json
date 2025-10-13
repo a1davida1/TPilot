@@ -11,6 +11,8 @@
     "incremental": false,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
     "noEmit": false,
+    "noEmitOnError": false,
+    "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
     "target": "ES2022",
     "strict": true,

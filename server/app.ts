@@ -8,7 +8,7 @@ import { registerRoutes } from './routes.js';
 import { setupAuth } from './auth.js';
 import { setupSocialAuth } from './social-auth.js';
 import { mountBillingRoutes } from './routes/billing.js';
-import { generalLimiter, sanitize } from './middleware/security.js';
+// Rate limiting handled in individual routes
 import { permissionsPolicy } from './middleware/permissions-policy.js';
 import { mountStripeWebhook } from './routes/webhooks.stripe.js';
 import { logger } from './bootstrap/logger.js';
@@ -350,7 +350,9 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
 
   const startQueueOption = options.startQueue ?? true;
   const configureStaticOption = options.configureStaticAssets ?? true;
-  const enableVite = options.enableVite ?? (app.get('env') === 'development');
+  // Never enable Vite in production, even if NODE_ENV is missing
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+  const enableVite = options.enableVite ?? (!isProduction && app.get('env') === 'development');
   const queuePrerequisitesPresent = Boolean(process.env.REDIS_URL || process.env.DATABASE_URL);
   const shouldStartQueue = startQueueOption && queuePrerequisitesPresent;
 
@@ -375,9 +377,10 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
       await configureStaticAssets(app, server, enableVite);
     }
 
-    // IMPORTANT: Add Sentry error handler AFTER all routes but BEFORE any other error middleware
+    // Sentry v7 error handler
     if (process.env.SENTRY_DSN) {
-      Sentry.setupExpressErrorHandler(app);
+      // In v7, use Handlers.errorHandler() instead
+      app.use(Sentry.Handlers.errorHandler());
     }
 
     // Optional fallthrough error handler

@@ -240,5 +240,8 @@
   "imports": {
     "#shared/*": "./shared/*",
     "#server/*": "./server/*"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }
