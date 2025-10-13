@@ -162,7 +162,17 @@ export async function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
             token: verificationToken,
             expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
           });
-          await emailService.sendVerificationEmail(user.email, user.username, verificationToken);
+
+          // Try to send verification email, but don't fail signup if it fails
+          try {
+            await emailService.sendVerificationEmail(user.email, user.username, verificationToken);
+            logger.info('Verification email sent successfully', { email: user.email });
+          } catch (emailError) {
+            logger.warn('Failed to send verification email, but signup continues', {
+              error: (emailError as Error).message,
+              email: user.email
+            });
+          }
         }
 
         // Generate auth token for immediate login (but email verification still required for full access)
@@ -1061,15 +1071,26 @@ export async function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
 
       // Send verification email
       assertExists(user.email, 'User email must exist to send verification email');
-      await emailService.sendVerificationEmail(user.email, user.username || 'User', verificationToken);
 
-      res.json({ 
-        message: 'Verification email sent. Please check your inbox and spam folder.' 
-      });
+      try {
+        await emailService.sendVerificationEmail(user.email, user.username || 'User', verificationToken);
+        logger.info('Resend verification email sent successfully', { email: user.email });
+        res.json({
+          message: 'Verification email sent. Please check your inbox and spam folder.'
+        });
+      } catch (emailError) {
+        logger.error('Failed to send verification email', {
+          error: (emailError as Error).message,
+          email: user.email
+        });
+        res.status(500).json({
+          message: 'Email service is not configured. Please contact support or set SENDGRID_API_KEY.'
+        });
+      }
 
     } catch (error) {
       safeLog('error', 'Resend verification error:', { error: (error as Error).message });
-      res.status(500).json({ message: 'Error sending verification email' });
+      res.status(500).json({ message: 'Error processing verification request' });
     }
   });
 
