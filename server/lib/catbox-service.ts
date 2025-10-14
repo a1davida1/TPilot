@@ -81,7 +81,7 @@ export class CatboxService {
 
       const response = await fetch(this.API_URL, {
         method: 'POST',
-        body: formData,
+        body: formData as unknown as BodyInit,
         headers: formData.getHeaders()
       });
 
@@ -128,7 +128,7 @@ export class CatboxService {
 
       const response = await fetch(this.API_URL, {
         method: 'POST',
-        body: formData,
+        body: formData as unknown as BodyInit,
         headers: formData.getHeaders()
       });
 
@@ -172,7 +172,7 @@ export class CatboxService {
 
       const response = await fetch(this.API_URL, {
         method: 'POST',
-        body: formData,
+        body: formData as unknown as BodyInit,
         headers: formData.getHeaders()
       });
 

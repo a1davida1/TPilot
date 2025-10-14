@@ -82,6 +82,25 @@ export const users = pgTable("users", {
   captionsGenerated: integer("captions_generated").default(0),
 });
 
+// Track Catbox uploads for analytics and history
+export const catboxUploads = pgTable("catbox_uploads", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  url: varchar("url", { length: 255 }).notNull(),
+  filename: varchar("filename", { length: 255 }),
+  fileSize: integer("file_size"),
+  uploadDuration: integer("upload_duration"), // milliseconds
+  retryCount: integer("retry_count").default(0),
+  provider: varchar("provider", { length: 50 }).default("catbox"),
+  success: boolean("success").default(true),
+  errorMessage: text("error_message"),
+  uploadedAt: timestamp("uploaded_at").defaultNow(),
+}, (table) => ({
+  userIdx: index("catbox_uploads_user_idx").on(table.userId),
+  urlIdx: index("catbox_uploads_url_idx").on(table.url),
+  uploadedAtIdx: index("catbox_uploads_uploaded_at_idx").on(table.uploadedAt),
+}));
+
 export const contentGenerations = pgTable("content_generations", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
