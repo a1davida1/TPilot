@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { trackUpload } from '@/lib/upload-monitoring';
-import { CatboxAPI } from '@/lib/catbox-api';
 
 interface UploadResult {
   imageUrl: string;
@@ -79,27 +78,39 @@ export function CatboxUploadPortal({
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 300);
 
-      // Use the proper Catbox API client
-      // TODO: Get userhash from user settings for authenticated uploads
-      const catboxApi = new CatboxAPI();
+      // ALWAYS use proxy to avoid CORS - Catbox doesn't set CORS headers
+      const formData = new FormData();
+      formData.append('file', file);
+      
       const startTime = Date.now();
-      const result = await catboxApi.uploadFile(file);
+      const response = await fetch('/api/upload/catbox-proxy', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include' // Include cookies for auth
+      });
+      
+      clearInterval(progressInterval);
       const _uploadDuration = Date.now() - startTime;
 
-      clearInterval(progressInterval);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || `Upload failed: ${response.statusText}`);
+      }
+
+      const data = await response.json();
       
-      if (!result.success) {
-        throw new Error(result.error || 'Upload failed');
+      if (!data.success || !data.imageUrl) {
+        throw new Error('Failed to get valid URL from upload');
       }
 
       setUploadProgress(100);
       
       // Set preview and notify parent
-      const imageUrl = result.url;
+      const imageUrl = data.imageUrl;
       setPreviewUrl(imageUrl);
       onComplete({ 
         imageUrl,
-        provider: 'catbox'
+        provider: data.provider || 'catbox'
       });
       
       // Track successful direct upload
@@ -121,70 +132,22 @@ export function CatboxUploadPortal({
         setIsUploading(false);
       }, 500);
 
-    } catch (_error) {
-      // Direct upload failed, track and fallback to proxy
+    } catch (error) {
+      // Upload failed
       trackUpload({
         provider: 'catbox',
         success: false,
-        errorType: 'cors'
+        errorType: 'network'
       });
       
-      // Fallback to proxy if direct upload fails (usually CORS issues)
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        const response = await fetch('/api/upload/catbox-proxy', {
-          method: 'POST',
-          body: formData
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Proxy upload failed');
-        }
-        
-        const data = await response.json();
-        setUploadProgress(100);
-        setPreviewUrl(data.imageUrl);
-        onComplete({ 
-          imageUrl: data.imageUrl,
-          provider: 'catbox'
-        });
-        
-        // Track successful proxy upload
-        trackUpload({
-          provider: 'proxy',
-          success: true,
-          fileSize: file.size
-        });
-        
-        toast({
-          title: "Upload successful",
-          description: "Your image has been uploaded to Catbox (via proxy)",
-        });
-        
-        setTimeout(() => {
-          setUploadProgress(0);
-          setIsUploading(false);
-        }, 500);
-        
-      } catch (_proxyError) {
-        // Both upload methods failed
-        trackUpload({
-          provider: 'proxy',
-          success: false,
-          errorType: 'network'
-        });
-        setUploadProgress(0);
-        setIsUploading(false);
-        
-        toast({
-          title: "Upload failed",
-          description: "Both direct and proxy uploads failed. Please try pasting a URL or using a different image host.",
-          variant: "destructive"
-        });
-      }
+      setUploadProgress(0);
+      setIsUploading(false);
+      
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "Failed to upload image. Please try again or use a URL.",
+        variant: "destructive"
+      });
     }
   }, [acceptedFormats, onComplete, toast]);
 
@@ -211,18 +174,29 @@ export function CatboxUploadPortal({
     setUploadProgress(50);
     
     try {
-      // Use Catbox API to upload from URL
-      const catboxApi = new CatboxAPI();
-      const result = await catboxApi.uploadFromUrl(externalUrl);
+      // Try to upload URL via our Catbox API (server-side)
+      const response = await fetch('/api/catbox/upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: externalUrl }),
+        credentials: 'include'
+      });
       
-      if (!result.success) {
-        throw new Error(result.error || 'URL upload failed');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'URL upload failed');
+      }
+      
+      const data = await response.json();
+      
+      if (!data.success || !data.url) {
+        throw new Error('Failed to upload from URL');
       }
       
       setUploadProgress(100);
-      setPreviewUrl(result.url);
+      setPreviewUrl(data.url);
       onComplete({
-        imageUrl: result.url,
+        imageUrl: data.url,
         provider: 'catbox'
       });
       
@@ -244,7 +218,7 @@ export function CatboxUploadPortal({
       
       toast({
         title: "URL accepted",
-        description: "Direct Catbox upload failed, using original URL",
+        description: "Using original URL (Catbox upload not available)",
       });
       
       setUploadProgress(0);
