@@ -407,7 +407,7 @@ export class ReferralManager {
   /**
    * Process referral rewards when a referred user subscribes
    */
-  static async processReferralReward(subscribingUserId: number): Promise<ReferralReward | null> {
+  static async processReferralReward(subscribingUserId: number, subscriptionId?: string): Promise<ReferralReward | null> {
     // Find who referred this user
     const [user] = await db
       .select({ referredBy: users.referredBy })
@@ -418,11 +418,21 @@ export class ReferralManager {
       return null; // No referrer
     }
 
-    const rewardAmount = 5;
+    const rewardAmount = 500; // $5 in cents
+    const now = new Date();
+    const billingPeriodEnd = new Date(now);
+    billingPeriodEnd.setMonth(billingPeriodEnd.getMonth() + 1);
+    
     await db.insert(referralRewards).values({
       referrerId: user.referredBy,
       referredId: subscribingUserId,
+      type: 'first_month_bonus',
       amount: rewardAmount,
+      month: 1, // First month
+      billingPeriodStart: now,
+      billingPeriodEnd: billingPeriodEnd,
+      status: 'pending',
+      subscriptionId: subscriptionId || undefined
     });
     
     // Send notification emails
