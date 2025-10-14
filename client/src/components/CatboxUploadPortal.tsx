@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { trackUpload } from '@/lib/upload-monitoring';
+import { CatboxAPI } from '@/lib/catbox-api';
 
 interface UploadResult {
   imageUrl: string;
@@ -73,39 +74,28 @@ export function CatboxUploadPortal({
     setUploadProgress(10);
 
     try {
-      // Create FormData for Catbox API
-      const formData = new FormData();
-      formData.append('reqtype', 'fileupload');
-      formData.append('fileToUpload', file);
-
       // Simulate progress updates
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 300);
 
-      // Direct upload to Catbox (anonymous, no auth needed)
-      const response = await fetch('https://catbox.moe/user/api.php', {
-        method: 'POST',
-        body: formData
-      });
+      // Use the proper Catbox API client
+      // TODO: Get userhash from user settings for authenticated uploads
+      const catboxApi = new CatboxAPI();
+      const startTime = Date.now();
+      const result = await catboxApi.uploadFile(file);
+      const _uploadDuration = Date.now() - startTime;
 
       clearInterval(progressInterval);
       
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
-      }
-
-      // Catbox returns the URL as plain text
-      const catboxUrl = await response.text();
-      
-      if (!catboxUrl || catboxUrl.includes('error')) {
-        throw new Error('Failed to get valid URL from Catbox');
+      if (!result.success) {
+        throw new Error(result.error || 'Upload failed');
       }
 
       setUploadProgress(100);
       
       // Set preview and notify parent
-      const imageUrl = catboxUrl.trim();
+      const imageUrl = result.url;
       setPreviewUrl(imageUrl);
       onComplete({ 
         imageUrl,
@@ -116,7 +106,8 @@ export function CatboxUploadPortal({
       trackUpload({
         provider: 'catbox',
         success: true,
-        fileSize: file.size
+        fileSize: file.size,
+        duration: _uploadDuration
       });
       
       toast({
@@ -198,19 +189,14 @@ export function CatboxUploadPortal({
   }, [acceptedFormats, onComplete, toast]);
 
   // Handle external URL submission
-  const handleExternalSubmit = useCallback(() => {
+  const handleExternalSubmit = useCallback(async () => {
     if (!externalUrl) return;
     
     // Basic validation of URL
     try {
       const url = new URL(externalUrl);
       if (!url.protocol.startsWith('http')) {
-        toast({
-          title: "Invalid URL",
-          description: "Please enter a valid HTTP(S) URL",
-          variant: "destructive"
-        });
-        return;
+        throw new Error('Invalid URL');
       }
     } catch {
       toast({
@@ -220,14 +206,50 @@ export function CatboxUploadPortal({
       });
       return;
     }
-
-    setPreviewUrl(externalUrl);
-    onComplete({ imageUrl: externalUrl, provider: 'external' });
     
-    toast({
-      title: "URL accepted",
-      description: "You can now generate captions for this image",
-    });
+    setIsUploading(true);
+    setUploadProgress(50);
+    
+    try {
+      // Use Catbox API to upload from URL
+      const catboxApi = new CatboxAPI();
+      const result = await catboxApi.uploadFromUrl(externalUrl);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'URL upload failed');
+      }
+      
+      setUploadProgress(100);
+      setPreviewUrl(result.url);
+      onComplete({
+        imageUrl: result.url,
+        provider: 'catbox'
+      });
+      
+      toast({
+        title: "Upload successful",
+        description: "Image uploaded from URL to Catbox",
+      });
+      
+      setExternalUrl('');
+      setTimeout(() => {
+        setUploadProgress(0);
+        setIsUploading(false);
+      }, 500);
+      
+    } catch (_error) {
+      // Fall back to accepting the URL directly if Catbox upload fails
+      setPreviewUrl(externalUrl);
+      onComplete({ imageUrl: externalUrl, provider: 'external' });
+      
+      toast({
+        title: "URL accepted",
+        description: "Direct Catbox upload failed, using original URL",
+      });
+      
+      setUploadProgress(0);
+      setIsUploading(false);
+    }
   }, [externalUrl, onComplete, toast]);
 
   // Handle file selection

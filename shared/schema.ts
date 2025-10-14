@@ -57,6 +57,7 @@ export const users = pgTable("users", {
   redditId: varchar("reddit_id", { length: 255 }),
   stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
   stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
+  catboxUserhash: varchar("catbox_userhash", { length: 255 }),
   bannedAt: timestamp("banned_at"),
   suspendedUntil: timestamp("suspended_until"),
   banReason: text("ban_reason"),

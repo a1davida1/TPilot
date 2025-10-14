@@ -977,6 +977,10 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   const catboxProxyRouter = (await import('./routes/catbox-proxy.js')).default;
   app.use('/api/upload', catboxProxyRouter);
 
+  // Catbox API routes
+  const catboxApiRouter = (await import('./routes/catbox-api.js')).default;
+  app.use('/api/catbox', catboxApiRouter);
+
   // Feedback system routes
   app.use('/api/feedback', feedbackRouter);
 
