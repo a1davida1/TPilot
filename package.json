@@ -40,7 +40,12 @@
     "validate:env": "tsx scripts/validate-production-env.ts",
     "smoke:test": "tsx scripts/smoke-test.ts",
     "db:backup": "tsx scripts/validate-db-backup.ts",
-    "db:backup:test": "TEST_RESTORE=true tsx scripts/validate-db-backup.ts"
+    "db:backup:test": "TEST_RESTORE=true tsx scripts/validate-db-backup.ts",
+    "predeploy": "npm run predeploy:check",
+    "predeploy:check": "npm run typecheck && npm run lint && npm run test:all && npm run build",
+    "predeploy:full": "npm run typecheck && npm run lint && npm run test:all && npm run validate:env && npm run build",
+    "predeploy:checklist": "bash scripts/predeploy-checklist.sh",
+    "predeploy:safe": "bash scripts/check-pending-migrations.sh && npm run predeploy:check"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",

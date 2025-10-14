@@ -69,12 +69,15 @@ describe('POST /api/upload/catbox-proxy', () => {
     });
 
     expect(CatboxService.getUserHash).toHaveBeenCalledWith(1);
-    expect(CatboxService.upload).toHaveBeenCalledWith({
-      reqtype: 'fileupload',
-      file: expect.any(Buffer),
-      filename: 'test.png',
-      userhash: 'stored-hash'
-    });
+    expect(CatboxService.upload).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reqtype: 'fileupload',
+        file: expect.any(Buffer),
+        filename: 'test.png',
+        mimeType: 'application/octet-stream',
+        userhash: 'stored-hash'
+      })
+    );
   });
 
   it('propagates Catbox 412 errors with guidance', async () => {
@@ -93,12 +96,15 @@ describe('POST /api/upload/catbox-proxy', () => {
     expect(response.body.error).toContain('Catbox rejected the upload');
     expect(response.body.details).toBe('You must provide a userhash');
 
-    expect(CatboxService.upload).toHaveBeenCalledWith({
-      reqtype: 'fileupload',
-      file: expect.any(Buffer),
-      filename: 'example.jpg',
-      userhash: undefined
-    });
+    expect(CatboxService.upload).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reqtype: 'fileupload',
+        file: expect.any(Buffer),
+        filename: 'example.jpg',
+        mimeType: 'application/octet-stream',
+        userhash: undefined
+      })
+    );
   });
 
   it('prefers request-provided userhash over stored value', async () => {
@@ -115,11 +121,14 @@ describe('POST /api/upload/catbox-proxy', () => {
 
     expect(response.status).toBe(200);
     expect(CatboxService.getUserHash).not.toHaveBeenCalled();
-    expect(CatboxService.upload).toHaveBeenCalledWith({
-      reqtype: 'fileupload',
-      file: expect.any(Buffer),
-      filename: 'from-request.png',
-      userhash: 'request-hash'
-    });
+    expect(CatboxService.upload).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reqtype: 'fileupload',
+        file: expect.any(Buffer),
+        filename: 'from-request.png',
+        mimeType: 'application/octet-stream',
+        userhash: 'request-hash'
+      })
+    );
   });
 });

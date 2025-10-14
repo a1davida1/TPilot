@@ -76,10 +76,13 @@ router.post('/upload',
         if (hash) userhash = hash;
       }
 
+      const mimeType = req.file.mimetype?.trim() || 'application/octet-stream';
+
       const result = await CatboxService.upload({
         reqtype: 'fileupload',
         file: req.file.buffer,
         filename: req.file.originalname,
+        mimeType,
         userhash
       });
 

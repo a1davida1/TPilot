@@ -37,6 +37,7 @@ router.post(
 
       const originalName = req.file.originalname || 'upload.bin';
       const sanitizedFilename = path.basename(originalName) || 'upload.bin';
+      const mimeType = req.file.mimetype?.trim() || 'application/octet-stream';
       let userhash: string | undefined;
       let userhashSource: 'request' | 'database' | 'none' = 'none';
 
@@ -64,6 +65,7 @@ router.post(
         reqtype: 'fileupload',
         file: fileBuffer,
         filename: sanitizedFilename,
+        mimeType,
         userhash
       });
 

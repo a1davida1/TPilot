@@ -3,6 +3,7 @@
  * Handles authenticated operations and user hash management
  */
 
+import FormDataNode from 'form-data';
 import { db } from '../db.js';
 import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
@@ -13,11 +14,47 @@ interface CatboxUploadOptions {
   reqtype: 'fileupload' | 'urlupload';
   file?: Buffer;
   filename?: string;
+  mimeType?: string;
   url?: string;
 }
 
 export class CatboxService {
   private static readonly API_URL = 'https://catbox.moe/user/api.php';
+  private static readonly USER_AGENT =
+    'Mozilla/5.0 (compatible; ThottoPilotBot/1.0; +https://thottopilot.com)';
+  private static readonly ACCEPT_HEADER = 'text/plain, */*;q=0.1';
+
+  private static async buildRequestHeaders(formData: FormDataNode): Promise<Record<string, string>> {
+    const headers: Record<string, string> = {
+      ...formData.getHeaders(),
+      'User-Agent': this.USER_AGENT,
+      Accept: this.ACCEPT_HEADER,
+      Connection: 'keep-alive'
+    };
+
+    const contentLength = await new Promise<number | null>((resolve) => {
+      formData.getLength((error: Error | null, length: number) => {
+        if (error) {
+          logger.warn('CatboxService: unable to determine multipart length', { error });
+          resolve(null);
+          return;
+        }
+
+        if (Number.isFinite(length) && length > 0) {
+          resolve(length);
+          return;
+        }
+
+        resolve(null);
+      });
+    });
+
+    if (contentLength !== null) {
+      headers['Content-Length'] = contentLength.toString();
+    }
+
+    return headers;
+  }
 
   /**
    * Get user's Catbox hash from database
@@ -58,41 +95,42 @@ export class CatboxService {
    */
   static async upload(options: CatboxUploadOptions): Promise<{ success: boolean; url?: string; error?: string; status?: number }> {
     try {
-      const FormData = (await import('form-data')).default;
-      const formData = new FormData();
+      const formData = new FormDataNode();
       
       formData.append('reqtype', options.reqtype);
       
       // Add userhash if available
-      if (options.userhash) {
-        formData.append('userhash', options.userhash);
+      const sanitizedUserhash = options.userhash?.trim();
+      if (sanitizedUserhash) {
+        formData.append('userhash', sanitizedUserhash);
       }
       
       // Add file or URL based on request type
       if (options.reqtype === 'fileupload' && options.file) {
-        formData.append('fileToUpload', options.file, {
-          filename: options.filename || 'upload.jpg'
-        });
+        const fileOptions: FormDataNode.AppendOptions = {
+          filename: options.filename || 'upload.bin',
+          contentType: options.mimeType || 'application/octet-stream'
+        };
+        formData.append('fileToUpload', options.file, fileOptions);
       } else if (options.reqtype === 'urlupload' && options.url) {
         formData.append('url', options.url);
       } else {
         return { success: false, error: 'Invalid upload parameters', status: 400 };
       }
 
+      const headers = await this.buildRequestHeaders(formData);
+
       let response = await fetch(this.API_URL, {
         method: 'POST',
         body: formData as unknown as BodyInit,
-        headers: {
-          ...formData.getHeaders(),
-          'User-Agent': 'ThottoPilot/1.0'
-        }
+        headers
       });
 
       // If Catbox returns 412 (Precondition Failed), try Litterbox as fallback
       if (response.status === 412 && options.reqtype === 'fileupload' && options.file) {
         logger.warn('Catbox returned 412, trying Litterbox as fallback');
         
-        const litterboxForm = new FormData();
+        const litterboxForm = new FormDataNode();
         litterboxForm.append('reqtype', 'fileupload');
         litterboxForm.append('time', '1h'); // 1 hour expiry
         litterboxForm.append('fileToUpload', options.file, {
@@ -111,15 +149,21 @@ export class CatboxService {
 
       const rawText = await response.text();
       const responseText = rawText.trim();
-      const isErrorResponse = responseText.toLowerCase().includes('error');
+      const normalizedResponse = responseText.toLowerCase();
+      const isErrorResponse = normalizedResponse.includes('error');
 
       // Check for errors
       if (!response.ok || isErrorResponse) {
-        const statusCode = response.ok ? 400 : response.status;
+        const statusCode = response.ok
+          ? normalizedResponse.includes('userhash') || normalizedResponse.includes('precondition')
+            ? 412
+            : 400
+          : response.status;
         
         logger.error('Catbox upload failed', { 
           status: statusCode,
-          response: responseText 
+          response: responseText,
+          upstreamStatus: response.status
         });
         return { 
           success: false, 
@@ -158,17 +202,18 @@ export class CatboxService {
    */
   static async deleteFiles(userhash: string, files: string[]): Promise<{ success: boolean; error?: string }> {
     try {
-      const FormData = (await import('form-data')).default;
-      const formData = new FormData();
+      const formData = new FormDataNode();
       
       formData.append('reqtype', 'deletefiles');
-      formData.append('userhash', userhash);
+      formData.append('userhash', userhash.trim());
       formData.append('files', files.join(' '));
+
+      const headers = await this.buildRequestHeaders(formData);
 
       const response = await fetch(this.API_URL, {
         method: 'POST',
         body: formData as unknown as BodyInit,
-        headers: formData.getHeaders()
+        headers
       });
 
       const text = await response.text();
@@ -198,21 +243,22 @@ export class CatboxService {
     files: string[]
   ): Promise<{ success: boolean; url?: string; short?: string; error?: string }> {
     try {
-      const FormData = (await import('form-data')).default;
-      const formData = new FormData();
+      const formData = new FormDataNode();
       
       formData.append('reqtype', 'createalbum');
       if (userhash) {
-        formData.append('userhash', userhash);
+        formData.append('userhash', userhash.trim());
       }
       formData.append('title', title);
       formData.append('desc', description);
       formData.append('files', files.join(' '));
 
+      const headers = await this.buildRequestHeaders(formData);
+
       const response = await fetch(this.API_URL, {
         method: 'POST',
         body: formData as unknown as BodyInit,
-        headers: formData.getHeaders()
+        headers
       });
 
       const text = await response.text();
