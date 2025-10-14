@@ -335,10 +335,18 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
       `${API_PREFIX}/webhooks/`,
       `${API_PREFIX}/health`,
       `${API_PREFIX}/uploads/imgur`,        // Exempt Imgur uploads from CSRF
-      `${API_PREFIX}/upload/catbox-proxy`   // Exempt Catbox proxy from CSRF
+      `${API_PREFIX}/upload/catbox-proxy`,  // Exempt Catbox proxy from CSRF
+      `${API_PREFIX}/catbox/`,              // Exempt all Catbox endpoints from CSRF
+      `${API_PREFIX}/caption/`              // Exempt caption generation from CSRF
     ];
 
-    if (exemptPaths.some((path) => req.path.startsWith(path))) {
+    const isExempt = exemptPaths.some((path) => req.path.startsWith(path));
+    
+    if (isExempt) {
+      logger.debug('CSRF exemption: path matched', { 
+        path: req.path,
+        method: req.method 
+      });
       return next();
     }
 
