@@ -1,5 +1,5 @@
 import { Router, type Response } from 'express';
-import { pipeline, InvalidImageError } from '../caption/geminiPipeline';
+import { pipeline, OpenRouterError } from '../caption/openrouterPipeline';
 import { pipelineTextOnly } from '../caption/textOnlyPipeline';
 import { pipelineRewrite } from '../caption/rewritePipeline';
 import { storage } from '../storage';
@@ -103,7 +103,7 @@ router.post('/generate', authenticateToken(true), async (req: AuthRequest, res: 
     
     // Save generation to database
     if (req.user?.id && result.final) {
-      const { caption: captionText, titles } = extractCaptionMetadata(result.final, result.titles);
+      const { caption: captionText, titles } = extractCaptionMetadata(result.final, result.final.titles);
       try {
         await storage.createGeneration({
           userId: req.user.id,
@@ -134,9 +134,10 @@ router.post('/generate', authenticateToken(true), async (req: AuthRequest, res: 
     
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "generation failed";
-    logger.error('Caption generation error', { error: message });
-    if (e instanceof InvalidImageError) {
-      return res.status(422).json({ error: message });
+    logger.error('Caption generation error', { error: message, cause: e instanceof Error ? e.cause : undefined });
+    if (e instanceof OpenRouterError) {
+      // Use a 502 Bad Gateway for upstream provider failures
+      return res.status(502).json({ error: 'AI provider failed: ' + message });
     }
     return res.status(500).json({ error: message });
   }
@@ -185,9 +186,6 @@ router.post('/generate-text', authenticateToken(true), async (req: AuthRequest, 
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "generation failed";
     logger.error('Text caption generation error', { error: message });
-    if (e instanceof InvalidImageError) {
-      return res.status(422).json({ error: message });
-    }
     return res.status(500).json({ error: message });
   }
 });
@@ -235,9 +233,6 @@ router.post('/rewrite', authenticateToken(true), async (req: AuthRequest, res: R
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "rewrite failed";
     logger.error('Caption rewrite error', { error: message });
-    if (e instanceof InvalidImageError) {
-      return res.status(422).json({ error: message });
-    }
     return res.status(500).json({ error: message });
   }
 });
