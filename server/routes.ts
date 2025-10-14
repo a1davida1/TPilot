@@ -1,8 +1,6 @@
 import type { Express } from "express";
 import express from "express";
-import type { Session } from "express-session";
-import { createServer, type Server } from "http";
-import path from 'path';
+import { createServer } from "http";
 import Stripe from 'stripe';
 import passport from 'passport';
 import process from 'node:process';
@@ -18,7 +16,7 @@ import { createSessionMiddleware } from "./bootstrap/session.js";
 // Route modules
 // import { authRoutes } from "./routes/auth.js"; // Removed - using server/auth.ts instead
 // import { uploadRoutes, applyImageShieldProtection, protectionPresets } from "./routes/upload.js"; // REMOVED - Local storage illegal
-import uploadRedirect from "./routes/upload-redirect.js"; // Redirects to Imgur for legal compliance
+// import uploadRedirect from "./routes/upload-redirect.js"; // REMOVED - Now using Catbox instead of Imgur
 import { mediaRoutes } from "./routes/media.js";
 import { analyticsRouter } from "./routes/analytics.js";
 import { referralRouter } from "./routes/referrals.js";
@@ -35,7 +33,7 @@ import { storage } from "./storage.js";
 import { setupAdminRoutes, requireAdmin } from "./admin-routes.js";
 import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers.js";
 import { deriveStripeConfig } from "./payments/stripe-config.js";
-import { buildUploadUrl } from "./lib/uploads.js";
+// import { buildUploadUrl } from "./lib/uploads.js"; // REMOVED - Not needed with external storage
 import { API_PREFIX, prefixApiPath } from "./lib/api-prefix.js";
 import { setupAuth } from "./auth.js";
 import { setupSocialAuth } from "./social-auth.js";
@@ -968,7 +966,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // app.use('/api/auth', authRoutes); // Removed - duplicate auth system
 
   // LEGAL COMPLIANCE: All uploads MUST go through external services - no local storage
-  app.use('/api/upload', uploadRedirect); // Redirects old endpoint
+  // NOTE: Removed uploadRedirect - now using Catbox instead of Imgur
   
   // External upload routes
   app.use('/api/uploads', imgurUploadRouter);
@@ -2027,7 +2025,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
       if (Number.isNaN(imageId)) return res.status(400).json({ message: 'Invalid image id' });
       const userId = req.user?.id;
       if (!userId) return res.status(401).json({ message: 'Authentication required' });
-      const { protectionLevel } = req.body as { protectionLevel?: string };
+      const _protectionLevel = req.body.protectionLevel;
       const image = await storage.getUserImage(imageId, userId);
       if (!image) return res.status(404).json({ message: 'Image not found' });
 
