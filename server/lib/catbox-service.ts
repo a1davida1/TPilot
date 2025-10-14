@@ -56,7 +56,7 @@ export class CatboxService {
   /**
    * Upload file to Catbox with optional authentication
    */
-  static async upload(options: CatboxUploadOptions): Promise<{ success: boolean; url?: string; error?: string }> {
+  static async upload(options: CatboxUploadOptions): Promise<{ success: boolean; url?: string; error?: string; status?: number }> {
     try {
       const FormData = (await import('form-data')).default;
       const formData = new FormData();
@@ -76,31 +76,69 @@ export class CatboxService {
       } else if (options.reqtype === 'urlupload' && options.url) {
         formData.append('url', options.url);
       } else {
-        return { success: false, error: 'Invalid upload parameters' };
+        return { success: false, error: 'Invalid upload parameters', status: 400 };
       }
 
-      const response = await fetch(this.API_URL, {
+      let response = await fetch(this.API_URL, {
         method: 'POST',
         body: formData as unknown as BodyInit,
-        headers: formData.getHeaders()
+        headers: {
+          ...formData.getHeaders(),
+          'User-Agent': 'ThottoPilot/1.0'
+        }
       });
 
-      const text = await response.text();
+      // If Catbox returns 412 (Precondition Failed), try Litterbox as fallback
+      if (response.status === 412 && options.reqtype === 'fileupload' && options.file) {
+        logger.warn('Catbox returned 412, trying Litterbox as fallback');
+        
+        const litterboxForm = new FormData();
+        litterboxForm.append('reqtype', 'fileupload');
+        litterboxForm.append('time', '1h'); // 1 hour expiry
+        litterboxForm.append('fileToUpload', options.file, {
+          filename: options.filename || 'upload.jpg'
+        });
+
+        response = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', {
+          method: 'POST',
+          body: litterboxForm as unknown as BodyInit,
+          headers: {
+            ...litterboxForm.getHeaders(),
+            'User-Agent': 'ThottoPilot/1.0'
+          }
+        });
+      }
+
+      const rawText = await response.text();
+      const responseText = rawText.trim();
+      const isErrorResponse = responseText.toLowerCase().includes('error');
 
       // Check for errors
-      if (!response.ok || text.toLowerCase().includes('error')) {
+      if (!response.ok || isErrorResponse) {
+        const statusCode = response.ok ? 400 : response.status;
+        
         logger.error('Catbox upload failed', { 
-          status: response.status,
-          response: text 
+          status: statusCode,
+          response: responseText 
         });
         return { 
           success: false, 
-          error: text || `Upload failed: ${response.statusText}` 
+          error: responseText || `Upload failed: ${response.statusText}`,
+          status: statusCode
         };
       }
 
-      // Success - URL returned as plain text
-      const url = text.trim();
+      // Validate response is a URL
+      const url = responseText;
+      if (!/^https?:\/\//u.test(url)) {
+        logger.error('Catbox upload returned invalid URL', { response: responseText });
+        return {
+          success: false,
+          error: 'Catbox returned an invalid response',
+          status: 502
+        };
+      }
+
       logger.info('Catbox upload successful', { url });
       
       return { success: true, url };
@@ -109,7 +147,8 @@ export class CatboxService {
       logger.error('Catbox upload error', { error });
       return { 
         success: false, 
-        error: error instanceof Error ? error.message : 'Upload failed' 
+        error: error instanceof Error ? error.message : 'Upload failed',
+        status: 500
       };
     }
   }

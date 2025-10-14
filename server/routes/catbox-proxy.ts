@@ -1,13 +1,16 @@
+import path from 'node:path';
 import { Router } from 'express';
 import multer from 'multer';
 import { logger } from '../bootstrap/logger.js';
+import { authenticateToken, type AuthRequest } from '../middleware/auth.js';
+import { CatboxService } from '../lib/catbox-service.js';
 
 const router = Router();
 
 // Configure multer for memory storage (200MB limit for Catbox)
-const upload = multer({ 
-  storage: multer.memoryStorage(), 
-  limits: { 
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
     fileSize: 200 * 1024 * 1024 // 200MB max for Catbox
   }
 });
@@ -17,124 +20,110 @@ const upload = multer({
  * Proxy endpoint for Catbox uploads to handle CORS issues
  * This is a fallback if direct browser uploads fail
  */
-router.post('/catbox-proxy', upload.single('file'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file provided' });
-    }
-
-    // Validate file type (Catbox restrictions)
-    const allowedTypes = [
-      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-      'video/mp4', 'video/webm', 'video/quicktime',
-      'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg'
-    ];
-    
-    if (!allowedTypes.includes(req.file.mimetype)) {
-      logger.warn('Invalid file type for Catbox', { 
-        mimetype: req.file.mimetype,
-        filename: req.file.originalname 
-      });
-      return res.status(415).json({ 
-        error: 'File type not supported by Catbox',
-        supportedTypes: allowedTypes 
-      });
-    }
-
-    // Log upload attempt
-    logger.info('Starting Catbox proxy upload', {
-      filename: req.file.originalname,
-      size: req.file.size,
-      mimetype: req.file.mimetype
-    });
-
-    // Create form data for Catbox
-    const FormData = (await import('form-data')).default;
-    const formData = new FormData();
-    formData.append('reqtype', 'fileupload');
-    formData.append('fileToUpload', req.file.buffer, {
-      filename: req.file.originalname,
-      contentType: req.file.mimetype
-    });
-
-    // Get user hash if available (for authenticated uploads)
-    const userhash = req.body?.userhash || req.headers['x-catbox-userhash'];
-    if (userhash) {
-      formData.append('userhash', userhash);
-      logger.info('Using authenticated upload with userhash');
-    }
-
-    // Try primary Catbox endpoint
-    let response = await fetch('https://catbox.moe/user/api.php', {
-      method: 'POST',
-      body: formData as unknown as BodyInit,
-      headers: {
-        ...formData.getHeaders(),
-        'User-Agent': 'ThottoPilot/1.0 (https://thottopilot.com)'
+router.post(
+  '/catbox-proxy',
+  authenticateToken(),
+  upload.single('file'),
+  async (req: AuthRequest, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file provided' });
       }
-    });
 
-    // If Catbox fails, try litterbox (temporary storage)
-    if (!response.ok && response.status === 412) {
-      logger.warn('Catbox returned 412, trying Litterbox as fallback');
-      
-      // Rebuild form for Litterbox (1 hour expiry)
-      const litterboxForm = new FormData();
-      litterboxForm.append('reqtype', 'fileupload');
-      litterboxForm.append('time', '1h'); // 1 hour expiry
-      litterboxForm.append('fileToUpload', req.file.buffer, {
-        filename: req.file.originalname,
-        contentType: req.file.mimetype
-      });
+      const fileBuffer = req.file.buffer;
+      if (!fileBuffer || fileBuffer.length === 0) {
+        return res.status(400).json({ error: 'Uploaded file is empty' });
+      }
 
-      response = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', {
-        method: 'POST',
-        body: litterboxForm as unknown as BodyInit,
-        headers: {
-          ...litterboxForm.getHeaders(),
-          'User-Agent': 'ThottoPilot/1.0 (https://thottopilot.com)'
+      const originalName = req.file.originalname || 'upload.bin';
+      const sanitizedFilename = path.basename(originalName) || 'upload.bin';
+      let userhash: string | undefined;
+      let userhashSource: 'request' | 'database' | 'none' = 'none';
+
+      const bodyUserhash = typeof req.body?.userhash === 'string' ? req.body.userhash.trim() : '';
+      if (bodyUserhash) {
+        if (bodyUserhash.length > 255) {
+          logger.warn('Catbox proxy received invalid userhash length', {
+            userId: req.user?.id ?? null
+          });
+
+          return res.status(400).json({ error: 'Invalid Catbox user hash' });
         }
+
+        userhash = bodyUserhash;
+        userhashSource = 'request';
+      } else if (req.user?.id) {
+        const storedHash = await CatboxService.getUserHash(req.user.id);
+        if (storedHash) {
+          userhash = storedHash;
+          userhashSource = 'database';
+        }
+      }
+
+      const uploadResult = await CatboxService.upload({
+        reqtype: 'fileupload',
+        file: fileBuffer,
+        filename: sanitizedFilename,
+        userhash
+      });
+
+      if (!uploadResult.success || !uploadResult.url) {
+        const statusCode =
+          uploadResult.status && uploadResult.status >= 400 ? uploadResult.status : 502;
+
+        const detailedError =
+          uploadResult.error ? uploadResult.error.trim().slice(0, 500) : undefined;
+
+        const responseMessage =
+          statusCode === 412
+            ? 'Catbox rejected the upload. Please verify your Catbox user hash in Settings.'
+            : detailedError || 'Catbox upload failed';
+
+        const responseBody: { error: string; details?: string } = { error: responseMessage };
+
+        if (detailedError && responseMessage !== detailedError) {
+          responseBody.details = detailedError;
+        }
+
+        logger.error('Catbox proxy upload failed', {
+          statusCode,
+          error: detailedError,
+          hasUserhash: Boolean(userhash),
+          userhashSource,
+          requiresUserhash: statusCode === 412,
+          userId: req.user?.id ?? null,
+          filename: sanitizedFilename
+        });
+
+        return res.status(statusCode).json(responseBody);
+      }
+
+      logger.info('Catbox proxy upload successful', {
+        url: uploadResult.url,
+        originalName: sanitizedFilename,
+        size: req.file.size,
+        authenticated: Boolean(userhash),
+        userhashSource,
+        userId: req.user?.id ?? null
+      });
+
+      return res.json({
+        success: true,
+        imageUrl: uploadResult.url,
+        provider: 'catbox'
+      });
+    } catch (error) {
+      logger.error('Catbox proxy upload error', {
+        error,
+        userId: req.user?.id ?? null
+      });
+
+      return res.status(500).json({
+        error: 'Upload failed',
+        details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
-
-    if (!response.ok) {
-      logger.error('Catbox upload failed', { 
-        status: response.status,
-        statusText: response.statusText 
-      });
-      return res.status(response.status).json({ 
-        error: `Catbox upload failed: ${response.statusText}` 
-      });
-    }
-
-    const catboxUrl = await response.text();
-    
-    if (!catboxUrl || catboxUrl.includes('error')) {
-      logger.error('Invalid Catbox response', { response: catboxUrl });
-      return res.status(500).json({ 
-        error: 'Failed to get valid URL from Catbox' 
-      });
-    }
-
-    logger.info('Catbox proxy upload successful', { 
-      url: catboxUrl.trim(),
-      originalName: req.file.originalname,
-      size: req.file.size
-    });
-
-    res.json({ 
-      success: true,
-      imageUrl: catboxUrl.trim(),
-      provider: 'catbox'
-    });
-
-  } catch (error) {
-    logger.error('Catbox proxy upload error', { error });
-    res.status(500).json({ 
-      error: 'Upload failed',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    });
   }
-});
+);
 
 export default router;

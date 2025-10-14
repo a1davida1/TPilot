@@ -84,7 +84,9 @@ router.post('/upload',
       });
 
       if (!result.success) {
-        return res.status(400).json({ 
+        const statusCode = result.status && result.status >= 400 ? result.status : 400;
+        
+        return res.status(statusCode).json({ 
           error: result.error || 'Upload failed' 
         });
       }
@@ -135,7 +137,9 @@ router.post('/upload-url', authenticateToken(), async (req: AuthRequest, res) =>
     });
 
     if (!result.success) {
-      return res.status(400).json({ 
+      const statusCode = result.status && result.status >= 400 ? result.status : 400;
+      
+      return res.status(statusCode).json({ 
         error: result.error || 'URL upload failed' 
       });
     }
