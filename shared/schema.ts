@@ -904,11 +904,32 @@ export const referralRewards = pgTable("referral_rewards", {
   id: serial("id").primaryKey(),
   referrerId: integer("referrer_id").references(() => users.id).notNull(),
   referredId: integer("referred_id").references(() => users.id).notNull(),
-  amount: integer("amount").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
 
+  // Payment tracking
+  type: varchar("type", { length: 20 }).notNull(), // 'first_month_bonus' | 'recurring_commission'
+  amount: integer("amount").notNull(), // in cents
+  month: integer("month").notNull(), // Which subscription month (1-9)
+
+  // Status tracking
+  status: varchar("status", { length: 20 }).default("pending").notNull(), // 'pending' | 'paid' | 'failed'
+  paidAt: timestamp("paid_at"),
+
+  // Subscription tracking
+  subscriptionId: varchar("subscription_id", { length: 255 }), // Stripe subscription ID
+  billingPeriodStart: timestamp("billing_period_start").notNull(),
+  billingPeriodEnd: timestamp("billing_period_end").notNull(),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  referrerIdx: index("referral_rewards_referrer_idx").on(table.referrerId),
+  referredIdx: index("referral_rewards_referred_idx").on(table.referredId),
+  statusIdx: index("referral_rewards_status_idx").on(table.status),
+  subscriptionIdx: index("referral_rewards_subscription_idx").on(table.subscriptionId),
+}));
+
+export const insertReferralRewardSchema = createInsertSchema(referralRewards);
 export type ReferralReward = typeof referralRewards.$inferSelect;
+export type InsertReferralReward = z.infer<typeof insertReferralRewardSchema>;
 export type InsertReferral = z.infer<typeof insertReferralSchema>;
 
 export type EventLog = typeof eventLogs.$inferSelect;

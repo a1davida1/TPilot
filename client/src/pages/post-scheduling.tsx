@@ -7,32 +7,23 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Calendar, 
-  Upload, 
-  Image as ImageIcon,
   Sparkles,
   Shield,
-  Clock,
   CheckCircle,
   ArrowRight,
   X,
-  Loader2,
-  Plus
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest } from '@/lib/queryClient';
-import { ImgurUploadPortal } from '@/components/ImgurUploadPortal';
-import { format } from 'date-fns';
+import { CatboxUploadPortal } from '@/components/CatboxUploadPortal';
 import { cn } from '@/lib/utils';
 import { SchedulingCalendar } from '@/components/SchedulingCalendar';
 
@@ -64,11 +55,8 @@ export default function PostSchedulingPage() {
   const [currentStep, setCurrentStep] = useState<'upload' | 'select' | 'caption' | 'protect' | 'schedule'>('upload');
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [selectedImages, setSelectedImages] = useState<UploadedImage[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
 
   // Scheduling form state
-  const [scheduledTime, setScheduledTime] = useState('');
-  const [subreddit, setSubreddit] = useState('');
   const [nsfw, setNsfw] = useState(false);
 
   // Handle image upload
@@ -104,7 +92,7 @@ export default function PostSchedulingPage() {
           style: 'explicit',
           nsfw: true
         });
-        return { imageId: image.id, caption: (response as any).caption || '' };
+        return { imageId: image.id, caption: (response as { caption?: string }).caption || '' };
       });
       return Promise.all(promises);
     },
@@ -225,22 +213,7 @@ export default function PostSchedulingPage() {
         break;
       
       case 'schedule':
-        if (!scheduledTime || !subreddit) {
-          toast({
-            title: 'Missing information',
-            description: 'Please fill in all required fields',
-            variant: 'destructive'
-          });
-          return;
-        }
-        const scheduleData: ScheduleData[] = selected.map(img => ({
-          imageUrl: img.protectedUrl || img.url,
-          caption: img.caption || '',
-          subreddit,
-          scheduledFor: scheduledTime,
-          nsfw
-        }));
-        schedulePosts.mutate(scheduleData);
+        // Scheduling is now handled by SchedulingCalendar component
         break;
     }
   };
@@ -298,11 +271,11 @@ export default function PostSchedulingPage() {
               <div>
                 <h2 className="text-xl font-semibold mb-2">Upload Images</h2>
                 <p className="text-muted-foreground mb-4">
-                  Upload your images to Imgur. They'll be stored securely and never on our servers.
+                  Upload your images to Catbox. They'll be stored securely and never on our servers.
                 </p>
               </div>
               
-              <ImgurUploadPortal onComplete={handleImageUpload} />
+              <CatboxUploadPortal onComplete={handleImageUpload} />
               
               {uploadedImages.length > 0 && (
                 <div>
@@ -495,13 +468,13 @@ export default function PostSchedulingPage() {
                   id: img.id,
                   url: img.url,
                   caption: img.caption,
-                  subreddit: subreddit
+                  subreddit: ''
                 }))}
                 onSchedule={(scheduleData) => {
                   // Add nsfw flag to each post in the schedule data
                   const scheduleDataWithNsfw = scheduleData.map(post => ({
                     ...post,
-                    nsfw: nsfw
+                    nsfw
                   }));
                   schedulePosts.mutate(scheduleDataWithNsfw);
                 }}

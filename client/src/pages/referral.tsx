@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type HTMLAttributes, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Copy, Check, Share2, Users, DollarSign, Gift, Sparkles } from 'lucide-react';
+import { Copy, Check, Share2, Users, DollarSign, Gift } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

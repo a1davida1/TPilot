@@ -10,8 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 // Switch component not currently used in this component
 import { CaptionPreview } from "./CaptionPreview";
-import { ImgurUploadPortal } from "./ImgurUploadPortal";
-import { Loader2, Sparkles, Upload, AlertCircle, Image as ImageIcon, Type, Edit3 } from "lucide-react";
+import { CatboxUploadPortal } from "./CatboxUploadPortal";
+import { Loader2, Sparkles, AlertCircle, Image as ImageIcon, Type, Edit3 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { getErrorMessage } from '@/utils/errorHelpers';
@@ -70,7 +70,7 @@ export function GeminiCaptionGeneratorTabs() {
   // Image tab states
   const [imageUrl, setImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [_imagePreview, setImagePreview] = useState<string | null>(null);
   
   // Text tab states
   const [theme, setTheme] = useState("");
@@ -80,7 +80,7 @@ export function GeminiCaptionGeneratorTabs() {
   const [existingCaption, setExistingCaption] = useState("");
   const [rewriteImageUrl, setRewriteImageUrl] = useState("");
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, forRewrite = false) => {
+  const _handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, forRewrite = false) => {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
@@ -347,8 +347,8 @@ export function GeminiCaptionGeneratorTabs() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Replace old upload UI with ImgurUploadPortal */}
-              <ImgurUploadPortal
+              {/* Replace old upload UI with CatboxUploadPortal */}
+              <CatboxUploadPortal
                 onComplete={(result) => {
                   setImageUrl(result.imageUrl);
                   setImagePreview(result.imageUrl);

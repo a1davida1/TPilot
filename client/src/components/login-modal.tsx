@@ -110,10 +110,29 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
       // Phase 3: Store access token in memory only
       const { setAccessToken } = await import('@/lib/auth');
       setAccessToken(data.accessToken || data.token);
-      
+
       // Keep user data in localStorage for now (non-sensitive)
       localStorage.setItem("user", JSON.stringify(data.user));
-      
+
+      // Apply referral code if one was stored
+      const referralCode = localStorage.getItem('referralCode');
+      if (referralCode && data.user?.id) {
+        try {
+          await apiRequest("POST", "/api/referral/apply", {
+            referralCode,
+            applicant: {
+              email: email,
+              userId: data.user.id
+            }
+          });
+          localStorage.removeItem('referralCode'); // Clear after successful application
+          console.log('Referral code applied successfully');
+        } catch (referralError) {
+          console.error('Failed to apply referral code:', referralError);
+          // Don't block signup if referral fails - just log it
+        }
+      }
+
       toast({
         title: "Account created!",
         description: "Welcome to ThottoPilot",

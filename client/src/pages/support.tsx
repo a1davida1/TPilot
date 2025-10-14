@@ -3,7 +3,6 @@ import { HelpCircle, MessageCircle, Book, Mail, Video, ChevronDown, ChevronUp } 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FeedbackWidget } from '@/components/FeedbackWidget';
 
 interface FAQItem {
   question: string;

@@ -7,7 +7,6 @@ import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { 
   Zap, 
-  Upload,
   Sparkles,
   Shield,
   Send,
@@ -17,7 +16,7 @@ import {
   Plus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
@@ -25,9 +24,8 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
 import { apiRequest } from '@/lib/queryClient';
-import { ImgurUploadPortal } from '@/components/ImgurUploadPortal';
+import { CatboxUploadPortal } from '@/components/CatboxUploadPortal';
 import { cn } from '@/lib/utils';
 
 interface CaptionOption {
@@ -37,7 +35,6 @@ interface CaptionOption {
 }
 
 export default function QuickPostPage() {
-  const { user } = useAuth();
   const { toast } = useToast();
 
   // State
@@ -47,7 +44,7 @@ export default function QuickPostPage() {
   const [selectedCaption, setSelectedCaption] = useState<string>('');
   const [subreddit, setSubreddit] = useState<string>('');
   const [nsfw, setNsfw] = useState<boolean>(true);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [_isProcessing, setIsProcessing] = useState(false);
   const [posted, setPosted] = useState(false);
 
   // Generate 2 caption options using Grok
@@ -75,7 +72,7 @@ export default function QuickPostPage() {
         })
       ];
       
-      const results = await Promise.all(promises) as any[];
+      const results = await Promise.all(promises) as unknown as Array<{ caption?: string; text?: string }>;
       return [
         { id: '1', text: results[0]?.caption || results[0]?.text || '', style: 'Flirty & Explicit' },
         { id: '2', text: results[1]?.caption || results[1]?.text || '', style: 'Cozy & Poetic' }
@@ -131,7 +128,7 @@ export default function QuickPostPage() {
         sendReplies: true
       });
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       setPosted(true);
       toast({
         title: '🎉 Posted successfully!',
@@ -204,7 +201,7 @@ export default function QuickPostPage() {
                 </div>
                 
                 {!imageUrl ? (
-                  <ImgurUploadPortal onComplete={handleImageUpload} />
+                  <CatboxUploadPortal onComplete={handleImageUpload} />
                 ) : (
                   <div className="flex items-center gap-4">
                     <img 
@@ -213,7 +210,7 @@ export default function QuickPostPage() {
                       className="w-32 h-32 object-cover rounded-lg"
                     />
                     <div>
-                      <p className="text-sm text-muted-foreground mb-2">Image uploaded to Imgur</p>
+                      <p className="text-sm text-muted-foreground mb-2">Image uploaded to Catbox</p>
                       <Button 
                         variant="outline" 
                         size="sm"

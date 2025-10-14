@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, Eye, Heart, MessageSquare, Users, Calendar, BarChart3, Activity } from 'lucide-react';
+import { TrendingUp, Eye, Heart, MessageSquare, BarChart3, Activity } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import {
-  LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
+  LineChart, Line, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 
@@ -114,7 +114,7 @@ export function AnalyticsDashboard() {
     );
   }
 
-  const COLORS = ['#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
+  const _COLORS = ['#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
 
   return (
     <div className="container mx-auto p-6 space-y-6">

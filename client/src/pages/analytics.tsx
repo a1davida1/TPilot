@@ -3,23 +3,14 @@
  * Tier-restricted analytics for content creators
  */
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
-  BarChart3, 
   TrendingUp, 
-  Users, 
-  Clock, 
-  Target,
-  Calendar,
-  DollarSign,
-  Activity,
-  Award,
   Lock,
   Crown,
   Zap,
   ChevronRight,
-  Info,
   Sparkles,
   AlertCircle
 } from 'lucide-react';
@@ -34,7 +25,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest } from '@/lib/queryClient';
 import { useLocation } from 'wouter';
-import { format, subDays, startOfWeek, endOfWeek } from 'date-fns';
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 // Tier access levels
@@ -78,7 +69,7 @@ export default function AnalyticsPage() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [timeRange, setTimeRange] = useState('7d');
-  const [selectedMetric, setSelectedMetric] = useState('engagement');
+  const [_selectedMetric, _setSelectedMetric] = useState('engagement');
   
   const userTier = user?.tier || 'free';
   const tierLevel = TIER_ACCESS[userTier as keyof typeof TIER_ACCESS] || 0;
@@ -86,7 +77,7 @@ export default function AnalyticsPage() {
   const isPremium = tierLevel >= TIER_ACCESS.premium;
 
   // Fetch analytics data based on tier
-  const { data: analytics, isLoading, error } = useQuery<AnalyticsData>({
+  const { data: analytics, isLoading } = useQuery<AnalyticsData>({
     queryKey: ['/api/analytics', timeRange, userTier],
     queryFn: async () => {
       try {

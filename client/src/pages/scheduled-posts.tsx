@@ -9,8 +9,7 @@ import {
   Loader2,
   CheckCircle,
   XCircle,
-  AlertCircle,
-  Image as ImageIcon
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,11 +45,12 @@ export default function ScheduledPostsPage() {
   const { data: posts, isLoading } = useQuery<ScheduledPost[]>({
     queryKey: ['/api/scheduled-posts'],
     enabled: !!user,
-    select: (data: any) => {
+    select: (data: unknown) => {
       // Handle both array response and object with posts array
-      if (Array.isArray(data)) return data;
-      if (data?.posts) return data.posts;
-      if (data?.scheduledPosts) return data.scheduledPosts;
+      const responseData = data as ScheduledPost[] | { posts?: ScheduledPost[]; scheduledPosts?: ScheduledPost[] };
+      if (Array.isArray(responseData)) return responseData;
+      if ('posts' in responseData && responseData.posts) return responseData.posts;
+      if ('scheduledPosts' in responseData && responseData.scheduledPosts) return responseData.scheduledPosts;
       return [];
     }
   });

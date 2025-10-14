@@ -36,11 +36,28 @@ export function UnifiedLanding() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Handle OAuth error parameters
+  // Handle OAuth error parameters and referral codes
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const error = params.get('error');
-    
+    const ref = params.get('ref');
+
+    // Store referral code in localStorage for use during signup
+    if (ref) {
+      try {
+        localStorage.setItem('referralCode', ref.trim().toUpperCase());
+        console.log('Referral code stored:', ref);
+
+        toast({
+          title: "Referral Code Applied! 🎉",
+          description: "Sign up to get started with your referral bonus.",
+          duration: 5000,
+        });
+      } catch (error) {
+        console.error('Failed to store referral code:', error);
+      }
+    }
+
     if (error) {
       const errorMessages: Record<string, string> = {
         'reddit_failed': 'Reddit sign-in failed. Please try again or use another method.',
@@ -50,14 +67,14 @@ export function UnifiedLanding() {
         'google_auth_failed': 'Google authentication failed. Please try again.',
         'facebook_auth_failed': 'Facebook authentication failed. Please try again.',
       };
-      
+
       toast({
         title: "Sign-in Error",
         description: errorMessages[error] || 'Authentication failed. Please try again.',
         variant: "destructive",
         duration: 6000,
       });
-      
+
       // Clean up the URL by removing the error parameter
       if (window.history.replaceState) {
         const cleanUrl = window.location.pathname;

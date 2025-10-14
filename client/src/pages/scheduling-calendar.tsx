@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, Plus, Edit2, Trash2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, Plus, Edit2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,7 +22,7 @@ export function SchedulingCalendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -51,8 +51,8 @@ export function SchedulingCalendar() {
       const data = await response.json();
       
       setScheduledPosts(data.posts || []);
-    } catch (error) {
-      console.error('Failed to fetch scheduled posts:', error);
+    } catch (_error) {
+      console.error('Failed to fetch scheduled posts:', _error);
     } finally {
       setLoading(false);
     }
@@ -66,7 +66,7 @@ export function SchedulingCalendar() {
         description: 'The scheduled post has been cancelled'
       });
       fetchScheduledPosts();
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Failed to cancel',
         description: 'Could not cancel the scheduled post',

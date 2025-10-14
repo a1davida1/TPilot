@@ -10,21 +10,16 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  ArrowRight,
   CheckCircle2,
   Shield,
   Sparkles,
   Target,
   Upload,
   BarChart3,
-  TrendingUp,
   Clock,
   Users,
-  DollarSign,
   Calculator,
-  Star,
   Scale,
-  FileSearch,
   Calendar,
   Zap,
   ImageIcon,
@@ -836,7 +831,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
               </Button>
               <Button
                 onClick={handleCommandCenter}
-                className="bg-gray-800 hover:bg-gray-700 text-white"
+                className="bg-white text-gray-900 hover:bg-gray-100 border border-gray-200 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:border-transparent"
               >
                 <Command className="h-4 w-4 mr-2" />
                 Command Center
