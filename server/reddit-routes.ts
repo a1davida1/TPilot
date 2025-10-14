@@ -342,22 +342,41 @@ export function registerRedditRoutes(app: Express) {
   app.get('/api/reddit/communities', authenticateToken(), async (req: AuthRequest, res) => {
     try {
       const { category, search } = req.query;
+      
+      logger.info('Fetching Reddit communities', { 
+        category: category || 'all', 
+        search: search || 'none',
+        user: req.user?.id || 'anonymous'
+      });
+      
       let communities = search
         ? await searchCommunities(search as string)
         : await listCommunities();
+        
+      logger.info(`Found ${communities.length} communities before filtering`);
+      
       if (category && category !== 'all') {
         communities = communities.filter(c => c.category === category);
+        logger.info(`Filtered to ${communities.length} communities for category: ${category}`);
       }
 
       // Ensure checkedAt is always present (null if undefined) to prevent UI crashes
       const { redditCommunityArrayZodSchema } = await import('@shared/schema');
 
       const validatedCommunities = redditCommunityArrayZodSchema.parse(communities);
+      
+      logger.info(`Returning ${validatedCommunities.length} validated communities`);
       res.json(validatedCommunities);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Error fetching Reddit communities', { error: err.message, stack: err.stack });
-      res.status(500).json({ error: 'Failed to fetch Reddit communities', items: [] });
+      logger.error('Error fetching Reddit communities', { 
+        error: err.message, 
+        stack: err.stack,
+        query: req.query 
+      });
+      
+      // Return empty array instead of error object for better client compatibility
+      res.json([]);
     }
   });
 

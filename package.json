@@ -11,6 +11,9 @@
   },
   "scripts": {
     "dev": "USE_PG_QUEUE=true NODE_ENV=development tsx --import=server/instrumentation.ts server/index.ts",
+    "seed": "tsx server/seed.ts",
+    "seed:communities": "tsx scripts/init-communities.ts",
+    "postbuild": "npm run seed:communities || echo 'Community seeding skipped'",
     "dev:client": "vite --open",
     "dev:full": "USE_PG_QUEUE=true NODE_ENV=development concurrently \"npm run dev\" \"npm run dev:client\"",
     "start": "NODE_ENV=production node --import=./dist/server/instrumentation.js dist/server/index.js",

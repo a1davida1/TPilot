@@ -29,7 +29,13 @@ export function ReferralWidget() {
 
   const fetchReferralData = async () => {
     try {
-      const data = await apiRequest('GET', '/api/referral/code') as any;
+      const response = await apiRequest('GET', '/api/referral/code');
+      const data = await response.json() as {
+        code: string;
+        totalReferrals?: number;
+        activeReferrals?: number;
+        earnings?: number;
+      };
       setReferralData({
         code: data.code,
         shareUrl: `${window.location.origin}/signup?ref=${data.code}`,
@@ -38,8 +44,8 @@ export function ReferralWidget() {
         earnings: data.earnings || 0,
         tier: user?.tier || 'free'
       });
-    } catch (error) {
-      console.error('Failed to fetch referral data:', error);
+    } catch (_error) {
+      // Failed to fetch referral data, will show loading state
     } finally {
       setLoading(false);
     }
@@ -56,7 +62,7 @@ export function ReferralWidget() {
         description: 'Referral link copied to clipboard'
       });
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Failed to copy',
         description: 'Please copy the link manually',
@@ -108,12 +114,15 @@ export function ReferralWidget() {
       <CardContent className="space-y-6">
         {/* Referral Link */}
         <div className="space-y-2">
-          <label className="text-sm font-medium">Your Referral Link</label>
+          <label htmlFor="referral-link" className="text-sm font-medium">Your Referral Link</label>
           <div className="flex gap-2">
             <input
+              id="referral-link"
               type="text"
               value={referralData.shareUrl}
               readOnly
+              aria-label="Your referral link"
+              title="Your referral link to share"
               className="flex-1 px-3 py-2 border rounded-md bg-white dark:bg-gray-900 text-sm"
             />
             <Button onClick={copyToClipboard} variant="secondary" size="sm">

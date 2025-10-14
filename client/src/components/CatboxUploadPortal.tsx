@@ -17,6 +17,7 @@ import {
   Shield
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { trackUpload } from '@/lib/upload-monitoring';
 
 interface UploadResult {
   imageUrl: string;
@@ -110,7 +111,14 @@ export function CatboxUploadPortal({
         imageUrl,
         provider: 'catbox'
       });
-
+      
+      // Track successful direct upload
+      trackUpload({
+        provider: 'catbox',
+        success: true,
+        fileSize: file.size
+      });
+      
       toast({
         title: "Upload successful",
         description: "Your image has been uploaded to Catbox",
@@ -122,8 +130,13 @@ export function CatboxUploadPortal({
         setIsUploading(false);
       }, 500);
 
-    } catch (error) {
-      console.warn('Direct Catbox upload failed, trying proxy:', error);
+    } catch (_error) {
+      // Direct upload failed, track and fallback to proxy
+      trackUpload({
+        provider: 'catbox',
+        success: false,
+        errorType: 'cors'
+      });
       
       // Fallback to proxy if direct upload fails (usually CORS issues)
       try {
@@ -148,6 +161,13 @@ export function CatboxUploadPortal({
           provider: 'catbox'
         });
         
+        // Track successful proxy upload
+        trackUpload({
+          provider: 'proxy',
+          success: true,
+          fileSize: file.size
+        });
+        
         toast({
           title: "Upload successful",
           description: "Your image has been uploaded to Catbox (via proxy)",
@@ -158,8 +178,13 @@ export function CatboxUploadPortal({
           setIsUploading(false);
         }, 500);
         
-      } catch (proxyError) {
-        console.error('Both direct and proxy uploads failed:', proxyError);
+      } catch (_proxyError) {
+        // Both upload methods failed
+        trackUpload({
+          provider: 'proxy',
+          success: false,
+          errorType: 'network'
+        });
         setUploadProgress(0);
         setIsUploading(false);
         

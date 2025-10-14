@@ -384,6 +384,7 @@ export const securityMiddleware = [
         ].filter(Boolean),
         styleSrc: [
           "'self'",
+          "'unsafe-inline'", // Required for Radix UI and React inline styles
           // Allow specific style sources
           "https://fonts.googleapis.com",
           "https://checkout.stripe.com",

@@ -107,7 +107,20 @@ export function RedditCommunities() {
       if (searchTerm) params.append('search', searchTerm);
 
       const response = await apiRequest('GET', `/api/reddit/communities?${params.toString()}`);
-      return response.json();
+      const data = await response.json();
+      
+      // Ensure we always return an array
+      if (Array.isArray(data)) {
+        return data;
+      }
+      
+      // Handle error responses
+      if (data.error && data.items) {
+        return data.items;
+      }
+      
+      // Fallback to empty array if response is unexpected
+      return [];
     },
     retry: false,
     enabled: true, // Changed from hasFullAccess to allow all users
@@ -395,9 +408,20 @@ export function RedditCommunities() {
           </Select>
         </div>
 
+        {/* Debug info - remove after fixing */}
+        {communitiesError && (
+          <Alert variant="destructive">
+            <AlertTitle>Error Loading Communities</AlertTitle>
+            <AlertDescription>
+              {communitiesError instanceof Error ? communitiesError.message : 'Failed to load communities'}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Results count */}
         <div className="text-sm text-gray-400">
           Showing {filteredCommunities.length} communities
+          {_communitiesLoading && " (Loading...)"}
         </div>
 
         {/* Communities Table */}
@@ -416,7 +440,28 @@ export function RedditCommunities() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredCommunities.map((community) => {
+              {filteredCommunities.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8">
+                    <div className="text-gray-400">
+                      <p className="text-lg mb-2">No communities found</p>
+                      <p className="text-sm">
+                        {_communitiesLoading 
+                          ? "Loading communities..." 
+                          : searchTerm 
+                            ? "Try adjusting your search criteria" 
+                            : "The communities database may need to be initialized"}
+                      </p>
+                      {!_communitiesLoading && !searchTerm && (
+                        <p className="text-xs mt-4">
+                          Run <code className="bg-gray-800 px-2 py-1 rounded">npm run seed:communities</code> to populate the database
+                        </p>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredCommunities.map((community) => {
                 const modActivityDisplay = getModActivityDisplay(community.modActivity);
                 return (
                   <React.Fragment key={community.id}>
@@ -579,7 +624,8 @@ export function RedditCommunities() {
                     )}
                   </React.Fragment>
                 );
-              })}
+              })
+              )}
             </TableBody>
           </Table>
         </div>
