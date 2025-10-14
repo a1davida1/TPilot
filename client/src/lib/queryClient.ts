@@ -188,7 +188,6 @@ async function throwIfResNotOk(res: Response) {
     if (!error.userMessage) {
       error.userMessage = "Server error occurred. Please try again in a few moments.";
     }
-  } else if (!error.userMessage) {
   }
 
   throw error;
@@ -209,7 +208,6 @@ export async function apiRequest(
       const {
         getAccessToken,
         refreshAccessToken,
-        hasValidToken,
         hasRefreshableToken,
       } = await import('@/lib/auth');
       let token = getAccessToken();
@@ -242,7 +240,17 @@ export async function apiRequest(
     }
   }
 
-  // Phase 1: CSRF not needed for Bearer tokens (server exempts them)
+  // Always include CSRF token for state-changing requests (POST, PUT, DELETE, PATCH)
+  if (typeof window !== "undefined" && ["POST", "PUT", "DELETE", "PATCH"].includes(method.toUpperCase())) {
+    try {
+      const token = await getCsrfToken();
+      if (token) {
+        headers["X-CSRF-Token"] = token;
+      }
+    } catch (error) {
+      console.warn("Unable to get CSRF token", error);
+    }
+  }
 
   if (data instanceof FormData) {
     body = data;
@@ -342,8 +350,8 @@ export const getQueryFn: <T = unknown>(options: {
                 'Content-Type': 'application/json',
               },
             });
-          } catch (logoutError) {
-            console.error('Failed to log out after auth error:', logoutError);
+          } catch {
+            // Token refresh failed, user needs to re-login
           }
           if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
             window.location.href = '/';
