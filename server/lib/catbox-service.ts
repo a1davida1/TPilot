@@ -3,7 +3,7 @@
  * Handles authenticated operations and user hash management
  */
 
-import FormDataNode from 'form-data';
+import FormData from 'form-data';
 import { db } from '../db.js';
 import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
@@ -24,36 +24,22 @@ export class CatboxService {
     'Mozilla/5.0 (compatible; ThottoPilotBot/1.0; +https://thottopilot.com)';
   private static readonly ACCEPT_HEADER = 'text/plain, */*;q=0.1';
 
-  private static async buildRequestHeaders(formData: FormDataNode): Promise<Record<string, string>> {
-    const headers: Record<string, string> = {
-      ...formData.getHeaders(),
-      'User-Agent': this.USER_AGENT,
-      Accept: this.ACCEPT_HEADER,
-      Connection: 'keep-alive'
-    };
+  private static prepareRequestPayload(formData: FormData): { body: Buffer; headers: Record<string, string> } {
+    const body = formData.getBuffer();
+    const headerEntries = Object.entries(formData.getHeaders() as Record<string, string | number>);
+    const headers: Record<string, string> = Object.fromEntries(
+      headerEntries.map(([key, value]) => [key, String(value)])
+    );
 
-    const contentLength = await new Promise<number | null>((resolve) => {
-      formData.getLength((error: Error | null, length: number) => {
-        if (error) {
-          logger.warn('CatboxService: unable to determine multipart length', { error });
-          resolve(null);
-          return;
-        }
+    headers['User-Agent'] = this.USER_AGENT;
+    headers['Accept'] = this.ACCEPT_HEADER;
+    headers['Connection'] = 'keep-alive';
 
-        if (Number.isFinite(length) && length > 0) {
-          resolve(length);
-          return;
-        }
-
-        resolve(null);
-      });
-    });
-
-    if (contentLength !== null) {
-      headers['Content-Length'] = contentLength.toString();
+    if (!headers['Content-Length']) {
+      headers['Content-Length'] = body.length.toString();
     }
 
-    return headers;
+    return { body, headers };
   }
 
   /**
@@ -95,7 +81,7 @@ export class CatboxService {
    */
   static async upload(options: CatboxUploadOptions): Promise<{ success: boolean; url?: string; error?: string; status?: number }> {
     try {
-      const formData = new FormDataNode();
+      const formData = new FormData();
       
       formData.append('reqtype', options.reqtype);
       
@@ -107,7 +93,7 @@ export class CatboxService {
       
       // Add file or URL based on request type
       if (options.reqtype === 'fileupload' && options.file) {
-        const fileOptions: FormDataNode.AppendOptions = {
+        const fileOptions: FormData.AppendOptions = {
           filename: options.filename || 'upload.bin',
           contentType: options.mimeType || 'application/octet-stream'
         };
@@ -118,11 +104,11 @@ export class CatboxService {
         return { success: false, error: 'Invalid upload parameters', status: 400 };
       }
 
-      const headers = await this.buildRequestHeaders(formData);
+      const { body, headers } = this.prepareRequestPayload(formData);
 
       let response = await fetch(this.API_URL, {
         method: 'POST',
-        body: formData as unknown as BodyInit,
+        body,
         headers
       });
 
@@ -130,7 +116,7 @@ export class CatboxService {
       if (response.status === 412 && options.reqtype === 'fileupload' && options.file) {
         logger.warn('Catbox returned 412, trying Litterbox as fallback');
         
-        const litterboxForm = new FormDataNode();
+        const litterboxForm = new FormData();
         litterboxForm.append('reqtype', 'fileupload');
         litterboxForm.append('time', '1h'); // 1 hour expiry
         litterboxForm.append('fileToUpload', options.file, {
@@ -202,17 +188,17 @@ export class CatboxService {
    */
   static async deleteFiles(userhash: string, files: string[]): Promise<{ success: boolean; error?: string }> {
     try {
-      const formData = new FormDataNode();
+      const formData = new FormData();
       
       formData.append('reqtype', 'deletefiles');
       formData.append('userhash', userhash.trim());
       formData.append('files', files.join(' '));
 
-      const headers = await this.buildRequestHeaders(formData);
+      const { body, headers } = this.prepareRequestPayload(formData);
 
       const response = await fetch(this.API_URL, {
         method: 'POST',
-        body: formData as unknown as BodyInit,
+        body,
         headers
       });
 
@@ -243,7 +229,7 @@ export class CatboxService {
     files: string[]
   ): Promise<{ success: boolean; url?: string; short?: string; error?: string }> {
     try {
-      const formData = new FormDataNode();
+      const formData = new FormData();
       
       formData.append('reqtype', 'createalbum');
       if (userhash) {
@@ -253,11 +239,11 @@ export class CatboxService {
       formData.append('desc', description);
       formData.append('files', files.join(' '));
 
-      const headers = await this.buildRequestHeaders(formData);
+      const { body, headers } = this.prepareRequestPayload(formData);
 
       const response = await fetch(this.API_URL, {
         method: 'POST',
-        body: formData as unknown as BodyInit,
+        body,
         headers
       });
 
