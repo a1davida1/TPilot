@@ -354,8 +354,12 @@ export function GeminiCaptionGeneratorTabs() {
                   setImagePreview(result.imageUrl);
                   // Clear file if using URL
                   setImageFile(null);
+                  toast({
+                    title: "✅ Image uploaded!",
+                    description: `Ready to generate content. URL: ${result.imageUrl.substring(0, 50)}...`,
+                  });
                 }}
-                showPreview={false} // We'll show preview separately
+                showPreview={true} // Show preview with uploaded URL
               />
 
               <PlatformVoiceSelectors />
