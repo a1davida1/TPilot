@@ -63,8 +63,8 @@ export function CatboxSettings() {
         const statsData = await statsResponse.json();
         setStats(statsData);
       }
-    } catch (error) {
-      console.error('Failed to load settings:', error);
+    } catch (_error) {
+      // Settings failed to load silently
     } finally {
       setIsLoading(false);
     }
@@ -127,7 +127,7 @@ export function CatboxSettings() {
           description: "Your Catbox hash has been removed"
         });
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to remove hash",

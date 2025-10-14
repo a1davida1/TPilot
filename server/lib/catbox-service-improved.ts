@@ -2,9 +2,10 @@
  * Enhanced Catbox Service with better error handling, retry logic, and monitoring
  */
 
-import { db } from '../db.js';
-import { users, catboxUploads } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+// TODO: Re-enable after migration
+// import { db } from '../db.js';
+// import { users } from '@shared/schema';
+// import { eq } from 'drizzle-orm';
 import { logger } from '../bootstrap/logger.js';
 import FormData from 'form-data';
 
@@ -98,17 +99,18 @@ export class EnhancedCatboxService {
         const startTime = Date.now();
         const result = await this.upload(options);
         
-        // Track successful upload in database
-        if (result.success && result.url && options.userId) {
-          await this.trackUpload({
-            userId: options.userId,
-            url: result.url,
-            filename: options.metadata?.originalName,
-            fileSize: options.metadata?.size,
-            duration: Date.now() - startTime,
-            retries
-          });
-        }
+        // TODO: Re-enable after migration
+        // // Track successful upload in database
+        // if (result.success && result.url && options.userId) {
+        //   await this.trackUpload({
+        //     userId: options.userId,
+        //     url: result.url,
+        //     filename: options.metadata?.originalName,
+        //     fileSize: options.metadata?.size,
+        //     duration: Date.now() - startTime,
+        //     retries
+        //   });
+        // }
 
         return { ...result, duration: Date.now() - startTime, retries };
       } catch (error) {
@@ -277,30 +279,31 @@ export class EnhancedCatboxService {
 
   /**
    * Track upload in database for analytics
+   * TODO: Re-enable after migration
    */
-  private static async trackUpload(data: {
-    userId: number;
-    url: string;
-    filename?: string;
-    fileSize?: number;
-    duration: number;
-    retries: number;
-  }): Promise<void> {
-    try {
-      await db.insert(catboxUploads).values({
-        userId: data.userId,
-        url: data.url,
-        filename: data.filename,
-        fileSize: data.fileSize,
-        uploadDuration: data.duration,
-        retryCount: data.retries,
-        provider: 'catbox',
-        success: true
-      });
-    } catch (error) {
-      logger.error('Failed to track upload', { error, data });
-    }
-  }
+  // private static async trackUpload(data: {
+  //   userId: number;
+  //   url: string;
+  //   filename?: string;
+  //   fileSize?: number;
+  //   duration: number;
+  //   retries: number;
+  // }): Promise<void> {
+  //   try {
+  //     await db.insert(catboxUploads).values({
+  //       userId: data.userId,
+  //       url: data.url,
+  //       filename: data.filename,
+  //       fileSize: data.fileSize,
+  //       uploadDuration: data.duration,
+  //       retryCount: data.retries,
+  //       provider: 'catbox',
+  //       success: true
+  //     });
+  //   } catch (error) {
+  //     logger.error('Failed to track upload', { error, data });
+  //   }
+  // }
 
   /**
    * Get error type from HTTP status code
@@ -318,32 +321,36 @@ export class EnhancedCatboxService {
    */
   private static userHashCache = new Map<number, { hash: string | null; expires: number }>();
   
-  static async getUserHash(userId: number): Promise<string | null> {
-    // Check cache
-    const cached = this.userHashCache.get(userId);
-    if (cached && cached.expires > Date.now()) {
-      return cached.hash;
-    }
+  static async getUserHash(_userId: number): Promise<string | null> {
+    // TODO: Re-enable after migration
+    // For now, always return null until catboxUserhash column is added
+    return null;
+    
+    // // Check cache
+    // const cached = this.userHashCache.get(userId);
+    // if (cached && cached.expires > Date.now()) {
+    //   return cached.hash;
+    // }
 
-    try {
-      const [user] = await db
-        .select({ catboxUserhash: users.catboxUserhash })
-        .from(users)
-        .where(eq(users.id, userId));
+    // try {
+    //   const [user] = await db
+    //     .select({ catboxUserhash: users.catboxUserhash })
+    //     .from(users)
+    //     .where(eq(users.id, userId));
       
-      const hash = user?.catboxUserhash || null;
+    //   const hash = user?.catboxUserhash || null;
       
-      // Cache for 5 minutes
-      this.userHashCache.set(userId, {
-        hash,
-        expires: Date.now() + 5 * 60 * 1000
-      });
+    //   // Cache for 5 minutes
+    //   this.userHashCache.set(userId, {
+    //     hash,
+    //     expires: Date.now() + 5 * 60 * 1000
+    //   });
       
-      return hash;
-    } catch (error) {
-      logger.error('Failed to get user Catbox hash', { userId, error });
-      return null;
-    }
+    //   return hash;
+    // } catch (error) {
+    //   logger.error('Failed to get user Catbox hash', { userId, error });
+    //   return null;
+    // }
   }
 
   /**
@@ -385,46 +392,55 @@ export class EnhancedCatboxService {
 
   /**
    * Get upload statistics for a user
+   * TODO: Re-enable after migration
    */
-  static async getUserUploadStats(userId: number): Promise<{
+  static async getUserUploadStats(_userId: number): Promise<{
     totalUploads: number;
     totalSize: number;
     successRate: number;
     averageDuration: number;
   }> {
-    try {
-      const stats = await db
-        .select({
-          count: db.count(catboxUploads.id),
-          totalSize: db.sum(catboxUploads.fileSize),
-          avgDuration: db.avg(catboxUploads.uploadDuration),
-          successCount: db.sum(
-            db.case()
-              .when(eq(catboxUploads.success, true), 1)
-              .else(0)
-          )
-        })
-        .from(catboxUploads)
-        .where(eq(catboxUploads.userId, userId));
+    // For now, return empty stats until catboxUploads table is added
+    return {
+      totalUploads: 0,
+      totalSize: 0,
+      successRate: 100,
+      averageDuration: 0
+    };
+    
+    // try {
+    //   const stats = await db
+    //     .select({
+    //       count: db.count(catboxUploads.id),
+    //       totalSize: db.sum(catboxUploads.fileSize),
+    //       avgDuration: db.avg(catboxUploads.uploadDuration),
+    //       successCount: db.sum(
+    //         db.case()
+    //           .when(eq(catboxUploads.success, true), 1)
+    //           .else(0)
+    //       )
+    //     })
+    //     .from(catboxUploads)
+    //     .where(eq(catboxUploads.userId, userId));
       
-      const result = stats[0];
-      const totalUploads = Number(result.count) || 0;
+    //   const result = stats[0];
+    //   const totalUploads = Number(result.count) || 0;
       
-      return {
-        totalUploads,
-        totalSize: Number(result.totalSize) || 0,
-        successRate: totalUploads > 0 ? 
-          (Number(result.successCount) || 0) / totalUploads * 100 : 0,
-        averageDuration: Number(result.avgDuration) || 0
-      };
-    } catch (error) {
-      logger.error('Failed to get upload stats', { userId, error });
-      return {
-        totalUploads: 0,
-        totalSize: 0,
-        successRate: 0,
-        averageDuration: 0
-      };
-    }
+    //   return {
+    //     totalUploads,
+    //     totalSize: Number(result.totalSize) || 0,
+    //     successRate: totalUploads > 0 ? 
+    //       (Number(result.successCount) || 0) / totalUploads * 100 : 0,
+    //     averageDuration: Number(result.avgDuration) || 0
+    //   };
+    // } catch (error) {
+    //   logger.error('Failed to get upload stats', { userId, error });
+    //   return {
+    //     totalUploads: 0,
+    //     totalSize: 0,
+    //     successRate: 0,
+    //     averageDuration: 0
+    //   };
+    // }
   }
 }

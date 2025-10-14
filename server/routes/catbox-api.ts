@@ -246,4 +246,31 @@ router.post('/album', authenticateToken(), async (req: AuthRequest, res) => {
   }
 });
 
+/**
+ * GET /api/catbox/stats
+ * Get user's upload statistics
+ */
+router.get('/stats', authenticateToken(true), async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // For now, return mock stats until EnhancedCatboxService is integrated
+    // TODO: Replace with EnhancedCatboxService.getUserUploadStats(userId)
+    const stats = {
+      totalUploads: 0,
+      totalSize: 0,
+      successRate: 100,
+      averageDuration: 0
+    };
+
+    res.json(stats);
+  } catch (error) {
+    logger.error('Failed to get upload stats', { error });
+    res.status(500).json({ error: 'Failed to get statistics' });
+  }
+});
+
 export default router;

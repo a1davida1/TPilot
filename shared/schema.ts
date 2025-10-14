@@ -57,7 +57,7 @@ export const users = pgTable("users", {
   redditId: varchar("reddit_id", { length: 255 }),
   stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
   stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
-  catboxUserhash: varchar("catbox_userhash", { length: 255 }),
+  // TODO: Add after migration - catboxUserhash: varchar("catbox_userhash", { length: 255 }),
   bannedAt: timestamp("banned_at"),
   suspendedUntil: timestamp("suspended_until"),
   banReason: text("ban_reason"),
@@ -82,24 +82,24 @@ export const users = pgTable("users", {
   captionsGenerated: integer("captions_generated").default(0),
 });
 
-// Track Catbox uploads for analytics and history
-export const catboxUploads = pgTable("catbox_uploads", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  url: varchar("url", { length: 255 }).notNull(),
-  filename: varchar("filename", { length: 255 }),
-  fileSize: integer("file_size"),
-  uploadDuration: integer("upload_duration"), // milliseconds
-  retryCount: integer("retry_count").default(0),
-  provider: varchar("provider", { length: 50 }).default("catbox"),
-  success: boolean("success").default(true),
-  errorMessage: text("error_message"),
-  uploadedAt: timestamp("uploaded_at").defaultNow(),
-}, (table) => ({
-  userIdx: index("catbox_uploads_user_idx").on(table.userId),
-  urlIdx: index("catbox_uploads_url_idx").on(table.url),
-  uploadedAtIdx: index("catbox_uploads_uploaded_at_idx").on(table.uploadedAt),
-}));
+// TODO: Add after migration - Track Catbox uploads for analytics and history
+// export const catboxUploads = pgTable("catbox_uploads", {
+//   id: serial("id").primaryKey(),
+//   userId: integer("user_id").references(() => users.id),
+//   url: varchar("url", { length: 255 }).notNull(),
+//   filename: varchar("filename", { length: 255 }),
+//   fileSize: integer("file_size"),
+//   uploadDuration: integer("upload_duration"), // milliseconds
+//   retryCount: integer("retry_count").default(0),
+//   provider: varchar("provider", { length: 50 }).default("catbox"),
+//   success: boolean("success").default(true),
+//   errorMessage: text("error_message"),
+//   uploadedAt: timestamp("uploaded_at").defaultNow(),
+// }, (table) => ({
+//   userIdx: index("catbox_uploads_user_idx").on(table.userId),
+//   urlIdx: index("catbox_uploads_url_idx").on(table.url),
+//   uploadedAtIdx: index("catbox_uploads_uploaded_at_idx").on(table.uploadedAt),
+// }));
 
 export const contentGenerations = pgTable("content_generations", {
   id: serial("id").primaryKey(),

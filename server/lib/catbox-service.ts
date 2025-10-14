@@ -3,9 +3,10 @@
  * Handles authenticated operations and user hash management
  */
 
-import { db } from '../db.js';
-import { users } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+// TODO: Re-enable these imports after migration
+// import { db } from '../db.js';
+// import { users } from '@shared/schema';
+// import { eq } from 'drizzle-orm';
 import { logger } from '../bootstrap/logger.js';
 
 interface CatboxUploadOptions {
@@ -21,36 +22,45 @@ export class CatboxService {
 
   /**
    * Get user's Catbox hash from database
+   * TODO: Re-enable after migration
    */
-  static async getUserHash(userId: number): Promise<string | null> {
-    try {
-      const [user] = await db
-        .select({ catboxUserhash: users.catboxUserhash })
-        .from(users)
-        .where(eq(users.id, userId));
+  static async getUserHash(_userId: number): Promise<string | null> {
+    // For now, always return null until catboxUserhash column is added
+    return null;
+    
+    // try {
+    //   const [user] = await db
+    //     .select({ catboxUserhash: users.catboxUserhash })
+    //     .from(users)
+    //     .where(eq(users.id, userId));
       
-      return user?.catboxUserhash || null;
-    } catch (error) {
-      logger.error('Failed to get user Catbox hash', { userId, error });
-      return null;
-    }
+    //   return user?.catboxUserhash || null;
+    // } catch (error) {
+    //   logger.error('Failed to get user Catbox hash', { userId, error });
+    //   return null;
+    // }
   }
 
   /**
    * Save user's Catbox hash
+   * TODO: Re-enable after migration
    */
   static async saveUserHash(userId: number, userhash: string): Promise<boolean> {
-    try {
-      await db
-        .update(users)
-        .set({ catboxUserhash: userhash })
-        .where(eq(users.id, userId));
+    // For now, always return false until catboxUserhash column is added
+    logger.warn('Cannot save Catbox hash - database migration needed', { userId, userhash });
+    return false;
+    
+    // try {
+    //   await db
+    //     .update(users)
+    //     .set({ catboxUserhash: userhash })
+    //     .where(eq(users.id, userId));
       
-      return true;
-    } catch (error) {
-      logger.error('Failed to save user Catbox hash', { userId, error });
-      return false;
-    }
+    //   return true;
+    // } catch (error) {
+    //   logger.error('Failed to save user Catbox hash', { userId, error });
+    //   return false;
+    // }
   }
 
   /**
