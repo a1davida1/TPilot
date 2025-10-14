@@ -29,7 +29,7 @@ export function ReferralWidget() {
 
   const fetchReferralData = async () => {
     try {
-      const data = await apiRequest('GET', '/api/referral/my-code') as any;
+      const data = await apiRequest('GET', '/api/referral/code') as any;
       setReferralData({
         code: data.code,
         shareUrl: `${window.location.origin}/signup?ref=${data.code}`,

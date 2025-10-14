@@ -123,15 +123,52 @@ export function CatboxUploadPortal({
       }, 500);
 
     } catch (error) {
-      console.error('Catbox upload error:', error);
-      setUploadProgress(0);
-      setIsUploading(false);
+      console.warn('Direct Catbox upload failed, trying proxy:', error);
       
-      toast({
-        title: "Upload failed",
-        description: error instanceof Error ? error.message : "Failed to upload to Catbox. Try pasting a URL instead.",
-        variant: "destructive"
-      });
+      // Fallback to proxy if direct upload fails (usually CORS issues)
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await fetch('/api/upload/catbox-proxy', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Proxy upload failed');
+        }
+        
+        const data = await response.json();
+        setUploadProgress(100);
+        setPreviewUrl(data.imageUrl);
+        onComplete({ 
+          imageUrl: data.imageUrl,
+          provider: 'catbox'
+        });
+        
+        toast({
+          title: "Upload successful",
+          description: "Your image has been uploaded to Catbox (via proxy)",
+        });
+        
+        setTimeout(() => {
+          setUploadProgress(0);
+          setIsUploading(false);
+        }, 500);
+        
+      } catch (proxyError) {
+        console.error('Both direct and proxy uploads failed:', proxyError);
+        setUploadProgress(0);
+        setIsUploading(false);
+        
+        toast({
+          title: "Upload failed",
+          description: "Both direct and proxy uploads failed. Please try pasting a URL or using a different image host.",
+          variant: "destructive"
+        });
+      }
     }
   }, [acceptedFormats, onComplete, toast]);
 

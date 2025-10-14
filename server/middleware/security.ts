@@ -394,9 +394,14 @@ export const securityMiddleware = [
           "'self'",
           "data:",
           "blob:",
-          "https:",
+          "https://files.catbox.moe",
+          "https://i.imgur.com",
+          "https://i.redd.it",
+          "https://cdn.discordapp.com",
           "*.stripe.com",
-          "*.googleapis.com"
+          "*.googleapis.com",
+          // Fallback for other image hosts
+          "https:"
         ],
         connectSrc: [
           "'self'",
@@ -404,6 +409,10 @@ export const securityMiddleware = [
           "https://checkout.stripe.com",
           "https://api.openai.com",
           "https://generativelanguage.googleapis.com",
+          "https://openrouter.ai",
+          "https://catbox.moe",
+          "https://files.catbox.moe",
+          "https://litterbox.catbox.moe",
           "wss://*.replit.dev",
           "wss://*.replit.app",
           "ws://localhost:*"

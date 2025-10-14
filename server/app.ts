@@ -334,7 +334,8 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
       `${API_PREFIX}/auth/logout`,
       `${API_PREFIX}/webhooks/`,
       `${API_PREFIX}/health`,
-      `${API_PREFIX}/uploads/imgur`         // Exempt Imgur uploads from CSRF
+      `${API_PREFIX}/uploads/imgur`,        // Exempt Imgur uploads from CSRF
+      `${API_PREFIX}/upload/catbox-proxy`   // Exempt Catbox proxy from CSRF
     ];
 
     if (exemptPaths.some((path) => req.path.startsWith(path))) {

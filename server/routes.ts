@@ -967,11 +967,15 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // Authentication routes - handled by setupAuth() in server/auth.ts
   // app.use('/api/auth', authRoutes); // Removed - duplicate auth system
 
-  // LEGAL COMPLIANCE: All uploads MUST go through Imgur - no local storage
-  app.use('/api/upload', uploadRedirect); // Redirects old endpoint to Imgur
+  // LEGAL COMPLIANCE: All uploads MUST go through external services - no local storage
+  app.use('/api/upload', uploadRedirect); // Redirects old endpoint
   
-  // Imgur upload routes - ONLY allowed upload method
+  // External upload routes
   app.use('/api/uploads', imgurUploadRouter);
+  
+  // Catbox proxy for CORS fallback
+  const catboxProxyRouter = (await import('./routes/catbox-proxy.js')).default;
+  app.use('/api/upload', catboxProxyRouter);
 
   // Feedback system routes
   app.use('/api/feedback', feedbackRouter);

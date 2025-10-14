@@ -47,10 +47,23 @@ const catboxUrl = await response.text();
 - Created `CatboxUploadPortal` component
 - Replaced all frontend Imgur imports
 - Updated UI text references
+- Added Catbox domains to Content Security Policy (CSP)
 
 ⚠️ **Pending** (Low Priority):
 - Backend Imgur routes still exist but unused
 - Can be removed in future cleanup
+
+## CSP Configuration
+
+Updated `/server/middleware/security.ts` to allow Catbox connections:
+```javascript
+connectSrc: [
+  "'self'",
+  "https://catbox.moe",          // Added for direct uploads
+  "https://files.catbox.moe",    // Added for serving images
+  // ... other domains
+]
+```
 
 ## Usage
 
