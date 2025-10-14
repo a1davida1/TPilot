@@ -51,6 +51,8 @@ export function CatboxSettings() {
         if (data.hash) {
           setUserhash(data.hash);
           setSavedHash(data.hash);
+          // Store in localStorage for use in uploads
+          localStorage.setItem('catbox_userhash', data.hash);
         }
       }
 
@@ -91,6 +93,8 @@ export function CatboxSettings() {
 
       if (response.ok) {
         setSavedHash(userhash);
+        // Store in localStorage for use in uploads
+        localStorage.setItem('catbox_userhash', userhash);
         toast({
           title: "Settings saved",
           description: "Your Catbox hash has been saved successfully"
@@ -122,6 +126,8 @@ export function CatboxSettings() {
       if (response.ok) {
         setUserhash('');
         setSavedHash('');
+        // Clear from localStorage
+        localStorage.removeItem('catbox_userhash');
         toast({
           title: "Hash removed",
           description: "Your Catbox hash has been removed"

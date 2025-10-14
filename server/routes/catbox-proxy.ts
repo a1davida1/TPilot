@@ -23,6 +23,31 @@ router.post('/catbox-proxy', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: 'No file provided' });
     }
 
+    // Validate file type (Catbox restrictions)
+    const allowedTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+      'video/mp4', 'video/webm', 'video/quicktime',
+      'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg'
+    ];
+    
+    if (!allowedTypes.includes(req.file.mimetype)) {
+      logger.warn('Invalid file type for Catbox', { 
+        mimetype: req.file.mimetype,
+        filename: req.file.originalname 
+      });
+      return res.status(415).json({ 
+        error: 'File type not supported by Catbox',
+        supportedTypes: allowedTypes 
+      });
+    }
+
+    // Log upload attempt
+    logger.info('Starting Catbox proxy upload', {
+      filename: req.file.originalname,
+      size: req.file.size,
+      mimetype: req.file.mimetype
+    });
+
     // Create form data for Catbox
     const FormData = (await import('form-data')).default;
     const formData = new FormData();
@@ -32,12 +57,45 @@ router.post('/catbox-proxy', upload.single('file'), async (req, res) => {
       contentType: req.file.mimetype
     });
 
-    // Upload to Catbox
-    const response = await fetch('https://catbox.moe/user/api.php', {
+    // Get user hash if available (for authenticated uploads)
+    const userhash = req.body?.userhash || req.headers['x-catbox-userhash'];
+    if (userhash) {
+      formData.append('userhash', userhash);
+      logger.info('Using authenticated upload with userhash');
+    }
+
+    // Try primary Catbox endpoint
+    let response = await fetch('https://catbox.moe/user/api.php', {
       method: 'POST',
       body: formData as any,
-      headers: formData.getHeaders()
+      headers: {
+        ...formData.getHeaders(),
+        'User-Agent': 'ThottoPilot/1.0 (https://thottopilot.com)'
+      }
     });
+
+    // If Catbox fails, try litterbox (temporary storage)
+    if (!response.ok && response.status === 412) {
+      logger.warn('Catbox returned 412, trying Litterbox as fallback');
+      
+      // Rebuild form for Litterbox (1 hour expiry)
+      const litterboxForm = new FormData();
+      litterboxForm.append('reqtype', 'fileupload');
+      litterboxForm.append('time', '1h'); // 1 hour expiry
+      litterboxForm.append('fileToUpload', req.file.buffer, {
+        filename: req.file.originalname,
+        contentType: req.file.mimetype
+      });
+
+      response = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', {
+        method: 'POST',
+        body: litterboxForm as any,
+        headers: {
+          ...litterboxForm.getHeaders(),
+          'User-Agent': 'ThottoPilot/1.0 (https://thottopilot.com)'
+        }
+      });
+    }
 
     if (!response.ok) {
       logger.error('Catbox upload failed', { 

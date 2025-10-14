@@ -49,22 +49,23 @@ export function CatboxUploadPortal({
   const uploadToCatbox = useCallback(async (file: File) => {
     if (!file) return;
 
-    // Validate file type
-    if (!acceptedFormats.some(format => file.type.startsWith(format.split('/')[0]))) {
+    // Check file size (200MB max for Catbox)
+    if (file.size > 200 * 1024 * 1024) {
       toast({
-        title: "Invalid file type",
-        description: "Please select an image file (JPEG, PNG, GIF, or WebP)",
-        variant: "destructive"
+        title: '⚠️ File too large',
+        description: 'Maximum file size is 200MB',
+        variant: 'destructive'
       });
       return;
     }
 
-    // Validate file size (200MB for Catbox)
-    if (file.size > 200 * 1024 * 1024) {
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
       toast({
-        title: "File too large",
-        description: "Maximum file size is 200MB",
-        variant: "destructive"
+        title: '⚠️ Invalid file type',
+        description: 'Please upload JPEG, PNG, GIF, or WebP images',
+        variant: 'destructive'
       });
       return;
     }
@@ -82,11 +83,17 @@ export function CatboxUploadPortal({
       const formData = new FormData();
       formData.append('file', file);
       
+      // Get user's Catbox hash from localStorage if available
+      const catboxHash = localStorage.getItem('catbox_userhash');
+      
       const startTime = Date.now();
       const response = await fetch('/api/upload/catbox-proxy', {
         method: 'POST',
         body: formData,
-        credentials: 'include' // Include cookies for auth
+        credentials: 'include', // Include cookies for auth
+        headers: catboxHash ? {
+          'X-Catbox-Userhash': catboxHash
+        } : undefined
       });
       
       clearInterval(progressInterval);
