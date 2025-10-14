@@ -6,17 +6,27 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Calendar, Clock, Loader2 } from 'lucide-react';
+import { Calendar, Loader2 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ImageUploadField } from './ImageUploadField';
 
+interface ScheduledPost {
+  id?: number;
+  title?: string;
+  imageUrl?: string;
+  caption?: string;
+  subreddit?: string;
+  scheduledFor?: string;
+  nsfw?: boolean;
+}
+
 interface CreateScheduledPostModalProps {
   isOpen: boolean;
   onClose: () => void;
-  editingPost?: any;
+  editingPost?: ScheduledPost;
 }
 
 export function CreateScheduledPostModal({ isOpen, onClose, editingPost }: CreateScheduledPostModalProps) {
@@ -33,7 +43,7 @@ export function CreateScheduledPostModal({ isOpen, onClose, editingPost }: Creat
   const [nsfw, setNsfw] = useState(editingPost?.nsfw || false);
 
   const createMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: ScheduledPost) => {
       if (editingPost) {
         return apiRequest('PUT', `/api/scheduled-posts/${editingPost.id}`, data);
       }
@@ -47,7 +57,7 @@ export function CreateScheduledPostModal({ isOpen, onClose, editingPost }: Creat
       });
       onClose();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Failed to schedule post',
         description: error.message || 'Please try again',
@@ -111,15 +121,14 @@ export function CreateScheduledPostModal({ isOpen, onClose, editingPost }: Creat
             </div>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="image">Image URL (optional)</Label>
-            <Input
-              id="image"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://i.imgur.com/..."
-            />
-          </div>
+          <ImageUploadField
+            value={imageUrl}
+            onChange={setImageUrl}
+            label="Image (optional)"
+            placeholder="https://i.imgur.com/..."
+            showPreview={true}
+            preferredService="catbox"
+          />
           
           <div className="space-y-2">
             <Label htmlFor="caption">Caption (optional)</Label>
