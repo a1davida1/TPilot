@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import express from "express";
-import { createServer } from "http";
+import { createServer, type Server } from "http";
+import type { Session } from "express-session";
 import Stripe from 'stripe';
 import passport from 'passport';
 import process from 'node:process';
@@ -739,12 +740,13 @@ const resolveBillingPeriodEnd = (
       }
     }
 
-    const subscriptionPeriodEnd = coerceStripeTimestamp((subscription as any).current_period_end);
+    const subscriptionPeriodEnd = coerceStripeTimestamp((subscription as Stripe.Subscription & {current_period_end?: number}).current_period_end);
     if (subscriptionPeriodEnd !== undefined) {
       return subscriptionPeriodEnd;
     }
 
-    return coerceIsoString((subscription as any).current_period_end);
+    const periodEnd = (subscription as Stripe.Subscription & {current_period_end?: string | number}).current_period_end;
+    return periodEnd ? coerceIsoString(String(periodEnd)) : undefined;
   }
 
   if (isStripeSubscriptionSchedule(subscription)) {
@@ -1048,19 +1050,14 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
       }
 
       // Create subscription with trial period
-      const priceData = {
+      const priceData: Stripe.SubscriptionCreateParams.Item.PriceData = {
         currency: 'usd',
-        product_data: {
-          name: plan === 'pro_plus' ? 'ThottoPilot Pro Plus' : 'ThottoPilot Pro',
-          description: plan === 'pro_plus'
-            ? 'Premium content creation with advanced features'
-            : 'Professional content creation and protection'
-        },
+        product: plan === 'pro_plus' ? 'prod_thottopilot_pro_plus' : 'prod_thottopilot_pro', // Using product IDs
         unit_amount: amount,
         recurring: {
-          interval: 'month'
+          interval: 'month' as Stripe.SubscriptionCreateParams.Item.PriceData.Recurring.Interval
         }
-      } as any;
+      };
 
       const subscription = await stripe.subscriptions.create({
         customer: customerId,

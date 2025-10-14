@@ -39,7 +39,7 @@ export default function ScheduledPostsPage() {
   const queryClient = useQueryClient();
   
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [editingPost, setEditingPost] = useState<ScheduledPost | null>(null);
+  const [editingPost, setEditingPost] = useState<ScheduledPost | undefined>(undefined);
 
   // Fetch scheduled posts
   const { data: posts, isLoading } = useQuery<ScheduledPost[]>({
@@ -83,7 +83,7 @@ export default function ScheduledPostsPage() {
 
   const handleCloseModal = () => {
     setIsCreateModalOpen(false);
-    setEditingPost(null);
+    setEditingPost(undefined);
     queryClient.invalidateQueries({ queryKey: ['/api/scheduled-posts'] });
   };
 

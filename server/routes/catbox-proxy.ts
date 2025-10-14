@@ -67,7 +67,7 @@ router.post('/catbox-proxy', upload.single('file'), async (req, res) => {
     // Try primary Catbox endpoint
     let response = await fetch('https://catbox.moe/user/api.php', {
       method: 'POST',
-      body: formData as any,
+      body: formData as unknown as BodyInit,
       headers: {
         ...formData.getHeaders(),
         'User-Agent': 'ThottoPilot/1.0 (https://thottopilot.com)'
@@ -89,7 +89,7 @@ router.post('/catbox-proxy', upload.single('file'), async (req, res) => {
 
       response = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', {
         method: 'POST',
-        body: litterboxForm as any,
+        body: litterboxForm as unknown as BodyInit,
         headers: {
           ...litterboxForm.getHeaders(),
           'User-Agent': 'ThottoPilot/1.0 (https://thottopilot.com)'
