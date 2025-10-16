@@ -10,8 +10,7 @@ import { z } from 'zod';
 import { logger } from '../bootstrap/logger.js';
 import { db } from '../db.js';
 import { scheduledPosts } from '@shared/schema';
-import { eq, and, gte, lte, desc, asc, or } from 'drizzle-orm';
-import { addDays, subDays } from 'date-fns';
+import { eq, desc } from 'drizzle-orm';
 import { workerOrchestrator } from '../lib/scheduler/worker-orchestrator.js';
 
 const router = Router();

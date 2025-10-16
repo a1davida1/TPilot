@@ -39,7 +39,8 @@ const Checkout = React.lazy(() => import("@/pages/checkout"));
 const NotFound = React.lazy(() => import("@/pages/not-found"));
 const TermsOfService = React.lazy(() => import("@/pages/terms-of-service"));
 const PrivacyPolicy = React.lazy(() => import("@/pages/privacy-policy"));
-const QuickPostPage = React.lazy(() => import("@/pages/quick-post"));
+const QuickPostPage = React.lazy(() => import("@/pages/quick-post").then(module => ({ default: module.QuickPostPage })));
+const FlightSchoolPage = React.lazy(() => import("@/pages/flight-school"));
 import { RedditCommunities } from "@/components/reddit-communities";
 import { ImageGallery } from "@/components/image-gallery";
 // Phase 1: Real Analytics Tracking
@@ -121,6 +122,7 @@ function AuthenticatedRoutes() {
       <Route path="/quick-post" component={QuickPostPage} />
       <Route path="/post-scheduling" component={PostSchedulingPage} />
       <Route path="/scheduled-posts" component={ScheduledPostsPage} />
+      <Route path="/flight-school" component={FlightSchoolPage} />
       <Route path="/analytics" component={AnalyticsPage} />
       <Route path="/gallery" component={() => <ImageGallery />} />
       <Route path="/tax-tracker" component={() => <TaxTracker />} />
@@ -167,6 +169,7 @@ function UnauthenticatedRoutes() {
       <Route path="/imageshield" component={ImageShieldPage} />
       <Route path="/reddit" component={RedditPostingPage} />
       <Route path="/pro-perks" component={ProPerksPage} />
+      <Route path="/flight-school" component={FlightSchoolPage} />
       <Route path="/landing">
         <SEOOptimization {...seoConfigs.landing} />
         <UnifiedLanding />

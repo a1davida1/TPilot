@@ -7,8 +7,6 @@ import { Router, type Response } from 'express';
 import { authenticateToken, type AuthRequest } from '../middleware/auth';
 import { 
   getRecommendations, 
-  getSubredditMetrics,
-  getTrendingTopics,
   type SubredditRecommendation
 } from '../lib/subreddit-recommender.js';
 import { z } from 'zod';
@@ -29,7 +27,7 @@ const recommendSchema = z.object({
  */
 router.post('/', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
-    const { category, tags = [], nsfw, excludeSubreddits } = recommendSchema.parse(req.body ?? {});
+    const { category, tags = [], excludeSubreddits } = recommendSchema.parse(req.body ?? {});
 
     if (!req.user?.id) {
       return res.status(401).json({ error: 'User not authenticated' });
