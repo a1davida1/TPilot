@@ -63,7 +63,9 @@ const keyGenerator = (req: Request): string => {
     return `user-${authReq.user.id}`;
   }
   // Fall back to IP address for unauthenticated users (IPv6 compliant)
-  return ipKeyGenerator(req);
+  // ipKeyGenerator expects IP string, not request object
+  const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+  return ipKeyGenerator(ip);
 };
 
 // Create rate limiter with tier-based limits
@@ -125,7 +127,10 @@ export const rateLimiters = {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 5, // 5 requests per 15 minutes
     skipSuccessfulRequests: true,
-    keyGenerator: ipKeyGenerator,
+    keyGenerator: (req) => {
+      const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+      return ipKeyGenerator(ip);
+    },
     handler: (req, res) => {
       logger.error('Auth rate limit exceeded', {
         ip: req.ip,
@@ -186,7 +191,11 @@ export const rateLimiters = {
   passwordReset: rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 3, // 3 reset attempts per hour
-    keyGenerator: (req) => req.body?.email || ipKeyGenerator(req),
+    keyGenerator: (req) => {
+      if (req.body?.email) return req.body.email;
+      const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+      return ipKeyGenerator(ip);
+    },
     handler: (req, res) => {
       logger.warn('Password reset rate limit exceeded', {
         email: req.body?.email,

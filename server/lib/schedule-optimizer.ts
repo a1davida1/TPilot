@@ -3,6 +3,8 @@
  * Suggests optimal posting times based on subreddit activity and historical performance
  */
 
+import { getUserSubredditMetrics, getGlobalSubredditMetrics, detectPeakHours } from './analytics-service.js';
+
 export interface OptimalTimeSlot {
   timestamp: Date;
   dayOfWeek: string;
@@ -24,22 +26,14 @@ export interface ScheduleRequest {
 }
 
 /**
- * Peak activity hours by subreddit (based on general Reddit patterns)
+ * Peak activity hours are now dynamically detected from postMetrics data
+ * via detectPeakHours() in analytics-service.ts
  * 
- * @todo Replace with actual database queries from post_metrics table
- * Future: Query `post_metrics` table aggregated by hour to determine
- * actual peak engagement times per subreddit. For now, uses empirical
- * data from NSFW community analysis.
+ * This provides personalized recommendations based on:
+ * - User's historical performance by hour
+ * - Global subreddit trends
+ * - Statistical significance (confidence scores)
  */
-const SUBREDDIT_PEAK_HOURS: Record<string, number[]> = {
-  'gonewild': [20, 21, 22, 23, 0, 1], // Evening/night EST
-  'RealGirls': [19, 20, 21, 22, 23],
-  'PetiteGoneWild': [20, 21, 22, 23],
-  'OnlyFansPromotions': [10, 11, 12, 18, 19, 20], // Lunch + evening
-  'SexSells': [18, 19, 20, 21],
-  'NSFWverifiedamateurs': [20, 21, 22, 23],
-  'default': [19, 20, 21, 22] // General evening
-};
 
 // Day-of-week multipliers (1.0 = average)
 const DAY_MULTIPLIERS: Record<number, number> = {
@@ -68,12 +62,13 @@ export async function getOptimalPostingTimes(
   const slots: OptimalTimeSlot[] = [];
   const now = new Date();
 
-  // Get peak hours for this subreddit
-  const peakHours = SUBREDDIT_PEAK_HOURS[subreddit] ?? SUBREDDIT_PEAK_HOURS['default'];
+  // Get dynamic peak hours from actual data
+  const peakHoursAnalysis = await detectPeakHours(subreddit, userId);
+  const peakHours = peakHoursAnalysis.peakHours;
 
-  // Get historical performance if userId provided
+  // Get historical performance from real data
   const historicalMetrics = userId
-    ? await getUserSubredditHistory(userId, subreddit)
+    ? await getUserSubredditMetrics(userId, subreddit)
     : await getGlobalSubredditMetrics(subreddit);
 
   // Generate time slots for next N days
@@ -127,67 +122,15 @@ export async function getOptimalPostingTimes(
   return slots.slice(0, 10);
 }
 
-interface SubredditMetrics {
-  avgUpvotes: number;
-  avgComments: number;
-  successRate?: number;
-}
-
 /**
- * Get user-specific historical metrics for a subreddit
+ * Analytics functions moved to analytics-service.ts
+ * - getUserSubredditMetrics(): Real DB queries with caching
+ * - getGlobalSubredditMetrics(): Platform-wide benchmarks
+ * - detectPeakHours(): Dynamic peak hour detection
  * 
- * @todo Implement database query
- * Implementation plan:
- * 1. Query `post_metrics` table filtered by userId and subreddit
- * 2. Calculate avg upvotes, comments, and success rate (not removed)
- * 3. Cache results for 1 hour to reduce DB load
- * 
- * Currently returns default metrics until user history accumulates.
+ * All functions query postMetrics and reddit_post_outcomes tables
+ * with Redis caching (1-6 hour TTLs)
  */
-async function getUserSubredditHistory(
-  _userId: number,
-  _subreddit: string
-): Promise<SubredditMetrics> {
-
-  return {
-    avgUpvotes: 100,
-    avgComments: 20,
-    successRate: 0.8
-  };
-}
-
-/**
- * Get global platform metrics for a subreddit
- */
-/**
- * Get platform-wide metrics for a subreddit
- * 
- * @todo Implement database query
- * Implementation plan:
- * 1. Aggregate metrics across all users for this subreddit from `post_metrics`
- * 2. Calculate percentiles (P50, P75, P90) for upvotes/comments
- * 3. Cache results for 6 hours as global metrics change slowly
- * 
- * Currently uses static baseline data from NSFW community research.
- */
-async function getGlobalSubredditMetrics(
-  subreddit: string
-): Promise<SubredditMetrics> {
-
-  const baseUpvotes: Record<string, number> = {
-    'gonewild': 800,
-    'RealGirls': 600,
-    'PetiteGoneWild': 500,
-    'OnlyFansPromotions': 150,
-    'default': 200
-  };
-
-  return {
-    avgUpvotes: baseUpvotes[subreddit] ?? baseUpvotes['default'],
-    avgComments: Math.floor((baseUpvotes[subreddit] ?? 200) * 0.08),
-    successRate: 0.75
-  };
-}
 
 function getDayName(dayIndex: number): string {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -225,14 +168,18 @@ export async function getNextOptimalTime(
 }
 
 /**
- * Check if a proposed time is within optimal window
+ * Check if a proposed time is within optimal window (using real data)
  */
 export async function isOptimalTime(
   subreddit: string,
-  proposedTime: Date
+  proposedTime: Date,
+  userId?: number
 ): Promise<{ isOptimal: boolean; score: number; reason: string }> {
   const hour = proposedTime.getHours();
-  const peakHours = SUBREDDIT_PEAK_HOURS[subreddit] ?? SUBREDDIT_PEAK_HOURS['default'];
+  
+  // Get dynamic peak hours from analytics
+  const peakHoursAnalysis = await detectPeakHours(subreddit, userId);
+  const peakHours = peakHoursAnalysis.peakHours;
 
   const isPeak = peakHours.includes(hour);
   const dayOfWeek = proposedTime.getDay();
@@ -244,7 +191,7 @@ export async function isOptimalTime(
     isOptimal: isPeak && score >= 80,
     score,
     reason: isPeak
-      ? `Peak hour for r/${subreddit}`
+      ? `Peak hour for r/${subreddit} (based on ${peakHoursAnalysis.sampleSize} posts)`
       : `Consider posting at ${peakHours.map(formatHour).join(', ')} for better engagement`
   };
 }

@@ -553,6 +553,7 @@ import { subredditRecommenderRouter } from "./routes/subreddit-recommender.js";
 import { scheduledPostsRouter } from "./routes/scheduled-posts.js";
 import { captionAnalyticsRouter } from "./routes/caption-analytics.js";
 import { registerSocialMediaRoutes } from "./social-media-routes.js";
+import analyticsPerformanceRouter from "./routes/analytics-performance.js";
 
 
 // Core dependencies
@@ -1440,6 +1441,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
 
   // Register Caption Analytics Routes (for A/B testing and performance tracking)
   app.use('/api/caption-analytics', captionAnalyticsRouter);
+
+  // Register Enhanced Performance Analytics Routes (real-time metrics with DB queries)
+  app.use('/api/analytics', analyticsPerformanceRouter);
 
   // Register Intelligence Routes (for AI-powered insights)
   const { intelligenceRouter } = await import('./routes/intelligence.js');

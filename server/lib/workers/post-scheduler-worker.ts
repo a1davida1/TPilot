@@ -8,7 +8,7 @@ import { logger } from '../../bootstrap/logger.js';
 import { db } from '../../db.js';
 import { scheduledPosts, redditPostOutcomes } from '@shared/schema';
 import { eq, and, lte } from 'drizzle-orm';
-// import { submitToReddit } from '../reddit.js'; // Commented out - not implemented yet
+import { RedditManager } from '../reddit.js';
 import Redis from 'ioredis';
 
 interface ScheduledPostJob {
@@ -80,53 +80,44 @@ export function createPostSchedulerWorker() {
           })
           .where(eq(scheduledPosts.id, postId));
 
-        /**
-         * Reddit submission integration
-         * 
-         * @todo Implement Reddit submission via RedditManager
-         * Implementation plan:
-         * 1. Import RedditManager from server/lib/reddit.ts
-         * 2. Initialize with user's OAuth tokens from creator_accounts table
-         * 3. Call RedditManager.submitPost() with post data
-         * 4. Handle rate limits, shadowban detection, and subreddit rules
-         * 5. Update scheduled_posts.status and reddit_post_outcomes tables
-         * 
-         * Blocked by: Need to finalize RedditManager error handling and test coverage
-         */
-        interface RedditSubmissionResult {
-          success: boolean;
-          redditPostId?: string | null;
-          postUrl?: string | null;
-          error?: string;
+        // Get RedditManager instance for this user
+        const redditManager = await RedditManager.forUser(userId);
+        
+        if (!redditManager) {
+          throw new Error('Reddit OAuth not configured for user. Please reconnect Reddit account.');
         }
 
-        // Mock result (temporary until Reddit API implemented)
-        const result: RedditSubmissionResult = {
-          success: false,
-          redditPostId: null,
-          postUrl: null,
-          error: 'Reddit submission not yet implemented'
-        };
+        // Submit post to Reddit
+        let result;
         
-        /*
-        const result = await submitToReddit({
-          userId: userId.toString(),
-          subreddit,
-          title,
-          content,
-          imageUrl,
-          flairText,
-          nsfw
-        });
-        */
+        if (post.imageUrl) {
+          // Image post
+          result = await redditManager.submitImagePost({
+            subreddit,
+            title: post.title,
+            imageUrl: post.imageUrl,
+            nsfw: post.nsfw ?? false,
+            spoiler: post.spoiler ?? false
+          });
+        } else {
+          // Link or text post
+          result = await redditManager.submitPost({
+            subreddit,
+            title: post.title,
+            body: post.content ?? undefined,
+            url: undefined, // Could add link support later
+            nsfw: post.nsfw ?? false,
+            spoiler: post.spoiler ?? false
+          });
+        }
 
-        if (result.success && result.redditPostId) {
+        if (result.success && result.postId) {
           // Update as completed
           await db.update(scheduledPosts)
             .set({
               status: 'completed',
-              redditPostId: result.redditPostId,
-              redditPostUrl: result.postUrl,
+              redditPostId: result.postId,
+              redditPostUrl: result.url,
               executedAt: new Date(),
               updatedAt: new Date()
             })
@@ -143,11 +134,11 @@ export function createPostSchedulerWorker() {
 
           logger.info('Scheduled post completed successfully', {
             postId,
-            redditPostId: result.redditPostId,
-            url: result.postUrl
+            redditPostId: result.postId,
+            url: result.url
           });
 
-          return { success: true, postId: result.redditPostId, url: result.postUrl };
+          return { success: true, postId: result.postId, url: result.url };
         } else {
           throw new Error(result.error || 'Failed to submit to Reddit');
         }
