@@ -5,11 +5,10 @@
 import * as cron from 'node-cron';
 import { logger } from '../../bootstrap/logger.js';
 import { db } from '../../db.js';
-import { scheduledPosts, redditPostOutcomes } from '@shared/schema';
+import { scheduledPosts } from '@shared/schema';
 import { eq, lte, and, or } from 'drizzle-orm';
 // import { addJob, QUEUE_NAMES } from '../../bootstrap/queue.js'; // Queue system not yet implemented
 // import { syncRedditCommunityRules } from '../reddit-community-sync.js'; // File doesn't exist yet
-import { workerOrchestrator } from './worker-orchestrator.js';
 
 interface CronJob {
   name: string;
@@ -221,7 +220,7 @@ class CronManager {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      const result = await db
+      const _result = await db
         .delete(scheduledPosts)
         .where(
           and(

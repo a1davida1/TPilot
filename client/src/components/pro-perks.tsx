@@ -439,7 +439,7 @@ export function ProPerks({ userTier: _userTier = "pro" }: ProPerksProps) {
     handleGenerateReferralCode(perk.id);
   }, [ensureInstructions, handleGenerateReferralCode]);
 
-  const handleClosePerk = useCallback(() => {
+  const _handleClosePerk = useCallback(() => {
     if (selectedPerk) {
       trackFeatureUsage("pro_perks", "close_perk", { perkId: selectedPerk.id });
     }

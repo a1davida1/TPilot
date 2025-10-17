@@ -16,9 +16,9 @@ async function runMigration() {
   try {
     const migrationSQL = readFileSync('./migrations/0014_recurring_commissions.sql', 'utf-8');
 
-    console.log('Running migration...');
+    console.warn('Running migration...');
     await pool.query(migrationSQL);
-    console.log('✅ Migration completed successfully!');
+    console.warn('✅ Migration completed successfully!');
   } catch (error) {
     console.error('❌ Migration failed:', error.message);
     process.exit(1);

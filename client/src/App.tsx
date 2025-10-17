@@ -39,7 +39,7 @@ const Checkout = React.lazy(() => import("@/pages/checkout"));
 const NotFound = React.lazy(() => import("@/pages/not-found"));
 const TermsOfService = React.lazy(() => import("@/pages/terms-of-service"));
 const PrivacyPolicy = React.lazy(() => import("@/pages/privacy-policy"));
-const QuickPostPage = React.lazy(() => import("@/pages/quick-post").then(module => ({ default: module.QuickPostPage })));
+const QuickPostPage = React.lazy(() => import("@/pages/quick-post"));
 const FlightSchoolPage = React.lazy(() => import("@/pages/flight-school"));
 import { RedditCommunities } from "@/components/reddit-communities";
 import { ImageGallery } from "@/components/image-gallery";
@@ -73,7 +73,7 @@ function CommunitiesPage() {
 }
 
 // Gallery Page Component
-function GalleryPage() {
+function _GalleryPage() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-background via-primary-50/60 to-primary-100/50 dark:from-background dark:via-primary-900/40 dark:to-primary-950/40">
       {/* Animated Background */}
@@ -101,7 +101,6 @@ function GalleryPage() {
 function AuthenticatedRoutes() {
   const { user } = useAuth();
   const isAdmin = Boolean(user?.isAdmin);
-  const userTier = user?.tier || 'free';
 
   return (
     <Switch>

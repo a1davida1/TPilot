@@ -161,7 +161,7 @@ async function waitForProcessing(
             ws?.close();
             reject(new Error(`Media processing failed: ${data.payload?.error ?? 'unknown'}`));
           }
-        } catch (error) {
+        } catch (_error) {
           // Ignore parse errors; keep waiting
         }
       };

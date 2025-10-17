@@ -47,7 +47,7 @@ router.get('/', async (req: Request, res: Response) => {
       status: 'ok',
       timestamp: new Date().toISOString()
     });
-  } catch (error) {
+  } catch (_error) {
     res.status(503).json({ 
       status: 'error',
       timestamp: new Date().toISOString()

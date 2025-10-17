@@ -1,13 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isAfter, isBefore, startOfDay, setHours, setMinutes } from 'date-fns';
-import { ChevronLeft, ChevronRight, Clock, Calendar as CalendarIcon, AlertCircle, Check, X, Loader2, TrendingUp } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, AlertCircle, X, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -20,13 +19,6 @@ interface ScheduledPost {
   imageUrl: string;
   caption: string;
   status: 'pending' | 'scheduled' | 'published' | 'failed';
-}
-
-interface TimeSlot {
-  time: string;
-  available: boolean;
-  optimal?: boolean;
-  posts?: ScheduledPost[];
 }
 
 interface SchedulingCalendarProps {
@@ -66,12 +58,12 @@ export function SchedulingCalendar({
   existingPosts = [],
   userTier = 'free' 
 }: SchedulingCalendarProps) {
-  const { user } = useAuth();
+  useAuth();
   const { toast } = useToast();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<Map<string, string>>(new Map());
-  const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>(existingPosts);
+  const [scheduledPosts] = useState<ScheduledPost[]>(existingPosts);
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
   const [showTimeSlotDialog, setShowTimeSlotDialog] = useState(false);
   const [selectedSubreddit, setSelectedSubreddit] = useState('');
@@ -168,7 +160,12 @@ export function SchedulingCalendar({
 
   // Schedule all selected posts
   const scheduleAllPosts = () => {
-    const scheduleData: any[] = [];
+    const scheduleData: Array<{
+      imageUrl: string;
+      caption: string;
+      subreddit: string;
+      scheduledFor: string;
+    }> = [];
     
     selectedTimeSlots.forEach((subreddit, dateTimeKey) => {
       selectedImages.forEach(img => {
@@ -233,7 +230,7 @@ export function SchedulingCalendar({
               </CardDescription>
             </div>
             <div className="flex gap-2">
-              <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'month' | 'week')}>
+              <Tabs value={viewMode} onValueChange={(v: string) => setViewMode(v as 'month' | 'week')}>
                 <TabsList>
                   <TabsTrigger value="month">Month</TabsTrigger>
                   <TabsTrigger value="week">Week</TabsTrigger>

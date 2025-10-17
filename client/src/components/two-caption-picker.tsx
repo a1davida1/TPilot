@@ -74,7 +74,7 @@ export function TwoCaptionPicker({
     }
   };
 
-  const confirmSelection = (index: number = selectedIndex!, autoSelected: boolean = false) => {
+  const confirmSelection = (index: number = selectedIndex ?? 0, autoSelected: boolean = false) => {
     if (index === null) return;
 
     const caption = captions[index];

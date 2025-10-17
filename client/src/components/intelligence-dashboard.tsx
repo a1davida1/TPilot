@@ -3,20 +3,18 @@
  * Real-time insights and analytics for content creators
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
   TrendingUp, 
   Clock, 
   Lightbulb, 
-  BarChart3, 
-  Target,
+  BarChart3,
   Sparkles,
   AlertCircle,
   RefreshCw,
   ChevronRight,
-  Flame,
-  Users
+  Flame
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -67,8 +65,8 @@ interface SubredditMetrics {
 }
 
 export function IntelligenceDashboard() {
-  const { user } = useAuth();
-  const [selectedSubreddit, setSelectedSubreddit] = useState<string>('gonewild');
+  useAuth();
+  const [selectedSubreddit] = useState<string>('gonewild');
   const [refreshing, setRefreshing] = useState(false);
 
   // Fetch trending topics

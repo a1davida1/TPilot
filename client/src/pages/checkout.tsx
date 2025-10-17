@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Shield, CheckCircle, Zap, AlertTriangle, CreditCard } from "lucide-react";
+import { ArrowLeft, Shield, CheckCircle, Zap, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
 
 // Lazy load Stripe only when needed

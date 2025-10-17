@@ -4,7 +4,6 @@ import { z } from 'zod';
 import { uploadAnonymousToImgur, uploadAuthorizedToImgur, deleteFromImgur, getDailyUsageStats } from '../services/imgur-uploader.js';
 import { logger } from '../bootstrap/logger.js';
 import { authenticateToken, type AuthRequest } from '../middleware/auth.js';
-import { storage } from '../storage.js';
 import { pool } from '../db.js';
 
 const router = Router();

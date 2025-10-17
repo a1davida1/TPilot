@@ -253,7 +253,7 @@ function gaussianRandom(): number {
   return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
 }
 
-async function blurSharpenStack(canvas: OffscreenCanvas, preset: string): Promise<OffscreenCanvas> {
+async function blurSharpenStack(canvas: OffscreenCanvas, _preset: string): Promise<OffscreenCanvas> {
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Failed to get canvas context');
 
@@ -311,8 +311,8 @@ async function addSubtleWatermark(canvas: OffscreenCanvas): Promise<OffscreenCan
 }
 
 async function calculateMetrics(
-  original: OffscreenCanvas,
-  protectedCanvas: OffscreenCanvas
+  _original: OffscreenCanvas,
+  _protectedCanvas: OffscreenCanvas
 ): Promise<{ ssim: number; phashDelta: number }> {
   // Stub: SSIM and pHash require dedicated implementations
   // For now, return estimates based on operation strength

@@ -302,7 +302,7 @@ export async function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
         {
           id: user.id,
           type: 'refresh',
-          version: (user as any).tokenVersion || 0,
+          version: ('tokenVersion' in user && typeof user.tokenVersion === 'number') ? user.tokenVersion : 0,
           jti: crypto.randomUUID()
         },
         JWT_SECRET_VALIDATED,
@@ -382,11 +382,12 @@ export async function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
         return res.status(401).json({ error: 'User not found' });
       }
       
-      if ((user as any).tokenVersion !== decoded.version) {
+      const userTokenVersion = ('tokenVersion' in user && typeof user.tokenVersion === 'number') ? user.tokenVersion : 0;
+      if (userTokenVersion !== decoded.version) {
         logger.warn('Token version mismatch - token revoked', {
           userId: user.id,
           tokenVersion: decoded.version,
-          currentVersion: (user as any).tokenVersion
+          currentVersion: userTokenVersion
         });
         return res.status(401).json({ error: 'Token revoked' });
       }
@@ -409,7 +410,7 @@ export async function setupAuth(app: Express, apiPrefix: string = API_PREFIX) {
         {
           id: user.id,
           type: 'refresh',
-          version: (user as any).tokenVersion || 0,
+          version: ('tokenVersion' in user && typeof user.tokenVersion === 'number') ? user.tokenVersion : 0,
           jti: crypto.randomUUID()
         },
         JWT_SECRET_VALIDATED,

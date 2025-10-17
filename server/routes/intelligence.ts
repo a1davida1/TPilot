@@ -6,7 +6,7 @@
 import { Router, type Response } from 'express';
 import { authenticateToken, type AuthRequest } from '../middleware/auth.js';
 import { db } from '../db.js';
-import { redditPostOutcomes, redditCommunities, contentGenerations } from '@shared/schema';
+import { redditPostOutcomes, redditCommunities } from '@shared/schema';
 import { eq, desc, gte, and, sql, count } from 'drizzle-orm';
 import { logger } from '../bootstrap/logger.js';
 import { subDays } from 'date-fns';
@@ -28,7 +28,7 @@ const TIER_ACCESS = {
  */
 router.get('/trends/:subreddit', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
-    const { subreddit } = req.params;
+    const _subreddit = req.params.subreddit;
     const userTier = req.user?.tier || 'free';
     const tierLevel = TIER_ACCESS[userTier as keyof typeof TIER_ACCESS] || 0;
     
@@ -78,7 +78,7 @@ router.get('/trends/:subreddit', authenticateToken(true), async (req: AuthReques
  */
 router.get('/optimal-times/:subreddit', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
-    const { subreddit } = req.params;
+    const _subreddit = req.params.subreddit;
     const userTier = req.user?.tier || 'free';
     const tierLevel = TIER_ACCESS[userTier as keyof typeof TIER_ACCESS] || 0;
     
@@ -145,12 +145,12 @@ router.get('/suggestions', authenticateToken(true), async (req: AuthRequest, res
     }
 
     // Get user's recent successful posts to base suggestions on
-    const recentSuccess = await db
+    const _recentSuccess = await db
       .select()
       .from(redditPostOutcomes)
       .where(
         and(
-          eq(redditPostOutcomes.userId, userId!),
+          eq(redditPostOutcomes.userId, userId ?? 0),
           eq(redditPostOutcomes.status, 'successful')
         )
       )
@@ -237,7 +237,7 @@ router.get('/performance', authenticateToken(true), async (req: AuthRequest, res
       .from(redditPostOutcomes)
       .where(
         and(
-          eq(redditPostOutcomes.userId, userId!),
+          eq(redditPostOutcomes.userId, userId ?? 0),
           eq(redditPostOutcomes.subreddit, subreddit),
           gte(redditPostOutcomes.occurredAt, thirtyDaysAgo)
         )

@@ -46,7 +46,6 @@ export function UnifiedLanding() {
     if (ref) {
       try {
         localStorage.setItem('referralCode', ref.trim().toUpperCase());
-        console.log('Referral code stored:', ref);
 
         toast({
           title: "Referral Code Applied! 🎉",

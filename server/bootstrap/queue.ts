@@ -25,7 +25,7 @@ export async function startQueue() {
       const { queueMonitor } = await import("../lib/queue-monitor.js");
       await queueMonitor.startMonitoring(30000); // Monitor every 30 seconds
       logger.info('Queue monitoring started (interval: 30000ms)');
-    } catch (error) {
+    } catch (_error) {
       logger.warn('Queue monitor not available, skipping');
     }
 
@@ -34,7 +34,7 @@ export async function startQueue() {
       const { workerScaler } = await import("../lib/worker-scaler.js");
       await workerScaler.startScaling(60000); // Scale every minute
       logger.info('Worker auto-scaling started (interval: 60000ms)');
-    } catch (error) {
+    } catch (_error) {
       logger.warn('Worker scaler not available, skipping');
     }
 
@@ -86,7 +86,7 @@ export async function stopQueue() {
     try {
       const { queueMonitor } = await import("../lib/queue-monitor.js");
       await queueMonitor.stopMonitoring();
-    } catch (error) {
+    } catch (_error) {
       // Monitor might not be available
     }
 
@@ -94,7 +94,7 @@ export async function stopQueue() {
     try {
       const { workerScaler } = await import("../lib/worker-scaler.js");
       await workerScaler.stopScaling();
-    } catch (error) {
+    } catch (_error) {
       // Scaler might not be available
     }
     

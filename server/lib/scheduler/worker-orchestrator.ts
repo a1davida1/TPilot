@@ -5,7 +5,7 @@
 
 import { db } from '../../db.js';
 import { scheduledPosts, redditPostOutcomes } from '@shared/schema';
-import { eq, and, lte, gte, or, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { logger } from '../../bootstrap/logger.js';
 import { addJob, QUEUE_NAMES } from '../queue/index.js';
 
@@ -16,7 +16,7 @@ interface RetryConfig {
   maxDelayMs: number;
 }
 
-interface JobMetadata {
+interface _JobMetadata {
   postId: number;
   userId: number;
   attempt: number;

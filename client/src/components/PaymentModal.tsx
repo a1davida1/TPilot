@@ -42,9 +42,14 @@ function PaymentForm({ tier, onSuccess, onCancel }: PaymentFormProps) {
       const { clientSecret } = await response.json();
 
       // Confirm payment
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) {
+        throw new Error('Card element not found');
+      }
+      
       const { error } = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
-          card: elements.getElement(CardElement)!,
+          card: cardElement,
         }
       });
 
@@ -61,7 +66,7 @@ function PaymentForm({ tier, onSuccess, onCancel }: PaymentFormProps) {
         });
         onSuccess();
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Payment error',
         description: 'Failed to process payment',

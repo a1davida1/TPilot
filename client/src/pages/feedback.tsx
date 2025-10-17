@@ -8,21 +8,17 @@ import {
   Clock, 
   CheckCircle,
   AlertCircle,
-  Filter,
   TrendingUp
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/useAuth';
-import { apiRequest } from '@/lib/queryClient';
 import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { FeedbackWidget } from '@/components/FeedbackWidget';
 
 interface FeedbackItem {
   id: number;

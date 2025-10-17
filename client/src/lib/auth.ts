@@ -90,7 +90,7 @@ export async function refreshAccessToken(): Promise<string | null> {
     const { accessToken: newToken } = await res.json();
     setAccessToken(newToken);
     return newToken;
-  } catch (err) {
+  } catch (_err) {
     // Refresh failed - clear token and return null
     clearAccessToken();
     return null;

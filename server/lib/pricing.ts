@@ -11,10 +11,18 @@ export function bucketForUser(userId: string): ProBucket {
 }
 
 export function proPriceIdForBucket(b: ProBucket): string {
-  const map: Record<ProBucket,string> = {
-    a: process.env.STRIPE_PRICE_PRO_29!,
-    b: process.env.STRIPE_PRICE_PRO_39!,
-    c: process.env.STRIPE_PRICE_PRO_49!,
+  const priceA = process.env.STRIPE_PRICE_PRO_29;
+  const priceB = process.env.STRIPE_PRICE_PRO_39;
+  const priceC = process.env.STRIPE_PRICE_PRO_49;
+  
+  if (!priceA || !priceB || !priceC) {
+    throw new Error('Missing Stripe price configuration for Pro tier');
+  }
+  
+  const map: Record<ProBucket, string> = {
+    a: priceA,
+    b: priceB,
+    c: priceC,
   };
   return map[b];
 }

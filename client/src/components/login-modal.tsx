@@ -126,7 +126,6 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
             }
           });
           localStorage.removeItem('referralCode'); // Clear after successful application
-          console.log('Referral code applied successfully');
         } catch (referralError) {
           console.error('Failed to apply referral code:', referralError);
           // Don't block signup if referral fails - just log it

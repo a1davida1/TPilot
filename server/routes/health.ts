@@ -40,7 +40,7 @@ interface HealthStatus {
 interface ServiceHealth {
   status: 'up' | 'down' | 'degraded';
   latency?: number;
-  details?: any;
+  details?: Record<string, unknown>;
   error?: string;
 }
 
@@ -183,11 +183,12 @@ async function checkDatabase(): Promise<ServiceHealth> {
         userCount: result.rows[0]?.count || 0
       }
     };
-  } catch (error: any) {
-    logger.error('Database health check failed', { error: error.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Database health check failed', { error: message });
     return {
       status: 'down',
-      error: error.message
+      error: message
     };
   }
 }
@@ -216,11 +217,12 @@ async function checkRedis(): Promise<ServiceHealth> {
       status: latency > 100 ? 'degraded' : 'up',
       latency
     };
-  } catch (error: any) {
-    logger.error('Redis health check failed', { error: error.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Redis health check failed', { error: message });
     return {
       status: 'down',
-      error: error.message
+      error: message
     };
   }
 }
@@ -235,10 +237,10 @@ function checkScheduler(): ServiceHealth {
       status: status.isRunning ? 'up' : 'down',
       details: status
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       status: 'down',
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
 }

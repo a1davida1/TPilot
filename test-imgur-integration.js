@@ -12,18 +12,18 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-console.log('🔍 Testing Imgur Integration...\n');
+console.warn('🔍 Testing Imgur Integration...\n');
 
 // 1. Check if environment variable is set
 const checkEnvVar = () => {
-  console.log('1️⃣  Checking environment variables...');
+  console.warn('1️⃣  Checking environment variables...');
   const hasImgurClientId = !!process.env.IMGUR_CLIENT_ID;
   
   if (!hasImgurClientId) {
-    console.log('   ⚠️  IMGUR_CLIENT_ID not set in environment');
-    console.log('   ℹ️  Add to .env: IMGUR_CLIENT_ID=your_client_id_here');
+    console.warn('   ⚠️  IMGUR_CLIENT_ID not set in environment');
+    console.warn('   ℹ️  Add to .env: IMGUR_CLIENT_ID=your_client_id_here');
   } else {
-    console.log('   ✅ IMGUR_CLIENT_ID is configured');
+    console.warn('   ✅ IMGUR_CLIENT_ID is configured');
   }
   
   return hasImgurClientId;
@@ -31,7 +31,7 @@ const checkEnvVar = () => {
 
 // 2. Check if server files exist
 const checkServerFiles = () => {
-  console.log('\n2️⃣  Checking server files...');
+  console.warn('\n2️⃣  Checking server files...');
   
   const files = [
     'server/services/imgur-uploader.ts',
@@ -43,7 +43,7 @@ const checkServerFiles = () => {
   let allExist = true;
   files.forEach(file => {
     const exists = fs.existsSync(path.join(__dirname, file));
-    console.log(`   ${exists ? '✅' : '❌'} ${file}`);
+    console.warn(`   ${exists ? '✅' : '❌'} ${file}`);
     if (!exists) allExist = false;
   });
   
@@ -52,7 +52,7 @@ const checkServerFiles = () => {
 
 // 3. Check if client component exists
 const checkClientFiles = () => {
-  console.log('\n3️⃣  Checking client files...');
+  console.warn('\n3️⃣  Checking client files...');
   
   const files = [
     'client/src/components/ImgurUploadPortal.tsx',
@@ -62,7 +62,7 @@ const checkClientFiles = () => {
   let allExist = true;
   files.forEach(file => {
     const exists = fs.existsSync(path.join(__dirname, file));
-    console.log(`   ${exists ? '✅' : '❌'} ${file}`);
+    console.warn(`   ${exists ? '✅' : '❌'} ${file}`);
     if (!exists) allExist = false;
   });
   
@@ -71,7 +71,7 @@ const checkClientFiles = () => {
 
 // 4. Check if routes are mounted
 const checkRouteMounting = () => {
-  console.log('\n4️⃣  Checking route mounting...');
+  console.warn('\n4️⃣  Checking route mounting...');
   
   const routesFile = path.join(__dirname, 'dist/server/routes.js');
   if (fs.existsSync(routesFile)) {
@@ -80,27 +80,27 @@ const checkRouteMounting = () => {
     const hasImport = content.includes('imgur-uploads.js');
     const hasMounting = content.includes("app.use('/api/uploads'");
     
-    console.log(`   ${hasImport ? '✅' : '❌'} Import statement found`);
-    console.log(`   ${hasMounting ? '✅' : '❌'} Route mounting found`);
+    console.warn(`   ${hasImport ? '✅' : '❌'} Import statement found`);
+    console.warn(`   ${hasMounting ? '✅' : '❌'} Route mounting found`);
     
     return hasImport && hasMounting;
   } else {
-    console.log('   ❌ dist/server/routes.js not found - run npm run build');
+    console.error('   ❌ dist/server/routes.js not found - run npm run build');
     return false;
   }
 };
 
 // 5. Check database migration
 const checkMigration = () => {
-  console.log('\n5️⃣  Checking database migration...');
+  console.warn('\n5️⃣  Checking database migration...');
   
   const migrationFile = path.join(__dirname, 'migrations/0013_add_user_storage_assets.sql');
   const exists = fs.existsSync(migrationFile);
   
-  console.log(`   ${exists ? '✅' : '❌'} Migration file exists`);
+  console.warn(`   ${exists ? '✅' : '❌'} Migration file exists`);
   
   if (exists) {
-    console.log('   ℹ️  Run: npm run db:migrate to apply');
+    console.warn('   ℹ️  Run: npm run db:migrate to apply');
   }
   
   return exists;
@@ -108,7 +108,7 @@ const checkMigration = () => {
 
 // 6. Test API endpoints (if server is running)
 const testApiEndpoints = async () => {
-  console.log('\n6️⃣  Testing API endpoints...');
+  console.warn('\n6️⃣  Testing API endpoints...');
   
   try {
     const { default: fetch } = await import('node-fetch');
@@ -118,24 +118,24 @@ const testApiEndpoints = async () => {
     const statsRes = await fetch(`${baseUrl}/api/uploads/imgur/stats`);
     if (statsRes.ok) {
       const stats = await statsRes.json();
-      console.log('   ✅ Stats endpoint working');
-      console.log(`      Usage: ${stats.used}/${stats.limit} (${stats.percentUsed}%)`);
+      console.warn('   ✅ Stats endpoint working');
+      console.warn(`      Usage: ${stats.used}/${stats.limit} (${stats.percentUsed}%)`);
     } else {
-      console.log(`   ⚠️  Stats endpoint returned ${statsRes.status}`);
+      console.warn(`   ⚠️  Stats endpoint returned ${statsRes.status}`);
     }
     
     return true;
-  } catch (error) {
-    console.log('   ⚠️  Server not running or not accessible');
-    console.log('   ℹ️  Start server with: npm run dev');
+  } catch (_error) {
+    console.warn('   ⚠️  Server not running or not accessible');
+    console.warn('   ℹ️  Start server with: npm run dev');
     return false;
   }
 };
 
 // Run all checks
 const runTests = async () => {
-  console.log('🚀 Imgur Integration Test Suite');
-  console.log('================================\n');
+  console.warn('🚀 Imgur Integration Test Suite');
+  console.warn('================================\n');
   
   const results = {
     env: checkEnvVar(),
@@ -146,31 +146,31 @@ const runTests = async () => {
     api: await testApiEndpoints()
   };
   
-  console.log('\n📊 Summary');
-  console.log('==========');
+  console.warn('\n📊 Summary');
+  console.warn('==========');
   
   const passed = Object.values(results).filter(r => r).length;
   const total = Object.keys(results).length;
   
-  console.log(`   Passed: ${passed}/${total} checks`);
+  console.warn(`   Passed: ${passed}/${total} checks`);
   
   if (passed === total) {
-    console.log('\n✅ All checks passed! Imgur integration is ready.');
+    console.warn('\n✅ All checks passed! Imgur integration is ready.');
   } else {
-    console.log('\n⚠️  Some checks failed. Review the output above.');
+    console.warn('\n⚠️  Some checks failed. Review the output above.');
     
     if (!results.env) {
-      console.log('\n🔧 Next steps:');
-      console.log('1. Get Imgur Client ID from: https://api.imgur.com/oauth2/addclient');
-      console.log('2. Add to .env: IMGUR_CLIENT_ID=your_client_id');
+      console.warn('\n🔧 Next steps:');
+      console.warn('1. Get Imgur Client ID from: https://api.imgur.com/oauth2/addclient');
+      console.warn('2. Add to .env: IMGUR_CLIENT_ID=your_client_id');
     }
     
     if (!results.server || !results.routes) {
-      console.log('3. Run: npm run build');
+      console.warn('3. Run: npm run build');
     }
     
     if (!results.api) {
-      console.log('4. Start server: npm run dev');
+      console.warn('4. Start server: npm run dev');
     }
   }
   

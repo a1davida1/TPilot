@@ -8,7 +8,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Loader2, 
   UploadCloud, 
   Link2, 
   AlertTriangle, 
@@ -53,7 +52,7 @@ interface Props {
 export function ImgurUploadPortal({ 
   onComplete, 
   showPreview = true,
-  allowMultiple = false,
+  allowMultiple: _allowMultiple = false,
   acceptedFormats = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 }: Props) {
   const [externalUrl, setExternalUrl] = useState('');

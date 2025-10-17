@@ -53,7 +53,7 @@ interface MockImage {
 }
 
 type FetchArgs = Parameters<typeof fetch>;
-type FetchReturn = ReturnType<typeof fetch>;
+type _FetchReturn = ReturnType<typeof fetch>;
 
 type RenderEntry = {
   root: Root;

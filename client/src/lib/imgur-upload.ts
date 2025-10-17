@@ -146,7 +146,7 @@ export function startImgurOAuth(): void {
     throw new Error('Imgur client ID not configured');
   }
 
-  const redirectUri = `${window.location.origin}/oauth/imgur/callback`;
+  const _redirectUri = `${window.location.origin}/oauth/imgur/callback`;
   const state = generateRandomState();
   
   // Store state for verification
