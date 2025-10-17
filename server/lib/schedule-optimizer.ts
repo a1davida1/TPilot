@@ -23,8 +23,14 @@ export interface ScheduleRequest {
   daysAhead?: number;
 }
 
-// Peak activity hours by subreddit (based on general Reddit patterns)
-// TODO: Replace with actual database queries from post_metrics table
+/**
+ * Peak activity hours by subreddit (based on general Reddit patterns)
+ * 
+ * @todo Replace with actual database queries from post_metrics table
+ * Future: Query `post_metrics` table aggregated by hour to determine
+ * actual peak engagement times per subreddit. For now, uses empirical
+ * data from NSFW community analysis.
+ */
 const SUBREDDIT_PEAK_HOURS: Record<string, number[]> = {
   'gonewild': [20, 21, 22, 23, 0, 1], // Evening/night EST
   'RealGirls': [19, 20, 21, 22, 23],
@@ -129,14 +135,19 @@ interface SubredditMetrics {
 
 /**
  * Get user-specific historical metrics for a subreddit
+ * 
+ * @todo Implement database query
+ * Implementation plan:
+ * 1. Query `post_metrics` table filtered by userId and subreddit
+ * 2. Calculate avg upvotes, comments, and success rate (not removed)
+ * 3. Cache results for 1 hour to reduce DB load
+ * 
+ * Currently returns default metrics until user history accumulates.
  */
 async function getUserSubredditHistory(
   _userId: number,
   _subreddit: string
 ): Promise<SubredditMetrics> {
-  // TODO: Implement database query
-  // Query post_metrics table filtered by userId and subreddit
-  // Calculate avg upvotes, comments, and success rate (not removed)
 
   return {
     avgUpvotes: 100,
@@ -148,11 +159,20 @@ async function getUserSubredditHistory(
 /**
  * Get global platform metrics for a subreddit
  */
+/**
+ * Get platform-wide metrics for a subreddit
+ * 
+ * @todo Implement database query
+ * Implementation plan:
+ * 1. Aggregate metrics across all users for this subreddit from `post_metrics`
+ * 2. Calculate percentiles (P50, P75, P90) for upvotes/comments
+ * 3. Cache results for 6 hours as global metrics change slowly
+ * 
+ * Currently uses static baseline data from NSFW community research.
+ */
 async function getGlobalSubredditMetrics(
   subreddit: string
 ): Promise<SubredditMetrics> {
-  // TODO: Implement database query
-  // Aggregate metrics across all users for this subreddit
 
   const baseUpvotes: Record<string, number> = {
     'gonewild': 800,

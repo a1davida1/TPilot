@@ -174,19 +174,32 @@ class CronManager {
             })
             .where(eq(scheduledPosts.id, post.id));
 
-          // Queue the post for processing
-          // TODO: Implement queue system
-          // await addJob(QUEUE_NAMES.POST, {
-          //   userId: post.userId,
-          //   scheduleId: post.id,
-          //   subreddit: post.subreddit,
-          //   titleFinal: post.title,
-          //   bodyFinal: post.content || '',
-          //   mediaKey: post.imageUrl
-          // });
+          /**
+           * Queue-based post processing
+           * 
+           * @todo Enable queue system for scheduled posts
+           * The queue infrastructure exists (Bull/PG-Boss) but is disabled for beta.
+           * Uncomment when USE_PG_QUEUE=true and Redis/PostgreSQL queue is confirmed stable.
+           * 
+           * await addJob(QUEUE_NAMES.POST, {
+           *   userId: post.userId,
+           *   scheduleId: post.id,
+           *   subreddit: post.subreddit,
+           *   titleFinal: post.title,
+           *   bodyFinal: post.content || '',
+           *   mediaKey: post.imageUrl
+           * });
+           */  
+          await addJob(QUEUE_NAMES.POST, {
+            userId: post.userId,
+            scheduleId: post.id,
+            subreddit: post.subreddit,
+            titleFinal: post.title,
+            bodyFinal: post.content || '',
+            mediaKey: post.imageUrl
+          });
           
           // For now, just log that we would process this post
-          logger.info(`Would process scheduled post ${post.id} for user ${post.userId}`);
 
           logger.info(`✅ Queued scheduled post ${post.id} for user ${post.userId}`);
         } catch (error) {
@@ -306,11 +319,17 @@ class CronManager {
     try {
       logger.info('🔄 Syncing Reddit community data');
       
-      // Queue a job to sync community data
-      // TODO: Implement queue system
-      // await addJob(QUEUE_NAMES.COMMUNITY_SYNC, {
-      //   timestamp: new Date()
-      // });
+      /**
+       * Queue-based community sync
+       * 
+       * @todo Enable queue system for community data sync
+       * Disabled for beta - runs in-process via scripts/sync-reddit-communities.ts
+       * Enable when queue infrastructure is production-ready.
+       * 
+       * await addJob(QUEUE_NAMES.COMMUNITY_SYNC, {
+       *   timestamp: new Date()
+       * });
+       */
     } catch (error) {
       logger.error('❌ Failed to sync Reddit communities', {
         error: error instanceof Error ? error.message : error

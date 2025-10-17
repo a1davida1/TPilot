@@ -169,7 +169,7 @@ The platform is **90% ready** for beta launch. The remaining 10% is:
 | **Scheduling** | ✅ Ready | Cron + workers running |
 | **Reddit Integration** | ✅ Ready | Needs production test |
 | **AI Captions** | ✅ Ready | OpenRouter configured |
-| **Image Upload** | ✅ Ready | Imgur only |
+| **Image Upload** | ✅ Ready | Catbox integration live |
 | **Analytics** | ✅ Ready | Dashboard complete |
 | **Monitoring** | ✅ Ready | Health checks + logging |
 | **Rate Limiting** | ✅ Ready | Tier-based limits |

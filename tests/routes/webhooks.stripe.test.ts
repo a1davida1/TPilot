@@ -7,15 +7,11 @@ import { subscriptions, invoices, users } from '../../shared/schema.ts';
 import type { db as DbType } from '../../server/db.ts';
 
 const stripeMock = vi.hoisted(() => {
-  const constructEvent = vi.fn().mockReturnValue({
-    type: 'checkout.session.completed',
-    data: { object: { customer: 'cus_test123' } },
-    livemode: false,
-    created: Date.now() / 1000,
-    api_version: process.env.STRIPE_API_VERSION,
-    object: 'event',
-    pending_webhooks: 0,
-    request: { id: null, idempotency_key: null }
+  const constructEvent = vi.fn().mockImplementation((payload: string | Buffer) => {
+    // Parse the payload to return the actual event being sent
+    const payloadStr = typeof payload === 'string' ? payload : payload.toString('utf8');
+    const event = JSON.parse(payloadStr);
+    return event;
   });
   const generateTestHeaderString = vi.fn().mockReturnValue('stripe-test-signature');
 

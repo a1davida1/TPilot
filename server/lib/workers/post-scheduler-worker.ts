@@ -80,9 +80,19 @@ export function createPostSchedulerWorker() {
           })
           .where(eq(scheduledPosts.id, postId));
 
-        // Submit to Reddit - NOT IMPLEMENTED YET
-        // TODO: Implement Reddit submission
-        // Define proper interface
+        /**
+         * Reddit submission integration
+         * 
+         * @todo Implement Reddit submission via RedditManager
+         * Implementation plan:
+         * 1. Import RedditManager from server/lib/reddit.ts
+         * 2. Initialize with user's OAuth tokens from creator_accounts table
+         * 3. Call RedditManager.submitPost() with post data
+         * 4. Handle rate limits, shadowban detection, and subreddit rules
+         * 5. Update scheduled_posts.status and reddit_post_outcomes tables
+         * 
+         * Blocked by: Need to finalize RedditManager error handling and test coverage
+         */
         interface RedditSubmissionResult {
           success: boolean;
           redditPostId?: string | null;

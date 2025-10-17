@@ -3,11 +3,11 @@
  * Implements tier-based limits, endpoint-specific rules, and abuse prevention
  */
 
-import rateLimit, { type Options } from 'express-rate-limit';
+import rateLimit, { type Options, ipKeyGenerator } from 'express-rate-limit';
 // Redis disabled for beta
 // import RedisStore from 'rate-limit-redis';
 // import Redis from 'ioredis';
-import { Request, Response } from 'express';
+import { Request, Response, Express } from 'express';
 import { logger } from '../bootstrap/logger.js';
 import { type AuthRequest } from './auth.js';
 
@@ -62,8 +62,8 @@ const keyGenerator = (req: Request): string => {
   if (authReq.user?.id) {
     return `user-${authReq.user.id}`;
   }
-  // Fall back to IP address for unauthenticated users
-  return req.ip || 'unknown';
+  // Fall back to IP address for unauthenticated users (IPv6 compliant)
+  return ipKeyGenerator(req);
 };
 
 // Create rate limiter with tier-based limits
@@ -125,7 +125,7 @@ export const rateLimiters = {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 5, // 5 requests per 15 minutes
     skipSuccessfulRequests: true,
-    keyGenerator: (req) => req.ip || 'unknown',
+    keyGenerator: ipKeyGenerator,
     handler: (req, res) => {
       logger.error('Auth rate limit exceeded', {
         ip: req.ip,
@@ -186,7 +186,7 @@ export const rateLimiters = {
   passwordReset: rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 3, // 3 reset attempts per hour
-    keyGenerator: (req) => req.body?.email || req.ip || 'unknown',
+    keyGenerator: (req) => req.body?.email || ipKeyGenerator(req),
     handler: (req, res) => {
       logger.warn('Password reset rate limit exceeded', {
         email: req.body?.email,
@@ -207,11 +207,20 @@ export const globalRateLimiter = createRateLimiter('default', 60000);
 
 // Abuse detection middleware
 export const detectAbuse = (req: AuthRequest, res: Response, next: () => void) => {
+  // Type for rate limit information added by express-rate-limit
+  interface RateLimitInfo {
+    remaining?: number;
+    limit?: number;
+    current?: number;
+  }
+  
+  const reqWithRateLimit = req as AuthRequest & { rateLimit?: RateLimitInfo };
+  
   const suspicious = [
     // Multiple failed auth attempts
     req.path.includes('/auth') && res.statusCode === 401,
     // Rapid API calls from same IP
-    (req as any).rateLimit?.remaining === 0,
+    reqWithRateLimit.rateLimit?.remaining === 0,
     // Suspicious user agents
     req.headers['user-agent']?.includes('bot') && !req.headers['user-agent']?.includes('googlebot'),
   ].filter(Boolean).length;
@@ -230,7 +239,7 @@ export const detectAbuse = (req: AuthRequest, res: Response, next: () => void) =
 };
 
 // Apply rate limiting to specific route groups
-export const applyRateLimiting = (app: any) => {
+export const applyRateLimiting = (app: Express) => {
   // Auth routes - strict limits
   app.use('/api/auth/login', rateLimiters.auth);
   app.use('/api/auth/signup', rateLimiters.auth);

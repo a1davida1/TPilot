@@ -72,12 +72,14 @@ describe('POST /api/upload/catbox-proxy', () => {
     expect(CatboxService.upload).toHaveBeenCalledWith(
       expect.objectContaining({
         reqtype: 'fileupload',
-        file: expect.any(Buffer),
         filename: 'test.png',
-        mimeType: 'application/octet-stream',
+        mimeType: 'image/png',
         userhash: 'stored-hash'
       })
     );
+
+    const uploadPayload = vi.mocked(CatboxService.upload).mock.calls[0]?.[0];
+    expect(uploadPayload?.file).toBeInstanceOf(Uint8Array);
   });
 
   it('propagates Catbox 412 errors with guidance', async () => {
@@ -99,12 +101,14 @@ describe('POST /api/upload/catbox-proxy', () => {
     expect(CatboxService.upload).toHaveBeenCalledWith(
       expect.objectContaining({
         reqtype: 'fileupload',
-        file: expect.any(Buffer),
         filename: 'example.jpg',
-        mimeType: 'application/octet-stream',
+        mimeType: 'image/jpeg',
         userhash: undefined
       })
     );
+
+    const uploadPayload = vi.mocked(CatboxService.upload).mock.calls[0]?.[0];
+    expect(uploadPayload?.file).toBeInstanceOf(Uint8Array);
   });
 
   it('prefers request-provided userhash over stored value', async () => {
@@ -124,11 +128,13 @@ describe('POST /api/upload/catbox-proxy', () => {
     expect(CatboxService.upload).toHaveBeenCalledWith(
       expect.objectContaining({
         reqtype: 'fileupload',
-        file: expect.any(Buffer),
         filename: 'from-request.png',
-        mimeType: 'application/octet-stream',
+        mimeType: 'image/png',
         userhash: 'request-hash'
       })
     );
+
+    const uploadPayload = vi.mocked(CatboxService.upload).mock.calls[0]?.[0];
+    expect(uploadPayload?.file).toBeInstanceOf(Uint8Array);
   });
 });
