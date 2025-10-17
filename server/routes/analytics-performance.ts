@@ -303,4 +303,141 @@ router.get('/dashboard', requireAuth, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/analytics/user-subreddits
+ * 
+ * Get list of subreddits user has posted to
+ * 
+ * Query params:
+ * - userId: number (optional, defaults to authenticated user)
+ * 
+ * Returns:
+ * - subreddits: string[] (unique subreddits from user's post history)
+ */
+router.get('/user-subreddits', requireAuth, async (req, res) => {
+  try {
+    const userId = req.query.userId ? Number(req.query.userId) : req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        error: 'User ID required'
+      });
+    }
+
+    const { db } = await import('../db.js');
+    const { postMetrics } = await import('@shared/schema');
+    const { sql } = await import('drizzle-orm');
+
+    // Get distinct subreddits from user's posts, ordered by most recent activity
+    const subreddits = await db
+      .selectDistinct({ 
+        subreddit: postMetrics.subreddit,
+        lastPosted: sql<Date>`MAX(${postMetrics.postedAt})`
+      })
+      .from(postMetrics)
+      .where(sql`${postMetrics.userId} = ${userId}`)
+      .groupBy(postMetrics.subreddit)
+      .orderBy(sql`MAX(${postMetrics.postedAt}) DESC`)
+      .limit(50);
+
+    const subredditList = subreddits.map(s => s.subreddit);
+
+    return res.json({
+      success: true,
+      count: subredditList.length,
+      subreddits: subredditList
+    });
+
+  } catch (error) {
+    logger.error('Failed to fetch user subreddits', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      userId: req.user?.id
+    });
+
+    return res.status(500).json({
+      error: 'Failed to fetch user subreddits',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * GET /api/analytics/historical-performance
+ * 
+ * Get performance over time for graphing
+ * 
+ * Query params:
+ * - subreddit: string (required)
+ * - userId: number (optional, defaults to authenticated user)
+ * - days: number (optional, default 30, max 90)
+ * 
+ * Returns:
+ * - data: Array of {date, avgScore, totalPosts}
+ */
+router.get('/historical-performance', requireAuth, async (req, res) => {
+  try {
+    const { subreddit, days = 30 } = req.query;
+    const userId = req.query.userId ? Number(req.query.userId) : req.user?.id;
+
+    if (!subreddit || typeof subreddit !== 'string') {
+      return res.status(400).json({
+        error: 'Subreddit parameter required'
+      });
+    }
+
+    if (!userId) {
+      return res.status(401).json({
+        error: 'User ID required'
+      });
+    }
+
+    const daysNumber = Math.min(Number(days) || 30, 90);
+
+    const { db } = await import('../db.js');
+    const { postMetrics } = await import('@shared/schema');
+    const { sql, and, eq, gte } = await import('drizzle-orm');
+
+    const daysAgo = new Date();
+    daysAgo.setDate(daysAgo.getDate() - daysNumber);
+
+    // Get daily aggregated performance
+    const dailyStats = await db
+      .select({
+        date: sql<string>`DATE(${postMetrics.postedAt})`,
+        avgScore: sql<number>`ROUND(AVG(${postMetrics.score}))`,
+        totalPosts: sql<number>`COUNT(*)`
+      })
+      .from(postMetrics)
+      .where(
+        and(
+          eq(postMetrics.userId, userId),
+          eq(postMetrics.subreddit, subreddit),
+          gte(postMetrics.postedAt, daysAgo)
+        )
+      )
+      .groupBy(sql`DATE(${postMetrics.postedAt})`)
+      .orderBy(sql`DATE(${postMetrics.postedAt}) ASC`);
+
+    return res.json({
+      success: true,
+      subreddit,
+      days: daysNumber,
+      dataPoints: dailyStats.length,
+      data: dailyStats
+    });
+
+  } catch (error) {
+    logger.error('Failed to fetch historical performance', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      userId: req.user?.id,
+      subreddit: req.query.subreddit
+    });
+
+    return res.status(500).json({
+      error: 'Failed to fetch historical performance',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;

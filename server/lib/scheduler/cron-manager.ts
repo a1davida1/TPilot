@@ -78,6 +78,15 @@ class CronManager {
         await this.performDatabaseBackup();
       }
     });
+
+    // Poll caption metrics every hour
+    this.addJob({
+      name: 'poll-caption-metrics',
+      schedule: '15 * * * *', // Every hour at :15 past
+      task: async () => {
+        await this.pollCaptionMetrics();
+      }
+    });
   }
 
   private addJob(job: CronJob) {
@@ -339,10 +348,24 @@ class CronManager {
   }
 
   /**
+   * Poll caption metrics from Reddit
+   */
+  private async pollCaptionMetrics() {
+    try {
+      const { pollCaptionMetrics } = await import('./caption-metrics-poller.js');
+      await pollCaptionMetrics();
+    } catch (error) {
+      logger.error('❌ Failed to poll caption metrics', {
+        error: error instanceof Error ? error.message : error
+      });
+    }
+  }
+
+  /**
    * Get status of all cron jobs
    */
   getStatus() {
-    const status: Record<string, any> = {};
+    const status: Record<string, { schedule: string; running: boolean }> = {};
     
     for (const [name, job] of this.jobs) {
       status[name] = {

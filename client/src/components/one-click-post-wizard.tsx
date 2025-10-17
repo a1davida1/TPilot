@@ -116,6 +116,34 @@ export function OneClickPostWizard() {
       // Generate pair ID and track
       const newPairId = generatePairId();
       setPairId(newPairId);
+      
+      // Fetch AI recommendation for which style to show first
+      try {
+        const recommendRes = await fetch(
+          `/api/caption-analytics/recommend-style?subreddit=${encodeURIComponent(selectedSubreddit || '')}&device=${getDeviceBucket()}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+            }
+          }
+        );
+        
+        if (recommendRes.ok) {
+          const { recommendation } = await recommendRes.json();
+          // Reorder captions to show recommended style first
+          if (recommendation.style === 'slutty' && captionPair[0].style === 'flirty') {
+            captionPair.reverse();
+          }
+          // Show confidence badge if high confidence (logged for debugging)
+          if (recommendation.confidence > 0.7) {
+            // AI recommendation will be used silently
+          }
+        }
+      } catch (_err) {
+        // Silently fail - not critical
+        // Could not fetch recommendation - continue without it
+      }
+      
       trackCaptionShown({
         pairId: newPairId,
         captionIds: [captionPair[0].id, captionPair[1].id],

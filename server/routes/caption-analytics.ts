@@ -425,4 +425,409 @@ router.get('/dashboard', authenticateToken(true), async (req: AuthRequest, res: 
   }
 });
 
+/**
+ * GET /api/caption-analytics/recommend-style
+ * Get AI recommendation for which caption style to use
+ */
+router.get('/recommend-style', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { recommendStyle, getStyleComparison } = await import('../lib/caption-recommender.js');
+    
+    const subreddit = req.query.subreddit as string | undefined;
+    const device = req.query.device as string | undefined;
+
+    const [recommendation, comparison] = await Promise.all([
+      recommendStyle(req.user.id, { subreddit, device }),
+      getStyleComparison(req.user.id)
+    ]);
+
+    return res.status(200).json({
+      recommendation,
+      comparison
+    });
+
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Failed to get style recommendation';
+    logger.error('Style recommendation error', { error: message });
+    return res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/caption-analytics/badges
+ * Get user's badges and progress
+ */
+router.get('/badges', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { calculateBadges } = await import('../lib/badge-calculator.js');
+    const badges = await calculateBadges(req.user.id);
+
+    return res.status(200).json({ badges });
+
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Failed to get badges';
+    logger.error('Badges query error', { error: message });
+    return res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/caption-analytics/check-badges
+ * Check and auto-award newly earned badges
+ */
+router.post('/check-badges', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { checkAndAwardBadges } = await import('../lib/badge-calculator.js');
+    const newBadges = await checkAndAwardBadges(req.user.id);
+
+    return res.status(200).json({ newBadges });
+
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Failed to check badges';
+    logger.error('Badge check error', { error: message });
+    return res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/caption-analytics/leaderboard
+ * Get global leaderboard rankings
+ */
+router.get('/leaderboard', authenticateToken(false), async (req: AuthRequest, res: Response) => {
+  try {
+    const category = req.query.category as string || 'upvotes';
+    const limit = Math.min(parseInt(req.query.limit as string || '50', 10), 100);
+
+    let query = '';
+    
+    if (category === 'upvotes') {
+      query = `SELECT * FROM user_leaderboard ORDER BY avg_upvotes_24h DESC NULLS LAST LIMIT $1`;
+    } else if (category === 'consistency') {
+      query = `SELECT * FROM user_leaderboard ORDER BY upvote_variance ASC NULLS LAST LIMIT $1`;
+    } else if (category === 'badges') {
+      query = `SELECT * FROM user_leaderboard ORDER BY badge_count DESC, avg_upvotes_24h DESC LIMIT $1`;
+    } else {
+      query = `SELECT * FROM user_leaderboard ORDER BY last_post_at DESC LIMIT $1`;
+    }
+
+    const result = await pool.query(query, [limit]);
+
+    return res.status(200).json({ leaderboard: result.rows, category });
+
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Failed to get leaderboard';
+    logger.error('Leaderboard query error', { error: message });
+    return res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/caption-analytics/submit-prediction
+ * Submit a prediction for which caption style will perform better
+ */
+router.post('/submit-prediction', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { pairId, predictedStyle, confidence } = req.body;
+
+    if (!pairId || !predictedStyle) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    await pool.query(
+      `INSERT INTO caption_predictions (pair_id, user_id, predicted_style, confidence_score)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (pair_id, user_id) DO UPDATE SET
+         predicted_style = EXCLUDED.predicted_style,
+         confidence_score = EXCLUDED.confidence_score`,
+      [pairId, req.user.id, predictedStyle, confidence || 3]
+    );
+
+    return res.status(201).json({ success: true });
+
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Failed to submit prediction';
+    logger.error('Prediction submission error', { error: message });
+    return res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/caption-analytics/prediction-accuracy
+ * Get user's prediction accuracy stats
+ */
+router.get('/prediction-accuracy', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const result = await pool.query(
+      `SELECT * FROM prediction_accuracy WHERE user_id = $1`,
+      [req.user.id]
+    );
+
+    return res.status(200).json({ 
+      accuracy: result.rows[0] || { total_predictions: 0, correct_predictions: 0, accuracy_rate: 0 }
+    });
+
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Failed to get prediction accuracy';
+    logger.error('Prediction accuracy error', { error: message });
+    return res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/caption-analytics/daily-challenge
+ * Get current daily challenge
+ */
+router.get('/daily-challenge', authenticateToken(false), async (_req: AuthRequest, res: Response) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    const result = await pool.query(
+      `SELECT * FROM daily_challenges WHERE challenge_date = $1`,
+      [today]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'No challenge for today' });
+    }
+
+    return res.status(200).json({ challenge: result.rows[0] });
+
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Failed to get daily challenge';
+    logger.error('Daily challenge query error', { error: message });
+    return res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/caption-analytics/submit-challenge
+ * Submit entry for daily challenge
+ */
+router.post('/submit-challenge', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { challengeId, caption } = req.body;
+
+    if (!challengeId || !caption) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    await pool.query(
+      `INSERT INTO challenge_submissions (challenge_id, user_id, caption)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (challenge_id, user_id) DO UPDATE SET
+         caption = EXCLUDED.caption`,
+      [challengeId, req.user.id, caption]
+    );
+
+    return res.status(201).json({ success: true });
+
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Failed to submit challenge';
+    logger.error('Challenge submission error', { error: message });
+    return res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/caption-analytics/vote-challenge
+ * Vote on a challenge submission
+ */
+router.post('/vote-challenge', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { submissionId } = req.body;
+
+    if (!submissionId) {
+      return res.status(400).json({ error: 'Missing submission ID' });
+    }
+
+    await pool.query(
+      `INSERT INTO challenge_votes (submission_id, voter_id)
+       VALUES ($1, $2)
+       ON CONFLICT (submission_id, voter_id) DO NOTHING`,
+      [submissionId, req.user.id]
+    );
+
+    // Update vote count
+    await pool.query(
+      `UPDATE challenge_submissions
+       SET vote_count = (
+         SELECT COUNT(*) FROM challenge_votes WHERE submission_id = $1
+       )
+       WHERE submission_id = $1`,
+      [submissionId]
+    );
+
+    return res.status(201).json({ success: true });
+
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Failed to vote';
+    logger.error('Challenge vote error', { error: message });
+    return res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * POST /api/caption-analytics/suggest-improvement
+ * Get AI-powered improvement suggestion for a caption
+ */
+router.post('/suggest-improvement', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { captionId, caption, style } = req.body;
+
+    if (!caption || !style) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Use Grok to generate improvement
+    const { openrouterChat } = await import('../lib/openrouter.js');
+    
+    const prompt = `This ${style} caption was NOT chosen by the user:
+"${caption}"
+
+Analyze why it might have been rejected and suggest ONE specific improvement.
+Be concise (1-2 sentences). Focus on actionable changes.`;
+
+    const suggestion = await openrouterChat({
+      model: 'x-ai/grok-4-fast',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 150,
+      temperature: 0.7
+    });
+
+    // Store the improvement
+    if (captionId) {
+      await pool.query(
+        `INSERT INTO caption_improvements (caption_id, user_id, suggestion)
+         VALUES ($1, $2, $3)`,
+        [captionId, req.user.id, suggestion]
+      );
+    }
+
+    return res.status(200).json({ suggestion });
+
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Failed to generate suggestion';
+    logger.error('Improvement suggestion error', { error: message });
+    return res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/caption-analytics/export-training-data
+ * Export caption data in JSONL format for AI fine-tuning (Admin only)
+ */
+router.get('/export-training-data', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Check if user is admin
+    const { storage } = await import('../storage.js');
+    const user = await storage.getUserById(req.user.id);
+    
+    if (!user?.isAdmin) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const result = await pool.query(`
+      SELECT 
+        c.caption_id,
+        c.text as caption,
+        c.style,
+        c.model,
+        c.category,
+        c.tags,
+        cc.chosen_caption_id = c.caption_id as was_chosen,
+        cc.edited,
+        cc.edit_delta_chars,
+        cc.time_to_choice_ms,
+        pm.upvotes,
+        pm.comments,
+        p.subreddit,
+        p.nsfw_flag,
+        cp.device_bucket,
+        p.posted_at
+      FROM captions c
+      JOIN caption_pairs cp ON c.caption_id IN (cp.caption_id_a, cp.caption_id_b)
+      LEFT JOIN caption_choices cc ON cp.pair_id = cc.pair_id
+      LEFT JOIN posts p ON c.caption_id = p.caption_id
+      LEFT JOIN post_metrics pm ON p.post_id = pm.post_id AND pm.measured_at_hours = 24
+      WHERE p.posted_at > NOW() - INTERVAL '90 days'
+      ORDER BY p.posted_at DESC
+    `);
+
+    // Convert to JSONL for OpenAI/Anthropic fine-tuning
+    const jsonl = result.rows.map(row => JSON.stringify({
+      messages: [
+        {
+          role: 'system',
+          content: `Generate ${row.style} Reddit captions. Be playful, suggestive, under 200 chars.`
+        },
+        {
+          role: 'user',
+          content: `Create a ${row.style} caption for r/${row.subreddit || 'reddit'}. Category: ${row.category || 'general'}`
+        },
+        {
+          role: 'assistant',
+          content: row.caption
+        }
+      ],
+      metadata: {
+        caption_id: row.caption_id,
+        was_chosen: row.was_chosen,
+        upvotes: row.upvotes,
+        comments: row.comments,
+        edited: row.edited,
+        edit_delta: row.edit_delta_chars,
+        time_to_choice_ms: row.time_to_choice_ms,
+        device: row.device_bucket,
+        model: row.model,
+        posted_at: row.posted_at
+      }
+    })).join('\n');
+
+    res.setHeader('Content-Type', 'application/x-ndjson');
+    res.setHeader('Content-Disposition', `attachment; filename="caption-training-${Date.now()}.jsonl"`);
+    return res.send(jsonl);
+
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Failed to export training data';
+    logger.error('Training data export error', { error: message });
+    return res.status(500).json({ error: message });
+  }
+});
+
 export { router as captionAnalyticsRouter };

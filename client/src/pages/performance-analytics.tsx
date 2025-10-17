@@ -4,11 +4,13 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
 import { 
   TrendingUp, TrendingDown, Minus, Heart, 
   MessageSquare, BarChart3, Clock, Calendar,
-  Lightbulb, Award, Target
+  Lightbulb, Award, Target, AlertCircle, Download
 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import {
-  BarChart, Bar,
+  BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   Cell
 } from 'recharts';
@@ -62,37 +64,70 @@ interface PeakHoursData {
 
 export function PerformanceAnalytics() {
   const [subreddit, setSubreddit] = useState('gonewild');
+  const [subreddits, setSubreddits] = useState<string[]>([]);
   const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
   const [peakHoursData, setPeakHoursData] = useState<PeakHoursData | null>(null);
+  const [historicalData, setHistoricalData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const [, navigate] = useLocation();
 
   const hasAccess = user?.tier && ['pro', 'premium', 'admin'].includes(user.tier);
+  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-  // Common subreddits list
-  const subreddits = [
-    'gonewild', 'RealGirls', 'PetiteGoneWild', 'OnlyFansPromotions',
-    'adorableporn', 'NSFWverifiedamateurs', 'SexSells'
-  ];
-
+  // Load user's subreddits on mount
   useEffect(() => {
     if (hasAccess && user?.id) {
+      loadUserSubreddits();
+    }
+  }, [hasAccess, user?.id]);
+
+  // Fetch analytics when subreddit changes
+  useEffect(() => {
+    if (hasAccess && user?.id && subreddit && subreddits.length > 0) {
       fetchAnalytics();
     }
   }, [subreddit, hasAccess, user?.id]);
 
+  const loadUserSubreddits = async () => {
+    try {
+      const response = await apiRequest('GET', `/api/analytics/user-subreddits?userId=${user?.id}`);
+      const data = await response.json();
+      
+      if (data.success && data.subreddits.length > 0) {
+        setSubreddits(data.subreddits);
+        setSubreddit(data.subreddits[0]); // Auto-select first
+      } else {
+        // Fallback to popular subreddits
+        const fallback = ['gonewild', 'RealGirls', 'PetiteGoneWild', 'adorableporn'];
+        setSubreddits(fallback);
+        setSubreddit(fallback[0]);
+      }
+    } catch (error) {
+      console.error('Failed to load subreddits:', error);
+      // Fallback to popular
+      const fallback = ['gonewild', 'RealGirls', 'PetiteGoneWild'];
+      setSubreddits(fallback);
+      setSubreddit(fallback[0]);
+    }
+  };
+
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      // Fetch performance analytics and peak hours in parallel
-      const [perfResponse, peakResponse] = await Promise.all([
+      // Fetch performance, peak hours, and historical data in parallel
+      const [perfResponse, peakResponse, historicalResponse] = await Promise.all([
         apiRequest('GET', `/api/analytics/performance?subreddit=${subreddit}&userId=${user?.id}`),
-        apiRequest('GET', `/api/analytics/peak-hours?subreddit=${subreddit}`)
+        apiRequest('GET', `/api/analytics/peak-hours?subreddit=${subreddit}`),
+        apiRequest('GET', `/api/analytics/historical-performance?subreddit=${subreddit}&userId=${user?.id}&days=30`)
       ]);
 
       const perfData = await perfResponse.json();
       const peakData = await peakResponse.json();
+      const historicalData = await historicalResponse.json();
 
       if (perfData.success) {
         setPerformanceData(perfData.data);
@@ -100,8 +135,12 @@ export function PerformanceAnalytics() {
       if (peakData.success) {
         setPeakHoursData(peakData.data);
       }
+      if (historicalData.success) {
+        setHistoricalData(historicalData.data);
+      }
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load analytics');
     } finally {
       setLoading(false);
     }
@@ -138,17 +177,100 @@ export function PerformanceAnalytics() {
     );
   }
 
-  if (loading || !performanceData || !peakHoursData) {
+  // Show error state
+  if (error && !loading) {
     return (
       <div className="container mx-auto p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="grid gap-4 md:grid-cols-4">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="h-32 bg-gray-200 rounded"></div>
-            ))}
+        <Card className="p-8 text-center">
+          <AlertCircle className="h-16 w-16 mx-auto mb-4 text-destructive" />
+          <h2 className="text-2xl font-bold mb-2">Unable to Load Analytics</h2>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button onClick={() => fetchAnalytics()}>
+            Try Again
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show loading skeleton
+  if (loading || !performanceData || !peakHoursData) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-9 w-[300px]" />
+            <Skeleton className="h-4 w-[250px]" />
           </div>
+          <Skeleton className="h-10 w-[200px]" />
         </div>
+        
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-4 w-[100px]" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-[80px]" />
+                <Skeleton className="h-3 w-[120px] mt-2" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-[200px]" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-[300px] w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show empty state if user has no posts
+  if (performanceData.user.totalPosts === 0) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card className="p-8 text-center max-w-4xl mx-auto">
+          <BarChart3 className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+          <h2 className="text-3xl font-bold mb-2">Start Tracking Your Performance</h2>
+          <p className="text-muted-foreground mb-8 text-lg">
+            Post to r/{subreddit} and come back here to see your analytics.
+            You'll need at least 10 posts for AI-powered insights.
+          </p>
+          
+          <div className="grid gap-4 md:grid-cols-3 max-w-3xl mx-auto mb-8">
+            <Card className="p-6">
+              <Target className="h-10 w-10 mb-3 text-primary" />
+              <h3 className="font-semibold mb-2">Track Performance</h3>
+              <p className="text-sm text-muted-foreground">
+                See which posts get the most upvotes and engagement
+              </p>
+            </Card>
+            <Card className="p-6">
+              <Clock className="h-10 w-10 mb-3 text-primary" />
+              <h3 className="font-semibold mb-2">Find Peak Hours</h3>
+              <p className="text-sm text-muted-foreground">
+                Discover when your audience is most active
+              </p>
+            </Card>
+            <Card className="p-6">
+              <Lightbulb className="h-10 w-10 mb-3 text-primary" />
+              <h3 className="font-semibold mb-2">Get AI Suggestions</h3>
+              <p className="text-sm text-muted-foreground">
+                Receive personalized title recommendations
+              </p>
+            </Card>
+          </div>
+          
+          <Button size="lg" onClick={() => navigate('/reddit-posting')}>
+            Create Your First Post
+          </Button>
+        </Card>
       </div>
     );
   }
@@ -174,26 +296,77 @@ export function PerformanceAnalytics() {
 
   const _maxScore = Math.max(...Object.values(peakHoursData.hourlyScores));
 
+  // Convert UTC hours to local timezone
+  const convertToLocalHour = (utcHour: number): number => {
+    const now = new Date();
+    now.setUTCHours(utcHour, 0, 0, 0);
+    return now.getHours();
+  };
+
+  // Format hour for display with timezone
+  const formatHourWithTimezone = (utcHour: number): string => {
+    const localHour = convertToLocalHour(utcHour);
+    return `${localHour}:00 (${utcHour}:00 UTC)`;
+  };
+
+  // Export to PDF functionality
+  const exportToPDF = async () => {
+    // Simple text-based PDF export (would need jspdf library for real PDF)
+    const reportContent = `
+PERFORMANCE ANALYTICS REPORT
+r/${subreddit}
+Generated: ${new Date().toLocaleDateString()}
+
+=== KEY METRICS ===
+Average Upvotes: ${performanceData.user.avgUpvotes}
+Success Rate: ${(performanceData.user.successRate * 100).toFixed(0)}%
+Average Comments: ${performanceData.user.avgComments}
+Total Posts: ${performanceData.user.totalPosts}
+Rank: ${performanceData.user.vsGlobal?.percentile}th percentile
+
+=== PEAK HOURS (Local Time) ===
+${peakHoursData.peakHours.map(h => formatHourWithTimezone(h)).join(', ')}
+
+=== RECOMMENDATIONS ===
+${performanceData.recommendations.map((rec, i) => `${i + 1}. ${rec}`).join('\n')}
+    `;
+
+    // Create downloadable text file (placeholder until jspdf is added)
+    const blob = new Blob([reportContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `analytics-${subreddit}-${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold">Performance Analytics</h1>
           <p className="text-gray-600">Real-time insights from your post history</p>
         </div>
-        <Select value={subreddit} onValueChange={setSubreddit}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Select subreddit" />
-          </SelectTrigger>
-          <SelectContent>
-            {subreddits.map(sub => (
-              <SelectItem key={sub} value={sub}>
-                r/{sub}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={exportToPDF}>
+            <Download className="h-4 w-4 mr-2" />
+            Export Report
+          </Button>
+          <Select value={subreddit} onValueChange={setSubreddit}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Select subreddit" />
+            </SelectTrigger>
+            <SelectContent>
+              {subreddits.map(sub => (
+                <SelectItem key={sub} value={sub}>
+                  r/{sub}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Key Metrics */}
@@ -269,6 +442,38 @@ export function PerformanceAnalytics() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
+          {/* Historical Performance Graph */}
+          {historicalData && historicalData.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Performance Trend (Last 30 Days)</CardTitle>
+                <CardDescription>Track your improvement over time</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={historicalData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="date" 
+                      tickFormatter={(date) => new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    />
+                    <YAxis />
+                    <Tooltip 
+                      labelFormatter={(date) => new Date(date).toLocaleDateString()}
+                      formatter={(value: number, name: string) => [
+                        name === 'avgScore' ? `${Math.round(value)} upvotes` : `${value} posts`,
+                        name === 'avgScore' ? 'Avg Score' : 'Posts'
+                      ]}
+                    />
+                    <Legend />
+                    <Line type="monotone" dataKey="avgScore" stroke="#8b5cf6" name="Avg Score" strokeWidth={2} />
+                    <Line type="monotone" dataKey="totalPosts" stroke="#3b82f6" name="Posts" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="grid gap-4 md:grid-cols-2">
             {/* Performance Comparison */}
             <Card>
@@ -364,7 +569,8 @@ export function PerformanceAnalytics() {
               <CardTitle>Best Posting Hours</CardTitle>
               <CardDescription>
                 Based on {peakHoursData.sampleSize} posts • 
-                Confidence: <Badge variant="outline">{peakHoursData.confidence}</Badge>
+                Confidence: <Badge variant="outline">{peakHoursData.confidence}</Badge> • 
+                Times shown in your timezone ({userTimezone})
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -373,11 +579,11 @@ export function PerformanceAnalytics() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis 
                     dataKey="hour" 
-                    tickFormatter={(hour) => `${hour}:00`}
+                    tickFormatter={(hour) => `${convertToLocalHour(hour)}:00`}
                   />
                   <YAxis />
                   <Tooltip 
-                    labelFormatter={(hour) => `${hour}:00`}
+                    labelFormatter={(hour) => formatHourWithTimezone(hour)}
                     formatter={(value: number) => [`${Math.round(value)} avg upvotes`, 'Performance']}
                   />
                   <Bar dataKey="score" radius={[8, 8, 0, 0]}>
@@ -400,10 +606,13 @@ export function PerformanceAnalytics() {
                   <div className="flex flex-wrap gap-2">
                     {peakHoursData.peakHours.map(hour => (
                       <Badge key={hour} variant="secondary">
-                        {hour}:00
+                        {convertToLocalHour(hour)}:00 local
                       </Badge>
                     ))}
                   </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {peakHoursData.peakHours.map(h => `${h}:00`).join(', ')} UTC
+                  </p>
                 </div>
 
                 <div className="p-4 border rounded-lg">

@@ -11,11 +11,13 @@ dotenv.config({ path: '.env.test' });
 
 // Set default test environment variables if not present
 const ensureTestEnvDefaults = () => {
+  process.env.NODE_ENV = 'test';
   process.env.APP_BASE_URL = process.env.APP_BASE_URL || 'https://thottopilot.com';
-  process.env.DATABASE_URL =
-    process.env.DATABASE_URL ||
-    process.env.NEON_DATABASE_URL ||
-    'postgresql://user:pass@localhost:5432/thottopilot_test';
+  
+  // CRITICAL: Always override DATABASE_URL in tests to prevent hitting production DB
+  // This must come AFTER any .env loading to ensure test isolation
+  process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/thottopilot_test';
+  
   process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key-1234567890-abcdef';
   process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'test-session-secret-key-1234567890abcd';
   process.env.OPENAI_API_KEY = process.env.OPENAI_API_KEY || 'test-openai-api-key';
@@ -32,7 +34,6 @@ const ensureTestEnvDefaults = () => {
   process.env.ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
   process.env.ADMIN_PASSWORD_HASH =
     process.env.ADMIN_PASSWORD_HASH || '$2a$10$CwTycUXWue0Thq9StjUM0uJ8e3obK/QGaGL3hXhN3kLBXjg5eQ8F.';
-  process.env.NODE_ENV = 'test';
 };
 
 ensureTestEnvDefaults();

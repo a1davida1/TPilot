@@ -52,7 +52,8 @@ const envKeys = [
   'GEMINI_API_KEY',
   'GOOGLE_GENAI_API_KEY',
   'GEMINI_TEXT_MODEL',
-  'GEMINI_VISION_MODEL'
+  'GEMINI_VISION_MODEL',
+  'OPENROUTER_API_KEY'
 ] as const;
 type EnvKey = typeof envKeys[number];
 
@@ -62,7 +63,8 @@ const originalEnv: Record<EnvKey, string | undefined> = {
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   GOOGLE_GENAI_API_KEY: process.env.GOOGLE_GENAI_API_KEY,
   GEMINI_TEXT_MODEL: process.env.GEMINI_TEXT_MODEL,
-  GEMINI_VISION_MODEL: process.env.GEMINI_VISION_MODEL
+  GEMINI_VISION_MODEL: process.env.GEMINI_VISION_MODEL,
+  OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY
 };
 
 describe('generateWithMultiProvider provider selection', () => {

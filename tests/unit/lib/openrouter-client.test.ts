@@ -53,7 +53,13 @@ describe('OpenRouter Client', () => {
       }]
     } as any);
 
-    await generateOpenRouterCaption('Test prompt');
+    vi.resetModules();
+    const { generateVision } = await import('../../../server/lib/openrouter-client.js');
+    
+    await generateVision({
+      prompt: 'Test prompt',
+      imageUrl: 'data:image/png;base64,test'
+    });
 
     expect(mockOpenAI.chat.completions.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -63,7 +69,7 @@ describe('OpenRouter Client', () => {
   });
 
   it('includes image_url in vision payload', async () => {
-{{ ... }}
+    process.env.OPENROUTER_API_KEY = 'sk-or-test-key';
 
     mockOpenAI.chat.completions.create.mockResolvedValueOnce({
       choices: [{ message: { content: 'ok' } }]
