@@ -10,6 +10,12 @@ import { redditPostOutcomes, redditCommunities } from '@shared/schema';
 import { eq, desc, gte, and, sql, count } from 'drizzle-orm';
 import { logger } from '../bootstrap/logger.js';
 import { subDays } from 'date-fns';
+import {
+  generateContentSuggestions,
+  getTopPerformingPosts,
+  analyzeContentPatterns,
+  generateTitleSuggestions
+} from '../lib/ai-content-advisor.js';
 
 const router = Router();
 
@@ -308,6 +314,115 @@ router.get('/competitors', authenticateToken(true), async (req: AuthRequest, res
   } catch (error) {
     logger.error('Failed to fetch competitor data', { error });
     return res.status(500).json({ error: 'Failed to fetch competitor analysis' });
+  }
+});
+
+/**
+ * POST /api/intelligence/suggest-content
+ * AI-powered content suggestions based on user's top posts (NEW)
+ */
+router.post('/suggest-content', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { subreddit } = req.body;
+    const userTier = req.user?.tier || 'free';
+    const tierLevel = TIER_ACCESS[userTier as keyof typeof TIER_ACCESS] || 0;
+    
+    // Premium feature
+    if (tierLevel < TIER_ACCESS.premium) {
+      return res.status(403).json({ 
+        error: 'AI content suggestions require Premium tier',
+        requiredTier: 'premium' 
+      });
+    }
+
+    if (!subreddit || !userId) {
+      return res.status(400).json({ error: 'Subreddit and user ID required' });
+    }
+
+    const suggestions = await generateContentSuggestions(userId, subreddit);
+    return res.json({ success: true, data: suggestions });
+  } catch (error) {
+    logger.error('Failed to generate content suggestions', { error });
+    return res.status(500).json({ error: 'Failed to generate suggestions' });
+  }
+});
+
+/**
+ * GET /api/intelligence/top-posts
+ * Get user's top performing posts (NEW)
+ */
+router.get('/top-posts', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const subreddit = req.query.subreddit as string;
+    const limit = parseInt(req.query.limit as string) || 10;
+    
+    if (!subreddit || !userId) {
+      return res.status(400).json({ error: 'Subreddit required' });
+    }
+
+    const posts = await getTopPerformingPosts(userId, subreddit, limit);
+    return res.json({ success: true, count: posts.length, data: posts });
+  } catch (error) {
+    logger.error('Failed to fetch top posts', { error });
+    return res.status(500).json({ error: 'Failed to fetch top posts' });
+  }
+});
+
+/**
+ * GET /api/intelligence/content-patterns
+ * Analyze content patterns from user's posts (NEW)
+ */
+router.get('/content-patterns', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const subreddit = req.query.subreddit as string;
+    
+    if (!subreddit || !userId) {
+      return res.status(400).json({ error: 'Subreddit required' });
+    }
+
+    const posts = await getTopPerformingPosts(userId, subreddit, 20);
+    const patterns = analyzeContentPatterns(posts);
+    return res.json({ success: true, sampleSize: posts.length, data: patterns });
+  } catch (error) {
+    logger.error('Failed to analyze patterns', { error });
+    return res.status(500).json({ error: 'Failed to analyze content patterns' });
+  }
+});
+
+/**
+ * POST /api/intelligence/suggest-titles
+ * Generate AI title suggestions (NEW)
+ */
+router.post('/suggest-titles', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { subreddit, count = 5 } = req.body;
+    const userTier = req.user?.tier || 'free';
+    const tierLevel = TIER_ACCESS[userTier as keyof typeof TIER_ACCESS] || 0;
+    
+    // Premium feature
+    if (tierLevel < TIER_ACCESS.premium) {
+      return res.status(403).json({ 
+        error: 'AI title generation requires Premium tier',
+        requiredTier: 'premium' 
+      });
+    }
+
+    if (!subreddit || !userId) {
+      return res.status(400).json({ error: 'Subreddit required' });
+    }
+
+    const posts = await getTopPerformingPosts(userId, subreddit, 10);
+    const patterns = analyzeContentPatterns(posts);
+    const suggestions = await generateTitleSuggestions(patterns, subreddit, Math.min(count, 10));
+    
+    return res.json({ success: true, count: suggestions.length, data: suggestions });
+  } catch (error) {
+    logger.error('Failed to generate title suggestions', { error });
+    return res.status(500).json({ error: 'Failed to generate title suggestions' });
   }
 });
 
