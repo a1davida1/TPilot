@@ -7,11 +7,14 @@ if (!process.env.DATABASE_URL) {
 // Parse the database URL to handle SSL properly for Render
 const dbUrl = process.env.DATABASE_URL || '';
 
-// Remove any existing query parameters
+// Clean the URL and add proper SSL for Render
+// Remove any existing query parameters first
 const baseUrl = dbUrl.split('?')[0];
 
-// Add correct SSL parameters for Render
-const urlForDrizzle = `${baseUrl}?sslmode=no-verify`;
+// Always use SSL for Render databases (they require it)
+const urlForDrizzle = baseUrl.includes('render.com') 
+  ? `${baseUrl}?sslmode=require`
+  : baseUrl;
 
 export default {
   dialect: 'postgresql',

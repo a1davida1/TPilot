@@ -1439,6 +1439,10 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // Register Scheduled Posts Routes (for scheduling Reddit posts)
   app.use('/api/scheduled-posts', scheduledPostsRouter);
 
+  // Register Smart Scheduling Routes (for intelligent post timing optimization)
+  const smartSchedulingRouter = (await import('./routes/smart-scheduling.js')).default;
+  app.use('/api/scheduling', smartSchedulingRouter);
+
   // Register Caption Analytics Routes (for A/B testing and performance tracking)
   app.use('/api/caption-analytics', captionAnalyticsRouter);
 
@@ -1448,6 +1452,10 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // Register Intelligence Routes (for AI-powered insights)
   const { intelligenceRouter } = await import('./routes/intelligence.js');
   app.use('/api/intelligence', intelligenceRouter);
+
+  // Register Health Monitor Routes (for account/community health tracking)
+  const healthMonitorRouter = (await import('./routes/health-monitor.js')).default;
+  app.use('/api/health', healthMonitorRouter);
 
   // Register Health Check Routes (for monitoring)
   const { healthRouter } = await import('./routes/health.js');

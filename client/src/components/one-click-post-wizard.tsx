@@ -20,6 +20,8 @@ import {
   getDeviceBucket
 } from '@/lib/caption-telemetry';
 import { AlertCircle, CheckCircle, Loader2, Upload } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { OptimalTimeIndicator } from './scheduling/optimal-time-badge';
 
 interface SubredditRecommendation {
   name: string;
@@ -47,6 +49,23 @@ export function OneClickPostWizard() {
     phashDelta: number;
     processingTime: number;
   } | null>(null);
+
+  // Fetch optimal posting time for selected subreddit
+  const { data: optimalTimeData } = useQuery({
+    queryKey: ['optimal-time', selectedSubreddit],
+    queryFn: async () => {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch(
+        `/api/scheduling/analyze-best-times?subreddit=${encodeURIComponent(selectedSubreddit)}&count=1`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!selectedSubreddit && step === 'picker'
+  });
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -373,14 +392,24 @@ export function OneClickPostWizard() {
         {step === 'picker' && captions && (
           <div className="space-y-4">
             {subredditRecommendations.length > 0 && (
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="text-sm font-medium mb-2">Recommended subreddit:</p>
+              <div className="p-4 bg-muted rounded-lg space-y-2">
+                <p className="text-sm font-medium">Recommended subreddit:</p>
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">r/{selectedSubreddit}</span>
                   <span className="text-xs text-muted-foreground">
                     ({subredditRecommendations[0].reason})
                   </span>
                 </div>
+                {optimalTimeData?.optimalTimes?.[0] && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">Best time to post:</span>
+                    <OptimalTimeIndicator
+                      dayOfWeek={optimalTimeData.optimalTimes[0].dayOfWeek}
+                      hourOfDay={optimalTimeData.optimalTimes[0].hourOfDay}
+                      avgUpvotes={optimalTimeData.optimalTimes[0].avgUpvotes}
+                    />
+                  </div>
+                )}
               </div>
             )}
 

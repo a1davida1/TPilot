@@ -87,6 +87,24 @@ class CronManager {
         await this.pollCaptionMetrics();
       }
     });
+
+    // Update optimal posting times cache weekly
+    this.addJob({
+      name: 'update-optimal-times',
+      schedule: '0 3 * * 0', // Weekly on Sunday at 3 AM
+      task: async () => {
+        await this.updateOptimalTimesCache();
+      }
+    });
+
+    // Run health checks daily
+    this.addJob({
+      name: 'daily-health-checks',
+      schedule: '0 2 * * *', // Daily at 2 AM
+      task: async () => {
+        await this.runDailyHealthChecks();
+      }
+    });
   }
 
   private addJob(job: CronJob) {
@@ -356,6 +374,94 @@ class CronManager {
       await pollCaptionMetrics();
     } catch (error) {
       logger.error('❌ Failed to poll caption metrics', {
+        error: error instanceof Error ? error.message : error
+      });
+    }
+  }
+
+  /**
+   * Update optimal posting times cache
+   */
+  private async updateOptimalTimesCache() {
+    try {
+      logger.info('⏰ Updating optimal posting times cache');
+      
+      const { updateOptimalTimesCache } = await import('./time-optimizer.js');
+      const { pool } = await import('../../db.js');
+      
+      // Get list of active subreddits from recent posts
+      const result = await pool.query(`
+        SELECT DISTINCT subreddit
+        FROM reddit_posts
+        WHERE created_at >= NOW() - INTERVAL '30 days'
+        AND subreddit IS NOT NULL
+        GROUP BY subreddit
+        HAVING COUNT(*) >= 5
+        ORDER BY COUNT(*) DESC
+        LIMIT 100
+      `);
+
+      const subreddits = result.rows.map((row: { subreddit: string }) => row.subreddit);
+      
+      logger.info(`📊 Updating optimal times for ${subreddits.length} subreddits`);
+      
+      for (const subreddit of subreddits) {
+        try {
+          await updateOptimalTimesCache(subreddit);
+          // Small delay to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (error) {
+          logger.error(`Failed to update times for r/${subreddit}`, {
+            error: error instanceof Error ? error.message : error
+          });
+        }
+      }
+      
+      logger.info('✅ Optimal times cache updated successfully');
+    } catch (error) {
+      logger.error('❌ Failed to update optimal times cache', {
+        error: error instanceof Error ? error.message : error
+      });
+    }
+  }
+
+  /**
+   * Run daily health checks for all active users
+   */
+  private async runDailyHealthChecks() {
+    try {
+      logger.info('🏥 Starting daily health checks');
+      
+      const { pool } = await import('../../db.js');
+      const { runAccountHealthCheck } = await import('../health/health-monitor.js');
+      
+      // Get users who posted in last 30 days
+      const result = await pool.query(`
+        SELECT DISTINCT user_id
+        FROM reddit_posts
+        WHERE created_at >= NOW() - INTERVAL '30 days'
+        ORDER BY user_id
+      `);
+      
+      const userIds = result.rows.map((r: { user_id: number }) => r.user_id);
+      
+      logger.info(`📊 Running health checks for ${userIds.length} active users`);
+      
+      for (const userId of userIds) {
+        try {
+          await runAccountHealthCheck(userId);
+          // Small delay to avoid overwhelming the system
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (error) {
+          logger.error(`Failed health check for user ${userId}`, {
+            error: error instanceof Error ? error.message : error
+          });
+        }
+      }
+      
+      logger.info('✅ Daily health checks completed');
+    } catch (error) {
+      logger.error('❌ Failed to run daily health checks', {
         error: error instanceof Error ? error.message : error
       });
     }

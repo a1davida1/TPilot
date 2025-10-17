@@ -1,5 +1,6 @@
-/* Premium Bubblegum Font Stack */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+/* Apple-Inspired Design System */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import './styles/apple-design-system.css';
 
 @tailwind base;
 @tailwind components;
@@ -21,173 +22,101 @@
 
 @layer base {
   :root {
-    /* Light Mode - Cotton Candy Aurora */
-    --background: 315 100 98;
-    --foreground: 327 45 18;
-
-    /* Card colors with elevated contrast */
-    --card: 318 70 99;
-    --card-foreground: 327 45 18;
-    --card-border: 315 65 88;
-
-    /* Popover colors for floating panels */
-    --popover: 318 60 99;
-    --popover-foreground: 327 45 18;
-
-    /* Secondary and muted surfaces - MISSING TOKENS ADDED */
-    --secondary: 320 50 92;
-    --secondary-foreground: 327 45 18;
-    --muted: 315 30 94;
-    --muted-foreground: 327 35 35;
-
-    /* Primary brand colors - Bubblegum gradient */
-    --primary: 320 90 72;
+    /* Light Mode - Clean & Minimal */
+    --background: 0 0 100;
+    --foreground: 0 0 11;
+    
+    /* Card and surfaces */
+    --card: 0 0 100;
+    --card-foreground: 0 0 11;
+    
+    --popover: 0 0 100;
+    --popover-foreground: 0 0 11;
+    
+    --secondary: 0 0 95;
+    --secondary-foreground: 0 0 11;
+    --muted: 0 0 96;
+    --muted-foreground: 0 0 45;
+    
+    /* Brand colors */
+    --primary: 211 100 50;
     --primary-foreground: 0 0 100;
-    --focus-ring: 0 0 0 2px rgba(232, 121, 249, 0.45);
-    --primary-50: 318 100 97;
-    --primary-100: 319 96 94;
-    --primary-200: 321 92 88;
-    --primary-300: 322 88 80;
-    --primary-400: 321 86 74;
-    --primary-500: 320 90 72;
-    --primary-600: 318 82 62;
-    --primary-700: 316 70 50;
-    --primary-800: 314 60 42;
-    --primary-900: 312 52 34;
-    --primary-950: 308 48 24;
-
-    /* Accent colors - Sky sugar blend */
-    --accent: 205 88 76;
-    --accent-foreground: 220 70 18;
-    --accent-purple: 286 82 78;
-    --accent-violet: 260 86 74;
-    --accent-indigo: 226 82 68;
-
-    /* State colors with WCAG contrast */
-    --destructive: 352 80 58;
+    
+    --accent: 340 82 52;
+    --accent-foreground: 0 0 100;
+    
+    /* Semantic colors */
+    --destructive: 0 84 60;
     --destructive-foreground: 0 0 100;
-    --success: 160 60 38;
-    --success-foreground: 0 0 100;
-    --warning: 40 90 56;
-    --warning-foreground: 30 90 16;
-
-    /* Form and interaction colors */
-    --border: 315 45 84;
+    
+    /* Borders */
+    --border: 0 0 90;
     --input: 0 0 100;
-    --ring: 320 90 72;
-
-    /* Interactive states */
-    --hover: 320 100 94;
-    --active: 320 92 88;
-    --focus: 205 92 76;
-
+    --ring: 211 100 50;
+    
+    /* Radiuses */
+    --radius: 0.75rem;
+    
     /* Chart colors */
-    --chart-1: 320 82 68;
-    --chart-2: 205 84 66;
-    --chart-3: 260 78 64;
-    --chart-4: 190 82 58;
-    --chart-5: 150 70 52;
-
-    /* Sidebar colors */
-    --sidebar-background: 315 100 97;
-    --sidebar-foreground: 327 45 18;
-    --sidebar-primary: 320 90 72;
+    --chart-1: 211 100 50;
+    --chart-2: 340 82 52;
+    --chart-3: 142 71 45;
+    --chart-4: 38 92 50;
+    --chart-5: 280 65 60;
+    
+    /* Sidebar */
+    --sidebar-background: 0 0 98;
+    --sidebar-foreground: 0 0 11;
+    --sidebar-primary: 211 100 50;
     --sidebar-primary-foreground: 0 0 100;
-    --sidebar-accent: 205 88 76;
-    --sidebar-accent-foreground: 220 70 18;
-    --sidebar-border: 315 45 84;
-    --sidebar-ring: 320 90 72;
-
-    /* Overlay colors */
-    --overlay: 280 60 14;
-    --overlay-opacity: 0.78;
-    --backdrop-blur: 20px;
-
-    --radius: 1rem;
+    --sidebar-accent: 340 82 52;
+    --sidebar-accent-foreground: 0 0 100;
+    --sidebar-border: 0 0 90;
+    --sidebar-ring: 211 100 50;
   }
 
   .dark {
-    /* Dark Mode - Luminous Canopy */
-    --background: 100 38 8;
-    --foreground: 78 68 94;
-
-    /* Card colors with guaranteed contrast */
-    --card: 100 34 12;
-    --card-foreground: 78 68 94;
-    --card-border: 98 42 24;
-
-    /* Popover colors for floating panels */
-    --popover: 100 32 16;
-    --popover-foreground: 78 68 94;
-
-    /* Primary brand colors - Neon canopy scale */
-    --primary: 92 92 58;
-    --primary-foreground: 0 0 10;
-    --primary-50: 105 28 12;
-    --primary-100: 102 36 18;
-    --primary-200: 100 44 26;
-    --primary-300: 96 56 34;
-    --primary-400: 94 68 44;
-    --primary-500: 92 80 52;
-    --primary-600: 90 88 56;
-    --primary-700: 88 92 62;
-    --primary-800: 86 94 70;
-    --primary-900: 84 96 80;
-    --primary-950: 82 98 88;
-
-    /* Secondary and muted surfaces */
-    --secondary: 120 30 18;
-    --secondary-foreground: 78 62 88;
-    --muted: 102 24 20;
-    --muted-foreground: 78 46 76;
-
-    /* Accent colors - Citrus glow blend */
-    --accent: 68 96 62;
-    --accent-foreground: 100 36 14;
-    --accent-purple: 84 88 58;
-    --accent-violet: 72 92 60;
-    --accent-indigo: 64 88 58;
-
-    /* State colors tuned for lime palette */
-    --destructive: 18 82 56;
-    --destructive-foreground: 0 0 96;
-    --success: 110 72 50;
-    --success-foreground: 110 30 94;
-    --warning: 58 98 58;
-    --warning-foreground: 58 48 12;
-
-    /* Form and interaction colors */
-    --border: 100 34 26;
-    --input: 100 28 18;
-    --ring: 92 92 58;
-    --focus-ring: 0 0 0 2px rgba(210, 255, 90, 0.55);
-
-    /* Interactive states */
-    --hover: 100 40 18;
-    --active: 100 36 14;
-    --focus: 78 96 64;
-
-    /* Chart colors for dark mode */
-    --chart-1: 92 88 60;
-    --chart-2: 68 88 58;
-    --chart-3: 54 90 56;
-    --chart-4: 40 92 52;
-    --chart-5: 30 86 46;
-
-    /* Sidebar colors for dark mode */
-    --sidebar-background: 100 36 10;
-    --sidebar-foreground: 78 68 90;
-    --sidebar-primary: 92 92 58;
-    --sidebar-primary-foreground: 0 0 10;
-    --sidebar-accent: 68 96 62;
-    --sidebar-accent-foreground: 100 36 14;
-    --sidebar-border: 100 34 24;
-    --sidebar-ring: 92 92 58;
-
-    /* Overlay colors for dark mode */
-    --overlay: 100 46 6;
-    --overlay-opacity: 0.86;
-    --backdrop-blur: 24px;
+    /* Dark Mode - Elegant */
+    --background: 0 0 7;
+    --foreground: 0 0 95;
+    
+    /* Card and surfaces */
+    --card: 0 0 11;
+    --card-foreground: 0 0 95;
+    
+    --popover: 0 0 11;
+    --popover-foreground: 0 0 95;
+    
+    --secondary: 0 0 18;
+    --secondary-foreground: 0 0 95;
+    --muted: 0 0 15;
+    --muted-foreground: 0 0 63;
+    
+    /* Brand colors */
+    --primary: 211 100 60;
+    --primary-foreground: 0 0 0;
+    
+    --accent: 340 82 62;
+    --accent-foreground: 0 0 0;
+    
+    /* Semantic colors */
+    --destructive: 0 62 50;
+    --destructive-foreground: 0 0 100;
+    
+    /* Borders */
+    --border: 0 0 20;
+    --input: 0 0 11;
+    --ring: 211 100 60;
+    
+    /* Sidebar */
+    --sidebar-background: 0 0 9;
+    --sidebar-foreground: 0 0 95;
+    --sidebar-primary: 211 100 60;
+    --sidebar-primary-foreground: 0 0 0;
+    --sidebar-accent: 340 82 62;
+    --sidebar-accent-foreground: 0 0 0;
+    --sidebar-border: 0 0 20;
+    --sidebar-ring: 211 100 60;
   }
 }
 
@@ -199,182 +128,92 @@
     transition-duration: 200ms;
   }
 
-  /* Smooth theme transitions */
+  /* Smooth scrolling & base setup */
   html {
-    transition: background-color 300ms ease, color 300ms ease;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Poppins', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-weight: 400;
-    line-height: 1.6;
-    letter-spacing: -0.01em;
-    transition: background-color 300ms ease, color 300ms ease;
+    line-height: 1.5;
+    letter-spacing: -0.015em;
+    transition: background-color 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
-  /* Smooth scrolling */
-  html {
-    scroll-behavior: smooth;
-  }
-
-  /* Premium Typography Hierarchy - Bubble Style */
+  /* Clean Typography - Apple Style */
   h1, h2, h3, h4, h5, h6 {
-    @apply text-foreground;
-    color: hsl(var(--foreground)) !important;
-    font-family: 'Poppins', sans-serif;
-    font-weight: 700;
-    letter-spacing: -0.02em;
+    font-weight: 600;
+    color: hsl(var(--foreground));
+    letter-spacing: -0.025em;
     line-height: 1.2;
   }
 
-  h1 { @apply text-4xl md:text-5xl lg:text-6xl; }
-  h2 { @apply text-3xl md:text-4xl lg:text-5xl; }
-  h3 { @apply text-2xl md:text-3xl lg:text-4xl; }
-  h4 { @apply text-xl md:text-2xl lg:text-3xl; }
-  h5 { @apply text-lg md:text-xl lg:text-2xl; }
-  h6 { @apply text-base md:text-lg lg:text-xl; }
+  h1 { font-size: 3rem; font-weight: 700; }
+  h2 { font-size: 2.25rem; font-weight: 600; }
+  h3 { font-size: 1.75rem; }
+  h4 { font-size: 1.5rem; }
+  h5 { font-size: 1.25rem; }
+  h6 { font-size: 1.125rem; }
 
-  p, span, label, a {
-    @apply text-foreground;
+  p {
     color: hsl(var(--foreground));
-    font-weight: 500;
-    letter-spacing: -0.01em;
+    line-height: 1.75;
   }
 
-  /* Ensure readable muted text */
+  /* Muted text */
   .text-muted-foreground {
     color: hsl(var(--muted-foreground));
-    font-weight: 600;
   }
 
-  /* Ensure card text is always readable */
-  .card *, .card-content *, .card-header * {
-    color: hsl(var(--card-foreground));
-    font-weight: 600 !important;
-  }
-
-  /* Button text - always readable with guaranteed contrast */
-  button, .btn, .button {
-    font-weight: 700 !important;
-    letter-spacing: -0.01em !important;
-    /* Removed problematic color: inherit !important */
-  }
-
-  /* Selection colors - Bubblegum */
+  /* Selection */
   ::selection {
-    background-color: hsl(320, 80%, 70%, 0.4);
-    color: hsl(var(--background));
+    background-color: hsl(var(--primary) / 0.2);
+    color: hsl(var(--foreground));
   }
 
   ::-moz-selection {
-    background-color: hsl(320, 80%, 70%, 0.4);
-    color: hsl(var(--background));
+    background-color: hsl(var(--primary) / 0.2);
+    color: hsl(var(--foreground));
   }
 }
 
-/* Premium Bubble Glass Effects - Enhanced with Theme Tokens */
+/* Apple-Style Glass Effects */
 .glass-panel {
-  background: hsl(var(--card) / 0.9);
-  border: 1px solid hsl(var(--border) / 0.6);
-  backdrop-filter: saturate(220%) blur(32px) brightness(1.1);
-  -webkit-backdrop-filter: saturate(220%) blur(32px) brightness(1.1);
-  border-radius: 1.75rem;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 
-    0 12px 40px hsl(var(--primary) / 0.15),
-    0 8px 24px hsl(var(--accent) / 0.12),
-    0 4px 12px hsl(var(--accent-indigo) / 0.08),
-    inset 0 2px 0 hsl(var(--card) / 0.3),
-    inset 0 -1px 0 hsl(var(--primary) / 0.1);
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.glass-panel::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+  background: hsl(var(--card) / 0.8);
+  border: 1px solid hsl(var(--border) / 0.5);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border-radius: 1rem;
+  box-shadow: 0 2px 8px hsl(0 0 0 / 0.08);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .glass-panel:hover {
   transform: translateY(-2px);
-  box-shadow: 
-    0 16px 50px hsl(var(--primary) / 0.2),
-    0 12px 30px hsl(var(--accent) / 0.15),
-    0 8px 16px hsl(var(--accent-indigo) / 0.1),
-    inset 0 2px 0 hsl(var(--card) / 0.4);
+  box-shadow: 0 8px 24px hsl(0 0 0 / 0.12);
 }
 
-.text-gradient {
-  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--primary-600)));
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-weight: 700;
-}
-
-/* Removed problematic color overrides - using CSS variables instead */
-
-.button-glow {
-  @apply shadow-lg hover:shadow-xl transition-all duration-200;
-}
-
-/* Smooth transitions for interactive elements */
-
-/* Enhanced Premium Micro-Interactions */
-button, .btn, .button {
-  @apply transition-all duration-300 ease-out;
-  border-radius: 1.25rem !important;
-  font-weight: 600 !important;
-  letter-spacing: -0.01em !important;
-  text-shadow: 0 1px 3px hsl(var(--overlay) / 0.15) !important;
+/* Clean Button Styles */
+button, .btn {
+  font-weight: 500;
+  border-radius: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   position: relative;
   overflow: hidden;
-  box-shadow: 
-    0 4px 12px hsl(var(--primary) / 0.2),
-    0 2px 6px hsl(var(--accent) / 0.15),
-    inset 0 2px 0 hsl(var(--card) / 0.2),
-    inset 0 -1px 0 hsl(var(--primary) / 0.1);
 }
 
-button::after, .btn::after, .button::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
-  transition: width 0.6s, height 0.6s, top 0.6s, left 0.6s;
-  transform: translate(-50%, -50%);
-  z-index: 0;
+button:hover, .btn:hover {
+  transform: translateY(-1px);
 }
 
-button:hover, .btn:hover, .button:hover {
-  transform: translateY(-3px) scale(1.02) !important;
-  box-shadow: 
-    0 8px 25px hsl(var(--primary) / 0.3),
-    0 4px 12px hsl(var(--accent) / 0.2),
-    0 2px 8px hsl(var(--accent-indigo) / 0.1),
-    inset 0 2px 0 hsl(var(--card) / 0.3) !important;
-}
-
-button:hover::after, .btn:hover::after, .button:hover::after {
-  width: 300px;
-  height: 300px;
-}
-
-button:active, .btn:active, .button:active {
-  transform: translateY(-1px) scale(1.01) !important;
-  transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1) !important;
+button:active, .btn:active {
+  transform: translateY(0);
 }
 
 /* Premium Table Styling */
@@ -401,23 +240,17 @@ td {
 
 /* Apple-style focus states */
 *:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  border-radius: 0.25rem;
 }
 
-/* Premium shadows */
-.shadow-apple {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07),
-              0 2px 4px -1px rgba(0, 0, 0, 0.06),
-              0 20px 25px -5px rgba(0, 0, 0, 0.1),
-              0 10px 10px -5px rgba(0, 0, 0, 0.04);
-}
-
-.shadow-apple-lg {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08),
-              0 4px 6px -2px rgba(0, 0, 0, 0.05),
-              0 25px 50px -12px rgba(0, 0, 0, 0.15);
-}
+/* Clean shadows */
+.shadow-sm { box-shadow: 0 1px 2px 0 hsl(0 0 0 / 0.05); }
+.shadow { box-shadow: 0 1px 3px 0 hsl(0 0 0 / 0.1), 0 1px 2px -1px hsl(0 0 0 / 0.1); }
+.shadow-md { box-shadow: 0 4px 6px -1px hsl(0 0 0 / 0.1), 0 2px 4px -2px hsl(0 0 0 / 0.1); }
+.shadow-lg { box-shadow: 0 10px 15px -3px hsl(0 0 0 / 0.1), 0 4px 6px -4px hsl(0 0 0 / 0.1); }
+.shadow-xl { box-shadow: 0 20px 25px -5px hsl(0 0 0 / 0.1), 0 8px 10px -6px hsl(0 0 0 / 0.1); }
 
 /* Enhanced Smooth animations with cubic-bezier easing */
 @keyframes fadeIn {
