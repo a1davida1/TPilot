@@ -36,7 +36,9 @@ if (isNeonDb) {
   // Use regular PostgreSQL pool for local/standard databases
   // Remove SSL parameters from URL as we'll configure them separately
   const cleanUrl = connectionString.split('?')[0];
-  const needsSSL = connectionString.includes('ssl=') || connectionString.includes('sslmode=');
+  const needsSSL = connectionString.includes('ssl=') || 
+                    connectionString.includes('sslmode=') || 
+                    connectionString.includes('render.com');
   
   const pgPool = new PostgresPool({ 
     connectionString: cleanUrl,

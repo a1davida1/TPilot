@@ -369,3 +369,389 @@
 {"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"level":"error","message":"Error in queue polling: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed","params":["pending","delayed"],"query":"update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())","stack":"Error: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed\n    at NodePgPreparedQuery.queryWithCache (/home/dave/CascadeProjects/TPilot/node_modules/src/pg-core/session.ts:73:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async PgQueue.processDelayedJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:152:5)\n    at async PgQueue.pollForJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:135:7)","timestamp":"2025-10-18T14:35:49.171Z"}
 {"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"level":"error","message":"Error in queue polling: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed","params":["pending","delayed"],"query":"update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())","stack":"Error: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed\n    at NodePgPreparedQuery.queryWithCache (/home/dave/CascadeProjects/TPilot/node_modules/src/pg-core/session.ts:73:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async PgQueue.processDelayedJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:152:5)\n    at async PgQueue.pollForJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:135:7)","timestamp":"2025-10-18T14:35:51.596Z"}
 {"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"level":"error","message":"Error in queue polling: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed","params":["pending","delayed"],"query":"update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())","stack":"Error: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed\n    at NodePgPreparedQuery.queryWithCache (/home/dave/CascadeProjects/TPilot/node_modules/src/pg-core/session.ts:73:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async PgQueue.processDelayedJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:152:5)\n    at async PgQueue.pollForJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:135:7)","timestamp":"2025-10-18T14:35:53.799Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-18T23:11:44.434Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-18T23:11:45.829Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-18T23:11:45.830Z"}
+{"level":"info","message":"[OpenRouter] Default model: x-ai/grok-4-fast","timestamp":"2025-10-18T23:11:45.830Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-18T23:11:46.184Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-18T23:11:46.185Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-18T23:11:46.185Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-18T23:11:46.185Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-18T23:11:46.185Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:11:46.196Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:11:46.197Z"}
+{"error":"Connection is closed.","level":"warn","message":"Failed to connect to Redis cache","timestamp":"2025-10-18T23:11:46.198Z"}
+{"level":"info","message":"Using memory store for rate limiting (Redis disabled for beta)","timestamp":"2025-10-18T23:11:46.200Z"}
+{"level":"info","message":"Rate limiter using memory store for api","timestamp":"2025-10-18T23:11:46.200Z"}
+{"level":"info","message":"Rate limiter using memory store for posts","timestamp":"2025-10-18T23:11:46.203Z"}
+{"level":"info","message":"Rate limiter using memory store for captions","timestamp":"2025-10-18T23:11:46.204Z"}
+{"level":"info","message":"Rate limiter using memory store for default","timestamp":"2025-10-18T23:11:46.205Z"}
+{"endpoints":["api","auth","posting","captions","upload","feedback","passwordReset"],"level":"info","message":"Rate limiting middleware configured","redisAvailable":false,"timestamp":"2025-10-18T23:11:46.205Z"}
+{"level":"info","message":"Advanced rate limiting applied","timestamp":"2025-10-18T23:11:46.205Z"}
+{"level":"info","message":"Observability middleware configured","timestamp":"2025-10-18T23:11:46.212Z"}
+{"level":"info","message":"Observability middleware applied","timestamp":"2025-10-18T23:11:46.212Z"}
+{"level":"info","message":"Session store configured with PostgreSQL backend","timestamp":"2025-10-18T23:11:46.213Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-18T23:11:46.214Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:11:46.300Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:11:46.302Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:11:46.502Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:11:46.502Z"}
+{"level":"warn","message":"Creating default admin account for development","timestamp":"2025-10-18T23:11:46.648Z"}
+{"level":"warn","message":"⚠️ DEFAULT ADMIN CREDENTIALS:","timestamp":"2025-10-18T23:11:46.648Z"}
+{"level":"warn","message":"   Email: admin@localhost","timestamp":"2025-10-18T23:11:46.648Z"}
+{"level":"warn","message":"   Password: admin123456","timestamp":"2025-10-18T23:11:46.648Z"}
+{"level":"warn","message":"   CHANGE THESE IN PRODUCTION!","timestamp":"2025-10-18T23:11:46.649Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:11:46.803Z"}
+{"level":"warn","message":"Redis connection failed after 3 retries, disabling cache","timestamp":"2025-10-18T23:11:46.803Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:11:46.803Z"}
+{"devErr":{"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"params":["admin@localhost","admin",1],"query":"select \"id\", \"username\", \"password\", \"email\", \"role\", \"is_admin\", \"email_verified\", \"first_name\", \"last_name\", \"tier\", \"must_change_password\", \"subscription_status\", \"trial_ends_at\", \"provider\", \"provider_id\", \"avatar\", \"bio\", \"referral_code_id\", \"referred_by\", \"reddit_username\", \"reddit_access_token\", \"reddit_refresh_token\", \"reddit_id\", \"stripe_customer_id\", \"stripe_subscription_id\", \"catbox_userhash\", \"banned_at\", \"suspended_until\", \"ban_reason\", \"suspension_reason\", \"created_at\", \"updated_at\", \"last_login\", \"password_reset_at\", \"deleted_at\", \"is_deleted\", \"avatar_url\", \"website\", \"timezone\", \"language\", \"two_factor_enabled\", \"last_login_at\", \"password_hash\", \"last_password_change\", \"posts_count\", \"captions_generated\" from \"users\" where (\"users\".\"email\" = $1 or \"users\".\"username\" = $2) limit $3"},"level":"error","message":"Failed to create development admin account","timestamp":"2025-10-18T23:11:47.063Z"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-18T23:11:47.064Z"}
+{"error":{"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"params":["admin@localhost","admin",1],"query":"select \"id\", \"username\", \"password\", \"email\", \"role\", \"is_admin\", \"email_verified\", \"first_name\", \"last_name\", \"tier\", \"must_change_password\", \"subscription_status\", \"trial_ends_at\", \"provider\", \"provider_id\", \"avatar\", \"bio\", \"referral_code_id\", \"referred_by\", \"reddit_username\", \"reddit_access_token\", \"reddit_refresh_token\", \"reddit_id\", \"stripe_customer_id\", \"stripe_subscription_id\", \"catbox_userhash\", \"banned_at\", \"suspended_until\", \"ban_reason\", \"suspension_reason\", \"created_at\", \"updated_at\", \"last_login\", \"password_reset_at\", \"deleted_at\", \"is_deleted\", \"avatar_url\", \"website\", \"timezone\", \"language\", \"two_factor_enabled\", \"last_login_at\", \"password_hash\", \"last_password_change\", \"posts_count\", \"captions_generated\" from \"users\" where (\"users\".\"email\" = $1 or \"users\".\"username\" = $2) limit $3"},"level":"error","message":"❌ Failed to apply production fixes","timestamp":"2025-10-18T23:11:47.670Z"}
+{"level":"info","message":"Initializing queue system...","timestamp":"2025-10-18T23:11:47.676Z"}
+{"level":"info","message":"Queue backend selection: USE_PG_QUEUE=true, REDIS_URL=true","timestamp":"2025-10-18T23:11:47.676Z"}
+{"level":"info","message":"🔧 Using PostgreSQL queue backend","timestamp":"2025-10-18T23:11:47.676Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-18T23:11:47.676Z"}
+{"level":"info","message":"Queue system initialized","timestamp":"2025-10-18T23:11:47.677Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-18T23:11:47.692Z"}
+{"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"level":"error","message":"Error in queue polling: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed","params":["pending","delayed"],"query":"update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())","stack":"Error: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed\n    at NodePgPreparedQuery.queryWithCache (/home/dave/CascadeProjects/TPilot/node_modules/src/pg-core/session.ts:73:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async PgQueue.processDelayedJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:152:5)\n    at async PgQueue.pollForJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:135:7)","timestamp":"2025-10-18T23:11:48.081Z"}
+{"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"level":"error","message":"Failed to collect metrics for queue post-queue: Failed query: select count(*) from \"queue_jobs\" where (\"queue_jobs\".\"queue_name\" = $1 and \"queue_jobs\".\"status\" = $2)\nparams: post-queue,pending","params":["post-queue","pending"],"query":"select count(*) from \"queue_jobs\" where (\"queue_jobs\".\"queue_name\" = $1 and \"queue_jobs\".\"status\" = $2)","stack":"Error: Failed query: select count(*) from \"queue_jobs\" where (\"queue_jobs\".\"queue_name\" = $1 and \"queue_jobs\".\"status\" = $2)\nparams: post-queue,pending\n    at NodePgPreparedQuery.queryWithCache (/home/dave/CascadeProjects/TPilot/node_modules/src/pg-core/session.ts:73:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async <anonymous> (/home/dave/CascadeProjects/TPilot/node_modules/src/node-postgres/session.ts:154:19)\n    at async PgQueue.getPendingCount (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:110:22)\n    at async Promise.all (index 0)\n    at async QueueMonitor.collectMetrics (/home/dave/CascadeProjects/TPilot/server/lib/queue-monitor.ts:85:52)\n    at async QueueMonitor.startMonitoring (/home/dave/CascadeProjects/TPilot/server/lib/queue-monitor.ts:50:5)\n    at async initializeWorkers (/home/dave/CascadeProjects/TPilot/server/lib/workers/index.ts:33:3)\n    at async startQueue (/home/dave/CascadeProjects/TPilot/server/bootstrap/queue.ts:16:5)\n    at async createApp (/home/dave/CascadeProjects/TPilot/server/app.ts:371:7)\n    at async bootstrap (/home/dave/CascadeProjects/TPilot/server/index.ts:49:24)","timestamp":"2025-10-18T23:11:48.083Z"}
+{"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"level":"error","message":"Failed to collect metrics for queue batch-post-queue: Failed query: select count(*) from \"queue_jobs\" where (\"queue_jobs\".\"queue_name\" = $1 and \"queue_jobs\".\"status\" = $2)\nparams: batch-post-queue,pending","params":["batch-post-queue","pending"],"query":"select count(*) from \"queue_jobs\" where (\"queue_jobs\".\"queue_name\" = $1 and \"queue_jobs\".\"status\" = $2)","stack":"Error: Failed query: select count(*) from \"queue_jobs\" where (\"queue_jobs\".\"queue_name\" = $1 and \"queue_jobs\".\"status\" = $2)\nparams: batch-post-queue,pending\n    at NodePgPreparedQuery.queryWithCache (/home/dave/CascadeProjects/TPilot/node_modules/src/pg-core/session.ts:73:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async <anonymous> (/home/dave/CascadeProjects/TPilot/node_modules/src/node-postgres/session.ts:154:19)\n    at async PgQueue.getPendingCount (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:110:22)\n    at async Promise.all (index 0)\n    at async QueueMonitor.collectMetrics (/home/dave/CascadeProjects/TPilot/server/lib/queue-monitor.ts:85:52)\n    at async QueueMonitor.startMonitoring (/home/dave/CascadeProjects/TPilot/server/lib/queue-monitor.ts:50:5)\n    at async initializeWorkers (/home/dave/CascadeProjects/TPilot/server/lib/workers/index.ts:33:3)\n    at async startQueue (/home/dave/CascadeProjects/TPilot/server/bootstrap/queue.ts:16:5)\n    at async createApp (/home/dave/CascadeProjects/TPilot/server/app.ts:371:7)\n    at async bootstrap (/home/dave/CascadeProjects/TPilot/server/index.ts:49:24)","timestamp":"2025-10-18T23:11:48.489Z"}
+{"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"level":"error","message":"Failed to collect metrics for queue metrics-queue: Failed query: select count(*) from \"queue_jobs\" where (\"queue_jobs\".\"queue_name\" = $1 and \"queue_jobs\".\"status\" = $2)\nparams: metrics-queue,pending","params":["metrics-queue","pending"],"query":"select count(*) from \"queue_jobs\" where (\"queue_jobs\".\"queue_name\" = $1 and \"queue_jobs\".\"status\" = $2)","stack":"Error: Failed query: select count(*) from \"queue_jobs\" where (\"queue_jobs\".\"queue_name\" = $1 and \"queue_jobs\".\"status\" = $2)\nparams: metrics-queue,pending\n    at NodePgPreparedQuery.queryWithCache (/home/dave/CascadeProjects/TPilot/node_modules/src/pg-core/session.ts:73:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async <anonymous> (/home/dave/CascadeProjects/TPilot/node_modules/src/node-postgres/session.ts:154:19)\n    at async PgQueue.getPendingCount (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:110:22)\n    at async Promise.all (index 0)\n    at async QueueMonitor.collectMetrics (/home/dave/CascadeProjects/TPilot/server/lib/queue-monitor.ts:85:52)\n    at async QueueMonitor.startMonitoring (/home/dave/CascadeProjects/TPilot/server/lib/queue-monitor.ts:50:5)\n    at async initializeWorkers (/home/dave/CascadeProjects/TPilot/server/lib/workers/index.ts:33:3)\n    at async startQueue (/home/dave/CascadeProjects/TPilot/server/bootstrap/queue.ts:16:5)\n    at async createApp (/home/dave/CascadeProjects/TPilot/server/app.ts:371:7)\n    at async bootstrap (/home/dave/CascadeProjects/TPilot/server/index.ts:49:24)","timestamp":"2025-10-18T23:11:49.103Z"}
+{"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"level":"error","message":"Failed to collect metrics for queue ai-promo-queue: Failed query: select count(*) from \"queue_jobs\" where (\"queue_jobs\".\"queue_name\" = $1 and \"queue_jobs\".\"status\" = $2)\nparams: ai-promo-queue,pending","params":["ai-promo-queue","pending"],"query":"select count(*) from \"queue_jobs\" where (\"queue_jobs\".\"queue_name\" = $1 and \"queue_jobs\".\"status\" = $2)","stack":"Error: Failed query: select count(*) from \"queue_jobs\" where (\"queue_jobs\".\"queue_name\" = $1 and \"queue_jobs\".\"status\" = $2)\nparams: ai-promo-queue,pending\n    at NodePgPreparedQuery.queryWithCache (/home/dave/CascadeProjects/TPilot/node_modules/src/pg-core/session.ts:73:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async <anonymous> (/home/dave/CascadeProjects/TPilot/node_modules/src/node-postgres/session.ts:154:19)\n    at async PgQueue.getPendingCount (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:110:22)\n    at async Promise.all (index 0)\n    at async QueueMonitor.collectMetrics (/home/dave/CascadeProjects/TPilot/server/lib/queue-monitor.ts:85:52)\n    at async QueueMonitor.startMonitoring (/home/dave/CascadeProjects/TPilot/server/lib/queue-monitor.ts:50:5)\n    at async initializeWorkers (/home/dave/CascadeProjects/TPilot/server/lib/workers/index.ts:33:3)\n    at async startQueue (/home/dave/CascadeProjects/TPilot/server/bootstrap/queue.ts:16:5)\n    at async createApp (/home/dave/CascadeProjects/TPilot/server/app.ts:371:7)\n    at async bootstrap (/home/dave/CascadeProjects/TPilot/server/index.ts:49:24)","timestamp":"2025-10-18T23:11:49.512Z"}
+{"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"level":"error","message":"Failed to collect metrics for queue dunning-queue: Failed query: select count(*) from \"queue_jobs\" where (\"queue_jobs\".\"queue_name\" = $1 and \"queue_jobs\".\"status\" = $2)\nparams: dunning-queue,pending","params":["dunning-queue","pending"],"query":"select count(*) from \"queue_jobs\" where (\"queue_jobs\".\"queue_name\" = $1 and \"queue_jobs\".\"status\" = $2)","stack":"Error: Failed query: select count(*) from \"queue_jobs\" where (\"queue_jobs\".\"queue_name\" = $1 and \"queue_jobs\".\"status\" = $2)\nparams: dunning-queue,pending\n    at NodePgPreparedQuery.queryWithCache (/home/dave/CascadeProjects/TPilot/node_modules/src/pg-core/session.ts:73:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async <anonymous> (/home/dave/CascadeProjects/TPilot/node_modules/src/node-postgres/session.ts:154:19)\n    at async PgQueue.getPendingCount (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:110:22)\n    at async Promise.all (index 0)\n    at async QueueMonitor.collectMetrics (/home/dave/CascadeProjects/TPilot/server/lib/queue-monitor.ts:85:52)\n    at async QueueMonitor.startMonitoring (/home/dave/CascadeProjects/TPilot/server/lib/queue-monitor.ts:50:5)\n    at async initializeWorkers (/home/dave/CascadeProjects/TPilot/server/lib/workers/index.ts:33:3)\n    at async startQueue (/home/dave/CascadeProjects/TPilot/server/bootstrap/queue.ts:16:5)\n    at async createApp (/home/dave/CascadeProjects/TPilot/server/app.ts:371:7)\n    at async bootstrap (/home/dave/CascadeProjects/TPilot/server/index.ts:49:24)","timestamp":"2025-10-18T23:11:49.895Z"}
+{"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"level":"error","message":"Failed to collect metrics for queue community-sync-queue: Failed query: select count(*) from \"queue_jobs\" where (\"queue_jobs\".\"queue_name\" = $1 and \"queue_jobs\".\"status\" = $2)\nparams: community-sync-queue,pending","params":["community-sync-queue","pending"],"query":"select count(*) from \"queue_jobs\" where (\"queue_jobs\".\"queue_name\" = $1 and \"queue_jobs\".\"status\" = $2)","stack":"Error: Failed query: select count(*) from \"queue_jobs\" where (\"queue_jobs\".\"queue_name\" = $1 and \"queue_jobs\".\"status\" = $2)\nparams: community-sync-queue,pending\n    at NodePgPreparedQuery.queryWithCache (/home/dave/CascadeProjects/TPilot/node_modules/src/pg-core/session.ts:73:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async <anonymous> (/home/dave/CascadeProjects/TPilot/node_modules/src/node-postgres/session.ts:154:19)\n    at async PgQueue.getPendingCount (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:110:22)\n    at async Promise.all (index 0)\n    at async QueueMonitor.collectMetrics (/home/dave/CascadeProjects/TPilot/server/lib/queue-monitor.ts:85:52)\n    at async QueueMonitor.startMonitoring (/home/dave/CascadeProjects/TPilot/server/lib/queue-monitor.ts:50:5)\n    at async initializeWorkers (/home/dave/CascadeProjects/TPilot/server/lib/workers/index.ts:33:3)\n    at async startQueue (/home/dave/CascadeProjects/TPilot/server/bootstrap/queue.ts:16:5)\n    at async createApp (/home/dave/CascadeProjects/TPilot/server/app.ts:371:7)\n    at async bootstrap (/home/dave/CascadeProjects/TPilot/server/index.ts:49:24)","timestamp":"2025-10-18T23:11:50.331Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-18T23:11:50.333Z"}
+{"level":"info","message":"Background workers initialized","timestamp":"2025-10-18T23:11:50.333Z"}
+{"level":"info","message":"🚀 Starting cron job manager...","timestamp":"2025-10-18T23:11:50.334Z"}
+{"level":"info","message":"✅ Started cron job: process-scheduled-posts (* * * * *)","timestamp":"2025-10-18T23:11:50.353Z"}
+{"level":"info","message":"✅ Started cron job: cleanup-old-posts (0 3 * * *)","timestamp":"2025-10-18T23:11:50.358Z"}
+{"level":"info","message":"✅ Started cron job: update-analytics (0 * * * *)","timestamp":"2025-10-18T23:11:50.362Z"}
+{"level":"info","message":"✅ Started cron job: check-stuck-jobs (*/5 * * * *)","timestamp":"2025-10-18T23:11:50.366Z"}
+{"level":"info","message":"✅ Started cron job: sync-reddit-communities (0 2 * * 1)","timestamp":"2025-10-18T23:11:50.374Z"}
+{"level":"info","message":"✅ Started cron job: database-backup (0 4 * * *)","timestamp":"2025-10-18T23:11:50.379Z"}
+{"level":"info","message":"✅ Started cron job: poll-caption-metrics (15 * * * *)","timestamp":"2025-10-18T23:11:50.382Z"}
+{"level":"info","message":"✅ Started cron job: update-optimal-times (0 3 * * 0)","timestamp":"2025-10-18T23:11:50.387Z"}
+{"level":"info","message":"✅ Started cron job: daily-health-checks (0 2 * * *)","timestamp":"2025-10-18T23:11:50.391Z"}
+{"level":"info","message":"✅ Cron job manager started successfully","timestamp":"2025-10-18T23:11:50.391Z"}
+{"level":"info","message":"Cron manager started","timestamp":"2025-10-18T23:11:50.391Z"}
+{"level":"info","message":"Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-18T23:11:50.392Z"}
+{"level":"info","message":"Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-18T23:11:50.399Z"}
+{"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"level":"error","message":"Error in queue polling: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed","params":["pending","delayed"],"query":"update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())","stack":"Error: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed\n    at NodePgPreparedQuery.queryWithCache (/home/dave/CascadeProjects/TPilot/node_modules/src/pg-core/session.ts:73:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async PgQueue.processDelayedJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:152:5)\n    at async PgQueue.pollForJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:135:7)","timestamp":"2025-10-18T23:11:50.538Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/dist/client/index.html","timestamp":"2025-10-18T23:11:50.591Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/client/dist/index.html","timestamp":"2025-10-18T23:11:50.591Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-18T23:11:50.591Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-18T23:11:50.999Z"}
+{"level":"info","message":"[HEALTH] Express app created successfully in 4814ms","timestamp":"2025-10-18T23:11:50.999Z"}
+{"level":"info","message":"[HEALTH] Target port from environment: 3005","timestamp":"2025-10-18T23:11:50.999Z"}
+{"level":"info","message":"[HEALTH] Starting server on 0.0.0.0:3005","timestamp":"2025-10-18T23:11:50.999Z"}
+{"level":"info","message":"[HEALTH] ✅ Server started successfully on port 3005 in 4815ms","timestamp":"2025-10-18T23:11:51.000Z"}
+{"level":"info","message":"serving on port 3005","timestamp":"2025-10-18T23:11:51.000Z"}
+{"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"level":"error","message":"Error in queue polling: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed","params":["pending","delayed"],"query":"update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())","stack":"Error: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed\n    at NodePgPreparedQuery.queryWithCache (/home/dave/CascadeProjects/TPilot/node_modules/src/pg-core/session.ts:73:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async PgQueue.processDelayedJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:152:5)\n    at async PgQueue.pollForJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:135:7)","timestamp":"2025-10-18T23:11:52.996Z"}
+{"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"level":"error","message":"Error in queue polling: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed","params":["pending","delayed"],"query":"update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())","stack":"Error: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed\n    at NodePgPreparedQuery.queryWithCache (/home/dave/CascadeProjects/TPilot/node_modules/src/pg-core/session.ts:73:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async PgQueue.processDelayedJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:152:5)\n    at async PgQueue.pollForJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:135:7)","timestamp":"2025-10-18T23:11:55.238Z"}
+{"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"level":"error","message":"Error in queue polling: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed","params":["pending","delayed"],"query":"update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())","stack":"Error: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed\n    at NodePgPreparedQuery.queryWithCache (/home/dave/CascadeProjects/TPilot/node_modules/src/pg-core/session.ts:73:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async PgQueue.processDelayedJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:152:5)\n    at async PgQueue.pollForJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:135:7)","timestamp":"2025-10-18T23:11:57.509Z"}
+{"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"level":"error","message":"Error in queue polling: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed","params":["pending","delayed"],"query":"update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())","stack":"Error: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed\n    at NodePgPreparedQuery.queryWithCache (/home/dave/CascadeProjects/TPilot/node_modules/src/pg-core/session.ts:73:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async PgQueue.processDelayedJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:152:5)\n    at async PgQueue.pollForJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:135:7)","timestamp":"2025-10-18T23:11:59.658Z"}
+{"level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-18T23:12:00.007Z"}
+{"error":"Failed query: select \"id\", \"user_id\", \"title\", \"content\", \"image_url\", \"caption\", \"subreddit\", \"scheduled_for\", \"timezone\", \"status\", \"nsfw\", \"spoiler\", \"flair_id\", \"flair_text\", \"reddit_post_id\", \"reddit_post_url\", \"error_message\", \"executed_at\", \"cancelled_at\", \"media_urls\", \"send_replies\", \"created_at\", \"updated_at\" from \"scheduled_posts\" where (\"scheduled_posts\".\"scheduled_for\" <= $1 and \"scheduled_posts\".\"status\" = $2) limit $3\nparams: 2025-10-18T23:12:00.008Z,pending,10","level":"error","message":"❌ Failed to process scheduled posts","timestamp":"2025-10-18T23:12:00.370Z"}
+{"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"level":"error","message":"Error in queue polling: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed","params":["pending","delayed"],"query":"update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())","stack":"Error: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed\n    at NodePgPreparedQuery.queryWithCache (/home/dave/CascadeProjects/TPilot/node_modules/src/pg-core/session.ts:73:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async PgQueue.processDelayedJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:152:5)\n    at async PgQueue.pollForJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:135:7)","timestamp":"2025-10-18T23:12:01.927Z"}
+{"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"level":"error","message":"Error in queue polling: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed","params":["pending","delayed"],"query":"update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())","stack":"Error: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed\n    at NodePgPreparedQuery.queryWithCache (/home/dave/CascadeProjects/TPilot/node_modules/src/pg-core/session.ts:73:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async PgQueue.processDelayedJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:152:5)\n    at async PgQueue.pollForJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:135:7)","timestamp":"2025-10-18T23:12:04.232Z"}
+{"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"level":"error","message":"Error in queue polling: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed","params":["pending","delayed"],"query":"update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())","stack":"Error: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed\n    at NodePgPreparedQuery.queryWithCache (/home/dave/CascadeProjects/TPilot/node_modules/src/pg-core/session.ts:73:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async PgQueue.processDelayedJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:152:5)\n    at async PgQueue.pollForJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:135:7)","timestamp":"2025-10-18T23:12:06.518Z"}
+{"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"level":"error","message":"Error in queue polling: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed","params":["pending","delayed"],"query":"update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())","stack":"Error: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed\n    at NodePgPreparedQuery.queryWithCache (/home/dave/CascadeProjects/TPilot/node_modules/src/pg-core/session.ts:73:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async PgQueue.processDelayedJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:152:5)\n    at async PgQueue.pollForJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:135:7)","timestamp":"2025-10-18T23:12:08.769Z"}
+{"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"level":"error","message":"Error in queue polling: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed","params":["pending","delayed"],"query":"update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())","stack":"Error: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed\n    at NodePgPreparedQuery.queryWithCache (/home/dave/CascadeProjects/TPilot/node_modules/src/pg-core/session.ts:73:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async PgQueue.processDelayedJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:152:5)\n    at async PgQueue.pollForJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:135:7)","timestamp":"2025-10-18T23:12:11.021Z"}
+{"cause":{"code":"28000","length":37,"name":"error","severity":"FATAL"},"level":"error","message":"Error in queue polling: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed","params":["pending","delayed"],"query":"update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())","stack":"Error: Failed query: update \"queue_jobs\" set \"status\" = $1 where (\"queue_jobs\".\"status\" = $2 and delay_until <= now())\nparams: pending,delayed\n    at NodePgPreparedQuery.queryWithCache (/home/dave/CascadeProjects/TPilot/node_modules/src/pg-core/session.ts:73:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async PgQueue.processDelayedJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:152:5)\n    at async PgQueue.pollForJobs (/home/dave/CascadeProjects/TPilot/server/lib/queue-pg.ts:135:7)","timestamp":"2025-10-18T23:12:13.274Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-18T23:13:55.026Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-18T23:13:55.926Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-18T23:13:55.927Z"}
+{"level":"info","message":"[OpenRouter] Default model: x-ai/grok-4-fast","timestamp":"2025-10-18T23:13:55.927Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-18T23:13:56.141Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-18T23:13:56.142Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-18T23:13:56.142Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-18T23:13:56.142Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-18T23:13:56.142Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:13:56.150Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:13:56.151Z"}
+{"error":"Connection is closed.","level":"warn","message":"Failed to connect to Redis cache","timestamp":"2025-10-18T23:13:56.151Z"}
+{"level":"info","message":"Using memory store for rate limiting (Redis disabled for beta)","timestamp":"2025-10-18T23:13:56.153Z"}
+{"level":"info","message":"Rate limiter using memory store for api","timestamp":"2025-10-18T23:13:56.154Z"}
+{"level":"info","message":"Rate limiter using memory store for posts","timestamp":"2025-10-18T23:13:56.155Z"}
+{"level":"info","message":"Rate limiter using memory store for captions","timestamp":"2025-10-18T23:13:56.156Z"}
+{"level":"info","message":"Rate limiter using memory store for default","timestamp":"2025-10-18T23:13:56.156Z"}
+{"endpoints":["api","auth","posting","captions","upload","feedback","passwordReset"],"level":"info","message":"Rate limiting middleware configured","redisAvailable":false,"timestamp":"2025-10-18T23:13:56.157Z"}
+{"level":"info","message":"Advanced rate limiting applied","timestamp":"2025-10-18T23:13:56.157Z"}
+{"level":"info","message":"Observability middleware configured","timestamp":"2025-10-18T23:13:56.161Z"}
+{"level":"info","message":"Observability middleware applied","timestamp":"2025-10-18T23:13:56.162Z"}
+{"level":"info","message":"Session store configured with PostgreSQL backend","timestamp":"2025-10-18T23:13:56.163Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-18T23:13:56.164Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:13:56.252Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:13:56.253Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:13:56.453Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:13:56.454Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:13:56.754Z"}
+{"level":"warn","message":"Redis connection failed after 3 retries, disabling cache","timestamp":"2025-10-18T23:13:56.754Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:13:56.755Z"}
+{"email":"admin@thottopilot.com","level":"info","message":"Admin account configured successfully","timestamp":"2025-10-18T23:13:56.987Z","username":"admin@thottopilot.com"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-18T23:13:56.987Z"}
+{"level":"info","message":"✅ Admin account verified: admin@thottopilot.com","timestamp":"2025-10-18T23:13:57.081Z"}
+{"level":"info","message":"User a1davida1 already has tier: pro","timestamp":"2025-10-18T23:13:57.174Z"}
+{"level":"info","message":"User a1davida1 email already verified","timestamp":"2025-10-18T23:13:57.262Z"}
+{"level":"info","message":"✅ Production database fixes completed","timestamp":"2025-10-18T23:13:57.263Z"}
+{"level":"info","message":"Initializing queue system...","timestamp":"2025-10-18T23:13:57.264Z"}
+{"level":"info","message":"Queue backend selection: USE_PG_QUEUE=true, REDIS_URL=true","timestamp":"2025-10-18T23:13:57.264Z"}
+{"level":"info","message":"🔧 Using PostgreSQL queue backend","timestamp":"2025-10-18T23:13:57.264Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-18T23:13:57.265Z"}
+{"level":"info","message":"Queue system initialized","timestamp":"2025-10-18T23:13:57.265Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-18T23:13:57.268Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-18T23:13:58.824Z"}
+{"level":"info","message":"Background workers initialized","timestamp":"2025-10-18T23:13:58.825Z"}
+{"level":"info","message":"🚀 Starting cron job manager...","timestamp":"2025-10-18T23:13:58.826Z"}
+{"level":"info","message":"✅ Started cron job: process-scheduled-posts (* * * * *)","timestamp":"2025-10-18T23:13:58.867Z"}
+{"level":"info","message":"✅ Started cron job: cleanup-old-posts (0 3 * * *)","timestamp":"2025-10-18T23:13:58.872Z"}
+{"level":"info","message":"✅ Started cron job: update-analytics (0 * * * *)","timestamp":"2025-10-18T23:13:58.877Z"}
+{"level":"info","message":"✅ Started cron job: check-stuck-jobs (*/5 * * * *)","timestamp":"2025-10-18T23:13:58.881Z"}
+{"level":"info","message":"✅ Started cron job: sync-reddit-communities (0 2 * * 1)","timestamp":"2025-10-18T23:13:58.889Z"}
+{"level":"info","message":"✅ Started cron job: database-backup (0 4 * * *)","timestamp":"2025-10-18T23:13:58.894Z"}
+{"level":"info","message":"✅ Started cron job: poll-caption-metrics (15 * * * *)","timestamp":"2025-10-18T23:13:58.898Z"}
+{"level":"info","message":"✅ Started cron job: update-optimal-times (0 3 * * 0)","timestamp":"2025-10-18T23:13:58.903Z"}
+{"level":"info","message":"✅ Started cron job: daily-health-checks (0 2 * * *)","timestamp":"2025-10-18T23:13:58.909Z"}
+{"level":"info","message":"✅ Cron job manager started successfully","timestamp":"2025-10-18T23:13:58.909Z"}
+{"level":"info","message":"Cron manager started","timestamp":"2025-10-18T23:13:58.909Z"}
+{"level":"info","message":"Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-18T23:13:58.910Z"}
+{"level":"info","message":"Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-18T23:13:58.912Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/dist/client/index.html","timestamp":"2025-10-18T23:13:59.072Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/client/dist/index.html","timestamp":"2025-10-18T23:13:59.072Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-18T23:13:59.072Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-18T23:13:59.651Z"}
+{"level":"info","message":"[HEALTH] Express app created successfully in 3509ms","timestamp":"2025-10-18T23:13:59.651Z"}
+{"level":"info","message":"[HEALTH] Target port from environment: 3005","timestamp":"2025-10-18T23:13:59.651Z"}
+{"level":"info","message":"[HEALTH] Starting server on 0.0.0.0:3005","timestamp":"2025-10-18T23:13:59.652Z"}
+{"level":"info","message":"[HEALTH] ✅ Server started successfully on port 3005 in 3510ms","timestamp":"2025-10-18T23:13:59.652Z"}
+{"level":"info","message":"serving on port 3005","timestamp":"2025-10-18T23:13:59.653Z"}
+{"level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-18T23:14:00.008Z"}
+{"correlationId":"e81fa604-c516-47b3-b752-331468bb1a02","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/health","query":{},"timestamp":"2025-10-18T23:14:24.492Z","userAgent":"curl/8.5.0"}
+{"correlationId":"e81fa604-c516-47b3-b752-331468bb1a02","level":"debug","message":"CSRF exemption: path matched","method":"GET","path":"/api/health","timestamp":"2025-10-18T23:14:24.494Z"}
+{"correlationId":"e81fa604-c516-47b3-b752-331468bb1a02","duration":6,"level":"info","message":"Response sent","method":"GET","path":"/api/health","statusCode":200,"timestamp":"2025-10-18T23:14:24.498Z"}
+{"correlationId":"e81fa604-c516-47b3-b752-331468bb1a02","level":"info","message":"GET /api/health 200 in 5ms :: {\"status\":\"ok\"}","requestId":"e81fa604-c516-47b3-b752-331468bb1a02","timestamp":"2025-10-18T23:14:24.499Z"}
+{"correlationId":"e81fa604-c516-47b3-b752-331468bb1a02","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":334906,"user":4772172},"memory":{"external":6.235084533691406,"heapTotal":100.05078125,"heapUsed":96.68000030517578,"rss":231.21484375},"pid":6495,"uptime":61.475724755},"system":{"freeMemory":25213.6875,"loadAverage":[1.16,1.03,0.55],"totalMemory":32039.31640625},"timestamp":"2025-10-18T23:14:56.162Z"}
+{"correlationId":"e81fa604-c516-47b3-b752-331468bb1a02","level":"debug","message":"⏰ Running cron job: check-stuck-jobs","timestamp":"2025-10-18T23:15:00.015Z"}
+{"correlationId":"e81fa604-c516-47b3-b752-331468bb1a02","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-18T23:15:00.016Z"}
+{"correlationId":"e81fa604-c516-47b3-b752-331468bb1a02","level":"debug","message":"⏰ Running cron job: poll-caption-metrics","timestamp":"2025-10-18T23:15:00.017Z"}
+{"correlationId":"e81fa604-c516-47b3-b752-331468bb1a02","level":"info","message":"⏰ Starting caption metrics polling...","timestamp":"2025-10-18T23:15:00.022Z"}
+{"correlationId":"e81fa604-c516-47b3-b752-331468bb1a02","level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-18T23:15:00.613Z"}
+{"correlationId":"dda309ae-571b-489f-b0e4-3580b79dc34d","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/","query":{},"timestamp":"2025-10-18T23:15:34.423Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0"}
+{"correlationId":"dda309ae-571b-489f-b0e4-3580b79dc34d","duration":22,"level":"info","message":"Response sent","method":"GET","path":"/","statusCode":200,"timestamp":"2025-10-18T23:15:34.446Z"}
+{"correlationId":"e5876f42-8583-49f0-9a8c-c196319f9a5e","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/src/main.tsx","query":{},"timestamp":"2025-10-18T23:15:34.463Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0"}
+{"correlationId":"e5876f42-8583-49f0-9a8c-c196319f9a5e","duration":8,"level":"info","message":"Response sent","method":"GET","path":"/src/main.tsx","statusCode":200,"timestamp":"2025-10-18T23:15:34.471Z"}
+{"correlationId":"c62ad135-6372-4e9a-bf7c-c715814cce00","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/logo.png","query":{},"timestamp":"2025-10-18T23:15:34.477Z","userAgent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0"}
+{"correlationId":"c62ad135-6372-4e9a-bf7c-c715814cce00","duration":5,"level":"info","message":"Response sent","method":"GET","path":"/logo.png","statusCode":200,"timestamp":"2025-10-18T23:15:34.482Z"}
+{"correlationId":"c62ad135-6372-4e9a-bf7c-c715814cce00","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":353884,"user":5075561},"memory":{"external":6.29482364654541,"heapTotal":100.80078125,"heapUsed":97.92662811279297,"rss":234.23046875},"pid":6495,"uptime":121.475570702},"system":{"freeMemory":25366.265625,"loadAverage":[1.22,1.08,0.6],"totalMemory":32039.31640625},"timestamp":"2025-10-18T23:15:56.162Z"}
+{"correlationId":"c62ad135-6372-4e9a-bf7c-c715814cce00","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-18T23:16:00.008Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-18T23:16:17.732Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-18T23:16:18.581Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-18T23:16:18.582Z"}
+{"level":"info","message":"[OpenRouter] Default model: x-ai/grok-4-fast","timestamp":"2025-10-18T23:16:18.582Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-18T23:16:18.787Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-18T23:16:18.788Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-18T23:16:18.788Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-18T23:16:18.788Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-18T23:16:18.788Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:16:18.796Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:16:18.797Z"}
+{"error":"Connection is closed.","level":"warn","message":"Failed to connect to Redis cache","timestamp":"2025-10-18T23:16:18.797Z"}
+{"level":"info","message":"Using memory store for rate limiting (Redis disabled for beta)","timestamp":"2025-10-18T23:16:18.799Z"}
+{"level":"info","message":"Rate limiter using memory store for api","timestamp":"2025-10-18T23:16:18.799Z"}
+{"level":"info","message":"Rate limiter using memory store for posts","timestamp":"2025-10-18T23:16:18.801Z"}
+{"level":"info","message":"Rate limiter using memory store for captions","timestamp":"2025-10-18T23:16:18.801Z"}
+{"level":"info","message":"Rate limiter using memory store for default","timestamp":"2025-10-18T23:16:18.802Z"}
+{"endpoints":["api","auth","posting","captions","upload","feedback","passwordReset"],"level":"info","message":"Rate limiting middleware configured","redisAvailable":false,"timestamp":"2025-10-18T23:16:18.802Z"}
+{"level":"info","message":"Advanced rate limiting applied","timestamp":"2025-10-18T23:16:18.803Z"}
+{"level":"info","message":"Observability middleware configured","timestamp":"2025-10-18T23:16:18.807Z"}
+{"level":"info","message":"Observability middleware applied","timestamp":"2025-10-18T23:16:18.807Z"}
+{"level":"info","message":"Session store configured with PostgreSQL backend","timestamp":"2025-10-18T23:16:18.808Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-18T23:16:18.809Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:16:18.898Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:16:18.898Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:16:19.100Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:16:19.100Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:16:19.401Z"}
+{"level":"warn","message":"Redis connection failed after 3 retries, disabling cache","timestamp":"2025-10-18T23:16:19.402Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:16:19.402Z"}
+{"email":"admin@thottopilot.com","level":"info","message":"Admin account configured successfully","timestamp":"2025-10-18T23:16:20.170Z","username":"admin@thottopilot.com"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-18T23:16:20.171Z"}
+{"level":"info","message":"✅ Admin account verified: admin@thottopilot.com","timestamp":"2025-10-18T23:16:20.376Z"}
+{"level":"info","message":"User a1davida1 already has tier: pro","timestamp":"2025-10-18T23:16:20.583Z"}
+{"level":"info","message":"User a1davida1 email already verified","timestamp":"2025-10-18T23:16:20.782Z"}
+{"level":"info","message":"✅ Production database fixes completed","timestamp":"2025-10-18T23:16:20.782Z"}
+{"level":"info","message":"Initializing queue system...","timestamp":"2025-10-18T23:16:20.785Z"}
+{"level":"info","message":"Queue backend selection: USE_PG_QUEUE=true, REDIS_URL=true","timestamp":"2025-10-18T23:16:20.785Z"}
+{"level":"info","message":"🔧 Using PostgreSQL queue backend","timestamp":"2025-10-18T23:16:20.785Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-18T23:16:20.785Z"}
+{"level":"info","message":"Queue system initialized","timestamp":"2025-10-18T23:16:20.787Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-18T23:16:20.790Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-18T23:16:23.966Z"}
+{"level":"info","message":"Background workers initialized","timestamp":"2025-10-18T23:16:23.967Z"}
+{"level":"info","message":"🚀 Starting cron job manager...","timestamp":"2025-10-18T23:16:23.967Z"}
+{"level":"info","message":"✅ Started cron job: process-scheduled-posts (* * * * *)","timestamp":"2025-10-18T23:16:23.986Z"}
+{"level":"info","message":"✅ Started cron job: cleanup-old-posts (0 3 * * *)","timestamp":"2025-10-18T23:16:23.991Z"}
+{"level":"info","message":"✅ Started cron job: update-analytics (0 * * * *)","timestamp":"2025-10-18T23:16:23.996Z"}
+{"level":"info","message":"✅ Started cron job: check-stuck-jobs (*/5 * * * *)","timestamp":"2025-10-18T23:16:24.000Z"}
+{"level":"info","message":"✅ Started cron job: sync-reddit-communities (0 2 * * 1)","timestamp":"2025-10-18T23:16:24.010Z"}
+{"level":"info","message":"✅ Started cron job: database-backup (0 4 * * *)","timestamp":"2025-10-18T23:16:24.015Z"}
+{"level":"info","message":"✅ Started cron job: poll-caption-metrics (15 * * * *)","timestamp":"2025-10-18T23:16:24.020Z"}
+{"level":"info","message":"✅ Started cron job: update-optimal-times (0 3 * * 0)","timestamp":"2025-10-18T23:16:24.025Z"}
+{"level":"info","message":"✅ Started cron job: daily-health-checks (0 2 * * *)","timestamp":"2025-10-18T23:16:24.030Z"}
+{"level":"info","message":"✅ Cron job manager started successfully","timestamp":"2025-10-18T23:16:24.031Z"}
+{"level":"info","message":"Cron manager started","timestamp":"2025-10-18T23:16:24.031Z"}
+{"level":"info","message":"Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-18T23:16:24.034Z"}
+{"level":"info","message":"Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-18T23:16:24.041Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/dist/client/index.html","timestamp":"2025-10-18T23:16:24.202Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/client/dist/index.html","timestamp":"2025-10-18T23:16:24.203Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-18T23:16:24.203Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-18T23:16:25.190Z"}
+{"correlationId":"c62ad135-6372-4e9a-bf7c-c715814cce00","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":374469,"user":5265855},"memory":{"external":6.283705711364746,"heapTotal":101.05078125,"heapUsed":97.87157440185547,"rss":234.42578125},"pid":6495,"uptime":181.475600297},"system":{"freeMemory":25242.3515625,"loadAverage":[0.7,0.96,0.59],"totalMemory":32039.31640625},"timestamp":"2025-10-18T23:16:56.162Z"}
+{"correlationId":"c62ad135-6372-4e9a-bf7c-c715814cce00","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-18T23:17:00.006Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-18T23:17:26.009Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-18T23:17:26.866Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-18T23:17:26.867Z"}
+{"level":"info","message":"[OpenRouter] Default model: x-ai/grok-4-fast","timestamp":"2025-10-18T23:17:26.867Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-18T23:17:27.078Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-18T23:17:27.078Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-18T23:17:27.079Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-18T23:17:27.079Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-18T23:17:27.079Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:17:27.089Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:17:27.089Z"}
+{"error":"Connection is closed.","level":"warn","message":"Failed to connect to Redis cache","timestamp":"2025-10-18T23:17:27.090Z"}
+{"level":"info","message":"Using memory store for rate limiting (Redis disabled for beta)","timestamp":"2025-10-18T23:17:27.091Z"}
+{"level":"info","message":"Rate limiter using memory store for api","timestamp":"2025-10-18T23:17:27.092Z"}
+{"level":"info","message":"Rate limiter using memory store for posts","timestamp":"2025-10-18T23:17:27.093Z"}
+{"level":"info","message":"Rate limiter using memory store for captions","timestamp":"2025-10-18T23:17:27.094Z"}
+{"level":"info","message":"Rate limiter using memory store for default","timestamp":"2025-10-18T23:17:27.094Z"}
+{"endpoints":["api","auth","posting","captions","upload","feedback","passwordReset"],"level":"info","message":"Rate limiting middleware configured","redisAvailable":false,"timestamp":"2025-10-18T23:17:27.095Z"}
+{"level":"info","message":"Advanced rate limiting applied","timestamp":"2025-10-18T23:17:27.095Z"}
+{"level":"info","message":"Observability middleware configured","timestamp":"2025-10-18T23:17:27.099Z"}
+{"level":"info","message":"Observability middleware applied","timestamp":"2025-10-18T23:17:27.099Z"}
+{"level":"info","message":"Session store configured with PostgreSQL backend","timestamp":"2025-10-18T23:17:27.100Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-18T23:17:27.101Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:17:27.190Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:17:27.191Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:17:27.391Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:17:27.391Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:17:27.692Z"}
+{"level":"warn","message":"Redis connection failed after 3 retries, disabling cache","timestamp":"2025-10-18T23:17:27.692Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:17:27.693Z"}
+{"email":"admin@thottopilot.com","level":"info","message":"Admin account configured successfully","timestamp":"2025-10-18T23:17:28.299Z","username":"admin@thottopilot.com"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-18T23:17:28.300Z"}
+{"level":"info","message":"✅ Admin account verified: admin@thottopilot.com","timestamp":"2025-10-18T23:17:28.502Z"}
+{"level":"info","message":"User a1davida1 already has tier: pro","timestamp":"2025-10-18T23:17:28.707Z"}
+{"level":"info","message":"User a1davida1 email already verified","timestamp":"2025-10-18T23:17:28.913Z"}
+{"level":"info","message":"✅ Production database fixes completed","timestamp":"2025-10-18T23:17:28.913Z"}
+{"level":"info","message":"Initializing queue system...","timestamp":"2025-10-18T23:17:28.914Z"}
+{"level":"info","message":"Queue backend selection: USE_PG_QUEUE=true, REDIS_URL=true","timestamp":"2025-10-18T23:17:28.915Z"}
+{"level":"info","message":"🔧 Using PostgreSQL queue backend","timestamp":"2025-10-18T23:17:28.915Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-18T23:17:28.915Z"}
+{"level":"info","message":"Queue system initialized","timestamp":"2025-10-18T23:17:28.916Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-18T23:17:28.919Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-18T23:17:32.597Z"}
+{"level":"info","message":"Background workers initialized","timestamp":"2025-10-18T23:17:32.598Z"}
+{"level":"info","message":"🚀 Starting cron job manager...","timestamp":"2025-10-18T23:17:32.598Z"}
+{"level":"info","message":"✅ Started cron job: process-scheduled-posts (* * * * *)","timestamp":"2025-10-18T23:17:32.618Z"}
+{"level":"info","message":"✅ Started cron job: cleanup-old-posts (0 3 * * *)","timestamp":"2025-10-18T23:17:32.623Z"}
+{"level":"info","message":"✅ Started cron job: update-analytics (0 * * * *)","timestamp":"2025-10-18T23:17:32.627Z"}
+{"level":"info","message":"✅ Started cron job: check-stuck-jobs (*/5 * * * *)","timestamp":"2025-10-18T23:17:32.630Z"}
+{"level":"info","message":"✅ Started cron job: sync-reddit-communities (0 2 * * 1)","timestamp":"2025-10-18T23:17:32.638Z"}
+{"level":"info","message":"✅ Started cron job: database-backup (0 4 * * *)","timestamp":"2025-10-18T23:17:32.643Z"}
+{"level":"info","message":"✅ Started cron job: poll-caption-metrics (15 * * * *)","timestamp":"2025-10-18T23:17:32.647Z"}
+{"level":"info","message":"✅ Started cron job: update-optimal-times (0 3 * * 0)","timestamp":"2025-10-18T23:17:32.651Z"}
+{"level":"info","message":"✅ Started cron job: daily-health-checks (0 2 * * *)","timestamp":"2025-10-18T23:17:32.656Z"}
+{"level":"info","message":"✅ Cron job manager started successfully","timestamp":"2025-10-18T23:17:32.656Z"}
+{"level":"info","message":"Cron manager started","timestamp":"2025-10-18T23:17:32.656Z"}
+{"level":"info","message":"Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-18T23:17:32.657Z"}
+{"level":"info","message":"Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-18T23:17:32.660Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/dist/client/index.html","timestamp":"2025-10-18T23:17:32.829Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/client/dist/index.html","timestamp":"2025-10-18T23:17:32.829Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-18T23:17:32.829Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-18T23:17:33.522Z"}
+{"level":"info","message":"[HEALTH] Express app created successfully in 6445ms","timestamp":"2025-10-18T23:17:33.523Z"}
+{"level":"info","message":"[HEALTH] Target port from environment: 3005","timestamp":"2025-10-18T23:17:33.523Z"}
+{"level":"info","message":"[HEALTH] Starting server on 0.0.0.0:3005","timestamp":"2025-10-18T23:17:33.523Z"}
+{"level":"info","message":"[HEALTH] ✅ Server started successfully on port 3005 in 6446ms","timestamp":"2025-10-18T23:17:33.524Z"}
+{"level":"info","message":"serving on port 3005","timestamp":"2025-10-18T23:17:33.524Z"}
+{"correlationId":"43b37e34-381a-48c3-a5e6-9d0f8f32a125","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/health","query":{},"timestamp":"2025-10-18T23:17:54.490Z","userAgent":"curl/8.5.0"}
+{"correlationId":"43b37e34-381a-48c3-a5e6-9d0f8f32a125","level":"debug","message":"CSRF exemption: path matched","method":"GET","path":"/api/health","timestamp":"2025-10-18T23:17:54.493Z"}
+{"correlationId":"43b37e34-381a-48c3-a5e6-9d0f8f32a125","duration":7,"level":"info","message":"Response sent","method":"GET","path":"/api/health","statusCode":200,"timestamp":"2025-10-18T23:17:54.497Z"}
+{"correlationId":"43b37e34-381a-48c3-a5e6-9d0f8f32a125","level":"info","message":"GET /api/health 200 in 4ms :: {\"status\":\"ok\"}","requestId":"43b37e34-381a-48c3-a5e6-9d0f8f32a125","timestamp":"2025-10-18T23:17:54.498Z"}
+{"correlationId":"43b37e34-381a-48c3-a5e6-9d0f8f32a125","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-18T23:18:00.011Z"}
+{"correlationId":"43b37e34-381a-48c3-a5e6-9d0f8f32a125","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":313837,"user":4488363},"memory":{"external":6.231961250305176,"heapTotal":103.55078125,"heapUsed":96.23014068603516,"rss":236.875},"pid":7503,"uptime":61.372478461},"system":{"freeMemory":25369.05078125,"loadAverage":[0.81,0.94,0.62],"totalMemory":32039.31640625},"timestamp":"2025-10-18T23:18:27.100Z"}
+{"correlationId":"43b37e34-381a-48c3-a5e6-9d0f8f32a125","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-18T23:19:00.007Z"}
+{"correlationId":"43b37e34-381a-48c3-a5e6-9d0f8f32a125","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":349764,"user":4694097},"memory":{"external":6.243940353393555,"heapTotal":103.55078125,"heapUsed":96.90435028076172,"rss":239.24609375},"pid":7503,"uptime":121.372183412},"system":{"freeMemory":25319.96484375,"loadAverage":[0.54,0.84,0.61],"totalMemory":32039.31640625},"timestamp":"2025-10-18T23:19:27.099Z"}
+{"correlationId":"43b37e34-381a-48c3-a5e6-9d0f8f32a125","level":"debug","message":"⏰ Running cron job: check-stuck-jobs","timestamp":"2025-10-18T23:20:00.011Z"}
+{"correlationId":"43b37e34-381a-48c3-a5e6-9d0f8f32a125","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-18T23:20:00.012Z"}
+{"correlationId":"43b37e34-381a-48c3-a5e6-9d0f8f32a125","level":"debug","message":"Health metrics collected","process":{"cpu":{"system":362961,"user":4892720},"memory":{"external":6.24478816986084,"heapTotal":103.55078125,"heapUsed":97.08074188232422,"rss":239.56640625},"pid":7503,"uptime":181.372207994},"system":{"freeMemory":25477.3515625,"loadAverage":[0.66,0.81,0.61],"totalMemory":32039.31640625},"timestamp":"2025-10-18T23:20:27.100Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-18T23:20:48.552Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-18T23:20:49.389Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-18T23:20:49.389Z"}
+{"level":"info","message":"[OpenRouter] Default model: x-ai/grok-4-fast","timestamp":"2025-10-18T23:20:49.390Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-18T23:20:49.608Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-18T23:20:49.609Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-18T23:20:49.609Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-18T23:20:49.609Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-18T23:20:49.609Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:20:49.617Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:20:49.618Z"}
+{"error":"Connection is closed.","level":"warn","message":"Failed to connect to Redis cache","timestamp":"2025-10-18T23:20:49.618Z"}
+{"level":"info","message":"Using memory store for rate limiting (Redis disabled for beta)","timestamp":"2025-10-18T23:20:49.620Z"}
+{"level":"info","message":"Rate limiter using memory store for api","timestamp":"2025-10-18T23:20:49.620Z"}
+{"level":"info","message":"Rate limiter using memory store for posts","timestamp":"2025-10-18T23:20:49.623Z"}
+{"level":"info","message":"Rate limiter using memory store for captions","timestamp":"2025-10-18T23:20:49.623Z"}
+{"level":"info","message":"Rate limiter using memory store for default","timestamp":"2025-10-18T23:20:49.624Z"}
+{"endpoints":["api","auth","posting","captions","upload","feedback","passwordReset"],"level":"info","message":"Rate limiting middleware configured","redisAvailable":false,"timestamp":"2025-10-18T23:20:49.625Z"}
+{"level":"info","message":"Advanced rate limiting applied","timestamp":"2025-10-18T23:20:49.625Z"}
+{"level":"info","message":"Observability middleware configured","timestamp":"2025-10-18T23:20:49.629Z"}
+{"level":"info","message":"Observability middleware applied","timestamp":"2025-10-18T23:20:49.629Z"}
+{"level":"info","message":"Session store configured with PostgreSQL backend","timestamp":"2025-10-18T23:20:49.630Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-18T23:20:49.631Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:20:49.719Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:20:49.719Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:20:49.920Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:20:49.921Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:20:50.222Z"}
+{"level":"warn","message":"Redis connection failed after 3 retries, disabling cache","timestamp":"2025-10-18T23:20:50.222Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:20:50.222Z"}
+{"email":"admin@thottopilot.com","level":"info","message":"Admin account configured successfully","timestamp":"2025-10-18T23:20:50.670Z","username":"admin@thottopilot.com"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-18T23:20:50.671Z"}
+{"level":"info","message":"✅ Admin account verified: admin@thottopilot.com","timestamp":"2025-10-18T23:20:50.877Z"}
+{"level":"info","message":"User a1davida1 already has tier: pro","timestamp":"2025-10-18T23:20:51.080Z"}
+{"level":"info","message":"User a1davida1 email already verified","timestamp":"2025-10-18T23:20:51.247Z"}
+{"level":"info","message":"✅ Production database fixes completed","timestamp":"2025-10-18T23:20:51.247Z"}
+{"level":"info","message":"Initializing queue system...","timestamp":"2025-10-18T23:20:51.250Z"}
+{"level":"info","message":"Queue backend selection: USE_PG_QUEUE=true, REDIS_URL=true","timestamp":"2025-10-18T23:20:51.250Z"}
+{"level":"info","message":"🔧 Using PostgreSQL queue backend","timestamp":"2025-10-18T23:20:51.250Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-18T23:20:51.251Z"}
+{"level":"info","message":"Queue system initialized","timestamp":"2025-10-18T23:20:51.252Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-18T23:20:51.255Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-18T23:20:54.972Z"}
+{"level":"info","message":"Background workers initialized","timestamp":"2025-10-18T23:20:54.972Z"}
+{"level":"info","message":"🚀 Starting cron job manager...","timestamp":"2025-10-18T23:20:54.973Z"}
+{"level":"info","message":"✅ Started cron job: process-scheduled-posts (* * * * *)","timestamp":"2025-10-18T23:20:54.991Z"}
+{"level":"info","message":"✅ Started cron job: cleanup-old-posts (0 3 * * *)","timestamp":"2025-10-18T23:20:54.995Z"}
+{"level":"info","message":"✅ Started cron job: update-analytics (0 * * * *)","timestamp":"2025-10-18T23:20:54.999Z"}
+{"level":"info","message":"✅ Started cron job: check-stuck-jobs (*/5 * * * *)","timestamp":"2025-10-18T23:20:55.003Z"}
+{"level":"info","message":"✅ Started cron job: sync-reddit-communities (0 2 * * 1)","timestamp":"2025-10-18T23:20:55.011Z"}
+{"level":"info","message":"✅ Started cron job: database-backup (0 4 * * *)","timestamp":"2025-10-18T23:20:55.016Z"}
+{"level":"info","message":"✅ Started cron job: poll-caption-metrics (15 * * * *)","timestamp":"2025-10-18T23:20:55.020Z"}
+{"level":"info","message":"✅ Started cron job: update-optimal-times (0 3 * * 0)","timestamp":"2025-10-18T23:20:55.025Z"}
+{"level":"info","message":"✅ Started cron job: daily-health-checks (0 2 * * *)","timestamp":"2025-10-18T23:20:55.030Z"}
+{"level":"info","message":"✅ Cron job manager started successfully","timestamp":"2025-10-18T23:20:55.030Z"}
+{"level":"info","message":"Cron manager started","timestamp":"2025-10-18T23:20:55.030Z"}
+{"level":"info","message":"Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-18T23:20:55.031Z"}
+{"level":"info","message":"Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-18T23:20:55.033Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/dist/client/index.html","timestamp":"2025-10-18T23:20:55.186Z"}
+{"level":"debug","message":"Client build candidate missing index at /home/dave/CascadeProjects/client/dist/index.html","timestamp":"2025-10-18T23:20:55.186Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-18T23:20:55.186Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-18T23:20:55.970Z"}
+{"level":"info","message":"[HEALTH] Express app created successfully in 6361ms","timestamp":"2025-10-18T23:20:55.970Z"}
+{"level":"info","message":"[HEALTH] Target port from environment: 3006","timestamp":"2025-10-18T23:20:55.970Z"}
+{"level":"info","message":"[HEALTH] Starting server on 0.0.0.0:3006","timestamp":"2025-10-18T23:20:55.970Z"}
+{"level":"info","message":"[HEALTH] ✅ Server started successfully on port 3006 in 6362ms","timestamp":"2025-10-18T23:20:55.971Z"}
+{"level":"info","message":"serving on port 3006","timestamp":"2025-10-18T23:20:55.971Z"}
+{"correlationId":"43b37e34-381a-48c3-a5e6-9d0f8f32a125","level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-18T23:21:00.006Z"}
+{"level":"debug","message":"⏰ Running cron job: process-scheduled-posts","timestamp":"2025-10-18T23:21:00.006Z"}
