@@ -94,6 +94,7 @@ interface CaptionResult {
   variants: z.infer<typeof CaptionArray>;
   ranked: z.infer<typeof RankResult>;
   titles?: string[];
+  topVariants?: z.infer<typeof CaptionItem>[];  // Top 2 for user selection
 }
 
 type CaptionPlatform = "instagram" | "x" | "reddit" | "tiktok";
@@ -883,6 +884,32 @@ export async function pipeline(params: {
       const final = enriched.final;
       ranked = enriched.ranked ?? ranked;
 
+      // Select top 2 variants for user choice (Quick Post workflow)
+      // The ranked object contains the best caption (final), so we use that as #1
+      // For #2, we select the next best variant that's sufficiently different
+      const topVariants: z.infer<typeof CaptionItem>[] = [final];
+
+      if (variants.length > 1) {
+        // Find the second-best variant that's different enough from #1
+        for (const variant of variants) {
+          if (topVariants.length >= 2) break;
+
+          // Skip if it's too similar to the top choice
+          const isSimilar = variant.caption === final.caption ||
+                           captionsAreSimilar(final.caption, variant.caption);
+
+          if (!isSimilar) {
+            topVariants.push(variant);
+          }
+        }
+      }
+
+      logger.info("[OpenRouter] Selected top variants for user choice", {
+        topCount: topVariants.length,
+        top1: topVariants[0]?.caption.substring(0, 50) + '...',
+        top2: topVariants[1]?.caption.substring(0, 50) + '...'
+      });
+
       return {
         provider: "openrouter",
         facts,
@@ -890,6 +917,7 @@ export async function pipeline(params: {
         ranked,
         final,
         titles: final.titles,
+        topVariants: topVariants.slice(0, 2), // Ensure max 2
       };
     } catch (error) {
       lastError = error;

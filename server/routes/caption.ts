@@ -31,6 +31,8 @@ const generationResponseSchema = z.object({
   facts: z.record(z.string(), z.unknown()).optional(),
   provider: z.string().optional(),
   titles: z.array(z.string()).min(1).optional(),
+  // Top 2 caption options for user selection (Quick Post workflow)
+  topVariants: z.array(captionObjectSchema).min(1).max(2).optional(),
 }).catchall(z.unknown());
 
 function extractCaptionMetadata(final: unknown, titlesHint?: unknown): { caption: string; titles: string[] } {
