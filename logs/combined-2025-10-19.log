@@ -274,3 +274,5 @@
 {"level":"info","message":"⏰ Starting caption metrics polling...","timestamp":"2025-10-19T19:15:00.016Z"}
 {"level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-19T19:15:00.633Z"}
 {"correlationId":"dd5e246e-3bc2-400b-b757-a680f235fc4d","level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-19T19:15:00.635Z"}
+{"level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-19T20:00:00.019Z"}
+{"correlationId":"dd5e246e-3bc2-400b-b757-a680f235fc4d","level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-19T20:00:00.019Z"}

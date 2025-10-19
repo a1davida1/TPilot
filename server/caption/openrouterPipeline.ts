@@ -570,7 +570,7 @@ async function extractFacts(imageUrl: string): Promise<Record<string, unknown>> 
       lastError = error;
 
       // Check for 413 Payload Too Large error
-      const errorObj = error as any;
+      const errorObj = error as { status?: number; code?: number; message?: string };
       const is413Error = errorObj?.status === 413 || errorObj?.code === 413 ||
                         (errorObj?.message && /payload.*large|413|length.*exceed/i.test(errorObj.message));
 
@@ -963,7 +963,7 @@ export async function pipeline(params: {
       lastError = error;
 
       // Check for 413 Payload Too Large error
-      const errorObj = error as any;
+      const errorObj = error as { status?: number; code?: number; message?: string };
       const is413Error = errorObj?.status === 413 || errorObj?.code === 413 ||
                         (errorObj?.message && /payload.*large|413|length.*exceed|too large/i.test(errorObj.message));
 

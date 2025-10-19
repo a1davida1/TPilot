@@ -3,13 +3,11 @@
  */
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { 
   TrendingUp, 
   Users, 
   MessageSquare,
   Activity,
-  Calendar,
   ChevronDown,
   Download,
   Filter,
@@ -19,7 +17,6 @@ import {
 import { AppleCard, AppleCardContent, AppleCardDescription, AppleCardHeader, AppleCardTitle } from '@/components/ui/apple-card';
 import { AppleButton } from '@/components/ui/apple-button';
 import { useAuth } from '@/hooks/useAuth';
-import { apiRequest } from '@/lib/queryClient';
 import { cn } from '@/lib/utils';
 
 interface MetricCardProps {

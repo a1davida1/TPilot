@@ -10,7 +10,6 @@ import { logger } from '../lib/logger.js';
 import {
   getOptimalTimes,
   predictUpvotes,
-  analyzeSubredditTimes,
   updateOptimalTimesCache,
   updateUserPatternsCache
 } from '../lib/scheduler/time-optimizer.js';

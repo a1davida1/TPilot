@@ -3,8 +3,7 @@
  */
 
 import { useState } from 'react';
-import { 
-  Calendar,
+import {
   Clock,
   Plus,
   ChevronLeft,
@@ -17,7 +16,7 @@ import {
   Edit,
   Trash2
 } from 'lucide-react';
-import { AppleCard, AppleCardContent, AppleCardDescription, AppleCardHeader, AppleCardTitle } from '@/components/ui/apple-card';
+import { AppleCard, AppleCardContent, AppleCardHeader, AppleCardTitle } from '@/components/ui/apple-card';
 import { AppleButton } from '@/components/ui/apple-button';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';

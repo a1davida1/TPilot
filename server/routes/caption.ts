@@ -7,7 +7,6 @@ import { authenticateToken, type AuthRequest } from '../middleware/auth';
 import { type CaptionObject } from '@shared/types/caption';
 import { z } from 'zod';
 import { logger } from '../bootstrap/logger';
-import { generateCaptionsWithFallback } from '../lib/openrouter';
 
 // Local validation schema to prevent import issues
 const captionObjectSchema = z.object({
@@ -253,30 +252,71 @@ router.post('/one-click-captions', authenticateToken(true), async (req: AuthRequ
   try {
     const { image_base64 } = oneClickCaptionSchema.parse(req.body ?? {});
 
-    // Generate two-caption variants using OpenRouter (Grok4 Fast → Claude 3 Opus fallback)
-    const result = await generateCaptionsWithFallback(image_base64, {
-      primaryModel: 'x-ai/grok-4-fast',
-      fallbackModel: 'anthropic/claude-3-opus'
-    });
+    // Convert base64 to data URL for our pipeline
+    const imageUrl = `data:image/jpeg;base64,${image_base64}`;
+    
+    // Select two different NSFW voices for variety
+    const nsfwVoices = ['seductive_goddess', 'intimate_girlfriend', 'bratty_tease', 'submissive_kitten'];
+    const shuffled = [...nsfwVoices].sort(() => Math.random() - 0.5);
+    const voice1 = shuffled[0];
+    const voice2 = shuffled[1];
+    
+    // Use our sophisticated pipeline with two different voices for variety
+    // Run both in parallel for speed
+    const [result1, result2] = await Promise.all([
+      pipeline({ 
+        imageUrl, 
+        platform: 'reddit', 
+        voice: voice1,
+        nsfw: true 
+      }),
+      pipeline({ 
+        imageUrl, 
+        platform: 'reddit', 
+        voice: voice2,
+        nsfw: true 
+      })
+    ]);
+
+    // Extract the top variants from each result
+    const caption1 = result1.topVariants?.[0] || result1.final;
+    const caption2 = result2.topVariants?.[0] || result2.final;
+    
+    // Format captions
+    const formatCaption = (cap: unknown): string => {
+      if (typeof cap === 'string') return cap;
+      if (cap && typeof cap === 'object' && 'caption' in cap) {
+        const captionObj = cap as CaptionObject;
+        return captionObj.caption || '';
+      }
+      return '';
+    };
 
     // Format response for two-caption picker
     const captions = [
       {
-        id: `flirty_${Date.now()}`,
-        text: result.captions.flirty,
-        style: 'flirty'
+        id: `${voice1}_${Date.now()}`,
+        text: formatCaption(caption1),
+        style: voice1
       },
       {
-        id: `slutty_${Date.now() + 1}`,
-        text: result.captions.slutty,
-        style: 'slutty'
+        id: `${voice2}_${Date.now() + 1}`,
+        text: formatCaption(caption2),
+        style: voice2
       }
     ];
 
+    // Extract category and tags from facts
+    const facts = result1.facts || {};
+    const categories = Array.isArray(facts.categories) ? facts.categories as string[] : [];
+    const category = categories[0] || 'lifestyle';
+    const keywords = Array.isArray(facts.keywords) ? facts.keywords as string[] : [];
+    const tags = keywords;
+
     return res.status(200).json({
       captions,
-      category: result.category,
-      tags: result.tags
+      category,
+      tags
     });
 
   } catch (e: unknown) {

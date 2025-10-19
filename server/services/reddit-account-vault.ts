@@ -8,7 +8,6 @@ import { db } from '../db.js';
 import {
   redditAccounts,
   redditAccountAuditLog,
-  type InsertRedditAccount,
   type RedditAccount,
   type InsertRedditAccountAuditLog,
 } from '@shared/schema';
