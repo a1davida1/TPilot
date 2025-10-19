@@ -47,32 +47,42 @@ export default function QuickPostPage() {
   const [_isProcessing, setIsProcessing] = useState(false);
   const [posted, setPosted] = useState(false);
 
-  // Generate 2 caption options using Grok
+  // Generate 2 caption options using Grok (generates 5, returns top 2)
   const generateCaptions = useMutation({
     mutationFn: async (url: string) => {
-      // Generate two different styles
-      const promises = [
-        apiRequest('POST', '/api/caption/generate', {
-          imageUrl: url,
-          platform: 'reddit',
-          voice: 'flirty_playful',
-          style: 'explicit',
-          nsfw: true,
-        }),
-        apiRequest('POST', '/api/caption/generate', {
-          imageUrl: url,
-          platform: 'reddit',
-          voice: 'cozy_girl',
-          style: 'poetic',
-          nsfw: true,
-        })
-      ];
-      
-      const results = await Promise.all(promises) as unknown as Array<{ caption?: string; text?: string }>;
-      return [
-        { id: '1', text: results[0]?.caption || results[0]?.text || '', style: 'Flirty & Explicit' },
-        { id: '2', text: results[1]?.caption || results[1]?.text || '', style: 'Cozy & Poetic' }
-      ];
+      // Backend generates 5 variants and returns the best 2
+      const response = await apiRequest('POST', '/api/caption/generate', {
+        imageUrl: url,
+        platform: 'reddit',
+        voice: 'flirty_playful',
+        style: 'explicit',
+        nsfw: true,
+      }) as { topVariants?: Array<{ caption: string; style?: string }>; final?: { caption: string } };
+
+      // Extract top 2 variants from response
+      const topVariants = response.topVariants || [];
+
+      // If topVariants exists, use it; otherwise fall back to final
+      if (topVariants.length >= 2) {
+        return [
+          { id: '1', text: topVariants[0].caption, style: topVariants[0].style || 'Top Choice' },
+          { id: '2', text: topVariants[1].caption, style: topVariants[1].style || 'Alternative' }
+        ];
+      } else if (topVariants.length === 1) {
+        return [
+          { id: '1', text: topVariants[0].caption, style: 'Generated Caption' },
+          { id: '2', text: topVariants[0].caption, style: 'Same Caption' }
+        ];
+      } else if (response.final) {
+        // Fallback to final if topVariants not available
+        const finalCaption = typeof response.final === 'string' ? response.final : response.final.caption;
+        return [
+          { id: '1', text: finalCaption, style: 'Generated Caption' },
+          { id: '2', text: finalCaption, style: 'Same Caption' }
+        ];
+      }
+
+      throw new Error('No captions generated');
     },
     onSuccess: (options) => {
       setCaptionOptions(options);
