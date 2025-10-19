@@ -828,6 +828,7 @@ export async function pipeline(params: {
   mood?: string;
   toneExtras?: Record<string, string>;
   mandatoryTokens?: string[];
+  existingCaption?: string;
 }): Promise<CaptionResult> {
   logger.info("[OpenRouter] Starting pipeline", { 
     platform: params.platform, 
@@ -874,6 +875,7 @@ export async function pipeline(params: {
         mood: baseMood,
         toneExtras,
         mandatoryTokens: params.mandatoryTokens,
+        existingCaption: params.existingCaption,
       });
       logger.info("[OpenRouter] Variants generated", { variantCount: variants.length });
 
@@ -896,6 +898,7 @@ export async function pipeline(params: {
             toneExtras,
             hint: coverage.hint,
             mandatoryTokens: params.mandatoryTokens,
+            existingCaption: params.existingCaption,
           });
           ranked = await rankAndSelect(variants, { platform: params.platform, facts });
           coverage = ensureFactCoverage({ facts, caption: ranked.final.caption, alt: ranked.final.alt });
@@ -916,6 +919,7 @@ export async function pipeline(params: {
           toneExtras,
           hint: `Fix: ${platformError}. Use IMAGE_FACTS nouns/colors/setting explicitly.`,
           mandatoryTokens: params.mandatoryTokens,
+          existingCaption: params.existingCaption,
         });
         ranked = await rankAndSelect(variants, { platform: params.platform, facts });
       }

@@ -20,13 +20,20 @@ const PLATFORMS = [
   { value: "tiktok", label: "TikTok" }
 ];
 
-const VOICES = [
+const SFW_VOICES = [
   { value: "flirty_playful", label: "Flirty & Playful" },
   { value: "gamer_nerdy", label: "Gamer & Nerdy" },
   { value: "luxury_minimal", label: "Luxury Minimal" },
   { value: "arts_muse", label: "Arts & Muse" },
   { value: "gym_energy", label: "Gym Energy" },
   { value: "cozy_girl", label: "Cozy Girl" }
+];
+
+const NSFW_VOICES = [
+  { value: "seductive_goddess", label: "Seductive Goddess" },
+  { value: "intimate_girlfriend", label: "Intimate Girlfriend" },
+  { value: "bratty_tease", label: "Bratty Tease" },
+  { value: "submissive_kitten", label: "Submissive Kitten" }
 ];
 
 const FALLBACK_ERROR_INDICATORS = [
@@ -70,12 +77,26 @@ export function GeminiCaptionGenerator() {
   const [imageUrl, setImageUrl] = useState("");
   const [platform, setPlatform] = useState<string>("instagram");
   const [voice, setVoice] = useState<string>("flirty_playful");
+  const [nsfw, setNsfw] = useState<boolean>(false);
   const [includeHashtags, setIncludeHashtags] = useState<boolean>(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [captionData, setCaptionData] = useState<GenerationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  
+  // Dynamic voice list based on NSFW state
+  const availableVoices = nsfw ? NSFW_VOICES : SFW_VOICES;
+  
+  // Auto-switch voice when NSFW changes
+  const handleNsfwChange = (checked: boolean) => {
+    setNsfw(checked);
+    if (checked) {
+      setVoice("seductive_goddess");
+    } else {
+      setVoice("flirty_playful");
+    }
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -115,6 +136,7 @@ export function GeminiCaptionGenerator() {
         imageUrl,
         platform,
         voice,
+        nsfw,
         includeHashtags,
       });
 
@@ -262,13 +284,25 @@ export function GeminiCaptionGenerator() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {VOICES.map(v => (
+                {availableVoices.map(v => (
                   <SelectItem key={v.value} value={v.value}>
                     {v.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border border-dashed border-gray-200 dark:border-gray-800 p-3">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">NSFW Content</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Switches to explicit first-person voices</p>
+            </div>
+            <Switch
+              checked={nsfw}
+              onCheckedChange={handleNsfwChange}
+              aria-label="Toggle NSFW content mode"
+            />
           </div>
 
           <div className="flex items-center justify-between rounded-lg border border-dashed border-gray-200 dark:border-gray-800 p-3">

@@ -1,7 +1,5 @@
 import { Router, type Response } from 'express';
 import { pipeline, OpenRouterError } from '../caption/openrouterPipeline';
-import { pipelineTextOnly } from '../caption/textOnlyPipeline';
-import { pipelineRewrite } from '../caption/rewritePipeline';
 import { storage } from '../storage';
 import { authenticateToken, type AuthRequest } from '../middleware/auth';
 import { type CaptionObject } from '@shared/types/caption';
@@ -147,8 +145,22 @@ router.post('/generate', authenticateToken(true), async (req: AuthRequest, res: 
 router.post('/generate-text', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const { platform, voice, style, mood, theme, context, nsfw } = generateTextSchema.parse(req.body ?? {});
+    // Note: context is parsed but not currently used by OpenRouter pipeline
     
-    const result = await pipelineTextOnly({ platform, voice, style, mood, theme, context, nsfw: nsfw || false });
+    // Use OpenRouter pipeline with synthetic image facts based on theme/context
+    // Create a 1x1 transparent PNG as a placeholder (OpenRouter pipeline requires an image)
+    const transparentPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    
+    // Use the pipeline but inject synthetic facts
+    const result = await pipeline({
+      imageUrl: transparentPng,
+      platform,
+      voice,
+      style,
+      mood,
+      nsfw: nsfw || false,
+      mandatoryTokens: theme ? [theme] : undefined
+    });
     
     // Validate response payload matches expected schema
     const validatedResult = generationResponseSchema.parse(result);
@@ -195,7 +207,20 @@ router.post('/rewrite', authenticateToken(true), async (req: AuthRequest, res: R
   try {
     const { platform, voice, style, mood, existingCaption, imageUrl, nsfw } = rewriteSchema.parse(req.body ?? {});
     
-    const result = await pipelineRewrite({ platform, voice, style, mood, existingCaption, imageUrl, nsfw: nsfw || false });
+    // Use OpenRouter pipeline with the existing caption as context
+    // If no image provided, use a transparent placeholder
+    const transparentPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    const finalImageUrl = imageUrl || transparentPng;
+    
+    const result = await pipeline({
+      imageUrl: finalImageUrl,
+      platform,
+      voice,
+      style,
+      mood,
+      nsfw: nsfw || false,
+      existingCaption
+    });
     
     // Validate response payload matches expected schema
     const validatedResult = generationResponseSchema.parse(result);

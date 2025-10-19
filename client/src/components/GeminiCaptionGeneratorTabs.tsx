@@ -27,13 +27,20 @@ const PLATFORMS = [
   { value: "tiktok", label: "TikTok" }
 ];
 
-const VOICES = [
+const SFW_VOICES = [
   { value: "flirty_playful", label: "Flirty & Playful" },
   { value: "gamer_nerdy", label: "Gamer & Nerdy" },
   { value: "luxury_minimal", label: "Luxury Minimal" },
   { value: "arts_muse", label: "Arts & Muse" },
   { value: "gym_energy", label: "Gym Energy" },
   { value: "cozy_girl", label: "Cozy Girl" }
+];
+
+const NSFW_VOICES = [
+  { value: "seductive_goddess", label: "Seductive Goddess" },
+  { value: "intimate_girlfriend", label: "Intimate Girlfriend" },
+  { value: "bratty_tease", label: "Bratty Tease" },
+  { value: "submissive_kitten", label: "Submissive Kitten" }
 ];
 
 const STYLES = [
@@ -71,6 +78,20 @@ export function GeminiCaptionGeneratorTabs() {
   const [style, setStyle] = useState<string>("playful");
   const [mood, setMood] = useState<string>("seductive");
   const [nsfw, setNsfw] = useState<boolean>(false);
+  
+  // Dynamic voice list based on NSFW state
+  const availableVoices = nsfw ? NSFW_VOICES : SFW_VOICES;
+  
+  // Auto-switch voice when NSFW checkbox changes
+  const handleNsfwChange = (checked: boolean) => {
+    setNsfw(checked);
+    // Switch to appropriate voice when toggling NSFW
+    if (checked) {
+      setVoice("seductive_goddess"); // Default NSFW voice
+    } else {
+      setVoice("flirty_playful"); // Default SFW voice
+    }
+  };
   const [includeHashtags, setIncludeHashtags] = useState<boolean>(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [captionData, setCaptionData] = useState<GenerationResponse | null>(null);
@@ -351,7 +372,7 @@ export function GeminiCaptionGeneratorTabs() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {VOICES.map(v => (
+              {availableVoices.map(v => (
                 <SelectItem key={v.value} value={v.value}>
                   {v.label}
                 </SelectItem>
@@ -397,11 +418,11 @@ export function GeminiCaptionGeneratorTabs() {
         <Checkbox
           id="nsfw"
           checked={nsfw}
-          onCheckedChange={(checked) => setNsfw(checked as boolean)}
+          onCheckedChange={(checked) => handleNsfwChange(checked as boolean)}
           data-testid="checkbox-nsfw"
         />
         <Label htmlFor="nsfw" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-          NSFW Content
+          NSFW Content (switches to explicit voices)
         </Label>
       </div>
 
