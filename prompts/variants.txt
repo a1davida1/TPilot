@@ -17,12 +17,54 @@ IMAGE_FACTS: <json>
 Write 5 options. Return JSON array of 5 objects ONLY:
 {"caption":"","alt":"","hashtags":[],"cta":"","mood":"","style":"","safety_level":""}
 
+HUMAN AUTHENTICITY (CRITICAL):
+
+1. PERSONALITY INJECTION:
+   - Casual asides: "trust me", "here's the thing", "real talk", "honestly", "not gonna lie"
+   - Rhetorical questions (2-3 per caption): "sound familiar?", "you feel me?", "see what I mean?"
+   - Mini-confessions: "I learned this the hard way", "I'll be honest", "guilty"
+   - Fragment endings: "And that's it.", "Simple as that.", "No filter."
+
+2. RHYTHM VARIATION (CRITICAL):
+   - Ultra-short: "Obsessed." "So good." "Love this." (1-3 words)
+   - Medium punchy: "This vibe hits different" (4-6 words)
+   - Longer flow: "Been working on this aesthetic for weeks and honestly it finally feels right" (13-15 words)
+   - Mix all three types in every caption
+
+3. AI PHRASE ELIMINATION:
+   - NO: "perhaps", "potentially", "it may be", "one might say"
+   - NO hedging: Say "I love" NOT "I think I might like"
+   - NO formal transitions: "furthermore", "moreover", "in addition"
+   - YES plain English: "This changed everything" NOT "This facilitated transformation"
+
+4. CONVERSATIONAL STARTERS:
+   - Use: "Look", "Listen", "Okay so", "Real talk", "Here's the deal", "Bottom line"
+   - Fragments: "No edits.", "Just vibes.", "And that's it."
+
+5. CORE MECHANICS:
+   - Contractions ALWAYS: I'm, you're, can't, won't, it's, you'll
+   - Typos: "soo good", "ur", "omg", "rn"
+   - Ellipses: "just thinking...", "maybe later......"
+   - Drop punctuation sometimes
+   - "You" focus - second person ONLY
+   - KEEP IT SHORT: 2-4 sentences max (Reddit), 1-2 sentences (Instagram/X)
+
+6. EMOJI USE (STRATEGIC):
+   - 1-3 emojis max per caption (less is more)
+   - Lifestyle approved: 💪 🔥 ✨ 👀 😍 🎨 🎮 ☕ 🌅 📸 💯 👏 🙌 🤩
+   - AVOID: Overuse (🔥🔥🔥), emoji spam, 😂 (dated), 😭 (too dramatic)
+   - Reddit: 0-2 max, sometimes zero (read the room)
+   - Instagram: 2-3 strategic placement
+   - X/Twitter: 1-2, adds punch
+   - Standalone for impact: "👀", "💯", "🔥"
+   - Example: "This vibe hits different ✨", "No excuses 💪", "Obsessed 🤩"
+
 Rules:
 - 5 different angles; include 1 short/punchy, 1 CTA-forward, 1 aesthetic/poetic.
 - Each caption must open with a hook grounded in AUDIENCE_HOOKS or VOICE_PERSONA that spotlights the target community.
 - Mention at least one concrete sensory or visual detail from IMAGE_FACTS in both the caption and the alt text.
 - CTA lines must follow CTA_PATTERNS and respect platform norms (IG: saves/shares; X: replies/quote chains; TikTok: watch/like/follow; Reddit: conversation/upvotes without hashtags).
 - Apply every AUTHENTICITY_CHECKLIST item: use contractions, keep tone conversational, show a personal reaction, and avoid corporate phrasing.
-- When PLATFORM=reddit, follow SUBREDDIT_NOTES (if provided), keep paragraphs compact, and never spam hashtags or emoji.
+- When PLATFORM=reddit, follow SUBREDDIT_NOTES (if provided), keep paragraphs compact (2-4 sentences MAX), and never spam hashtags or emoji.
 - Use nouns/colors/setting from IMAGE_FACTS.
 - Platform limits: IG hook<=125, total<=2200 & 3–8 tags; X<=250 & 0–3 tags; Reddit no tag spam; TikTok 150–220 & 2–5 tags.

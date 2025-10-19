@@ -1,5 +1,7 @@
 # ThottoPilot Platform Overview
-*Generated: October 10, 2025*
+*Last Updated: October 19, 2025*
+
+**⚠️ CRITICAL: This is the source of truth for platform architecture. Always reference this document when making technical decisions or code changes.**
 
 ## 🎯 Core Purpose
 ThottoPilot is a professional content management platform for adult content creators to manage their Reddit presence with legal compliance, content protection, and growth tools.
@@ -83,11 +85,19 @@ Scheduling Page → Bulk Upload → Select Images → Generate Captions → Set 
 - Rate limiting protection
 
 ### **Content Pipeline**
-- **Imgur-only storage** (legal compliance)
-- AI caption generation (OpenAI, Anthropic, Grok)
-- Style presets (flirty, mysterious, confident, playful)
-- 
-- NSFW content handling
+- **Image Storage**: Imgur-only (legal compliance, NO local storage)
+- **Catbox.moe Integration**: Optional secondary hosting with authenticated uploads
+- **AI Caption Generation**: OpenRouter ONLY (Grok-4-Fast primary model)
+  - **SFW Voices**: flirty_playful, gamer_nerdy, luxury_minimal, arts_muse, gym_energy, cozy_girl
+  - **NSFW Voices**: seductive_goddess, intimate_girlfriend, bratty_tease, submissive_kitten
+  - **Generation Modes**:
+    - Image → Content (vision analysis + caption generation)
+    - Text → Content (theme-based generation with placeholder image)
+    - Rewrite (existing caption enhancement)
+  - **NSFW Toggle**: Automatically switches voice options and uses explicit first-person prompts
+  - **Pipeline**: `openrouterPipeline.ts` for ALL generation modes (no Gemini)
+- **Voice System**: JSON-defined personality profiles with persona, traits, hooks, CTAs, and authenticity guidelines
+- **Platform Optimization**: Reddit, Instagram, X/Twitter, TikTok-specific formatting
 
 ### **Posting Features**
 - Immediate posting
@@ -160,11 +170,16 @@ Scheduling Page → Bulk Upload → Select Images → Generate Captions → Set 
 - JWT authentication
 
 ### **External Services**
-- Imgur API (image hosting)
-- Reddit API (posting/monitoring)
-- OpenRouter (AI captions)
-- Stripe (payments)
-- SendGrid (emails)
+- **Imgur API** (primary image hosting, legal compliance)
+- **Catbox.moe API** (secondary hosting, optional authenticated uploads)
+- **Reddit API** (OAuth, posting, monitoring, subreddit discovery)
+- **OpenRouter API** (AI caption generation via Grok-4-Fast)
+  - Model: `x-ai/grok-4-fast`
+  - Temp: 1.4, Freq Penalty: 0.7, Presence Penalty: 1.5
+  - Uncensored NSFW support
+  - Vision model: `opengvlab/internvl3-78b` (NSFW-specialized)
+- **Stripe** (subscription payments, tier management)
+- **SendGrid** (transactional emails)
 
 ## 📈 Business Model
 
@@ -182,19 +197,22 @@ Scheduling Page → Bulk Upload → Select Images → Generate Captions → Set 
 
 ## 🚧 Current Status
 
-### **Working**
-- Authentication system
-- Reddit integration
-- Imgur uploads
-- Caption generation
-- Basic scheduling
-- Dashboard UI
+### **Working** ✅
+- Authentication system (email/password, Reddit OAuth)
+- Reddit integration (multi-account, posting, monitoring)
+- Imgur uploads (primary hosting)
+- Catbox.moe uploads (secondary hosting)
+- OpenRouter caption generation (3 modes: Image, Text, Rewrite)
+- NSFW voice system (4 explicit voices with first-person prompts)
+- Scheduled posting (cron-based processing)
+- Analytics dashboard (Pro/Premium tiers)
+- Dashboard UI (React + TypeScript)
 
-### **In Development**
-- Analytics dashboard
-- Intelligence features
-- Bulk operations
-- Mobile optimization
+### **In Development** 🚧
+- Advanced analytics intelligence
+- Bulk scheduling operations
+- Mobile responsive optimization
+- Payment tier enforcement refinements
 
 ### **Planned (Beta)**
 - ImageShield re-enabling
@@ -212,14 +230,34 @@ Scheduling Page → Bulk Upload → Select Images → Generate Captions → Set 
 - Support tickets
 
 ## 🔴 Known Issues
-1. Scheduling cron jobs need setup
-2. ImageShield temporarily disabled
-3. Analytics dashboard incomplete
-4. Payment tier enforcement partial
-5. Rate limiting not fully implemented
+1. ImageShield temporarily disabled (stability)
+2. Rate limiting not fully implemented
+3. Some tier restrictions need hardening
+4. Mobile UI needs polish
+5. Webhook integrations not yet built
 
-## 📝 Notes
-- ImageShield disabled until beta for stability
-- Focus on core posting features for MVP
-- Analytics being built with tier restrictions
-- Mobile app planned post-launch
+## 📝 Architecture Notes
+
+### **AI Caption Generation (CRITICAL)**
+- **ONLY OpenRouter is used** - No Gemini, no other providers
+- All three generation modes (Image, Text, Rewrite) use `openrouterPipeline.ts`
+- Text and Rewrite modes use transparent 1x1 PNG placeholders to satisfy vision API requirements
+- NSFW checkbox changes voice dropdown and activates explicit prompts from `prompts/nsfw-system.txt` and `prompts/nsfw-variants.txt`
+- Voice definitions in `prompts/voices.json` define personality profiles
+- First-person NSFW captions use "I/me/my" perspective
+
+### **Image Storage**
+- NO local file storage (legal compliance)
+- Imgur is primary (all posts)
+- Catbox.moe is optional secondary (authenticated uploads)
+
+### **Scheduling**
+- Cron manager processes scheduled posts every minute
+- Tier enforcement: Free/Starter = NO scheduling, Pro = 7 days, Premium = 30 days
+- Bull queues handle async job processing
+
+### **Future Plans**
+- ImageShield re-enabling after beta stability
+- Advanced automation workflows
+- Mobile app (post-launch)
+- Webhook integrations for external tools
