@@ -109,8 +109,7 @@ export async function generateVision(opts: {
       // @ts-ignore - OpenRouter-specific provider settings
       provider: {
         allow_fallbacks: true,
-        require_parameters: true,
-        data_collection: "deny",
+        data_collection: "allow",
       },
     });
     
