@@ -85,7 +85,7 @@ export default function PostSchedulingPage() {
   const generateCaptions = useMutation({
     mutationFn: async (images: UploadedImage[]) => {
       const promises = images.map(async (image) => {
-        const response = await apiRequest('POST', '/api/ai/generate-from-url', {
+        const response = await apiRequest('POST', '/api/caption/generate', {
           imageUrl: image.url,
           platform: 'reddit',
           voice: 'flirty_playful',

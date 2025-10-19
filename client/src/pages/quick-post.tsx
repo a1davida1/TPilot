@@ -52,23 +52,19 @@ export default function QuickPostPage() {
     mutationFn: async (url: string) => {
       // Generate two different styles
       const promises = [
-        apiRequest('POST', '/api/ai/generate-from-url', {
+        apiRequest('POST', '/api/caption/generate', {
           imageUrl: url,
           platform: 'reddit',
           voice: 'flirty_playful',
           style: 'explicit',
           nsfw: true,
-          provider: 'openrouter', // Use Grok through OpenRouter
-          model: 'grok-beta'
         }),
-        apiRequest('POST', '/api/ai/generate-from-url', {
+        apiRequest('POST', '/api/caption/generate', {
           imageUrl: url,
           platform: 'reddit',
           voice: 'cozy_girl',
           style: 'poetic',
           nsfw: true,
-          provider: 'openrouter',
-          model: 'grok-beta'
         })
       ];
       
