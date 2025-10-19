@@ -1,7 +1,10 @@
 import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
-import path from 'path';
-import fs from 'fs';
+import type TransportStream from 'winston-transport';
+import * as path from 'path';
+import * as fs from 'fs';
+import { createRemoteLogForwarder } from './log-forwarder.js';
+import type { RemoteLogForwarder } from './log-forwarder.js';
 
 // Ensure logs directory exists
 const logsDir = path.join(process.cwd(), 'logs');
@@ -27,9 +30,16 @@ const consoleFormat = winston.format.combine(
   })
 );
 
+type CategorizedRotateFile = DailyRotateFile & { logCategory?: string };
+
+const assignCategory = (transport: DailyRotateFile, category: string): DailyRotateFile => {
+  (transport as CategorizedRotateFile).logCategory = category;
+  return transport;
+};
+
 // Configure log rotation for different levels
 const createRotatingTransport = (level: string, filename: string) => {
-  return new DailyRotateFile({
+  const transport = new DailyRotateFile({
     level,
     filename: path.join(logsDir, `${filename}-%DATE%.log`),
     datePattern: 'YYYY-MM-DD',
@@ -41,6 +51,7 @@ const createRotatingTransport = (level: string, filename: string) => {
     createSymlink: true,
     symlinkName: `${filename}-current.log`
   });
+  return assignCategory(transport, filename);
 };
 
 // Create transports array
@@ -69,7 +80,7 @@ if (process.env.NODE_ENV !== 'test') {
     ] : []),
     
     // Security-specific logs
-    new DailyRotateFile({
+    assignCategory(new DailyRotateFile({
       level: 'warn',
       filename: path.join(logsDir, 'security-%DATE%.log'),
       datePattern: 'YYYY-MM-DD',
@@ -89,10 +100,10 @@ if (process.env.NODE_ENV !== 'test') {
       auditFile: path.join(logsDir, '.security-audit.json'),
       createSymlink: true,
       symlinkName: 'security-current.log'
-    }),
+    }), 'security'),
     
     // Performance/metrics logs
-    new DailyRotateFile({
+    assignCategory(new DailyRotateFile({
       level: 'info',
       filename: path.join(logsDir, 'metrics-%DATE%.log'),
       datePattern: 'YYYY-MM-DD',
@@ -112,7 +123,7 @@ if (process.env.NODE_ENV !== 'test') {
       auditFile: path.join(logsDir, '.metrics-audit.json'),
       createSymlink: true,
       symlinkName: 'metrics-current.log'
-    })
+    }), 'metrics')
   );
 }
 
@@ -126,33 +137,85 @@ export const logger = winston.createLogger({
   exceptionHandlers: [
     new winston.transports.Console(),
     ...(process.env.NODE_ENV !== 'test' ? [
-      new DailyRotateFile({
+      assignCategory(new DailyRotateFile({
         filename: path.join(logsDir, 'exceptions-%DATE%.log'),
         datePattern: 'YYYY-MM-DD',
         zippedArchive: true,
         maxSize: '20m',
         maxFiles: '30d', // Keep exception logs longer
         format: fileFormat
-      })
+      }), 'exceptions')
     ] : [])
   ],
   
   rejectionHandlers: [
     new winston.transports.Console(),
     ...(process.env.NODE_ENV !== 'test' ? [
-      new DailyRotateFile({
+      assignCategory(new DailyRotateFile({
         filename: path.join(logsDir, 'rejections-%DATE%.log'),
         datePattern: 'YYYY-MM-DD',
         zippedArchive: true,
         maxSize: '20m',
         maxFiles: '30d',
         format: fileFormat
-      })
+      }), 'rejections')
     ] : [])
   ],
   
   exitOnError: false // Don't exit on handled exceptions
 });
+
+const remoteForwarderInstance: RemoteLogForwarder | null = createRemoteLogForwarder(logger);
+
+const resolveTransportLevel = (transport: DailyRotateFile): string => {
+  return typeof transport.level === 'string' && transport.level.length > 0 ? transport.level : 'info';
+};
+
+const registerForwarderTransport = (forwarder: RemoteLogForwarder, transport: TransportStream, fallbackCategory: string) => {
+  if (!(transport instanceof DailyRotateFile)) {
+    return;
+  }
+
+  const categorized = transport as CategorizedRotateFile;
+  const category = categorized.logCategory ?? fallbackCategory;
+  forwarder.attachToTransport(transport, {
+    category,
+    level: resolveTransportLevel(transport),
+  });
+};
+
+if (remoteForwarderInstance) {
+  transports.forEach((transport) => {
+    registerForwarderTransport(remoteForwarderInstance, transport as TransportStream, 'application');
+  });
+
+  const exceptionTransports: TransportStream[] = logger.exceptions?.handlers
+    ? Array.from(logger.exceptions.handlers.values())
+    : [];
+  exceptionTransports.forEach((transport) => {
+    registerForwarderTransport(remoteForwarderInstance, transport, 'exceptions');
+  });
+
+  const rejectionTransports: TransportStream[] = logger.rejections?.handlers
+    ? Array.from(logger.rejections.handlers.values())
+    : [];
+  rejectionTransports.forEach((transport) => {
+    registerForwarderTransport(remoteForwarderInstance, transport, 'rejections');
+  });
+
+  if (process.env.LOG_ARCHIVE_VERIFY_ON_START === 'true') {
+    remoteForwarderInstance.verifyConnectivity().catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Remote log archive connectivity check failed', {
+        error: message,
+        alert: 'log_forwarder_connectivity_failure',
+        metrics: true,
+      });
+    });
+  }
+}
+
+export const remoteLogForwarder = remoteForwarderInstance;
 
 // Enhanced SENTRY_DSN format validation
 export function validateSentryDSN(dsn: string): { isValid: boolean; errors: string[] } {

@@ -29,6 +29,19 @@ export const envSchema = z
   
   // Redis (Optional for Phase 5)
   REDIS_URL: z.string().optional(),
+
+  // Remote log archival
+  LOG_ARCHIVE_PROVIDER: z.enum(['s3', 'gcs']).optional(),
+  LOG_ARCHIVE_BUCKET: z.string().optional(),
+  LOG_ARCHIVE_PREFIX: z.string().optional(),
+  LOG_ARCHIVE_KMS_KEY: z.string().optional(),
+  LOG_ARCHIVE_STORAGE_CLASS: z.string().optional(),
+  LOG_ARCHIVE_MAX_RETRIES: z.coerce.number().optional(),
+  LOG_ARCHIVE_BACKOFF_MS: z.coerce.number().optional(),
+  LOG_ARCHIVE_BACKOFF_MAX_MS: z.coerce.number().optional(),
+  LOG_ARCHIVE_S3_ENDPOINT: z.string().optional(),
+  LOG_ARCHIVE_S3_FORCE_PATH_STYLE: z.coerce.boolean().optional(),
+  LOG_ARCHIVE_VERIFY_ON_START: z.coerce.boolean().optional(),
   
   // App Configuration
   APP_BASE_URL: z.string().optional(),
@@ -162,6 +175,17 @@ try {
       S3_BUCKET_MEDIA: '',
       S3_PUBLIC_CDN_DOMAIN: process.env.S3_PUBLIC_CDN_DOMAIN || undefined,
       REDIS_URL: process.env.REDIS_URL || undefined,
+      LOG_ARCHIVE_PROVIDER: process.env.LOG_ARCHIVE_PROVIDER as 's3' | 'gcs' | undefined,
+      LOG_ARCHIVE_BUCKET: process.env.LOG_ARCHIVE_BUCKET || undefined,
+      LOG_ARCHIVE_PREFIX: process.env.LOG_ARCHIVE_PREFIX || undefined,
+      LOG_ARCHIVE_KMS_KEY: process.env.LOG_ARCHIVE_KMS_KEY || undefined,
+      LOG_ARCHIVE_STORAGE_CLASS: process.env.LOG_ARCHIVE_STORAGE_CLASS || undefined,
+      LOG_ARCHIVE_MAX_RETRIES: process.env.LOG_ARCHIVE_MAX_RETRIES ? Number.parseInt(process.env.LOG_ARCHIVE_MAX_RETRIES, 10) : undefined,
+      LOG_ARCHIVE_BACKOFF_MS: process.env.LOG_ARCHIVE_BACKOFF_MS ? Number.parseInt(process.env.LOG_ARCHIVE_BACKOFF_MS, 10) : undefined,
+      LOG_ARCHIVE_BACKOFF_MAX_MS: process.env.LOG_ARCHIVE_BACKOFF_MAX_MS ? Number.parseInt(process.env.LOG_ARCHIVE_BACKOFF_MAX_MS, 10) : undefined,
+      LOG_ARCHIVE_S3_ENDPOINT: process.env.LOG_ARCHIVE_S3_ENDPOINT,
+      LOG_ARCHIVE_S3_FORCE_PATH_STYLE: process.env.LOG_ARCHIVE_S3_FORCE_PATH_STYLE === 'true' ? true : undefined,
+      LOG_ARCHIVE_VERIFY_ON_START: process.env.LOG_ARCHIVE_VERIFY_ON_START === 'true' ? true : undefined,
       APP_BASE_URL: 'http://localhost:5000',
       CRON_TZ: 'America/Chicago',
       CCBILL_CLIENT_ACCOUNT: '',

@@ -1,6 +1,5 @@
 import sharp from 'sharp';
 import { MediaManager, type MediaAssetWithUrl } from '../lib/media.js';
-import { CatboxService } from '../lib/catbox-service.js';
 import { logger } from '../bootstrap/logger.js';
 
 const THUMBNAIL_WIDTH = 480;
@@ -50,29 +49,19 @@ async function createThumbnailBuffer(asset: MediaAssetWithUrl): Promise<Buffer> 
     .toBuffer();
 }
 
-async function uploadThumbnail(userId: number, asset: MediaAssetWithUrl): Promise<string> {
+async function generateThumbnailDataUrl(asset: MediaAssetWithUrl): Promise<string> {
   try {
     const thumbnailBuffer = await createThumbnailBuffer(asset);
-    const userhash = await CatboxService.getUserHash(userId);
-    const uploadResult = await CatboxService.upload({
-      reqtype: 'fileupload',
-      file: thumbnailBuffer,
-      filename: `${asset.id}-thumbnail.jpg`,
-      mimeType: 'image/jpeg',
-      userhash: userhash ?? undefined,
-    });
-
-    if (!uploadResult.success || !uploadResult.url) {
-      throw new Error(uploadResult.error || 'Unknown Catbox upload failure');
-    }
-
-    return uploadResult.url;
+    // Return as base64 data URL - no external hosting needed!
+    const base64 = thumbnailBuffer.toString('base64');
+    return `data:image/jpeg;base64,${base64}`;
   } catch (error) {
-    logger.warn('Failed to upload gallery thumbnail to Catbox', {
+    logger.warn('Failed to generate thumbnail data URL', {
       error: error instanceof Error ? error.message : String(error),
       assetId: asset.id,
     });
-    return PLACEHOLDER_URL;
+    // If we have the source URL from S3, return it as fallback
+    return asset.signedUrl || asset.downloadUrl || PLACEHOLDER_URL;
   }
 }
 
@@ -86,11 +75,17 @@ async function getThumbnailUrl(userId: number, asset: MediaAssetWithUrl): Promis
     return cached.url;
   }
 
-  const url = await uploadThumbnail(userId, asset);
-  thumbnailCache.set(asset.id, {
-    url,
-    expiresAt: Date.now() + THUMBNAIL_TTL_MS,
-  });
+  // Generate inline data URL - no external hosting required!
+  const url = await generateThumbnailDataUrl(asset);
+  
+  // Only cache if it's not a placeholder or fallback URL
+  if (url !== PLACEHOLDER_URL && url.startsWith('data:')) {
+    thumbnailCache.set(asset.id, {
+      url,
+      expiresAt: Date.now() + THUMBNAIL_TTL_MS,
+    });
+  }
+  
   return url;
 }
 

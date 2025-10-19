@@ -1,19 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import fs from 'fs/promises';
-import os from 'os';
-import path from 'path';
 import { authenticateToken, type AuthRequest } from '../middleware/auth.js';
-import { RedditManager } from '../lib/reddit.js';
-import { MediaManager } from '../lib/media.js';
-import { applyImageShieldProtection } from './upload.js';
-import { CatboxService } from '../lib/catbox-service.js';
-import { recordPostOutcome } from '../compliance/ruleViolationTracker.js';
+import { RedditNativeUploadService } from '../services/reddit-native-upload.js';
 import { logger } from '../bootstrap/logger.js';
 
 const router = Router();
-
-const IMAGE_MIME_PATTERN = /^image\//i;
 
 const quickRepostSchema = z.object({
   assetId: z.number().int().positive(),
@@ -38,79 +29,49 @@ router.post('/', authenticateToken(true), async (req: AuthRequest, res) => {
     return res.status(400).json({ error: 'Invalid request payload' });
   }
 
-  const { assetId, subreddit, title, nsfw, spoiler } = parsed.data;
+  const { assetId, subreddit, title, nsfw, spoiler, flairText } = parsed.data;
 
   // Prevent concurrent reposts of same asset
   if (repostingAssets.has(assetId)) {
     return res.status(409).json({ error: 'Repost already in progress for this asset.' });
   }
 
-  const asset = await MediaManager.getAsset(assetId, userId);
-  if (!asset) {
-    return res.status(404).json({ error: 'Media asset not found' });
-  }
-
-  if (!IMAGE_MIME_PATTERN.test(asset.mime)) {
-    return res.status(400).json({ error: 'Only image assets can be reposted.' });
-  }
-
-  const reddit = await RedditManager.forUser(userId);
-  if (!reddit) {
-    return res.status(404).json({
-      error: 'No active Reddit account found. Please connect your Reddit account first.'
-    });
-  }
-
   repostingAssets.add(assetId);
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'tp-repost-'));
-  const sourcePath = path.join(tempDir, 'source');
-  const protectedPath = path.join(tempDir, 'protected.jpg');
 
   try {
-    const assetBuffer = await MediaManager.getAssetBuffer(asset);
-    await fs.writeFile(sourcePath, assetBuffer);
-
-    await applyImageShieldProtection(sourcePath, protectedPath, 'standard', true, String(userId));
-    const protectedBuffer = await fs.readFile(protectedPath);
-
-    const userhash = await CatboxService.getUserHash(userId);
-    const catboxResult = await CatboxService.upload({
-      reqtype: 'fileupload',
-      file: protectedBuffer,
-      filename: `${assetId}-repost.jpg`,
-      mimeType: 'image/jpeg',
-      userhash: userhash ?? undefined,
-    });
-
-    if (!catboxResult.success || !catboxResult.url) {
-      const statusCode = catboxResult.status && catboxResult.status >= 400 ? catboxResult.status : 502;
-      return res.status(statusCode).json({ error: catboxResult.error || 'Failed to publish protected image' });
-    }
-
-    const submission = await reddit.submitImagePost({
+    // Use Reddit native upload - no external dependencies!
+    const result = await RedditNativeUploadService.uploadAndPost({
+      userId,
+      assetId,
       subreddit,
       title,
-      imageUrl: catboxResult.url,
       nsfw: nsfw ?? true,
       spoiler: spoiler ?? false,
+      flairText,
+      applyWatermark: true, // Apply ImageShield protection
     });
 
-    if (!submission.success || !submission.postId) {
+    if (!result.success) {
       return res.status(400).json({
-        error: submission.error || 'Failed to repost image to Reddit',
-        warnings: submission.decision?.warnings || [],
-        reasons: submission.decision?.reasons || [],
+        error: result.error || 'Failed to repost image to Reddit',
+        warnings: result.warnings || [],
       });
     }
 
-    await MediaManager.recordUsage(assetId, 'reddit-repost', new Date().toISOString());
-    await recordPostOutcome(userId, subreddit, { status: 'posted' });
+    logger.info('Quick repost successful via Reddit native upload', {
+      userId,
+      assetId,
+      subreddit,
+      postId: result.postId,
+      redditImageUrl: result.redditImageUrl,
+    });
 
     return res.status(200).json({
       success: true,
-      postId: submission.postId,
-      url: submission.url,
-      warnings: submission.decision?.warnings || [],
+      postId: result.postId,
+      url: result.url,
+      redditImageUrl: result.redditImageUrl, // i.redd.it URL
+      warnings: result.warnings || [],
       repostedAt: new Date().toISOString(),
     });
   } catch (error) {
@@ -125,7 +86,6 @@ router.post('/', authenticateToken(true), async (req: AuthRequest, res) => {
     });
   } finally {
     repostingAssets.delete(assetId);
-    await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
   }
 });
 
