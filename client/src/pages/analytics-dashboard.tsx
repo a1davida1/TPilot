@@ -99,7 +99,7 @@ export function AnalyticsDashboard() {
     );
   }
 
-  if (loading || !analyticsData) {
+  if (loading || !analyticsData || !analyticsData.overview) {
     return (
       <div className="container mx-auto p-6">
         <div className="animate-pulse space-y-4">
@@ -146,9 +146,9 @@ export function AnalyticsDashboard() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analyticsData.overview.totalPosts}</div>
+            <div className="text-2xl font-bold">{analyticsData.overview.totalPosts ?? 0}</div>
             <p className="text-xs text-muted-foreground">
-              +{analyticsData.overview.growth}% from last period
+              +{analyticsData.overview.growth ?? 0}% from last period
             </p>
           </CardContent>
         </Card>
@@ -158,7 +158,7 @@ export function AnalyticsDashboard() {
             <Eye className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{(analyticsData.overview.totalViews / 1000).toFixed(1)}k</div>
+            <div className="text-2xl font-bold">{((analyticsData.overview.totalViews ?? 0) / 1000).toFixed(1)}k</div>
             <p className="text-xs text-muted-foreground">Across all posts</p>
           </CardContent>
         </Card>
@@ -168,7 +168,7 @@ export function AnalyticsDashboard() {
             <Heart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analyticsData.overview.totalUpvotes}</div>
+            <div className="text-2xl font-bold">{analyticsData.overview.totalUpvotes ?? 0}</div>
             <p className="text-xs text-muted-foreground">Total engagement</p>
           </CardContent>
         </Card>
@@ -178,7 +178,7 @@ export function AnalyticsDashboard() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analyticsData.overview.averageEngagement}%</div>
+            <div className="text-2xl font-bold">{analyticsData.overview.averageEngagement ?? 0}%</div>
             <p className="text-xs text-muted-foreground">Per post</p>
           </CardContent>
         </Card>
@@ -188,7 +188,7 @@ export function AnalyticsDashboard() {
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">+{analyticsData.overview.growth}%</div>
+            <div className="text-2xl font-bold text-green-600">+{analyticsData.overview.growth ?? 0}%</div>
             <p className="text-xs text-muted-foreground">vs previous period</p>
           </CardContent>
         </Card>

@@ -1,10 +1,26 @@
 import { Router } from 'express';
 import { authenticateToken, type AuthRequest } from '../middleware/auth.js';
 import { CatboxService } from '../lib/catbox-service.js';
+import { CatboxAnalyticsService } from '../services/catbox-analytics-service.js';
 import { logger } from '../bootstrap/logger.js';
 import multer from 'multer';
 
 const router = Router();
+
+function extractFilenameFromUrl(rawUrl: string): string | undefined {
+  try {
+    const parsed = new URL(rawUrl);
+    const parts = parsed.pathname.split('/');
+    const filename = parts[parts.length - 1];
+    if (!filename) {
+      return undefined;
+    }
+    const decoded = decodeURIComponent(filename);
+    return decoded.trim() ? decoded : undefined;
+  } catch (_error) {
+    return undefined;
+  }
+}
 
 // Configure multer for memory storage
 const upload = multer({ 
@@ -78,6 +94,7 @@ router.post('/upload',
 
       const mimeType = req.file.mimetype?.trim() || 'application/octet-stream';
 
+      const uploadStartedAt = Date.now();
       const result = await CatboxService.upload({
         reqtype: 'fileupload',
         file: req.file.buffer,
@@ -91,6 +108,17 @@ router.post('/upload',
         
         return res.status(statusCode).json({ 
           error: result.error || 'Upload failed' 
+        });
+      }
+
+      if (req.user?.id && result.url) {
+        await CatboxAnalyticsService.recordUpload({
+          userId: req.user.id,
+          url: result.url,
+          filename: req.file.originalname,
+          fileSize: typeof req.file.size === 'number' ? req.file.size : undefined,
+          uploadDuration: Date.now() - uploadStartedAt,
+          provider: 'catbox',
         });
       }
 
@@ -133,6 +161,7 @@ router.post('/upload-url', authenticateToken(), async (req: AuthRequest, res) =>
       if (hash) userhash = hash;
     }
 
+    const uploadStartedAt = Date.now();
     const result = await CatboxService.upload({
       reqtype: 'urlupload',
       url,
@@ -144,6 +173,16 @@ router.post('/upload-url', authenticateToken(), async (req: AuthRequest, res) =>
       
       return res.status(statusCode).json({ 
         error: result.error || 'URL upload failed' 
+      });
+    }
+
+    if (req.user?.id && result.url) {
+      await CatboxAnalyticsService.recordUpload({
+        userId: req.user.id,
+        url: result.url,
+        filename: extractFilenameFromUrl(result.url) ?? extractFilenameFromUrl(url),
+        uploadDuration: Date.now() - uploadStartedAt,
+        provider: 'catbox',
       });
     }
 
@@ -264,14 +303,7 @@ router.get('/stats', authenticateToken(true), async (req: AuthRequest, res) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // For now, return mock stats until EnhancedCatboxService is integrated
-    // TODO: Replace with EnhancedCatboxService.getUserUploadStats(userId)
-    const stats = {
-      totalUploads: 0,
-      totalSize: 0,
-      successRate: 100,
-      averageDuration: 0
-    };
+    const stats = await CatboxAnalyticsService.getUploadStats(userId);
 
     res.json(stats);
   } catch (error) {

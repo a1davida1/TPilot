@@ -46,6 +46,8 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { apiRequest } from "@/lib/queryClient";
 import type { ApiError } from "@/lib/queryClient";
 import { ReferralWidget } from "@/components/ReferralWidget";
+import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
+import type { CatboxUploadStatsResponse } from '@shared/catbox-analytics';
 
 interface ModernDashboardProps {
   isRedditConnected?: boolean;
@@ -143,6 +145,49 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
+function formatBytes(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) {
+    return '0 B';
+  }
+
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let remaining = value;
+  let unitIndex = 0;
+
+  while (remaining >= 1024 && unitIndex < units.length - 1) {
+    remaining /= 1024;
+    unitIndex += 1;
+  }
+
+  const precision = remaining % 1 === 0 ? 0 : 1;
+  return `${remaining.toFixed(precision)} ${units[unitIndex]}`;
+}
+
+function formatDurationMs(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) {
+    return '0 ms';
+  }
+
+  if (value < 1000) {
+    return `${Math.round(value)} ms`;
+  }
+
+  if (value < 60_000) {
+    return `${(value / 1000).toFixed(1)} s`;
+  }
+
+  return `${(value / 60000).toFixed(1)} min`;
+}
+
+function formatChartDateLabel(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 function readStoredProgress(): OnboardingProgress {
   if (typeof window === 'undefined') {
     return onboardingDefaults;
@@ -222,6 +267,15 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     enabled: Boolean(resolvedUser?.id),
   });
 
+  const {
+    data: catboxStats,
+    isLoading: catboxStatsLoading,
+    error: catboxStatsError,
+  } = useQuery<CatboxUploadStatsResponse>({
+    queryKey: ['/api/catbox/stats'],
+    enabled: Boolean(resolvedUser?.id),
+  });
+
   // Sync onboarding progress with props and API data
   useEffect(() => {
     const currentProgress = { ...onboardingProgress };
@@ -268,6 +322,15 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
       });
     }
   }, [activityError, toast]);
+  
+  useEffect(() => {
+    if (catboxStatsError instanceof Error) {
+      toast({
+        title: "Unable to load Catbox insights",
+        description: catboxStatsError.message,
+      });
+    }
+  }, [catboxStatsError, toast]);
   
   // Get current time greeting
   const getGreeting = () => {
@@ -880,6 +943,146 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
             </Card>
           ))}
         </div>
+
+        {/* Catbox Analytics */}
+        <Card className="bg-gray-800 border-gray-700 mb-8">
+          <CardHeader>
+            <CardTitle className="text-white">Catbox Upload Insights</CardTitle>
+            <CardDescription className="text-gray-400">
+              Track your recent upload volume and performance
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {catboxStatsLoading ? (
+              <div className="h-48 w-full animate-pulse rounded-lg bg-gray-700/60" />
+            ) : catboxStats && catboxStats.totalUploads > 0 ? (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={catboxStats.uploadsByDay.map(point => ({
+                      ...point,
+                      dateLabel: formatChartDateLabel(point.date),
+                    }))}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis dataKey="dateLabel" stroke="#9CA3AF" />
+                      <YAxis stroke="#9CA3AF" allowDecimals={false} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#1F2937',
+                          border: '1px solid #4B5563',
+                          borderRadius: '8px',
+                          color: '#F9FAFB',
+                        }}
+                        formatter={(value: number, name: string) => {
+                          if (name === 'uploads') {
+                            return [value, 'Uploads'];
+                          }
+                          if (name === 'totalSize') {
+                            return [formatBytes(value as number), 'Data'];
+                          }
+                          if (name === 'successRate') {
+                            return [`${(value as number).toFixed(1)}%`, 'Success'];
+                          }
+                          return [value, name];
+                        }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="uploads"
+                        stroke="#A855F7"
+                        fill="#A855F7"
+                        fillOpacity={0.25}
+                        name="uploads"
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="totalSize"
+                        stroke="#38BDF8"
+                        fill="#38BDF8"
+                        fillOpacity={0.15}
+                        name="totalSize"
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="successRate"
+                        stroke="#F97316"
+                        fill="#F97316"
+                        fillOpacity={0}
+                        name="successRate"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-400">Active streak</p>
+                      <p className="text-lg font-semibold text-white">
+                        {catboxStats?.streakDays ?? 0} {catboxStats && catboxStats.streakDays === 1 ? 'day' : 'days'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Average upload time</p>
+                      <p className="text-lg font-semibold text-white">
+                        {formatDurationMs(catboxStats?.averageDuration ?? 0)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Total uploaded</p>
+                      <p className="text-lg font-semibold text-white">
+                        {formatBytes(catboxStats?.totalSize ?? 0)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Success rate</p>
+                      <p className="text-lg font-semibold text-white">
+                        {(catboxStats?.successRate ?? 0).toFixed(1)}%
+                      </p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="mb-2 text-sm font-semibold text-gray-300">Recent uploads</p>
+                    <div className="space-y-2">
+                      {catboxStats.recentUploads.slice(0, 3).map((upload) => (
+                        <div key={upload.id} className="flex items-center justify-between rounded-md bg-gray-700/60 px-3 py-2">
+                          <div className="mr-3 min-w-0">
+                            <p className="truncate text-sm text-gray-100">
+                              {upload.filename ?? upload.url}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              {upload.fileSize ? formatBytes(upload.fileSize) : 'Size unknown'}
+                            </p>
+                          </div>
+                          <div className="text-right text-xs text-gray-400">
+                            {upload.uploadedAt ? formatChartDateLabel(upload.uploadedAt) : '—'}
+                          </div>
+                        </div>
+                      ))}
+                      {catboxStats.recentUploads.length === 0 && (
+                        <p className="text-sm text-gray-400">Uploads will appear here after your next Catbox transfer.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-start gap-4 rounded-lg border border-dashed border-gray-700 bg-gray-900/60 p-6">
+                <div>
+                  <h4 className="text-lg font-semibold text-white">Start tracking your Catbox uploads</h4>
+                  <p className="text-sm text-gray-400">
+                    Upload media through ThottoPilot to unlock analytics and performance trends.
+                  </p>
+                </div>
+                <Button
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  onClick={() => setLocation('/settings')}
+                >
+                  Configure Catbox
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Referral Widget - Prominent placement for all users */}
         <div className="mb-8">

@@ -5,6 +5,9 @@
  * This script can be run during build or manually
  */
 
+import dotenv from 'dotenv';
+dotenv.config();
+
 import { db } from '../server/db.js';
 import { redditCommunities } from '../shared/schema';
 import { readFileSync } from 'fs';

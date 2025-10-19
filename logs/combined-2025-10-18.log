@@ -712,3 +712,181 @@
 {"level":"info","message":"[HEALTH] Starting server on 0.0.0.0:3006","timestamp":"2025-10-18T23:20:55.970Z"}
 {"level":"info","message":"[HEALTH] ✅ Server started successfully on port 3006 in 6362ms","timestamp":"2025-10-18T23:20:55.971Z"}
 {"level":"info","message":"serving on port 3006","timestamp":"2025-10-18T23:20:55.971Z"}
+{"correlationId":"884a9569-4e4b-4a32-970d-4ff084fe01c3","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/health","query":{},"timestamp":"2025-10-18T23:24:00.877Z","userAgent":"curl/8.5.0"}
+{"correlationId":"884a9569-4e4b-4a32-970d-4ff084fe01c3","duration":2,"level":"info","message":"Response sent","method":"GET","path":"/api/health","statusCode":200,"timestamp":"2025-10-18T23:24:00.878Z"}
+{"correlationId":"884a9569-4e4b-4a32-970d-4ff084fe01c3","level":"info","message":"GET /api/health 200 in 1ms :: {\"status\":\"ok\"}","requestId":"884a9569-4e4b-4a32-970d-4ff084fe01c3","timestamp":"2025-10-18T23:24:00.879Z"}
+{"correlationId":"6b75722d-c006-42ee-b12a-e84446deeaec","ip":"127.0.0.1","level":"info","message":"Request received","method":"HEAD","path":"/","query":{},"timestamp":"2025-10-18T23:32:29.072Z","userAgent":"curl/8.5.0"}
+{"correlationId":"6b75722d-c006-42ee-b12a-e84446deeaec","duration":8,"level":"info","message":"Response sent","method":"HEAD","path":"/","statusCode":200,"timestamp":"2025-10-18T23:32:29.080Z"}
+{"correlationId":"1976c85a-67e0-404e-bf91-f3f7cde6bb5d","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/analytics","query":{"range":"7d"},"timestamp":"2025-10-18T23:32:29.087Z","userAgent":"curl/8.5.0"}
+{"correlationId":"1976c85a-67e0-404e-bf91-f3f7cde6bb5d","duration":2,"level":"info","message":"Response sent","method":"GET","path":"/","statusCode":401,"timestamp":"2025-10-18T23:32:29.089Z"}
+{"correlationId":"1976c85a-67e0-404e-bf91-f3f7cde6bb5d","level":"info","message":"GET /api/analytics 401 in 2ms :: {\"error\":\"Access token required\"}","requestId":"1976c85a-67e0-404e-bf91-f3f7cde6bb5d","timestamp":"2025-10-18T23:32:29.089Z"}
+{"correlationId":"b6cc5513-a712-4378-bc1c-de63f69ecbe5","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/analytics","query":{"range":"7d"},"timestamp":"2025-10-18T23:32:38.090Z","userAgent":"curl/8.5.0"}
+{"correlationId":"b6cc5513-a712-4378-bc1c-de63f69ecbe5","duration":2,"level":"info","message":"Response sent","method":"GET","path":"/","statusCode":401,"timestamp":"2025-10-18T23:32:38.092Z"}
+{"correlationId":"b6cc5513-a712-4378-bc1c-de63f69ecbe5","level":"info","message":"GET /api/analytics 401 in 1ms :: {\"error\":\"Access token required\"}","requestId":"b6cc5513-a712-4378-bc1c-de63f69ecbe5","timestamp":"2025-10-18T23:32:38.092Z"}
+{"correlationId":"25422f6b-2048-4287-a857-36f7e570e022","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/auth/login","query":{},"timestamp":"2025-10-18T23:33:38.509Z","userAgent":"curl/8.5.0"}
+{"correlationId":"25422f6b-2048-4287-a857-36f7e570e022","duration":125,"level":"info","message":"Response sent","method":"POST","path":"/api/auth/login","statusCode":401,"timestamp":"2025-10-18T23:33:38.635Z"}
+{"level":"info","message":"Sentry DSN not configured, skipping Sentry initialization","timestamp":"2025-10-18T23:34:42.722Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-18T23:34:43.704Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-18T23:34:43.704Z"}
+{"level":"info","message":"[OpenRouter] Default model: x-ai/grok-4-fast","timestamp":"2025-10-18T23:34:43.705Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-18T23:34:43.935Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-18T23:34:43.935Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-18T23:34:43.936Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-18T23:34:43.936Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-18T23:34:43.936Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:34:43.944Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:34:43.945Z"}
+{"error":"Connection is closed.","level":"warn","message":"Failed to connect to Redis cache","timestamp":"2025-10-18T23:34:43.945Z"}
+{"level":"info","message":"Using memory store for rate limiting (Redis disabled for beta)","timestamp":"2025-10-18T23:34:43.947Z"}
+{"level":"info","message":"Rate limiter using memory store for api","timestamp":"2025-10-18T23:34:43.947Z"}
+{"level":"info","message":"Rate limiter using memory store for posts","timestamp":"2025-10-18T23:34:43.950Z"}
+{"level":"info","message":"Rate limiter using memory store for captions","timestamp":"2025-10-18T23:34:43.950Z"}
+{"level":"info","message":"Rate limiter using memory store for default","timestamp":"2025-10-18T23:34:43.951Z"}
+{"endpoints":["api","auth","posting","captions","upload","feedback","passwordReset"],"level":"info","message":"Rate limiting middleware configured","redisAvailable":false,"timestamp":"2025-10-18T23:34:43.952Z"}
+{"level":"info","message":"Advanced rate limiting applied","timestamp":"2025-10-18T23:34:43.952Z"}
+{"level":"info","message":"Observability middleware configured","timestamp":"2025-10-18T23:34:43.956Z"}
+{"level":"info","message":"Observability middleware applied","timestamp":"2025-10-18T23:34:43.956Z"}
+{"level":"info","message":"Session store configured with PostgreSQL backend","timestamp":"2025-10-18T23:34:43.957Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-18T23:34:43.958Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:34:44.045Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:34:44.045Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:34:44.246Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:34:44.246Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:34:44.547Z"}
+{"level":"warn","message":"Redis connection failed after 3 retries, disabling cache","timestamp":"2025-10-18T23:34:44.548Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:34:44.548Z"}
+{"email":"admin@thottopilot.com","level":"info","message":"Admin account configured successfully","timestamp":"2025-10-18T23:34:44.802Z","username":"admin@thottopilot.com"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-18T23:34:44.802Z"}
+{"level":"info","message":"✅ Admin account verified: admin@thottopilot.com","timestamp":"2025-10-18T23:34:44.888Z"}
+{"level":"info","message":"User a1davida1 already has tier: pro","timestamp":"2025-10-18T23:34:44.980Z"}
+{"level":"info","message":"User a1davida1 email already verified","timestamp":"2025-10-18T23:34:45.104Z"}
+{"level":"info","message":"✅ Production database fixes completed","timestamp":"2025-10-18T23:34:45.105Z"}
+{"level":"info","message":"Initializing queue system...","timestamp":"2025-10-18T23:34:45.106Z"}
+{"level":"info","message":"Queue backend selection: USE_PG_QUEUE=true, REDIS_URL=true","timestamp":"2025-10-18T23:34:45.106Z"}
+{"level":"info","message":"🔧 Using PostgreSQL queue backend","timestamp":"2025-10-18T23:34:45.107Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-18T23:34:45.107Z"}
+{"level":"info","message":"Queue system initialized","timestamp":"2025-10-18T23:34:45.107Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-18T23:34:45.110Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-18T23:34:46.736Z"}
+{"level":"info","message":"Background workers initialized","timestamp":"2025-10-18T23:34:46.736Z"}
+{"level":"info","message":"🚀 Starting cron job manager...","timestamp":"2025-10-18T23:34:46.736Z"}
+{"level":"info","message":"✅ Started cron job: process-scheduled-posts (* * * * *)","timestamp":"2025-10-18T23:34:46.755Z"}
+{"level":"info","message":"✅ Started cron job: cleanup-old-posts (0 3 * * *)","timestamp":"2025-10-18T23:34:46.760Z"}
+{"level":"info","message":"✅ Started cron job: update-analytics (0 * * * *)","timestamp":"2025-10-18T23:34:46.764Z"}
+{"level":"info","message":"✅ Started cron job: check-stuck-jobs (*/5 * * * *)","timestamp":"2025-10-18T23:34:46.767Z"}
+{"level":"info","message":"✅ Started cron job: sync-reddit-communities (0 2 * * 1)","timestamp":"2025-10-18T23:34:46.776Z"}
+{"level":"info","message":"✅ Started cron job: database-backup (0 4 * * *)","timestamp":"2025-10-18T23:34:46.781Z"}
+{"level":"info","message":"✅ Started cron job: poll-caption-metrics (15 * * * *)","timestamp":"2025-10-18T23:34:46.785Z"}
+{"level":"info","message":"✅ Started cron job: update-optimal-times (0 3 * * 0)","timestamp":"2025-10-18T23:34:46.790Z"}
+{"level":"info","message":"✅ Started cron job: daily-health-checks (0 2 * * *)","timestamp":"2025-10-18T23:34:46.795Z"}
+{"level":"info","message":"✅ Cron job manager started successfully","timestamp":"2025-10-18T23:34:46.795Z"}
+{"level":"info","message":"Cron manager started","timestamp":"2025-10-18T23:34:46.795Z"}
+{"level":"info","message":"Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-18T23:34:46.796Z"}
+{"level":"info","message":"Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-18T23:34:46.798Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-18T23:34:47.001Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-18T23:34:47.567Z"}
+{"level":"info","message":"[HEALTH] Express app created successfully in 3633ms","timestamp":"2025-10-18T23:34:47.568Z"}
+{"level":"info","message":"[HEALTH] Target port from environment: 3005","timestamp":"2025-10-18T23:34:47.568Z"}
+{"level":"info","message":"[HEALTH] Starting server on 0.0.0.0:3005","timestamp":"2025-10-18T23:34:47.568Z"}
+{"level":"info","message":"[HEALTH] ✅ Server started successfully on port 3005 in 3634ms","timestamp":"2025-10-18T23:34:47.569Z"}
+{"level":"info","message":"serving on port 3005","timestamp":"2025-10-18T23:34:47.569Z"}
+{"correlationId":"7a7a51de-e031-4be9-8fbf-01b8cbadb095","ip":"127.0.0.1","level":"info","message":"Request received","method":"POST","path":"/api/auth/login","query":{},"timestamp":"2025-10-18T23:35:13.606Z","userAgent":"curl/8.5.0"}
+{"correlationId":"7a7a51de-e031-4be9-8fbf-01b8cbadb095","duration":375,"level":"info","message":"Response sent","method":"POST","path":"/api/auth/login","statusCode":200,"timestamp":"2025-10-18T23:35:13.982Z"}
+{"level":"info","message":"Sentry initialized successfully","timestamp":"2025-10-18T23:53:34.019Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-18T23:53:35.157Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-18T23:53:35.157Z"}
+{"level":"info","message":"[OpenRouter] Default model: x-ai/grok-4-fast","timestamp":"2025-10-18T23:53:35.157Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-18T23:53:35.412Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-18T23:53:35.413Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-18T23:53:35.413Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-18T23:53:35.413Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-18T23:53:35.413Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:53:35.422Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:53:35.422Z"}
+{"error":"Connection is closed.","level":"warn","message":"Failed to connect to Redis cache","timestamp":"2025-10-18T23:53:35.423Z"}
+{"level":"info","message":"Using memory store for rate limiting (Redis disabled for beta)","timestamp":"2025-10-18T23:53:35.425Z"}
+{"level":"info","message":"Rate limiter using memory store for api","timestamp":"2025-10-18T23:53:35.426Z"}
+{"level":"info","message":"Rate limiter using memory store for posts","timestamp":"2025-10-18T23:53:35.428Z"}
+{"level":"info","message":"Rate limiter using memory store for captions","timestamp":"2025-10-18T23:53:35.429Z"}
+{"level":"info","message":"Rate limiter using memory store for default","timestamp":"2025-10-18T23:53:35.430Z"}
+{"endpoints":["api","auth","posting","captions","upload","feedback","passwordReset"],"level":"info","message":"Rate limiting middleware configured","redisAvailable":false,"timestamp":"2025-10-18T23:53:35.430Z"}
+{"level":"info","message":"Advanced rate limiting applied","timestamp":"2025-10-18T23:53:35.430Z"}
+{"level":"info","message":"Observability middleware configured","timestamp":"2025-10-18T23:53:35.436Z"}
+{"level":"info","message":"Observability middleware applied","timestamp":"2025-10-18T23:53:35.436Z"}
+{"level":"info","message":"Session store configured with PostgreSQL backend","timestamp":"2025-10-18T23:53:35.438Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-18T23:53:35.439Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:53:35.523Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:53:35.524Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:53:35.724Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:53:35.725Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-18T23:53:36.025Z"}
+{"level":"warn","message":"Redis connection failed after 3 retries, disabling cache","timestamp":"2025-10-18T23:53:36.025Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-18T23:53:36.026Z"}
+{"email":"admin@thottopilot.com","level":"info","message":"Admin account configured successfully","timestamp":"2025-10-18T23:53:36.084Z","username":"admin@thottopilot.com"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-18T23:53:36.085Z"}
+{"level":"info","message":"✅ Admin account verified: admin@thottopilot.com","timestamp":"2025-10-18T23:53:36.171Z"}
+{"level":"info","message":"User a1davida1 already has tier: pro","timestamp":"2025-10-18T23:53:36.260Z"}
+{"level":"info","message":"User a1davida1 email already verified","timestamp":"2025-10-18T23:53:36.358Z"}
+{"level":"info","message":"✅ Production database fixes completed","timestamp":"2025-10-18T23:53:36.358Z"}
+{"level":"info","message":"Initializing queue system...","timestamp":"2025-10-18T23:53:36.360Z"}
+{"level":"info","message":"Queue backend selection: USE_PG_QUEUE=true, REDIS_URL=true","timestamp":"2025-10-18T23:53:36.360Z"}
+{"level":"info","message":"🔧 Using PostgreSQL queue backend","timestamp":"2025-10-18T23:53:36.361Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-18T23:53:36.361Z"}
+{"level":"info","message":"Queue system initialized","timestamp":"2025-10-18T23:53:36.362Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-18T23:53:36.365Z"}
+{"level":"error","message":"✅ Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-18T23:53:37.880Z"}
+{"level":"info","message":"Background workers initialized","timestamp":"2025-10-18T23:53:37.881Z"}
+{"level":"info","message":"🚀 Starting cron job manager...","timestamp":"2025-10-18T23:53:37.881Z"}
+{"level":"info","message":"✅ Started cron job: process-scheduled-posts (* * * * *)","timestamp":"2025-10-18T23:53:37.901Z"}
+{"level":"info","message":"✅ Started cron job: cleanup-old-posts (0 3 * * *)","timestamp":"2025-10-18T23:53:37.906Z"}
+{"level":"info","message":"✅ Started cron job: update-analytics (0 * * * *)","timestamp":"2025-10-18T23:53:37.910Z"}
+{"level":"info","message":"✅ Started cron job: check-stuck-jobs (*/5 * * * *)","timestamp":"2025-10-18T23:53:37.914Z"}
+{"level":"info","message":"✅ Started cron job: sync-reddit-communities (0 2 * * 1)","timestamp":"2025-10-18T23:53:37.922Z"}
+{"level":"info","message":"✅ Started cron job: database-backup (0 4 * * *)","timestamp":"2025-10-18T23:53:37.927Z"}
+{"level":"info","message":"✅ Started cron job: poll-caption-metrics (15 * * * *)","timestamp":"2025-10-18T23:53:37.932Z"}
+{"level":"info","message":"✅ Started cron job: update-optimal-times (0 3 * * 0)","timestamp":"2025-10-18T23:53:37.937Z"}
+{"level":"info","message":"✅ Started cron job: daily-health-checks (0 2 * * *)","timestamp":"2025-10-18T23:53:37.941Z"}
+{"level":"info","message":"✅ Cron job manager started successfully","timestamp":"2025-10-18T23:53:37.941Z"}
+{"level":"info","message":"Cron manager started","timestamp":"2025-10-18T23:53:37.942Z"}
+{"level":"info","message":"Queue monitoring started (interval: 30000ms)","timestamp":"2025-10-18T23:53:37.944Z"}
+{"level":"info","message":"Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-18T23:53:37.949Z"}
+{"level":"info","message":"Serving client from: /home/dave/CascadeProjects/TPilot/client","timestamp":"2025-10-18T23:53:38.117Z"}
+{"level":"info","message":"Vite development server configured","timestamp":"2025-10-18T23:53:38.620Z"}
+{"level":"info","message":"[HEALTH] Express app created successfully in 3207ms","timestamp":"2025-10-18T23:53:38.620Z"}
+{"level":"info","message":"[HEALTH] Target port from environment: 3005","timestamp":"2025-10-18T23:53:38.620Z"}
+{"level":"info","message":"[HEALTH] Starting server on 0.0.0.0:3005","timestamp":"2025-10-18T23:53:38.620Z"}
+{"level":"info","message":"[HEALTH] ✅ Server started successfully on port 3005 in 3208ms","timestamp":"2025-10-18T23:53:38.621Z"}
+{"level":"info","message":"serving on port 3005","timestamp":"2025-10-18T23:53:38.621Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","ip":"127.0.0.1","level":"info","message":"Request received","method":"GET","path":"/api/health","query":{},"timestamp":"2025-10-18T23:53:52.936Z","userAgent":"curl/8.5.0"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","duration":6,"level":"info","message":"Response sent","method":"GET","path":"/api/health","statusCode":200,"timestamp":"2025-10-18T23:53:52.942Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"GET /api/health 200 in 4ms :: {\"status\":\"ok\"}","requestId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","timestamp":"2025-10-18T23:53:52.944Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-19T00:00:00.017Z"}
+{"level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-19T00:00:00.020Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"⏰ Starting caption metrics polling...","timestamp":"2025-10-19T00:15:00.016Z"}
+{"level":"info","message":"⏰ Starting caption metrics polling...","timestamp":"2025-10-19T00:15:00.019Z"}
+{"level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-19T00:15:00.634Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-19T00:15:00.704Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-19T01:00:00.019Z"}
+{"level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-19T01:00:00.019Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"⏰ Starting caption metrics polling...","timestamp":"2025-10-19T01:15:00.017Z"}
+{"level":"info","message":"⏰ Starting caption metrics polling...","timestamp":"2025-10-19T01:15:00.017Z"}
+{"level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-19T01:15:01.396Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-19T01:15:01.396Z"}
+{"level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-19T02:00:00.014Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-19T02:00:00.015Z"}
+{"level":"info","message":"⏰ Starting caption metrics polling...","timestamp":"2025-10-19T02:15:00.016Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"⏰ Starting caption metrics polling...","timestamp":"2025-10-19T02:15:00.017Z"}
+{"level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-19T02:15:01.415Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-19T02:15:01.617Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-19T03:00:00.016Z"}
+{"level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-19T03:00:00.020Z"}
+{"level":"info","message":"⏰ Starting caption metrics polling...","timestamp":"2025-10-19T03:15:00.019Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"⏰ Starting caption metrics polling...","timestamp":"2025-10-19T03:15:00.020Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-19T03:15:01.467Z"}
+{"level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-19T03:15:01.469Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-19T04:00:00.016Z"}
+{"level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-19T04:00:00.017Z"}
+{"level":"info","message":"⏰ Starting caption metrics polling...","timestamp":"2025-10-19T04:15:00.013Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"⏰ Starting caption metrics polling...","timestamp":"2025-10-19T04:15:00.013Z"}
+{"level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-19T04:15:00.223Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-19T04:15:01.091Z"}

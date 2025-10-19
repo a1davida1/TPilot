@@ -23,6 +23,11 @@ vi.mock('../../server/lib/catbox-service.js', () => ({
     upload: vi.fn()
   }
 }));
+vi.mock('../../server/services/catbox-analytics-service.ts', () => ({
+  CatboxAnalyticsService: {
+    recordUpload: vi.fn().mockResolvedValue(undefined),
+  },
+}));
 
 import catboxProxyRouter from '../../server/routes/catbox-proxy.js';
 import { CatboxService } from '../../server/lib/catbox-service.js';

@@ -184,26 +184,26 @@ export default function AnalyticsPage() {
 
   // Basic stats cards (Pro tier)
   const renderBasicStats = () => {
-    if (!data) return null;
+    if (!data?.overview) return null;
     
     return (
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardHeader className="pb-3">
             <CardDescription>Total Posts</CardDescription>
-            <CardTitle className="text-2xl">{data.overview.totalPosts}</CardTitle>
+            <CardTitle className="text-2xl">{data.overview.totalPosts ?? 0}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-3">
             <CardDescription>Engagement Rate</CardDescription>
-            <CardTitle className="text-2xl">{data.overview.averageEngagementRate}%</CardTitle>
+            <CardTitle className="text-2xl">{data.overview.averageEngagementRate ?? 0}%</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-3">
             <CardDescription>This Week</CardDescription>
-            <CardTitle className="text-2xl">{data.overview.postsThisWeek} posts</CardTitle>
+            <CardTitle className="text-2xl">{data.overview.postsThisWeek ?? 0} posts</CardTitle>
           </CardHeader>
         </Card>
         <Card>
@@ -211,7 +211,7 @@ export default function AnalyticsPage() {
             <CardDescription>Growth</CardDescription>
             <CardTitle className="text-2xl flex items-center gap-1">
               <TrendingUp className="h-4 w-4 text-green-500" />
-              {data.overview.growthRate}%
+              {data.overview.growthRate ?? 0}%
             </CardTitle>
           </CardHeader>
         </Card>

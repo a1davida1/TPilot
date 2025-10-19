@@ -4,6 +4,7 @@ import multer from 'multer';
 import { logger } from '../bootstrap/logger.js';
 import { authenticateToken, type AuthRequest } from '../middleware/auth.js';
 import { CatboxService } from '../lib/catbox-service.js';
+import { CatboxAnalyticsService } from '../services/catbox-analytics-service.js';
 
 const router = Router();
 
@@ -108,6 +109,16 @@ router.post(
         userhashSource,
         userId: req.user?.id ?? null
       });
+
+      if (req.user?.id && uploadResult.url) {
+        await CatboxAnalyticsService.recordUpload({
+          userId: req.user.id,
+          url: uploadResult.url,
+          filename: sanitizedFilename,
+          fileSize: req.file.size,
+          provider: 'catbox',
+        });
+      }
 
       return res.json({
         success: true,

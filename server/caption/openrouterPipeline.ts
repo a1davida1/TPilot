@@ -499,6 +499,7 @@ async function extractFacts(imageUrl: string): Promise<Record<string, unknown>> 
     throw new OpenRouterError("OpenRouter is not enabled, cannot extract facts.");
   }
 
+  logger.debug("[OpenRouter] Loading prompts for fact extraction");
   const [systemPrompt, guardPrompt, extractPrompt] = await Promise.all([
     loadPrompt("system.txt"),
     loadPrompt("guard.txt"),
@@ -512,6 +513,7 @@ async function extractFacts(imageUrl: string): Promise<Record<string, unknown>> 
   let lastError: unknown;
   while (attempt < 2) {
     attempt += 1;
+    logger.debug(`[OpenRouter] Fact extraction attempt ${attempt}/2`, { imageUrl });
     try {
       const response = await generateVision({
         prompt,
@@ -522,6 +524,7 @@ async function extractFacts(imageUrl: string): Promise<Record<string, unknown>> 
         presencePenalty: 1.2,
         system,
       });
+      logger.debug("[OpenRouter] Vision API responded", { responseLength: response?.length });
       const parsed = stripToJSON(response);
       if (!parsed || typeof parsed !== "object") {
         throw new OpenRouterError("Vision response did not contain a JSON object");
@@ -531,10 +534,20 @@ async function extractFacts(imageUrl: string): Promise<Record<string, unknown>> 
       return facts;
     } catch (error) {
       lastError = error;
-      logger.warn("[OpenRouter] Fact extraction attempt failed", { attempt, error });
+      logger.warn("[OpenRouter] Fact extraction attempt failed", { 
+        attempt, 
+        imageUrl,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
     }
   }
 
+  logger.error("[OpenRouter] Failed to extract facts after all retries", { 
+    imageUrl,
+    attempts: 2,
+    lastError: lastError instanceof Error ? lastError.message : String(lastError)
+  });
   throw new OpenRouterError("Failed to extract facts from image after retries", lastError);
 }
 
@@ -761,6 +774,15 @@ export async function pipeline(params: {
   toneExtras?: Record<string, string>;
   mandatoryTokens?: string[];
 }): Promise<CaptionResult> {
+  logger.info("[OpenRouter] Starting pipeline", { 
+    platform: params.platform, 
+    voice: params.voice,
+    imageUrl: params.imageUrl?.substring(0, 100) + '...',
+    nsfw: params.nsfw,
+    style: params.style,
+    mood: params.mood
+  });
+
   if (!params.voice || params.voice.trim().length === 0) {
     throw new OpenRouterError("Voice is required for OpenRouter pipeline");
   }
@@ -782,8 +804,12 @@ export async function pipeline(params: {
 
   while (attempt < 2) {
     attempt += 1;
+    logger.info(`[OpenRouter] Pipeline attempt ${attempt}/2`);
     try {
+      logger.debug("[OpenRouter] Extracting facts from image", { imageUrl: params.imageUrl });
       facts = await extractFacts(params.imageUrl);
+      logger.info("[OpenRouter] Facts extracted successfully", { factCount: Object.keys(facts).length });
+      logger.debug("[OpenRouter] Generating variants");
       variants = await generateVariants({
         platform: params.platform,
         voice,
@@ -794,8 +820,11 @@ export async function pipeline(params: {
         toneExtras,
         mandatoryTokens: params.mandatoryTokens,
       });
+      logger.info("[OpenRouter] Variants generated", { variantCount: variants.length });
 
+      logger.debug("[OpenRouter] Ranking and selecting variants");
       ranked = await rankAndSelect(variants, { platform: params.platform, facts });
+      logger.info("[OpenRouter] Ranking complete", { selectedCaption: ranked.final.caption?.substring(0, 50) + '...' });
 
       const ensureCoverage = async () => {
         let coverage = ensureFactCoverage({ facts, caption: ranked.final.caption, alt: ranked.final.alt });
@@ -850,9 +879,27 @@ export async function pipeline(params: {
       };
     } catch (error) {
       lastError = error;
-      logger.error("[OpenRouter] Pipeline attempt failed", { attempt, error });
+      const errorDetails = {
+        attempt,
+        imageUrl: params.imageUrl,
+        platform: params.platform,
+        voice: params.voice,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+        errorCause: error instanceof Error ? error.cause : undefined
+      };
+      logger.error("[OpenRouter] Pipeline attempt failed", errorDetails);
     }
   }
 
+  logger.error("[OpenRouter] All pipeline attempts exhausted", { 
+    attempts: 2,
+    lastError: lastError instanceof Error ? lastError.message : String(lastError),
+    params: {
+      imageUrl: params.imageUrl,
+      platform: params.platform,
+      voice: params.voice
+    }
+  });
   throw new OpenRouterError("OpenRouter pipeline failed after retries", lastError);
 }

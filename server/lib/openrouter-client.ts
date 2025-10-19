@@ -43,15 +43,26 @@ export async function generateText(opts: {
   const model = opts.model || DEFAULT_MODEL;
   logger.debug(`[OpenRouter] Text generation with model: ${model}`);
   
-  const resp = await openrouter.chat.completions.create({
-    model,
-    messages: [
-      ...(opts.system ? [{ role: "system" as const, content: opts.system }] : []),
-      { role: "user" as const, content: opts.prompt },
-    ],
-    temperature: opts.temperature ?? 0.7,
-  });
-  return resp.choices?.[0]?.message?.content ?? "";
+  try {
+    const resp = await openrouter.chat.completions.create({
+      model,
+      messages: [
+        ...(opts.system ? [{ role: "system" as const, content: opts.system }] : []),
+        { role: "user" as const, content: opts.prompt },
+      ],
+      temperature: opts.temperature ?? 0.7,
+    });
+    const content = resp.choices?.[0]?.message?.content ?? "";
+    logger.debug(`[OpenRouter] Text generation successful`, { contentLength: content.length });
+    return content;
+  } catch (error) {
+    logger.error(`[OpenRouter] Text generation failed`, {
+      model,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    throw error;
+  }
 }
 
 export async function generateVision(opts: {
@@ -68,7 +79,11 @@ export async function generateVision(opts: {
   }
 
   const model = opts.model || DEFAULT_MODEL;
-  logger.debug(`[OpenRouter] Vision generation with model: ${model}`);
+  logger.info(`[OpenRouter] Vision generation starting`, { 
+    model, 
+    imageUrl: opts.imageUrl.substring(0, 100) + '...',
+    promptLength: opts.prompt.length
+  });
 
   const messages: any[] = [];
   
@@ -84,21 +99,40 @@ export async function generateVision(opts: {
     ],
   });
 
-  const resp = await openrouter.chat.completions.create({
-    model,
-    messages,
-    temperature: opts.temperature ?? 0.2,
-    frequency_penalty: opts.frequencyPenalty ?? 0.7,
-    presence_penalty: opts.presencePenalty ?? 1.5,
-    // @ts-ignore - OpenRouter-specific provider settings
-    provider: {
-      allow_fallbacks: true,
-      require_parameters: true,
-      data_collection: "deny",
-    },
-  });
-  
-  return resp.choices?.[0]?.message?.content ?? "";
+  try {
+    const resp = await openrouter.chat.completions.create({
+      model,
+      messages,
+      temperature: opts.temperature ?? 0.2,
+      frequency_penalty: opts.frequencyPenalty ?? 0.7,
+      presence_penalty: opts.presencePenalty ?? 1.5,
+      // @ts-ignore - OpenRouter-specific provider settings
+      provider: {
+        allow_fallbacks: true,
+        require_parameters: true,
+        data_collection: "deny",
+      },
+    });
+    
+    const content = resp.choices?.[0]?.message?.content ?? "";
+    logger.info(`[OpenRouter] Vision generation successful`, { 
+      contentLength: content.length,
+      model: resp.model,
+      finishReason: resp.choices?.[0]?.finish_reason
+    });
+    return content;
+  } catch (error: any) {
+    logger.error(`[OpenRouter] Vision generation failed`, {
+      model,
+      imageUrl: opts.imageUrl,
+      error: error?.message || String(error),
+      status: error?.status,
+      code: error?.code,
+      type: error?.type,
+      stack: error?.stack
+    });
+    throw error;
+  }
 }
 
 export function isOpenRouterEnabled(): boolean {

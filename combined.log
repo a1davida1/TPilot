@@ -783,3 +783,14 @@
 {"level":"warn","message":"ADMIN_EMAIL environment variable is not set. Admin login is disabled.","timestamp":"2025-10-18T23:20:49.207Z"}
 {"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-18T23:20:55.033Z"}
 {"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-18T23:20:55.033Z"}
+{"level":"info","message":"[2025-10-18T23:24:00.878Z] GET /api/health - IP: 127.0.0.1","timestamp":"2025-10-18T23:24:00.878Z"}
+{"level":"info","message":"[2025-10-18T23:32:29.072Z] HEAD / - IP: 127.0.0.1","timestamp":"2025-10-18T23:32:29.072Z"}
+{"level":"info","message":"[2025-10-18T23:32:29.087Z] GET /api/analytics - IP: 127.0.0.1","timestamp":"2025-10-18T23:32:29.087Z"}
+{"level":"info","message":"[2025-10-18T23:32:38.091Z] GET /api/analytics - IP: 127.0.0.1","timestamp":"2025-10-18T23:32:38.091Z"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-18T23:34:43.514Z"}
+{"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-18T23:34:46.798Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-18T23:34:46.798Z"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-18T23:53:34.924Z"}
+{"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-18T23:53:37.949Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-18T23:53:37.949Z"}
+{"level":"info","message":"[2025-10-18T23:53:52.939Z] GET /api/health - IP: 127.0.0.1","timestamp":"2025-10-18T23:53:52.939Z"}

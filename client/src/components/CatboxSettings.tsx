@@ -17,20 +17,14 @@ import {
   BarChart
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-interface UploadStats {
-  totalUploads: number;
-  totalSize: number;
-  successRate: number;
-  averageDuration: number;
-}
+import type { CatboxUploadStatsResponse } from '@shared/catbox-analytics';
 
 export function CatboxSettings() {
   const [userhash, setUserhash] = useState('');
   const [savedHash, setSavedHash] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [stats, setStats] = useState<UploadStats | null>(null);
+  const [stats, setStats] = useState<CatboxUploadStatsResponse | null>(null);
   const { toast } = useToast();
 
   // Load current hash and stats
@@ -150,11 +144,6 @@ export function CatboxSettings() {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const formatDuration = (ms: number): string => {
-    if (ms < 1000) return `${ms}ms`;
-    return `${(ms / 1000).toFixed(2)}s`;
   };
 
   return (
@@ -299,7 +288,7 @@ export function CatboxSettings() {
                 <BarChart className="h-4 w-4" />
                 Upload Statistics
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Uploads</p>
                   <p className="text-lg font-semibold">{stats.totalUploads}</p>
@@ -313,8 +302,12 @@ export function CatboxSettings() {
                   <p className="text-lg font-semibold">{stats.successRate.toFixed(1)}%</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Avg. Duration</p>
-                  <p className="text-lg font-semibold">{formatDuration(stats.averageDuration)}</p>
+                  <p className="text-sm text-muted-foreground">Upload Streak</p>
+                  <p className="text-lg font-semibold">{stats.streakDays} {stats.streakDays === 1 ? 'day' : 'days'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Last Upload</p>
+                  <p className="text-lg font-semibold">{stats.lastUploadAt ? new Date(stats.lastUploadAt).toLocaleString() : '—'}</p>
                 </div>
               </div>
             </div>

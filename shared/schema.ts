@@ -1527,3 +1527,74 @@ export const feedback = pgTable("feedback", {
   userIdx: index("feedback_user_idx").on(table.userId),
   createdIdx: index("feedback_created_idx").on(table.createdAt),
 }));
+
+// ==========================================
+// REDDIT OAUTH CREDENTIAL VAULT (STAGE 1)
+// ==========================================
+
+export const redditAccounts = pgTable("reddit_accounts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  
+  // Encrypted credentials (AES-256-GCM)
+  refreshTokenEncrypted: text("refresh_token_encrypted").notNull(),
+  accessTokenHash: varchar("access_token_hash", { length: 64 }).notNull(),
+  
+  // OAuth metadata
+  redditUsername: varchar("reddit_username", { length: 255 }).notNull(),
+  redditId: varchar("reddit_id", { length: 255 }).notNull(),
+  scopes: text("scopes").array().notNull().default([]),
+  
+  // Token lifecycle
+  expiresAt: timestamp("expires_at").notNull(),
+  lastRotatedAt: timestamp("last_rotated_at").defaultNow().notNull(),
+  
+  // Audit trail
+  linkedAt: timestamp("linked_at").defaultNow().notNull(),
+  lastUsedAt: timestamp("last_used_at"),
+  revokedAt: timestamp("revoked_at"),
+}, (table) => ({
+  userIdUnique: unique().on(table.userId), // One Reddit account per user
+  redditIdUnique: unique().on(table.redditId), // One app connection per Reddit account
+  userIdIdx: index("idx_reddit_accounts_user_id").on(table.userId),
+  redditIdIdx: index("idx_reddit_accounts_reddit_id").on(table.redditId),
+  expiresAtIdx: index("idx_reddit_accounts_expires_at").on(table.expiresAt),
+}));
+
+export const redditAccountAuditLog = pgTable("reddit_account_audit_log", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  redditAccountId: integer("reddit_account_id").references(() => redditAccounts.id, { onDelete: "set null" }),
+  
+  action: varchar("action", { length: 50 }).notNull(), // 'linked', 'refreshed', 'revoked', 'unlinked'
+  metadata: jsonb("metadata"),
+  ipAddress: varchar("ip_address", { length: 45 }), // IPv6 max length
+  userAgent: text("user_agent"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("idx_reddit_audit_user_id").on(table.userId, table.createdAt),
+  actionIdx: index("idx_reddit_audit_action").on(table.action),
+}));
+
+// Zod validation schemas for Reddit accounts
+export const insertRedditAccountSchema = createInsertSchema(redditAccounts, {
+  refreshTokenEncrypted: z.string().min(1),
+  accessTokenHash: z.string().length(64),
+  redditUsername: z.string().min(1).max(255),
+  redditId: z.string().min(1).max(255),
+  scopes: z.array(z.string()).min(1),
+  expiresAt: z.date().or(z.string().datetime()),
+});
+
+export const insertRedditAuditLogSchema = createInsertSchema(redditAccountAuditLog, {
+  action: z.enum(['linked', 'refreshed', 'revoked', 'unlinked', 'failed_refresh']),
+  metadata: z.record(z.unknown()).optional(),
+  ipAddress: z.string().ip().optional(),
+  userAgent: z.string().optional(),
+});
+
+export type RedditAccount = typeof redditAccounts.$inferSelect;
+export type InsertRedditAccount = z.infer<typeof insertRedditAccountSchema>;
+export type RedditAccountAuditLog = typeof redditAccountAuditLog.$inferSelect;
+export type InsertRedditAccountAuditLog = z.infer<typeof insertRedditAuditLogSchema>;

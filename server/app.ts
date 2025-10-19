@@ -1,5 +1,6 @@
 import express from 'express';
 import type { RequestHandler } from 'express';
+import type { Session, SessionData, Store } from 'express-session';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { doubleCsrf } from 'csrf-csrf';
@@ -309,9 +310,40 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
 
   const csrfProtection: RequestHandler = doubleCsrfProtection;
 
+  type SessionAwareRequest = express.Request & {
+    session: Session & Partial<SessionData>;
+    sessionStore: (Store & { generate?: (req: express.Request) => void }) | undefined;
+  };
+
   app.get(`${API_PREFIX}/csrf-token`, (req, res) => {
-    const token = generateCsrfToken(req, res);
-    res.json({ csrfToken: token });
+    const sessionRequest = req as Partial<SessionAwareRequest>;
+
+    if (!sessionRequest.session) {
+      sessionRequest.sessionStore?.generate?.(req);
+    }
+
+    const activeSession = sessionRequest.session;
+    if (!activeSession) {
+      logger.error('CSRF token requested without active session', {
+        correlationId: req.correlationId,
+      });
+      return res.status(503).json({ error: 'Session unavailable' });
+    }
+
+    try {
+      if (typeof activeSession.touch === 'function') {
+        activeSession.touch();
+      }
+
+      const token = generateCsrfToken(req, res);
+      res.json({ csrfToken: token });
+    } catch (error) {
+      logger.error('Failed to generate CSRF token', {
+        correlationId: req.correlationId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      res.status(500).json({ error: 'Unable to generate CSRF token' });
+    }
   });
 
   app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
