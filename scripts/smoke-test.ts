@@ -15,7 +15,7 @@
 import { config } from 'dotenv';
 import chalk from 'chalk';
 import { JSDOM } from 'jsdom';
-import process from 'node:process';
+import * as process from 'node:process';
 
 config();
 
@@ -117,7 +117,7 @@ function collectSpaAssets(html: string): AssetCandidate[] {
   const document = dom.window.document;
   const assets = new Map<string, AssetCandidate>();
 
-  const scriptElements = Array.from(document.querySelectorAll<HTMLScriptElement>('script[src]'));
+  const scriptElements = Array.from(document.querySelectorAll('script[src]')) as HTMLScriptElement[];
   for (const element of scriptElements) {
     const src = element.getAttribute('src');
     if (!src) {
@@ -133,7 +133,7 @@ function collectSpaAssets(html: string): AssetCandidate[] {
     assets.set(url, { url, type: 'script' });
   }
 
-  const linkElements = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'));
+  const linkElements = Array.from(document.querySelectorAll('link[rel="stylesheet"]')) as HTMLLinkElement[];
   for (const element of linkElements) {
     const href = element.getAttribute('href');
     if (!href) {

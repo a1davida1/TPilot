@@ -9,10 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Badge } from "@/components/ui/badge";
 // Switch component not currently used in this component
 import { CaptionPreview } from "./CaptionPreview";
 import { CatboxUploadPortal } from "./CatboxUploadPortal";
-import { Loader2, Sparkles, AlertCircle, Image as ImageIcon, Type, Edit3, CheckCircle } from "lucide-react";
+import { Loader2, Sparkles, AlertCircle, Image as ImageIcon, Type, Edit3 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { getErrorMessage } from '@/utils/errorHelpers';

@@ -4,9 +4,7 @@
     "shared/**/*.ts",
     "client/**/*.ts",
     "client/**/*.tsx",
-    "client/vite-env.d.ts",
-    "app/**/*.ts",
-    "app/**/*.tsx"
+    "client/vite-env.d.ts"
   ],
   "exclude": ["node_modules", "dist"],
   "compilerOptions": {

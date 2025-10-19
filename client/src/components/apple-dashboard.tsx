@@ -13,7 +13,7 @@ import {
   BarChart3,
   Clock
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link } from 'wouter';
 import { cn } from '@/lib/utils';
 
 interface StatCard {

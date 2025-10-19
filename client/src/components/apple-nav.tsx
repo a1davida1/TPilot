@@ -13,7 +13,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'wouter';
 
 interface NavItem {
   label: string;
@@ -31,8 +31,8 @@ const navItems: NavItem[] = [
 ];
 
 export function AppleNav() {
-  const location = useLocation();
-  const { resolvedTheme } = useTheme();
+  const [location] = useLocation();
+  const { resolvedTheme: _resolvedTheme } = useTheme();
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -54,7 +54,7 @@ export function AppleNav() {
         <div className="flex flex-1 items-center space-x-4 lg:space-x-6">
           <div className="hidden md:flex items-center space-x-1">
             {navItems.map((item) => {
-              const isActive = location.pathname === item.href;
+              const isActive = location === item.href;
               const Icon = item.icon;
               
               return (

@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 import { promises as fs } from 'node:fs';
-import path from 'node:path';
-import process from 'node:process';
+import * as path from 'node:path';
+import * as process from 'node:process';
 import { JSDOM } from 'jsdom';
 
 interface ValidationResult {
@@ -46,7 +46,7 @@ function collectAssets(html: string): AssetReference[] {
   const dom = new JSDOM(html);
   const document = dom.window.document;
   const assets: AssetReference[] = [];
-  const scriptElements = Array.from(document.querySelectorAll<HTMLScriptElement>('script[src]'));
+  const scriptElements = Array.from(document.querySelectorAll('script[src]')) as HTMLScriptElement[];
   for (const element of scriptElements) {
     const src = element.getAttribute('src');
     if (!src) {
@@ -66,7 +66,7 @@ function collectAssets(html: string): AssetReference[] {
     });
   }
 
-  const styleElements = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'));
+  const styleElements = Array.from(document.querySelectorAll('link[rel="stylesheet"]')) as HTMLLinkElement[];
   for (const element of styleElements) {
     const href = element.getAttribute('href');
     if (!href) {
@@ -107,7 +107,7 @@ async function validateAsset(directory: string, asset: AssetReference): Promise<
   if (stats.size === 0) {
     return `Referenced ${asset.type} asset is empty: ${asset.sourcePath}`;
   }
-  if (!/assets\/.+\.[cm]?js$|assets\/.+\.css$/u.test(asset.filePath)) {
+  if (!/assets\/.+\.[cm]?js$|assets\/.+\.css$/.test(asset.filePath)) {
     return `Unexpected asset path format: ${asset.sourcePath}`;
   }
   return null;

@@ -8,6 +8,13 @@
       "when": 1760405458499,
       "tag": "0000_chilly_gabe_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1760891837467,
+      "tag": "0001_cultured_crusher_hogan",
+      "breakpoints": true
     }
   ]
 }

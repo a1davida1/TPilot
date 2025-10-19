@@ -794,3 +794,27 @@
 {"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-18T23:53:37.949Z"}
 {"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-18T23:53:37.949Z"}
 {"level":"info","message":"[2025-10-18T23:53:52.939Z] GET /api/health - IP: 127.0.0.1","timestamp":"2025-10-18T23:53:52.939Z"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-19T16:35:44.170Z"}
+{"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-19T16:35:47.504Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-19T16:35:47.504Z"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-19T16:37:17.329Z"}
+{"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-19T16:37:20.531Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-19T16:37:20.531Z"}
+{"level":"info","message":"[2025-10-19T16:38:29.190Z] GET / - IP: 127.0.0.1","timestamp":"2025-10-19T16:38:29.191Z"}
+{"level":"info","message":"[2025-10-19T16:38:29.223Z] GET /src/main.tsx - IP: 127.0.0.1","timestamp":"2025-10-19T16:38:29.223Z"}
+{"level":"info","message":"[2025-10-19T16:38:29.235Z] GET /logo.png - IP: 127.0.0.1","timestamp":"2025-10-19T16:38:29.235Z"}
+{"level":"info","message":"[2025-10-19T17:02:54.085Z] GET / - IP: 127.0.0.1","timestamp":"2025-10-19T17:02:54.085Z"}
+{"level":"info","message":"[2025-10-19T17:03:03.220Z] GET / - IP: 127.0.0.1","timestamp":"2025-10-19T17:03:03.220Z"}
+{"level":"info","message":"[2025-10-19T17:03:03.296Z] GET /health - IP: 127.0.0.1","timestamp":"2025-10-19T17:03:03.296Z"}
+{"level":"info","message":"[2025-10-19T17:03:03.306Z] GET /health/live - IP: 127.0.0.1","timestamp":"2025-10-19T17:03:03.306Z"}
+{"level":"info","message":"[2025-10-19T17:03:03.314Z] GET /health/ready - IP: 127.0.0.1","timestamp":"2025-10-19T17:03:03.314Z"}
+{"level":"info","message":"[2025-10-19T17:03:03.323Z] GET /health/detailed - IP: 127.0.0.1","timestamp":"2025-10-19T17:03:03.323Z"}
+{"level":"info","message":"[2025-10-19T17:03:03.334Z] GET /metrics - IP: 127.0.0.1","timestamp":"2025-10-19T17:03:03.334Z"}
+{"level":"info","message":"[2025-10-19T17:03:03.343Z] GET /api/analytics/landing/summary - IP: 127.0.0.1","timestamp":"2025-10-19T17:03:03.343Z"}
+{"level":"info","message":"[2025-10-19T17:03:04.097Z] GET /api/pricing - IP: 127.0.0.1","timestamp":"2025-10-19T17:03:04.097Z"}
+{"level":"warn","message":"API 404","method":"GET","originalUrl":"/api/pricing","path":"/","timestamp":"2025-10-19T17:03:04.098Z","url":"/"}
+{"level":"info","message":"[2025-10-19T17:03:04.335Z] GET /api/user/profile - IP: 127.0.0.1","timestamp":"2025-10-19T17:03:04.335Z"}
+{"level":"info","message":"[2025-10-19T17:03:04.508Z] GET /api/scheduled-posts - IP: 127.0.0.1","timestamp":"2025-10-19T17:03:04.508Z"}
+{"level":"info","message":"[2025-10-19T17:03:04.686Z] GET /api/feedback/my-feedback - IP: 127.0.0.1","timestamp":"2025-10-19T17:03:04.686Z"}
+{"level":"info","message":"[2025-10-19T17:03:04.864Z] GET /api/analytics - IP: 127.0.0.1","timestamp":"2025-10-19T17:03:04.864Z"}
+{"level":"warn","message":"API 404","method":"GET","originalUrl":"/api/admin/cron-status","path":"/","timestamp":"2025-10-19T17:03:05.042Z","url":"/"}
