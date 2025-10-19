@@ -10,8 +10,8 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { ModernDashboard } from "@/components/modern-dashboard";
-import { DashboardLoading } from "@/dashboard/loading";
-import { DashboardErrorBoundary } from "@/dashboard/error-boundary";
+import { DashboardLoading } from "@/app/(dashboard)/loading";
+import { DashboardErrorBoundary } from "@/app/(dashboard)/error-boundary";
 import { useToast } from "@/hooks/use-toast";
 import { type User } from "@shared/schema.js";
 

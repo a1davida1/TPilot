@@ -1588,6 +1588,8 @@ export const insertRedditAccountSchema = createInsertSchema(redditAccounts, {
 });
 
 export const insertRedditAuditLogSchema = createInsertSchema(redditAccountAuditLog, {
+  userId: z.number(),
+  redditAccountId: z.number().optional(),
   action: z.enum(['linked', 'refreshed', 'revoked', 'unlinked', 'failed_refresh']),
   metadata: z.record(z.unknown()).optional(),
   ipAddress: z.string().ip().optional(),
