@@ -63,14 +63,18 @@ vi.mock('../../server/reddit-communities.ts', () => ({
 }));
 
 // Mock the schema
-vi.mock('@shared/schema', () => ({
-  insertRedditCommunitySchema: {
-    parse: vi.fn().mockImplementation((data: unknown) => data),
-    partial: vi.fn().mockReturnValue({
-      parse: vi.fn().mockImplementation((data: unknown) => data)
-    })
-  }
-}));
+vi.mock('@shared/schema', async () => {
+  const actual = await vi.importActual<typeof import('@shared/schema')>('@shared/schema');
+  return {
+    ...actual,
+    insertRedditCommunitySchema: {
+      parse: vi.fn().mockImplementation((data: unknown) => data),
+      partial: vi.fn().mockReturnValue({
+        parse: vi.fn().mockImplementation((data: unknown) => data)
+      })
+    }
+  };
+});
 
 type AdminSessionUser = {
   id: number;

@@ -1,0 +1,2 @@
+{"error":"for SELECT DISTINCT, ORDER BY expressions must appear in select list","level":"error","message":"❌ Failed to update optimal times cache","timestamp":"2025-10-19T08:00:00.875Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","error":"for SELECT DISTINCT, ORDER BY expressions must appear in select list","level":"error","message":"❌ Failed to update optimal times cache","timestamp":"2025-10-19T08:00:01.083Z"}

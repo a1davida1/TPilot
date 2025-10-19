@@ -30,14 +30,18 @@ vi.mock('../../server/admin-routes.ts', () => ({
   requireAdmin: vi.fn()
 }));
 
-vi.mock('@shared/schema', () => ({
-  insertRedditCommunitySchema: {
-    parse: vi.fn(),
-    partial: vi.fn().mockReturnValue({
-      parse: vi.fn()
-    })
-  }
-}));
+vi.mock('@shared/schema', async () => {
+  const actual = await vi.importActual<typeof import('@shared/schema')>('@shared/schema');
+  return {
+    ...actual,
+    insertRedditCommunitySchema: {
+      parse: vi.fn(),
+      partial: vi.fn().mockReturnValue({
+        parse: vi.fn()
+      })
+    }
+  };
+});
 
 // Import mocked functions
 import { listCommunities, createCommunity, updateCommunity, deleteCommunity } from '../../server/reddit-communities.ts';

@@ -10,3 +10,27 @@
 {"level":"info","message":"⏰ Starting caption metrics polling...","timestamp":"2025-10-19T06:15:00.019Z"}
 {"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-19T06:15:00.654Z"}
 {"level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-19T06:15:00.750Z"}
+{"level":"info","message":"🏥 Starting daily health checks","timestamp":"2025-10-19T07:00:00.017Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"🏥 Starting daily health checks","timestamp":"2025-10-19T07:00:00.017Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-19T07:00:00.018Z"}
+{"level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-19T07:00:00.018Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"📊 Running health checks for 0 active users","timestamp":"2025-10-19T07:00:00.582Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"✅ Daily health checks completed","timestamp":"2025-10-19T07:00:00.582Z"}
+{"level":"info","message":"📊 Running health checks for 0 active users","timestamp":"2025-10-19T07:00:00.800Z"}
+{"level":"info","message":"✅ Daily health checks completed","timestamp":"2025-10-19T07:00:00.801Z"}
+{"level":"info","message":"⏰ Starting caption metrics polling...","timestamp":"2025-10-19T07:15:00.013Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"⏰ Starting caption metrics polling...","timestamp":"2025-10-19T07:15:00.015Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-19T07:15:01.053Z"}
+{"level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-19T07:15:01.055Z"}
+{"level":"info","message":"⏰ Updating optimal posting times cache","timestamp":"2025-10-19T08:00:00.029Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"⏰ Updating optimal posting times cache","timestamp":"2025-10-19T08:00:00.030Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-19T08:00:00.031Z"}
+{"level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-19T08:00:00.032Z"}
+{"level":"info","message":"🧹 Cleaned up old scheduled posts","timestamp":"2025-10-19T08:00:00.115Z"}
+{"error":"for SELECT DISTINCT, ORDER BY expressions must appear in select list","level":"error","message":"❌ Failed to update optimal times cache","timestamp":"2025-10-19T08:00:00.875Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"🧹 Cleaned up old scheduled posts","timestamp":"2025-10-19T08:00:00.961Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","error":"for SELECT DISTINCT, ORDER BY expressions must appear in select list","level":"error","message":"❌ Failed to update optimal times cache","timestamp":"2025-10-19T08:00:01.083Z"}
+{"level":"info","message":"⏰ Starting caption metrics polling...","timestamp":"2025-10-19T08:15:00.019Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"⏰ Starting caption metrics polling...","timestamp":"2025-10-19T08:15:00.022Z"}
+{"correlationId":"dbaea42c-2cf7-4a54-ab3f-719902b77864","level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-19T08:15:01.089Z"}
+{"level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-19T08:15:01.264Z"}

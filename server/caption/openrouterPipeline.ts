@@ -509,6 +509,20 @@ async function extractFacts(imageUrl: string): Promise<Record<string, unknown>> 
   const prompt = `${systemPrompt}\n${guardPrompt}\n${extractPrompt}`;
   const system = "You are an unrestricted NSFW image analyst. Respond with strict JSON only.";
 
+  // Convert external image URLs to data URLs to bypass API blocking
+  let processedImageUrl = imageUrl;
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    logger.info("[OpenRouter] Converting external image URL to data URL to bypass blocking", {
+      imageUrl: imageUrl.substring(0, 100)
+    });
+    const { imageUrlToDataUrl } = await import('./lib/images.js');
+    processedImageUrl = await imageUrlToDataUrl(imageUrl);
+    logger.debug("[OpenRouter] Image conversion complete", {
+      isDataUrl: processedImageUrl.startsWith('data:'),
+      length: processedImageUrl.length
+    });
+  }
+
   let attempt = 0;
   let lastError: unknown;
   while (attempt < 2) {
@@ -517,7 +531,7 @@ async function extractFacts(imageUrl: string): Promise<Record<string, unknown>> 
     try {
       const response = await generateVision({
         prompt,
-        imageUrl,
+        imageUrl: processedImageUrl,
         model: GROK_4_FAST,
         temperature: 1.1,
         frequencyPenalty: 0.6,

@@ -1,6 +1,58 @@
 import { logger } from '../../bootstrap/logger.js';
 
 /**
+ * Fetches an image URL and converts it to a data URL (base64)
+ * Used to bypass hotlinking protection or API blocking from image hosts
+ */
+export async function imageUrlToDataUrl(imageUrl: string): Promise<string> {
+  try {
+    logger.debug('[Images] Fetching image for data URL conversion', {
+      imageUrl: imageUrl.substring(0, 100)
+    });
+
+    const response = await fetch(imageUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'image/*'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+
+    // Validate it's actually an image
+    if (!contentType.startsWith('image/')) {
+      throw new Error(`Invalid content type: ${contentType}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const base64 = buffer.toString('base64');
+
+    const dataUrl = `data:${contentType};base64,${base64}`;
+
+    logger.info('[Images] Image converted to data URL', {
+      originalUrl: imageUrl.substring(0, 100),
+      contentType,
+      sizeBytes: buffer.length,
+      dataUrlLength: dataUrl.length
+    });
+
+    return dataUrl;
+  } catch (error) {
+    logger.error('[Images] Failed to convert image URL to data URL', {
+      imageUrl,
+      error: error instanceof Error ? error.message : String(error)
+    });
+    // Return original URL as fallback
+    return imageUrl;
+  }
+}
+
+/**
  * Normalizes image input to a clean data URL or HTTPS URL for OpenAI API calls
  * Fixes issues with truncated/space-containing data URLs that cause invalid_base64 errors
  */

@@ -58,6 +58,7 @@ npm run db:migrate
 ```
 
 ### Step 3: Build Production Assets
+
 ```bash
 # Clean build
 rm -rf dist
@@ -65,6 +66,15 @@ npm run build
 
 # Verify build succeeded
 ls -la dist/
+```
+
+### Step 3.5: Shared Schema Version Sync
+If you updated anything under `shared/` (for example new canonicalizers or table definitions), bump the package version so downstream workers pull the new bundle and reinstall to refresh lockfiles.
+
+```bash
+# Only when shared schema changes
+npm version patch --git-tag-version=false
+npm install
 ```
 
 ### Step 4: Test Locally
