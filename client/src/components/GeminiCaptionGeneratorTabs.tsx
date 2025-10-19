@@ -8,13 +8,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 // Switch component not currently used in this component
 import { CaptionPreview } from "./CaptionPreview";
 import { CatboxUploadPortal } from "./CatboxUploadPortal";
-import { Loader2, Sparkles, AlertCircle, Image as ImageIcon, Type, Edit3 } from "lucide-react";
+import { Loader2, Sparkles, AlertCircle, Image as ImageIcon, Type, Edit3, CheckCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { getErrorMessage } from '@/utils/errorHelpers';
+import { cn } from "@/lib/utils";
 import type { GenerationResponse, CaptionPreviewData } from '@shared/types/caption';
 
 const PLATFORMS = [
@@ -55,6 +57,12 @@ const MOODS = [
   { value: "bold", label: "Bold" }
 ];
 
+interface CaptionOption {
+  id: string;
+  text: string;
+  style: string;
+}
+
 export function GeminiCaptionGeneratorTabs() {
   // Shared states
   const [platform, setPlatform] = useState<string>("reddit");
@@ -66,6 +74,10 @@ export function GeminiCaptionGeneratorTabs() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [captionData, setCaptionData] = useState<GenerationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Caption variant selection states
+  const [captionOptions, setCaptionOptions] = useState<CaptionOption[]>([]);
+  const [selectedCaption, setSelectedCaption] = useState<string>('');
   
   // Image tab states
   const [imageUrl, setImageUrl] = useState("");
@@ -116,18 +128,50 @@ export function GeminiCaptionGeneratorTabs() {
     setIsGenerating(true);
     setError(null);
     setCaptionData(null);
+    setCaptionOptions([]);
+    setSelectedCaption('');
 
     try {
       const response = await apiRequest('POST', '/api/caption/generate', {
         imageUrl, platform, voice, style, mood, nsfw, includeHashtags
       });
 
-      const result = await response.json();
+      const result = await response.json() as { topVariants?: Array<{ caption: string; style?: string }>; final?: { caption: string } };
 
-      setCaptionData(result);
+      // Extract top 2 variants from response
+      const topVariants = result.topVariants || [];
+
+      if (topVariants.length >= 2) {
+        const options = [
+          { id: '1', text: topVariants[0].caption, style: topVariants[0].style || 'Top Choice' },
+          { id: '2', text: topVariants[1].caption, style: topVariants[1].style || 'Alternative' }
+        ];
+        setCaptionOptions(options);
+        setSelectedCaption(options[0].id); // Auto-select first option
+      } else if (topVariants.length === 1) {
+        const options = [
+          { id: '1', text: topVariants[0].caption, style: 'Generated Caption' },
+          { id: '2', text: topVariants[0].caption, style: 'Same Caption' }
+        ];
+        setCaptionOptions(options);
+        setSelectedCaption(options[0].id);
+      } else if (result.final) {
+        // Fallback to final if topVariants not available
+        const finalCaption = typeof result.final === 'string' ? result.final : result.final.caption;
+        const options = [
+          { id: '1', text: finalCaption, style: 'Generated Caption' },
+          { id: '2', text: finalCaption, style: 'Same Caption' }
+        ];
+        setCaptionOptions(options);
+        setSelectedCaption(options[0].id);
+      }
+
+      // Store the full result for CaptionPreview
+      setCaptionData(result as GenerationResponse);
+
       toast({
         title: "Content generated!",
-        description: "Your AI-powered content is ready to use",
+        description: "Choose your preferred caption variant",
       });
     } catch (err: unknown) {
       console.error('Generation error:', err);
@@ -151,18 +195,48 @@ export function GeminiCaptionGeneratorTabs() {
     setIsGenerating(true);
     setError(null);
     setCaptionData(null);
+    setCaptionOptions([]);
+    setSelectedCaption('');
 
     try {
       const response = await apiRequest('POST', '/api/caption/generate-text', {
         platform, voice, style, mood, theme, context, nsfw, includeHashtags
       });
 
-      const result = await response.json();
+      const result = await response.json() as { topVariants?: Array<{ caption: string; style?: string }>; final?: { caption: string } };
 
-      setCaptionData(result);
+      // Extract top 2 variants from response
+      const topVariants = result.topVariants || [];
+
+      if (topVariants.length >= 2) {
+        const options = [
+          { id: '1', text: topVariants[0].caption, style: topVariants[0].style || 'Top Choice' },
+          { id: '2', text: topVariants[1].caption, style: topVariants[1].style || 'Alternative' }
+        ];
+        setCaptionOptions(options);
+        setSelectedCaption(options[0].id);
+      } else if (topVariants.length === 1) {
+        const options = [
+          { id: '1', text: topVariants[0].caption, style: 'Generated Caption' },
+          { id: '2', text: topVariants[0].caption, style: 'Same Caption' }
+        ];
+        setCaptionOptions(options);
+        setSelectedCaption(options[0].id);
+      } else if (result.final) {
+        const finalCaption = typeof result.final === 'string' ? result.final : result.final.caption;
+        const options = [
+          { id: '1', text: finalCaption, style: 'Generated Caption' },
+          { id: '2', text: finalCaption, style: 'Same Caption' }
+        ];
+        setCaptionOptions(options);
+        setSelectedCaption(options[0].id);
+      }
+
+      setCaptionData(result as GenerationResponse);
+
       toast({
         title: "Content generated!",
-        description: "Your AI-powered content is ready to use",
+        description: "Choose your preferred caption variant",
       });
     } catch (err: unknown) {
       console.error('Generation error:', err);
@@ -186,6 +260,8 @@ export function GeminiCaptionGeneratorTabs() {
     setIsGenerating(true);
     setError(null);
     setCaptionData(null);
+    setCaptionOptions([]);
+    setSelectedCaption('');
 
     try {
       const response = await apiRequest('POST', '/api/caption/rewrite', {
@@ -199,13 +275,41 @@ export function GeminiCaptionGeneratorTabs() {
         includeHashtags,
       });
 
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Rewrite failed');
+      const result = await response.json() as { topVariants?: Array<{ caption: string; style?: string }>; final?: { caption: string } };
+      if (!response.ok) throw new Error((result as any).error || 'Rewrite failed');
 
-      setCaptionData(result);
+      // Extract top 2 variants from response
+      const topVariants = result.topVariants || [];
+
+      if (topVariants.length >= 2) {
+        const options = [
+          { id: '1', text: topVariants[0].caption, style: topVariants[0].style || 'Top Choice' },
+          { id: '2', text: topVariants[1].caption, style: topVariants[1].style || 'Alternative' }
+        ];
+        setCaptionOptions(options);
+        setSelectedCaption(options[0].id);
+      } else if (topVariants.length === 1) {
+        const options = [
+          { id: '1', text: topVariants[0].caption, style: 'Generated Caption' },
+          { id: '2', text: topVariants[0].caption, style: 'Same Caption' }
+        ];
+        setCaptionOptions(options);
+        setSelectedCaption(options[0].id);
+      } else if (result.final) {
+        const finalCaption = typeof result.final === 'string' ? result.final : result.final.caption;
+        const options = [
+          { id: '1', text: finalCaption, style: 'Generated Caption' },
+          { id: '2', text: finalCaption, style: 'Same Caption' }
+        ];
+        setCaptionOptions(options);
+        setSelectedCaption(options[0].id);
+      }
+
+      setCaptionData(result as GenerationResponse);
+
       toast({
         title: "Content rewritten!",
-        description: "Your improved content is ready to use",
+        description: "Choose your preferred caption variant",
       });
     } catch (err: unknown) {
       console.error('Rewrite error:', err);
@@ -364,6 +468,41 @@ export function GeminiCaptionGeneratorTabs() {
 
               <PlatformVoiceSelectors />
 
+              {/* Caption Variant Selection - Image Tab */}
+              {captionOptions.length > 0 && (
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium">Choose Your Caption</Label>
+                    <p className="text-xs text-muted-foreground mt-1">Select your preferred caption variant</p>
+                  </div>
+
+                  <RadioGroup value={selectedCaption} onValueChange={setSelectedCaption}>
+                    <div className="space-y-3">
+                      {captionOptions.map((option) => (
+                        <Card
+                          key={option.id}
+                          className={cn(
+                            "cursor-pointer transition-all",
+                            selectedCaption === option.id && "border-purple-500 bg-purple-50 dark:bg-purple-950/20"
+                          )}
+                          onClick={() => setSelectedCaption(option.id)}
+                        >
+                          <CardHeader className="pb-2">
+                            <div className="flex items-center gap-2">
+                              <RadioGroupItem value={option.id} />
+                              <Badge variant="secondary">{option.style}</Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-sm">{option.text}</p>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </RadioGroup>
+                </div>
+              )}
+
               {error && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
@@ -428,6 +567,41 @@ export function GeminiCaptionGeneratorTabs() {
               </div>
 
               <PlatformVoiceSelectors />
+
+              {/* Caption Variant Selection - Text Tab */}
+              {captionOptions.length > 0 && (
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium">Choose Your Caption</Label>
+                    <p className="text-xs text-muted-foreground mt-1">Select your preferred caption variant</p>
+                  </div>
+
+                  <RadioGroup value={selectedCaption} onValueChange={setSelectedCaption}>
+                    <div className="space-y-3">
+                      {captionOptions.map((option) => (
+                        <Card
+                          key={option.id}
+                          className={cn(
+                            "cursor-pointer transition-all",
+                            selectedCaption === option.id && "border-purple-500 bg-purple-50 dark:bg-purple-950/20"
+                          )}
+                          onClick={() => setSelectedCaption(option.id)}
+                        >
+                          <CardHeader className="pb-2">
+                            <div className="flex items-center gap-2">
+                              <RadioGroupItem value={option.id} />
+                              <Badge variant="secondary">{option.style}</Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-sm">{option.text}</p>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </RadioGroup>
+                </div>
+              )}
 
               {error && (
                 <Alert variant="destructive">
@@ -495,6 +669,41 @@ export function GeminiCaptionGeneratorTabs() {
 
               <PlatformVoiceSelectors />
 
+              {/* Caption Variant Selection - Rewrite Tab */}
+              {captionOptions.length > 0 && (
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium">Choose Your Caption</Label>
+                    <p className="text-xs text-muted-foreground mt-1">Select your preferred caption variant</p>
+                  </div>
+
+                  <RadioGroup value={selectedCaption} onValueChange={setSelectedCaption}>
+                    <div className="space-y-3">
+                      {captionOptions.map((option) => (
+                        <Card
+                          key={option.id}
+                          className={cn(
+                            "cursor-pointer transition-all",
+                            selectedCaption === option.id && "border-purple-500 bg-purple-50 dark:bg-purple-950/20"
+                          )}
+                          onClick={() => setSelectedCaption(option.id)}
+                        >
+                          <CardHeader className="pb-2">
+                            <div className="flex items-center gap-2">
+                              <RadioGroupItem value={option.id} />
+                              <Badge variant="secondary">{option.style}</Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-sm">{option.text}</p>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </RadioGroup>
+                </div>
+              )}
+
               {error && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
@@ -525,13 +734,27 @@ export function GeminiCaptionGeneratorTabs() {
         </TabsContent>
       </Tabs>
 
-      {captionData ? (
-        <CaptionPreview
-          data={captionData as CaptionPreviewData}
-          includeHashtags={includeHashtags}
-          platform={platform}
-        />
-      ) : null}
+      {/* Show CaptionPreview only when a caption is selected */}
+      {captionData && selectedCaption && captionOptions.length > 0 ? (() => {
+        // Find the selected caption option
+        const selectedOption = captionOptions.find(opt => opt.id === selectedCaption);
+
+        if (!selectedOption) return null;
+
+        // Construct preview data with the selected caption
+        const previewData: CaptionPreviewData = {
+          ...captionData,
+          final: selectedOption.text
+        };
+
+        return (
+          <CaptionPreview
+            data={previewData}
+            includeHashtags={includeHashtags}
+            platform={platform}
+          />
+        );
+      })() : null}
     </div>
   );
 }

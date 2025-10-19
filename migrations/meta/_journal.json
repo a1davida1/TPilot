@@ -106,6 +106,20 @@
       "when": 1760274521896,
       "tag": "0014_yellow_green_goblin",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1760367060000,
+      "tag": "0015_recurring_commissions",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1760759260000,
+      "tag": "0016_reddit_accounts_vault",
+      "breakpoints": true
     }
   ]
 }

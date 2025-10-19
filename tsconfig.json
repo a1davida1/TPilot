@@ -35,7 +35,8 @@
     "paths": {
       "@shared/*": ["shared/*"],
       "@server/*": ["server/*"],
-      "@/*": ["client/src/*"]
+      "@/*": ["client/src/*"],
+      "@/dashboard/*": ["client/src/app/(dashboard)/*"]
     },
     "preserveSymlinks": true,
     "outDir": "dist"

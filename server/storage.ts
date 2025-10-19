@@ -48,7 +48,7 @@ import {
   invoices
 } from "../shared/schema";
 import { db } from "./db";
-import { eq, desc, and, gte, sql, count } from "drizzle-orm";
+import { eq, desc, and, gte, sql, count, or, inArray } from "drizzle-orm";
 import { safeLog } from './lib/logger-utils';
 import { logger } from './bootstrap/logger.js';
 
@@ -209,6 +209,7 @@ export interface IStorage {
   recordRedditPostOutcome(outcome: InsertRedditPostOutcome): Promise<void>;
   getRedditPostOutcomes(userId: number): Promise<RedditPostOutcome[]>;
   getRedditPostRemovalSummary(userId: number): Promise<Array<{ reason: string | null; count: number }>>;
+  getLatestRedditPostTimestamp(userId: number, subreddit: string, statuses?: string[]): Promise<Date | null>;
   clearRedditPostOutcomes(userId?: number): Promise<void>;
 }
 
@@ -355,12 +356,12 @@ export class DatabaseStorage implements IStorage {
         UserUpdate[keyof UserUpdate]
       ]>;
 
-      const cleanUpdates = entries.reduce<Partial<UserUpdate>>((acc, [key, value]) => {
+      const cleanUpdates: Record<string, unknown> = {};
+      for (const [key, value] of entries) {
         if (value !== undefined) {
-          (acc as Record<string, unknown>)[key] = value;
+          cleanUpdates[key] = value;
         }
-        return acc;
-      }, {});
+      }
 
       // If no valid updates, return the existing user
       if (Object.keys(cleanUpdates).length === 0) {
@@ -371,7 +372,7 @@ export class DatabaseStorage implements IStorage {
         return user;
       }
 
-      const result = await db.update(users).set(cleanUpdates as any).where(eq(users.id, userId)).returning();
+      const result = await db.update(users).set(cleanUpdates as Partial<typeof users.$inferInsert>).where(eq(users.id, userId)).returning();
       if (!result[0]) {
         throw new Error('User not found');
       }
@@ -1528,6 +1529,41 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       logger.error('Error summarizing reddit removal outcomes:', { error: (error as Error).message, userId });
       return [];
+    }
+  }
+
+  async getLatestRedditPostTimestamp(userId: number, subreddit: string, statuses: string[] = ['posted', 'completed', 'approved', 'successful']): Promise<Date | null> {
+    try {
+      const normalizedStatuses = statuses
+        .map(status => status.trim())
+        .filter(status => status.length > 0);
+
+      const conditions = [
+        eq(redditPostOutcomes.userId, userId),
+        eq(redditPostOutcomes.subreddit, subreddit.trim()),
+      ];
+
+      const whereClause = normalizedStatuses.length > 0
+        ? and(
+            ...conditions,
+            or(
+              inArray(redditPostOutcomes.status, normalizedStatuses),
+              eq(redditPostOutcomes.success, true)
+            )
+          )
+        : and(...conditions, eq(redditPostOutcomes.success, true));
+
+      const [row] = await db
+        .select({ occurredAt: redditPostOutcomes.occurredAt })
+        .from(redditPostOutcomes)
+        .where(whereClause)
+        .orderBy(desc(redditPostOutcomes.occurredAt))
+        .limit(1);
+
+      return row?.occurredAt ?? null;
+    } catch (error) {
+      logger.error('Error fetching latest reddit post timestamp:', { error: (error as Error).message, userId, subreddit });
+      return null;
     }
   }
 

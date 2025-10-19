@@ -19,6 +19,7 @@ import { createSessionMiddleware } from "./bootstrap/session.js";
 // import { uploadRoutes, applyImageShieldProtection, protectionPresets } from "./routes/upload.js"; // REMOVED - Local storage illegal
 // import uploadRedirect from "./routes/upload-redirect.js"; // REMOVED - Now using Catbox instead of Imgur
 import { mediaRoutes } from "./routes/media.js";
+import { galleryRoutes } from "./routes/gallery.js";
 import { analyticsRouter } from "./routes/analytics.js";
 import { referralRouter } from "./routes/referrals.js";
 // import { getOpenApiRouter } from "./routes/openapi.js"; // Commented out - file missing
@@ -987,6 +988,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
 
   // Media routes
   app.use('/api/media', mediaRoutes);
+  app.use('/api/gallery', galleryRoutes);
 
   // Analytics routes
   app.use('/api/analytics', analyticsRouter);
@@ -1411,6 +1413,10 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
 
   // Register Reddit Routes
   registerRedditRoutes(app);
+  
+  // Reddit quick-repost endpoint (NO cooldown enforcement - allows infinite reposts)
+  const quickRepostRouter = (await import('./routes/reddit-quick-repost.js')).default;
+  app.use('/api/reddit/quick-repost', quickRepostRouter);
 
   // Register Analytics Routes
   registerAnalyticsRoutes(app);

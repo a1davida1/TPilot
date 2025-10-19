@@ -10,6 +10,8 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { ModernDashboard } from "@/components/modern-dashboard";
+import { DashboardLoading } from "@/dashboard/loading";
+import { DashboardErrorBoundary } from "@/dashboard/error-boundary";
 import { useToast } from "@/hooks/use-toast";
 import { type User } from "@shared/schema.js";
 
@@ -144,17 +146,7 @@ export default function Dashboard() {
   }, [location, isAuthenticated, toast, refetch]);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-4">
-          <div className="relative">
-            <div className="h-12 w-12 rounded-full border-2 border-primary/20 mx-auto" />
-            <div className="absolute inset-0 h-12 w-12 rounded-full border-2 border-t-primary animate-spin mx-auto" />
-          </div>
-          <p className="text-sm text-muted-foreground font-medium">Loading dashboard...</p>
-        </div>
-      </div>
-    );
+    return <DashboardLoading />;
   }
 
   // Determine admin status and user tier
@@ -170,15 +162,17 @@ export default function Dashboard() {
   );
   
   return (
-    <ModernDashboard 
-      user={user ? { 
-        ...user, 
-        username: user.username || user.email || 'User',
-        email: user.email ?? undefined,
-      } : undefined} 
-      userTier={userTier} 
-      isAdmin={isAdmin}
-      isRedditConnected={isRedditConnected}
-    />
+    <DashboardErrorBoundary>
+      <ModernDashboard
+        user={user ? {
+          ...user,
+          username: user.username || user.email || 'User',
+          email: user.email ?? undefined,
+        } : undefined}
+        userTier={userTier}
+        isAdmin={isAdmin}
+        isRedditConnected={isRedditConnected}
+      />
+    </DashboardErrorBoundary>
   );
 }

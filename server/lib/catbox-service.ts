@@ -3,6 +3,7 @@
  * Handles authenticated operations and user hash management
  */
 
+import { setTimeout as delay } from 'node:timers/promises';
 import FormData from 'form-data';
 import { db } from '../db.js';
 import { users } from '@shared/schema';
@@ -18,11 +19,30 @@ interface CatboxUploadOptions {
   url?: string;
 }
 
+interface CatboxUploadResult {
+  success: boolean;
+  url?: string;
+  error?: string;
+  status?: number;
+}
+
+type UploadLogMetadata = {
+  reqtype: CatboxUploadOptions['reqtype'];
+  hasUserhash: boolean;
+  filename?: string;
+  fileSize?: number | null;
+  hasUrl?: boolean;
+};
+
 export class CatboxService {
   private static readonly API_URL = 'https://catbox.moe/user/api.php';
+  private static readonly LITTERBOX_URL = 'https://litterbox.catbox.moe/resources/internals/api.php';
   private static readonly USER_AGENT =
     'Mozilla/5.0 (compatible; ThottoPilotBot/1.0; +https://thottopilot.com)';
   private static readonly ACCEPT_HEADER = 'text/plain, */*;q=0.1';
+  private static readonly MAX_UPLOAD_SIZE_BYTES = 200 * 1024 * 1024; // 200MB
+  private static readonly MAX_RETRIES = 3;
+  private static readonly RETRY_BASE_DELAY_MS = 250;
 
   private static prepareRequestPayload(formData: FormData): { body: Buffer; headers: Record<string, string> } {
     const body = formData.getBuffer();
@@ -40,6 +60,106 @@ export class CatboxService {
     }
 
     return { body, headers };
+  }
+
+  private static validateUploadOptions(
+    options: CatboxUploadOptions,
+    sanitizedUserhash?: string
+  ): string | null {
+    if (options.reqtype !== 'fileupload' && options.reqtype !== 'urlupload') {
+      return 'Unsupported Catbox request type';
+    }
+
+    if (sanitizedUserhash && !/^[A-Za-z0-9]{16,64}$/u.test(sanitizedUserhash)) {
+      return 'Invalid Catbox user hash format';
+    }
+
+    if (options.reqtype === 'fileupload') {
+      if (!options.file || options.file.length === 0) {
+        return 'No file provided for Catbox upload';
+      }
+
+      if (options.file.length > this.MAX_UPLOAD_SIZE_BYTES) {
+        return 'File exceeds Catbox 200MB limit';
+      }
+
+      if (options.filename && options.filename.length > 255) {
+        return 'Filename exceeds 255 character limit';
+      }
+    }
+
+    if (options.reqtype === 'urlupload') {
+      if (!options.url) {
+        return 'No URL provided for Catbox upload';
+      }
+
+      try {
+        const parsed = new URL(options.url);
+        if (!['http:', 'https:'].includes(parsed.protocol)) {
+          return 'Catbox only accepts HTTP(S) URLs';
+        }
+      } catch {
+        return 'Invalid URL provided for Catbox upload';
+      }
+    }
+
+    return null;
+  }
+
+  private static calculateRetryDelay(attempt: number): number {
+    return this.RETRY_BASE_DELAY_MS * 2 ** (attempt - 1);
+  }
+
+  private static shouldRetryResponse(response: Awaited<ReturnType<typeof fetch>>): boolean {
+    return response.status >= 500 || response.status === 429;
+  }
+
+  private static async postWithRetry(
+    url: string,
+    body: Buffer,
+    headers: Record<string, string>,
+    metadata: UploadLogMetadata,
+    attempt = 1
+  ): Promise<Awaited<ReturnType<typeof fetch>>> {
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        body,
+        headers
+      });
+
+      if (this.shouldRetryResponse(response) && attempt < this.MAX_RETRIES) {
+        const delayMs = this.calculateRetryDelay(attempt);
+        logger.warn('Catbox upload transient response, retrying', {
+          url,
+          attempt,
+          delayMs,
+          status: response.status,
+          ...metadata
+        });
+
+        await delay(delayMs);
+        return this.postWithRetry(url, body, headers, metadata, attempt + 1);
+      }
+
+      return response;
+    } catch (error) {
+      if (attempt < this.MAX_RETRIES) {
+        const delayMs = this.calculateRetryDelay(attempt);
+        logger.warn('Catbox upload request failed, retrying', {
+          url,
+          attempt,
+          delayMs,
+          error: error instanceof Error ? error.message : String(error),
+          ...metadata
+        });
+
+        await delay(delayMs);
+        return this.postWithRetry(url, body, headers, metadata, attempt + 1);
+      }
+
+      throw error;
+    }
   }
 
   /**
@@ -79,19 +199,34 @@ export class CatboxService {
   /**
    * Upload file to Catbox with optional authentication
    */
-  static async upload(options: CatboxUploadOptions): Promise<{ success: boolean; url?: string; error?: string; status?: number }> {
+  static async upload(options: CatboxUploadOptions): Promise<CatboxUploadResult> {
+    const sanitizedUserhash = options.userhash?.trim();
+    const metadata: UploadLogMetadata = {
+      reqtype: options.reqtype,
+      hasUserhash: Boolean(sanitizedUserhash),
+      filename: options.filename,
+      fileSize: options.file?.length ?? null,
+      hasUrl: Boolean(options.url)
+    };
+
+    const validationError = this.validateUploadOptions(options, sanitizedUserhash);
+    if (validationError) {
+      logger.warn('Catbox upload validation failed', {
+        reason: validationError,
+        ...metadata
+      });
+
+      return { success: false, error: validationError, status: 400 };
+    }
+
     try {
       const formData = new FormData();
-      
       formData.append('reqtype', options.reqtype);
-      
-      // Add userhash if available
-      const sanitizedUserhash = options.userhash?.trim();
+
       if (sanitizedUserhash) {
         formData.append('userhash', sanitizedUserhash);
       }
-      
-      // Add file or URL based on request type
+
       if (options.reqtype === 'fileupload' && options.file) {
         const fileOptions: FormData.AppendOptions = {
           filename: options.filename || 'upload.bin',
@@ -105,32 +240,28 @@ export class CatboxService {
       }
 
       const { body, headers } = this.prepareRequestPayload(formData);
-
-      let response = await fetch(this.API_URL, {
-        method: 'POST',
-        body,
-        headers
-      });
+      let response = await this.postWithRetry(this.API_URL, body, headers, metadata);
 
       // If Catbox returns 412 (Precondition Failed), try Litterbox as fallback
       if (response.status === 412 && options.reqtype === 'fileupload' && options.file) {
-        logger.warn('Catbox returned 412, trying Litterbox as fallback');
-        
+        logger.warn('Catbox returned 412, attempting Litterbox fallback', {
+          ...metadata
+        });
+
         const litterboxForm = new FormData();
         litterboxForm.append('reqtype', 'fileupload');
-        litterboxForm.append('time', '1h'); // 1 hour expiry
+        litterboxForm.append('time', '1h');
         litterboxForm.append('fileToUpload', options.file, {
           filename: options.filename || 'upload.jpg'
         });
 
-        response = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', {
-          method: 'POST',
-          body: litterboxForm as unknown as BodyInit,
-          headers: {
-            ...litterboxForm.getHeaders(),
-            'User-Agent': 'ThottoPilot/1.0'
-          }
-        });
+        const litterboxPayload = this.prepareRequestPayload(litterboxForm);
+        response = await this.postWithRetry(
+          this.LITTERBOX_URL,
+          litterboxPayload.body,
+          litterboxPayload.headers,
+          metadata
+        );
       }
 
       const rawText = await response.text();
@@ -140,20 +271,32 @@ export class CatboxService {
 
       // Check for errors
       if (!response.ok || isErrorResponse) {
-        const statusCode = response.ok
-          ? normalizedResponse.includes('userhash') || normalizedResponse.includes('precondition')
-            ? 412
-            : 400
-          : response.status;
-        
-        logger.error('Catbox upload failed', { 
+        const inferredStatus = normalizedResponse.includes('userhash') || normalizedResponse.includes('precondition')
+          ? 412
+          : normalizedResponse.includes('limit')
+            ? 429
+            : 400;
+        const statusCode = response.ok ? inferredStatus : response.status;
+        const truncatedResponse = responseText.length > 500 ? `${responseText.slice(0, 500)}…` : responseText;
+
+        logger.error('Catbox upload failed', {
           status: statusCode,
-          response: responseText,
-          upstreamStatus: response.status
+          upstreamStatus: response.status,
+          responseSnippet: truncatedResponse,
+          ...metadata
         });
-        return { 
-          success: false, 
-          error: responseText || `Upload failed: ${response.statusText}`,
+
+        const preconditionMessage = sanitizedUserhash
+          ? 'Catbox rejected the upload. Please verify your Catbox user hash.'
+          : 'Catbox rejected the upload because a Catbox user hash is required.';
+
+        const errorMessage = statusCode === 412
+          ? truncatedResponse || preconditionMessage
+          : truncatedResponse || `Upload failed: ${response.statusText}`;
+
+        return {
+          success: false,
+          error: errorMessage,
           status: statusCode
         };
       }
@@ -161,7 +304,10 @@ export class CatboxService {
       // Validate response is a URL
       const url = responseText;
       if (!/^https?:\/\//u.test(url)) {
-        logger.error('Catbox upload returned invalid URL', { response: responseText });
+        logger.error('Catbox upload returned invalid URL', {
+          responseSnippet: url.slice(0, 200),
+          ...metadata
+        });
         return {
           success: false,
           error: 'Catbox returned an invalid response',
@@ -169,14 +315,20 @@ export class CatboxService {
         };
       }
 
-      logger.info('Catbox upload successful', { url });
-      
+      logger.info('Catbox upload successful', {
+        url,
+        ...metadata
+      });
+
       return { success: true, url };
-      
+
     } catch (error) {
-      logger.error('Catbox upload error', { error });
-      return { 
-        success: false, 
+      logger.error('Catbox upload error', {
+        error: error instanceof Error ? error.message : error,
+        ...metadata
+      });
+      return {
+        success: false,
         error: error instanceof Error ? error.message : 'Upload failed',
         status: 500
       };
@@ -212,9 +364,9 @@ export class CatboxService {
       
     } catch (error) {
       logger.error('Catbox delete error', { error });
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Delete failed' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Delete failed'
       };
     }
   }
@@ -261,9 +413,9 @@ export class CatboxService {
       
     } catch (error) {
       logger.error('Catbox album creation error', { error });
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Album creation failed' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Album creation failed'
       };
     }
   }

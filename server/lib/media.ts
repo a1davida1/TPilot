@@ -3,10 +3,11 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import sharp from "sharp";
 import crypto from "crypto";
 import Redis from "ioredis";
+import { Readable } from 'node:stream';
 import { env, config } from "./config.js";
 import { db } from "../db.js";
 import { mediaAssets, mediaUsages, users } from "@shared/schema";
-import { eq, sum, and } from "drizzle-orm";
+import { eq, sum, and, sql, desc } from "drizzle-orm";
 import fs from "fs/promises";
 import path from "path";
 import { buildUploadUrl } from "./uploads.js";
@@ -493,5 +494,86 @@ export class MediaManager {
       .select()
       .from(mediaUsages)
       .where(eq(mediaUsages.mediaId, mediaId));
+  }
+
+  static async getUserAssetsPaged(userId: number, page: number, pageSize: number): Promise<MediaAssetWithUrl[]> {
+    const normalizedPage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+    const normalizedPageSize = Number.isFinite(pageSize) && pageSize > 0 ? Math.min(Math.floor(pageSize), 100) : 50;
+    const offset = (normalizedPage - 1) * normalizedPageSize;
+
+    const assets = await db
+      .select()
+      .from(mediaAssets)
+      .where(eq(mediaAssets.userId, userId))
+      .orderBy(desc(mediaAssets.createdAt))
+      .limit(normalizedPageSize)
+      .offset(offset);
+
+    return Promise.all(assets.map(async (asset) => this.buildAssetResponse(asset)));
+  }
+
+  static async getUserAssetCount(userId: number): Promise<number> {
+    const [row] = await db
+      .select({ value: sql<number>`CAST(COUNT(*) AS INTEGER)` })
+      .from(mediaAssets)
+      .where(eq(mediaAssets.userId, userId));
+    return Number(row?.value ?? 0);
+  }
+
+  static async getLastUsageTimestamp(mediaId: number, usedInType: string): Promise<Date | null> {
+    const [usage] = await db
+      .select({ createdAt: mediaUsages.createdAt })
+      .from(mediaUsages)
+      .where(and(eq(mediaUsages.mediaId, mediaId), eq(mediaUsages.usedInType, usedInType)))
+      .orderBy(desc(mediaUsages.createdAt))
+      .limit(1);
+
+    return usage?.createdAt ?? null;
+  }
+
+  static async getAssetBuffer(asset: MediaAssetRow | MediaAssetWithUrl): Promise<Buffer> {
+    if (isS3Configured && s3Client) {
+      assertExists(env.S3_BUCKET_MEDIA, 'S3_BUCKET_MEDIA is required for download');
+      const command = new GetObjectCommand({
+        Bucket: env.S3_BUCKET_MEDIA,
+        Key: asset.key,
+      });
+      const response = await s3Client.send(command);
+      return this.streamToBuffer(response.Body);
+    }
+
+    const localPath = this.getLocalAssetPath(asset.key);
+    return fs.readFile(localPath);
+  }
+
+  private static async streamToBuffer(streamBody: unknown): Promise<Buffer> {
+    if (!streamBody) {
+      throw new Error('Unable to read asset body');
+    }
+
+    if (Buffer.isBuffer(streamBody)) {
+      return streamBody;
+    }
+
+    if (streamBody instanceof Uint8Array) {
+      return Buffer.from(streamBody);
+    }
+
+    if (typeof (streamBody as Readable).pipe === 'function') {
+      const readable = streamBody as Readable;
+      const chunks: Buffer[] = [];
+      for await (const chunk of readable) {
+        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : Buffer.from(chunk));
+      }
+      return Buffer.concat(chunks);
+    }
+
+    const maybeArrayBuffer = streamBody as { arrayBuffer?: () => Promise<ArrayBuffer> };
+    if (typeof maybeArrayBuffer.arrayBuffer === 'function') {
+      const arrayBuffer = await maybeArrayBuffer.arrayBuffer();
+      return Buffer.from(arrayBuffer);
+    }
+
+    throw new Error('Unsupported asset body type');
   }
 }

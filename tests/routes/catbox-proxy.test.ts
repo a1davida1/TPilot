@@ -57,7 +57,7 @@ describe('POST /api/upload/catbox-proxy', () => {
   });
 
   it('uses stored user hash for authenticated uploads', async () => {
-    vi.mocked(CatboxService.getUserHash).mockResolvedValue('stored-hash');
+    vi.mocked(CatboxService.getUserHash).mockResolvedValue('0123456789abcdef0123456789abcdef');
     vi.mocked(CatboxService.upload).mockResolvedValue({
       success: true,
       url: 'https://files.catbox.moe/test.png'
@@ -80,7 +80,7 @@ describe('POST /api/upload/catbox-proxy', () => {
         reqtype: 'fileupload',
         filename: 'test.png',
         mimeType: 'image/png',
-        userhash: 'stored-hash'
+        userhash: '0123456789abcdef0123456789abcdef'
       })
     );
 
@@ -140,7 +140,7 @@ describe('POST /api/upload/catbox-proxy', () => {
   });
 
   it('prefers request-provided userhash over stored value', async () => {
-    vi.mocked(CatboxService.getUserHash).mockResolvedValue('stored-hash-should-not-be-used');
+    vi.mocked(CatboxService.getUserHash).mockResolvedValue('ffffffffffffffffffffffffffffffff');
     vi.mocked(CatboxService.upload).mockResolvedValue({
       success: true,
       url: 'https://files.catbox.moe/request.png'
@@ -148,7 +148,7 @@ describe('POST /api/upload/catbox-proxy', () => {
 
     const response = await request(app)
       .post('/api/upload/catbox-proxy')
-      .field('userhash', 'request-hash')
+      .field('userhash', 'abcdefabcdefabcdefabcdefabcdefab')
       .attach('file', Buffer.from('image-bytes'), 'from-request.png');
 
     expect(response.status).toBe(200);
@@ -158,7 +158,7 @@ describe('POST /api/upload/catbox-proxy', () => {
         reqtype: 'fileupload',
         filename: 'from-request.png',
         mimeType: 'image/png',
-        userhash: 'request-hash'
+        userhash: 'abcdefabcdefabcdefabcdefabcdefab'
       })
     );
 
