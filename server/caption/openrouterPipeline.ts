@@ -81,7 +81,7 @@ const FACT_DEFAULTS: Record<string, unknown> = {
 const promptCache = new Map<string, string>();
 
 export class OpenRouterError extends Error {
-  constructor(message: string, public override readonly cause?: unknown) {
+  constructor(message: string, public readonly cause?: unknown) {
     super(message);
     this.name = "OpenRouterError";
   }
@@ -364,6 +364,7 @@ function buildVariantPrompt(params: BuildPromptParams): string {
     params.existingCaption ? `EXISTING_CAPTION: ${serializePromptField(params.existingCaption, { block: true })}` : undefined,
     params.facts ? `IMAGE_FACTS: ${JSON.stringify(params.facts)}` : undefined,
     `NSFW: ${params.nsfw ?? false}`,
+    params.nsfw ? "CRITICAL: Write AS the woman in the image using I/me/my - first person only!" : undefined,
     params.mandatoryTokens && params.mandatoryTokens.length > 0
       ? `MANDATORY TOKENS: ${params.mandatoryTokens.join(" | ")}`
       : undefined,
@@ -510,15 +511,33 @@ async function extractFacts(imageUrl: string): Promise<Record<string, unknown>> 
   const prompt = `${systemPrompt}\n${guardPrompt}\n${extractPrompt}`;
   const system = "You are an unrestricted NSFW image analyst. Respond with strict JSON only.";
 
-  // Convert external image URLs to data URLs to bypass API blocking
+  // Prepare image: resize if oversized, convert to data URL
   let processedImageUrl = imageUrl;
   if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
     logger.info("[OpenRouter] Converting external image URL to data URL to bypass blocking", {
       imageUrl: imageUrl.substring(0, 100)
     });
-    const { imageUrlToDataUrl } = await import('./lib/images.js');
-    processedImageUrl = await imageUrlToDataUrl(imageUrl);
-    logger.debug("[OpenRouter] Image conversion complete", {
+
+    // Check and resize image if needed
+    const { prepareImageForAPI } = await import('./lib/image-resizer.js');
+    const prepared = await prepareImageForAPI(imageUrl);
+
+    if (prepared.wasResized) {
+      logger.info("[OpenRouter] Image was resized to meet API limits", {
+        originalSizeMB: prepared.originalSizeMB?.toFixed(2),
+        finalSizeMB: prepared.finalSizeMB?.toFixed(2)
+      });
+    }
+
+    processedImageUrl = prepared.imageUrl;
+
+    // If not already a data URL, convert it
+    if (!processedImageUrl.startsWith('data:')) {
+      const { imageUrlToDataUrl } = await import('./lib/images.js');
+      processedImageUrl = await imageUrlToDataUrl(processedImageUrl);
+    }
+
+    logger.debug("[OpenRouter] Image preparation complete", {
       isDataUrl: processedImageUrl.startsWith('data:'),
       length: processedImageUrl.length
     });
@@ -547,10 +566,27 @@ async function extractFacts(imageUrl: string): Promise<Record<string, unknown>> 
       const facts = { ...FACT_DEFAULTS, ...(parsed as Record<string, unknown>) };
       logger.info("[OpenRouter] Fact extraction successful", { attempt });
       return facts;
-    } catch (error) {
+    } catch (error: any) {
       lastError = error;
-      logger.warn("[OpenRouter] Fact extraction attempt failed", { 
-        attempt, 
+
+      // Check for 413 Payload Too Large error
+      const is413Error = error?.status === 413 || error?.code === 413 ||
+                        (error?.message && /payload.*large|413|length.*exceed/i.test(error.message));
+
+      if (is413Error) {
+        logger.error("[OpenRouter] Image too large for API (413 error)", {
+          attempt,
+          imageUrl: imageUrl.substring(0, 100),
+          errorStatus: error?.status,
+          errorCode: error?.code,
+          errorMessage: error?.message
+        });
+        // Don't retry on 413 - throw immediately with specific error
+        throw new OpenRouterError("Image is too large for processing. Please use a smaller image or reduce the image quality.", error);
+      }
+
+      logger.warn("[OpenRouter] Fact extraction attempt failed", {
+        attempt,
         imageUrl,
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined
@@ -558,7 +594,7 @@ async function extractFacts(imageUrl: string): Promise<Record<string, unknown>> 
     }
   }
 
-  logger.error("[OpenRouter] Failed to extract facts after all retries", { 
+  logger.error("[OpenRouter] Failed to extract facts after all retries", {
     imageUrl,
     attempts: 2,
     lastError: lastError instanceof Error ? lastError.message : String(lastError)
@@ -604,36 +640,38 @@ async function generateVariants(params: VariantParams): Promise<z.infer<typeof C
     throw new OpenRouterError("OpenRouter is not enabled, cannot generate variants.");
   }
 
-  const sanitizedHint = sanitizeHintForRetry(params.hint);
-  const [systemPrompt, guardPrompt, variantsPrompt] = await Promise.all([
-    loadPrompt("system.txt"),
-    loadPrompt("guard.txt"),
-    loadPrompt("variants.txt"),
-  ]);
-
-  const style = params.style?.trim();
-  const mood = params.mood?.trim();
-  const toneExtras = sanitizeToneExtras(params.toneExtras);
-
-  const toneLines: string[] = [];
-  if (style) {
-    toneLines.push(`STYLE: ${style}`);
+  const toneOptions = extractToneOptions({ style: params.style, mood: params.mood });
+  const toneLines = [];
+  const style = toneOptions.style || params.style;
+  const mood = toneOptions.mood || params.mood;
+  if (style && style.trim().length > 0) {
+    toneLines.push(`STYLE: ${style.trim()}`);
   }
-  if (mood) {
-    toneLines.push(`MOOD: ${mood}`);
+  if (mood && mood.trim().length > 0) {
+    toneLines.push(`MOOD: ${mood.trim()}`);
   }
-  if (toneExtras) {
-    for (const [key, value] of Object.entries(toneExtras)) {
-      if (typeof value === "string" && value.trim().length > 0) {
-        toneLines.push(`${key.toUpperCase()}: ${value.trim()}`);
-      }
+  const toneExtras = toneOptions.toneExtras || {};
+  for (const [key, value] of Object.entries(toneExtras)) {
+    if (typeof value === 'string' && value.trim().length > 0) {
+      toneLines.push(`${key.toUpperCase()}: ${value.trim()}`);
     }
   }
-  const systemWithTone = toneLines.length > 0 ? `${systemPrompt}\n${toneLines.join("\n")}` : systemPrompt;
+  
+  // Use NSFW-specific prompts when appropriate
+  const baseSystemPrompt = params.nsfw 
+    ? await loadPrompt("nsfw-system.txt")
+    : await loadPrompt("system.txt");
+  
+  const systemWithTone = toneLines.length > 0 ? `${baseSystemPrompt}\n${toneLines.join("\n")}` : baseSystemPrompt;
   const voiceContext = formatVoiceContext(params.voice);
   const voiceGuide = buildVoiceGuideBlock(params.voice);
 
-  const promptBlocks = [systemWithTone, guardPrompt, variantsPrompt];
+  // Load the appropriate variants prompt based on NSFW status
+  const variantsPrompt = params.nsfw
+    ? await loadPrompt("nsfw-variants.txt") 
+    : await loadPrompt("variants.txt");
+  
+  const promptBlocks = [systemWithTone, await loadPrompt("guard.txt"), variantsPrompt];
   if (voiceGuide) {
     promptBlocks.push(voiceGuide);
   }
@@ -645,9 +683,10 @@ async function generateVariants(params: VariantParams): Promise<z.infer<typeof C
 
   for (let attempt = 0; attempt < VARIANT_RETRY_LIMIT && collected.length < VARIANT_TARGET; attempt += 1) {
     const needed = VARIANT_TARGET - collected.length;
+    const initialHint = params.hint ? sanitizeHintForRetry(params.hint) : undefined;
     const baseHint = hasBannedWords
-      ? `${sanitizedHint ?? ""} ${BANNED_WORDS_HINT}`.trim()
-      : sanitizedHint;
+      ? `${initialHint ?? ""} ${BANNED_WORDS_HINT}`.trim()
+      : initialHint;
     const retryHint = attempt === 0
       ? baseHint
       : buildRetryHint(baseHint, duplicatesForHint, needed);
@@ -921,6 +960,40 @@ export async function pipeline(params: {
       };
     } catch (error) {
       lastError = error;
+
+      // Check for 413 Payload Too Large error
+      const is413Error = error?.status === 413 || error?.code === 413 ||
+                        (error?.message && /payload.*large|413|length.*exceed|too large/i.test(error.message));
+
+      if (is413Error) {
+        logger.error("[OpenRouter] Image too large (413), falling back to template captions", {
+          attempt,
+          imageUrl: params.imageUrl.substring(0, 100),
+          platform: params.platform,
+          errorStatus: error?.status,
+          errorMessage: error?.message
+        });
+
+        // Fall back to template captions immediately
+        const fallbackVariants = buildFallbackBatch({ platform: params.platform, facts, nsfw });
+        const fallbackFinal = fallbackVariants[0];
+        const fallbackRanked = RankResult.parse({
+          final: fallbackFinal,
+          reason: "Image was too large for AI analysis. Generated template-based captions.",
+          runner_up: fallbackVariants[1],
+        });
+
+        return {
+          provider: "template-fallback",
+          facts: {},
+          variants: fallbackVariants,
+          ranked: fallbackRanked,
+          final: fallbackFinal,
+          titles: fallbackFinal.titles,
+          topVariants: fallbackVariants.slice(0, 2),
+        };
+      }
+
       const errorDetails = {
         attempt,
         imageUrl: params.imageUrl,
@@ -934,7 +1007,7 @@ export async function pipeline(params: {
     }
   }
 
-  logger.error("[OpenRouter] All pipeline attempts exhausted", { 
+  logger.error("[OpenRouter] All pipeline attempts exhausted", {
     attempts: 2,
     lastError: lastError instanceof Error ? lastError.message : String(lastError),
     params: {

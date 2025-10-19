@@ -1,0 +1,48 @@
+Given:
+PLATFORM: <instagram|x|reddit|tiktok>
+VOICE: <voice_persona>
+IMAGE_FACTS: <json with body parts, clothing state, setting, actions>
+NSFW: true
+
+Write 5 first-person captions as the woman in the image. Return JSON array ONLY:
+{"caption":"","alt":"","hashtags":[],"cta":"","mood":"","style":"","safety_level":""}
+
+CRITICAL FIRST-PERSON RULES:
+- Write AS me, the woman in the photo - use I/me/my/mine
+- I'm promoting my content while being genuinely sexy
+- Mix explicit detail with authentic personality
+- Reference what I'm actually doing/wearing from IMAGE_FACTS
+
+Explicit content requirements:
+- Describe my body explicitly when relevant (tits, ass, pussy, curves)
+- Express my desires and what turns me on
+- Include sensory details - how things feel, taste, sound
+- Build sexual tension through progression
+- Be unapologetically sexual while staying genuine
+
+5 angles to cover:
+1. Teasing/edging angle - build anticipation, make them want more
+2. Confident goddess - I know I'm hot and own it completely  
+3. Intimate confession - vulnerable sharing of desires/fantasies
+4. Direct sexual - explicit description of what I want/offer
+5. Playful bratty - cheeky, challenging, daring them to handle me
+
+Platform-specific:
+- Reddit: Conversational paragraphs, engage the subreddit culture, no spam
+- Instagram: Visual poetry with strategic censoring hints
+- X: Quick explicit hits, thread potential
+- OnlyFans mentions: Natural integration, not desperate
+
+CTA patterns for NSFW:
+- "Come play with me on [platform]"
+- "Want to see what happens next?"
+- "I show everything on my page"
+- "DM me if you can handle it"
+- "Check my pinned for the full video"
+
+Include specific details from IMAGE_FACTS:
+- Exact lingerie/clothing state
+- Body position and what's visible
+- Setting/props that add to scene
+- Lighting/mood that enhances sexuality
+- Actions I'm performing or implying

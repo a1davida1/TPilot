@@ -262,3 +262,11 @@
 {"correlationId":"dd5e246e-3bc2-400b-b757-a680f235fc4d","level":"info","message":"⏰ Starting caption metrics polling...","timestamp":"2025-10-19T17:15:00.037Z"}
 {"correlationId":"dd5e246e-3bc2-400b-b757-a680f235fc4d","level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-19T17:15:01.236Z"}
 {"level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-19T17:15:01.330Z"}
+{"level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-19T18:00:00.011Z"}
+{"correlationId":"dd5e246e-3bc2-400b-b757-a680f235fc4d","level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-19T18:00:00.019Z"}
+{"correlationId":"dd5e246e-3bc2-400b-b757-a680f235fc4d","level":"info","message":"⏰ Starting caption metrics polling...","timestamp":"2025-10-19T18:15:00.046Z"}
+{"level":"info","message":"⏰ Starting caption metrics polling...","timestamp":"2025-10-19T18:15:00.047Z"}
+{"level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-19T18:15:00.679Z"}
+{"correlationId":"dd5e246e-3bc2-400b-b757-a680f235fc4d","level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-19T18:15:00.773Z"}
+{"correlationId":"dd5e246e-3bc2-400b-b757-a680f235fc4d","level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-19T19:00:00.010Z"}
+{"level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-19T19:00:00.015Z"}
