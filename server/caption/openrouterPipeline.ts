@@ -566,20 +566,21 @@ async function extractFacts(imageUrl: string): Promise<Record<string, unknown>> 
       const facts = { ...FACT_DEFAULTS, ...(parsed as Record<string, unknown>) };
       logger.info("[OpenRouter] Fact extraction successful", { attempt });
       return facts;
-    } catch (error: any) {
+    } catch (error) {
       lastError = error;
 
       // Check for 413 Payload Too Large error
-      const is413Error = error?.status === 413 || error?.code === 413 ||
-                        (error?.message && /payload.*large|413|length.*exceed/i.test(error.message));
+      const errorObj = error as any;
+      const is413Error = errorObj?.status === 413 || errorObj?.code === 413 ||
+                        (errorObj?.message && /payload.*large|413|length.*exceed/i.test(errorObj.message));
 
       if (is413Error) {
         logger.error("[OpenRouter] Image too large for API (413 error)", {
           attempt,
           imageUrl: imageUrl.substring(0, 100),
-          errorStatus: error?.status,
-          errorCode: error?.code,
-          errorMessage: error?.message
+          errorStatus: errorObj?.status,
+          errorCode: errorObj?.code,
+          errorMessage: errorObj?.message
         });
         // Don't retry on 413 - throw immediately with specific error
         throw new OpenRouterError("Image is too large for processing. Please use a smaller image or reduce the image quality.", error);
@@ -962,16 +963,17 @@ export async function pipeline(params: {
       lastError = error;
 
       // Check for 413 Payload Too Large error
-      const is413Error = error?.status === 413 || error?.code === 413 ||
-                        (error?.message && /payload.*large|413|length.*exceed|too large/i.test(error.message));
+      const errorObj = error as any;
+      const is413Error = errorObj?.status === 413 || errorObj?.code === 413 ||
+                        (errorObj?.message && /payload.*large|413|length.*exceed|too large/i.test(errorObj.message));
 
       if (is413Error) {
         logger.error("[OpenRouter] Image too large (413), falling back to template captions", {
           attempt,
           imageUrl: params.imageUrl.substring(0, 100),
           platform: params.platform,
-          errorStatus: error?.status,
-          errorMessage: error?.message
+          errorStatus: errorObj?.status,
+          errorMessage: errorObj?.message
         });
 
         // Fall back to template captions immediately
