@@ -349,6 +349,15 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     estimatedTaxSavings: statsData?.estimatedTaxSavings ?? 0,
   } satisfies DashboardStatsResponse;
 
+  const catboxTotalUploads = catboxStats?.totalUploads ?? 0;
+  const catboxSuccessfulUploads = catboxStats?.successfulUploads ?? 0;
+  const catboxFailedUploads = catboxStats?.failedUploads ?? 0;
+  const catboxChartData = (catboxStats?.uploadsByDay ?? []).map(point => ({
+    ...point,
+    dateLabel: formatChartDateLabel(point.date),
+  }));
+  const catboxRecentUploads = catboxStats?.recentUploads ?? [];
+
   const statsCards = [
     {
       label: "Posts Today",
@@ -959,10 +968,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 h-72">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={catboxStats.uploadsByDay.map(point => ({
-                      ...point,
-                      dateLabel: formatChartDateLabel(point.date),
-                    }))}>
+                    <AreaChart data={catboxChartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                       <XAxis dataKey="dateLabel" stroke="#9CA3AF" />
                       <YAxis stroke="#9CA3AF" allowDecimals={false} />
@@ -1014,7 +1020,31 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                   </ResponsiveContainer>
                 </div>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-400">Total attempts</p>
+                      <p className="text-lg font-semibold text-white">
+                        {formatNumber(catboxTotalUploads)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Successful uploads</p>
+                      <p className="text-lg font-semibold text-white">
+                        {formatNumber(catboxSuccessfulUploads)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Failed attempts</p>
+                      <p className="text-lg font-semibold text-white">
+                        {formatNumber(catboxFailedUploads)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Success rate</p>
+                      <p className="text-lg font-semibold text-white">
+                        {(catboxStats?.successRate ?? 0).toFixed(1)}%
+                      </p>
+                    </div>
                     <div>
                       <p className="text-sm text-gray-400">Active streak</p>
                       <p className="text-lg font-semibold text-white">
@@ -1027,23 +1057,17 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                         {formatDurationMs(catboxStats?.averageDuration ?? 0)}
                       </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-400">Total uploaded</p>
+                    <div className="md:col-span-2 lg:col-span-3">
+                      <p className="text-sm text-gray-400">Data transferred</p>
                       <p className="text-lg font-semibold text-white">
                         {formatBytes(catboxStats?.totalSize ?? 0)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-400">Success rate</p>
-                      <p className="text-lg font-semibold text-white">
-                        {(catboxStats?.successRate ?? 0).toFixed(1)}%
                       </p>
                     </div>
                   </div>
                   <div>
                     <p className="mb-2 text-sm font-semibold text-gray-300">Recent uploads</p>
                     <div className="space-y-2">
-                      {catboxStats.recentUploads.slice(0, 3).map((upload) => (
+                      {catboxRecentUploads.slice(0, 3).map((upload) => (
                         <div key={upload.id} className="flex items-center justify-between rounded-md bg-gray-700/60 px-3 py-2">
                           <div className="mr-3 min-w-0">
                             <p className="truncate text-sm text-gray-100">

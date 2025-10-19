@@ -1,0 +1,77 @@
+name: Production Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Base URL to exercise. Overrides repository/secret defaults.'
+        required: false
+        type: string
+  deployment_status:
+    types: [success]
+
+jobs:
+  spa-smoke:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'deployment_status' &&
+       github.event.deployment_status.environment == 'production' &&
+       github.event.deployment_status.state == 'success')
+    name: SPA Smoke Test
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ coalesce(github.event.deployment_status.environment_url, github.event.inputs.base_url, vars.PRODUCTION_APP_BASE_URL, secrets.PRODUCTION_APP_BASE_URL) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Resolve base URL
+        id: config
+        shell: bash
+        run: |
+          set -euo pipefail
+          base_url="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.base_url || '' }}"
+          if [ -z "$base_url" ]; then
+            base_url="${{ github.event_name == 'deployment_status' && github.event.deployment_status.environment_url || '' }}"
+          fi
+          if [ -z "$base_url" ]; then
+            base_url="${{ secrets.PRODUCTION_APP_BASE_URL || vars.PRODUCTION_APP_BASE_URL || '' }}"
+          fi
+          if [ -z "$base_url" ]; then
+            echo "::error::Missing production base URL. Provide a workflow input, deployment environment_url, or PRODUCTION_APP_BASE_URL secret/variable."
+            exit 1
+          fi
+          echo "base_url=$base_url" >> "$GITHUB_OUTPUT"
+          echo "Resolved base URL: $base_url"
+
+      - name: Run production smoke test
+        env:
+          APP_BASE_URL: ${{ steps.config.outputs.base_url }}
+        run: npm run smoke:test
+
+      - name: Publish summary
+        if: always()
+        run: |
+          {
+            echo "## Production Smoke Test"
+            echo "* Target: ${{ steps.config.outputs.base_url }}"
+            echo "* Run ID: $GITHUB_RUN_ID"
+            echo "* Status: ${{ job.status }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload smoke artefacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-smoke-${{ github.run_id }}
+          path: |
+            logs/**
+            dist/client/index.html
+          if-no-files-found: warn

@@ -102,23 +102,40 @@ router.post('/upload',
         mimeType,
         userhash
       });
+      const uploadDuration = Date.now() - uploadStartedAt;
+
+      const analyticsBase = req.user?.id
+        ? {
+            userId: req.user.id,
+            filename: req.file.originalname,
+            fileSize: typeof req.file.size === 'number' ? req.file.size : undefined,
+            uploadDuration,
+            provider: 'catbox',
+          }
+        : null;
 
       if (!result.success) {
+        if (analyticsBase) {
+          await CatboxAnalyticsService.recordUpload({
+            ...analyticsBase,
+            url: result.url,
+            success: false,
+            errorMessage: result.error ?? undefined,
+          });
+        }
+
         const statusCode = result.status && result.status >= 400 ? result.status : 400;
         
-        return res.status(statusCode).json({ 
-          error: result.error || 'Upload failed' 
+        return res.status(statusCode).json({
+          error: result.error || 'Upload failed'
         });
       }
 
-      if (req.user?.id && result.url) {
+      if (analyticsBase) {
         await CatboxAnalyticsService.recordUpload({
-          userId: req.user.id,
+          ...analyticsBase,
           url: result.url,
-          filename: req.file.originalname,
-          fileSize: typeof req.file.size === 'number' ? req.file.size : undefined,
-          uploadDuration: Date.now() - uploadStartedAt,
-          provider: 'catbox',
+          success: true,
         });
       }
 
@@ -167,22 +184,43 @@ router.post('/upload-url', authenticateToken(), async (req: AuthRequest, res) =>
       url,
       userhash
     });
+    const uploadDuration = Date.now() - uploadStartedAt;
+
+    const fallbackFilename = extractFilenameFromUrl(url) ?? null;
+    const analyticsBase = req.user?.id
+      ? {
+          userId: req.user.id,
+          sourceUrl: url,
+          uploadDuration,
+          provider: 'catbox',
+        }
+      : null;
 
     if (!result.success) {
+      if (analyticsBase) {
+        await CatboxAnalyticsService.recordUpload({
+          ...analyticsBase,
+          url: result.url,
+          filename: fallbackFilename,
+          success: false,
+          errorMessage: result.error ?? undefined,
+        });
+      }
+
       const statusCode = result.status && result.status >= 400 ? result.status : 400;
       
-      return res.status(statusCode).json({ 
-        error: result.error || 'URL upload failed' 
+      return res.status(statusCode).json({
+        error: result.error || 'URL upload failed'
       });
     }
 
-    if (req.user?.id && result.url) {
+    if (analyticsBase) {
+      const resultFilename = result.url ? extractFilenameFromUrl(result.url) ?? null : null;
       await CatboxAnalyticsService.recordUpload({
-        userId: req.user.id,
+        ...analyticsBase,
         url: result.url,
-        filename: extractFilenameFromUrl(result.url) ?? extractFilenameFromUrl(url),
-        uploadDuration: Date.now() - uploadStartedAt,
-        provider: 'catbox',
+        filename: resultFilename ?? fallbackFilename,
+        success: true,
       });
     }
 

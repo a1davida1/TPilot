@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import type { Express } from 'express';
@@ -8,6 +8,7 @@ import { createApp } from '../../server/index.ts';
 import { storage } from '../../server/storage.ts';
 import { db } from '../../server/db.ts';
 import { catboxUploads } from '../../shared/schema.ts';
+import { CatboxService } from '../../server/lib/catbox-service.ts';
 
 const TEST_SECRET = process.env.JWT_SECRET || 'test-secret-key-with-at-least-32-characters!!';
 process.env.JWT_SECRET = TEST_SECRET;
@@ -30,7 +31,6 @@ describe('Catbox API analytics', () => {
       username: 'catbox-analytics-user',
       email: 'catbox-analytics@test.com',
       password: 'hashed-password',
-      subscriptionTier: 'free',
     });
 
     userId = user.id;
@@ -46,6 +46,10 @@ describe('Catbox API analytics', () => {
     await db.delete(catboxUploads).where(eq(catboxUploads.userId, userId));
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('returns zeroed stats when no uploads exist', async () => {
     const response = await request(app)
       .get('/api/catbox/stats')
@@ -54,6 +58,8 @@ describe('Catbox API analytics', () => {
 
     expect(response.body).toMatchObject({
       totalUploads: 0,
+      successfulUploads: 0,
+      failedUploads: 0,
       totalSize: 0,
       successRate: 0,
       averageDuration: 0,
@@ -110,13 +116,44 @@ describe('Catbox API analytics', () => {
       .expect(200);
 
     expect(response.body.totalUploads).toBe(3);
+    expect(response.body.successfulUploads).toBe(2);
+    expect(response.body.failedUploads).toBe(1);
     expect(response.body.totalSize).toBe(3584);
     expect(response.body.averageDuration).toBeGreaterThan(0);
     expect(response.body.successRate).toBeLessThan(100);
     expect(Array.isArray(response.body.uploadsByDay)).toBe(true);
     expect(response.body.uploadsByDay.length).toBeGreaterThanOrEqual(3);
+    expect(response.body.recentUploads).toHaveLength(2);
     expect(response.body.recentUploads[0].url).toBe('https://files.catbox.moe/upload-1.jpg');
     expect(response.body.lastUploadAt).not.toBeNull();
+  });
+
+  it('records failed upload attempts for authenticated creators', async () => {
+    const uploadSpy = vi.spyOn(CatboxService, 'upload').mockResolvedValue({
+      success: false,
+      error: 'Simulated upstream outage',
+      status: 503,
+    });
+
+    const response = await request(app)
+      .post('/api/catbox/upload')
+      .set('Authorization', `Bearer ${token}`)
+      .attach('file', Buffer.from('sample-bytes'), 'failure.jpg');
+
+    expect(response.status).toBe(503);
+    expect(response.body.error).toBe('Simulated upstream outage');
+
+    const records = await db
+      .select()
+      .from(catboxUploads)
+      .where(eq(catboxUploads.userId, userId));
+
+    expect(records).toHaveLength(1);
+    expect(records[0]?.success).toBe(false);
+    expect(records[0]?.filename).toBe('failure.jpg');
+    expect(records[0]?.errorMessage).toContain('Simulated upstream outage');
+
+    uploadSpy.mockRestore();
   });
 
   it('requires authentication', async () => {

@@ -10,11 +10,14 @@ import type {
 
 interface RecordUploadOptions {
   userId: number;
-  url: string;
-  filename?: string;
-  fileSize?: number;
-  uploadDuration?: number;
-  provider?: string;
+  url?: string | null;
+  sourceUrl?: string | null;
+  filename?: string | null;
+  fileSize?: number | null;
+  uploadDuration?: number | null;
+  provider?: string | null;
+  success?: boolean;
+  errorMessage?: string | null;
 }
 
 const TIMELINE_DAYS = 14;
@@ -27,6 +30,71 @@ function startOfDay(date: Date): Date {
 
 function formatDay(date: Date): string {
   return date.toISOString().slice(0, 10);
+}
+
+function sanitizeString(value: string | null | undefined, maxLength: number): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  return trimmed.length > maxLength ? trimmed.slice(0, maxLength) : trimmed;
+}
+
+function sanitizeProvider(provider: string | null | undefined): string {
+  const sanitized = sanitizeString(provider, 50);
+  return sanitized ?? 'catbox';
+}
+
+function normalizeNumeric(value: number | null | undefined): number | null {
+  if (typeof value !== 'number') {
+    return null;
+  }
+
+  if (!Number.isFinite(value)) {
+    return null;
+  }
+
+  const rounded = Math.round(value);
+  return rounded >= 0 ? rounded : null;
+}
+
+function sanitizeErrorMessage(message: string | null | undefined): string | null {
+  if (!message) {
+    return null;
+  }
+
+  const normalized = message.trim();
+  if (!normalized) {
+    return null;
+  }
+
+  const maxLength = 2000;
+  return normalized.length > maxLength ? normalized.slice(0, maxLength) : normalized;
+}
+
+function resolveStoredUrl(options: RecordUploadOptions): string {
+  const primary = sanitizeString(options.url, 255);
+  if (primary) {
+    return primary;
+  }
+
+  const candidates = [
+    sanitizeString(options.sourceUrl, 255),
+    sanitizeString(options.filename, 255),
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate) {
+      return candidate;
+    }
+  }
+
+  return `catbox://${options.userId}/${Date.now()}`;
 }
 
 function toIsoString(value: Date | string | null | undefined): string | null {
@@ -47,20 +115,20 @@ export class CatboxAnalyticsService {
     try {
       await db.insert(catboxUploads).values({
         userId: options.userId,
-        url: options.url,
-        filename: options.filename ?? null,
-        fileSize: typeof options.fileSize === 'number' ? Math.round(options.fileSize) : null,
-        uploadDuration: typeof options.uploadDuration === 'number'
-          ? Math.round(options.uploadDuration)
-          : null,
-        provider: options.provider ?? 'catbox',
-        success: true,
+        url: resolveStoredUrl(options),
+        filename: sanitizeString(options.filename, 255),
+        fileSize: normalizeNumeric(options.fileSize),
+        uploadDuration: normalizeNumeric(options.uploadDuration),
+        provider: sanitizeProvider(options.provider),
+        success: options.success ?? true,
+        errorMessage: sanitizeErrorMessage(options.errorMessage),
       });
     } catch (error) {
       logger.error('Failed to record Catbox upload analytics', {
         error,
         userId: options.userId,
-        url: options.url,
+        url: options.url ?? null,
+        success: options.success ?? true,
       });
     }
   }
@@ -72,14 +140,16 @@ export class CatboxAnalyticsService {
           totalUploads: sql<number>`count(*)::int`,
           totalSize: sql<number>`coalesce(sum(${catboxUploads.fileSize}), 0)::bigint`,
           successCount: sql<number>`count(case when ${catboxUploads.success} then 1 end)::int`,
+          failureCount: sql<number>`count(case when not ${catboxUploads.success} then 1 end)::int`,
           averageDuration: sql<number>`coalesce(avg(${catboxUploads.uploadDuration}), 0)::float`,
         })
         .from(catboxUploads)
         .where(eq(catboxUploads.userId, userId));
 
-      const totalUploads = Number(aggregate?.totalUploads ?? 0);
       const totalSize = Number(aggregate?.totalSize ?? 0);
       const successCount = Number(aggregate?.successCount ?? 0);
+      const failureCount = Number(aggregate?.failureCount ?? 0);
+      const totalUploads = Number(aggregate?.totalUploads ?? successCount + failureCount);
       const averageDuration = Number(aggregate?.averageDuration ?? 0);
 
       const timelineStart = startOfDay(new Date());
@@ -118,6 +188,7 @@ export class CatboxAnalyticsService {
       }
 
       const uploadsByDay: CatboxUploadDailyStat[] = [];
+      const successByDay: number[] = [];
       const today = startOfDay(new Date());
 
       for (let index = 0; index < TIMELINE_DAYS; index += 1) {
@@ -134,13 +205,15 @@ export class CatboxAnalyticsService {
           totalSize: size,
           successRate: uploads > 0 ? Math.round((successes / uploads) * 1000) / 10 : 0,
         });
+        successByDay.push(successes);
       }
 
       let streakDays = 0;
       for (let index = uploadsByDay.length - 1; index >= 0; index -= 1) {
         const entry = uploadsByDay[index];
         const entryDate = new Date(entry.date);
-        if (entry.uploads > 0) {
+        const successes = successByDay[index] ?? 0;
+        if (successes > 0) {
           // Only count streak if dates are consecutive up to today
           if (streakDays === 0) {
             const sameDay = formatDay(entryDate) === formatDay(today);
@@ -152,10 +225,8 @@ export class CatboxAnalyticsService {
           streakDays += 1;
         } else if (streakDays > 0) {
           break;
-        } else {
-          if (formatDay(entryDate) === formatDay(today)) {
-            break;
-          }
+        } else if (formatDay(entryDate) === formatDay(today)) {
+          break;
         }
       }
 
@@ -170,7 +241,7 @@ export class CatboxAnalyticsService {
           uploadDuration: catboxUploads.uploadDuration,
         })
         .from(catboxUploads)
-        .where(eq(catboxUploads.userId, userId))
+        .where(and(eq(catboxUploads.userId, userId), eq(catboxUploads.success, true)))
         .orderBy(desc(catboxUploads.uploadedAt))
         .limit(5);
 
@@ -188,6 +259,8 @@ export class CatboxAnalyticsService {
 
       return {
         totalUploads,
+        successfulUploads: successCount,
+        failedUploads: failureCount,
         totalSize,
         successRate: totalUploads > 0 ? Math.round((successCount / totalUploads) * 1000) / 10 : 0,
         averageDuration: Math.round(averageDuration || 0),
@@ -200,6 +273,8 @@ export class CatboxAnalyticsService {
       logger.error('Failed to build Catbox upload statistics', { error, userId });
       return {
         totalUploads: 0,
+        successfulUploads: 0,
+        failedUploads: 0,
         totalSize: 0,
         successRate: 0,
         averageDuration: 0,

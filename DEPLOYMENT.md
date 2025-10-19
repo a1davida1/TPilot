@@ -42,6 +42,23 @@ npm run fix-imports
 cd client && npx vite build && cd ..
 ```
 
+### Client Artifact Validation
+```bash
+npm run validate:client -- dist/client
+```
+This command verifies that the Vite output copied into `dist/client` references hashed assets, includes matching pre-compressed `.gz` files, and keeps the SPA entry from falling back to development sources. The production build now runs this step automatically and fails fast if the bundle is missing or corrupt.
+
+### Production Smoke Gate
+The `Production Smoke` GitHub Actions workflow exercises the live single-page application immediately after a deployment succeeds (or on demand via *Run workflow*). It reuses `scripts/smoke-test.ts` to fetch the SPA entry, confirm the `#root` mount, and download each hashed JS/CSS asset. Failures mark the `production` environment check as failed, blocking promotions until the issue is resolved.
+
+To debug locally, build the client and serve it (for example via `npm run build:client` and `npm run dev:client -- --host 0.0.0.0 --port 4173`), then run:
+
+```bash
+npm run smoke:spa -- --base-url=http://localhost:4173
+```
+
+A convenience alias `npm run smoke:spa:local` is provided for the default Vite preview port.
+
 ## 🚀 Running in Production
 
 ### Recommended Command

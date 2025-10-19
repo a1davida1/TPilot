@@ -290,12 +290,16 @@ export function CatboxSettings() {
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Uploads</p>
+                  <p className="text-sm text-muted-foreground">Total Attempts</p>
                   <p className="text-lg font-semibold">{stats.totalUploads}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Size</p>
-                  <p className="text-lg font-semibold">{formatBytes(stats.totalSize)}</p>
+                  <p className="text-sm text-muted-foreground">Successful Uploads</p>
+                  <p className="text-lg font-semibold">{stats.successfulUploads}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Failed Attempts</p>
+                  <p className="text-lg font-semibold">{stats.failedUploads}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Success Rate</p>
@@ -304,6 +308,10 @@ export function CatboxSettings() {
                 <div>
                   <p className="text-sm text-muted-foreground">Upload Streak</p>
                   <p className="text-lg font-semibold">{stats.streakDays} {stats.streakDays === 1 ? 'day' : 'days'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Data Transferred</p>
+                  <p className="text-lg font-semibold">{formatBytes(stats.totalSize)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Last Upload</p>

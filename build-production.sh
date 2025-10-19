@@ -99,9 +99,26 @@ fi
 # Build client for production
 echo "🎨 Building client..."
 npm run build:client
+
+if [ ! -d client/dist ]; then
+  echo "❌ Client build failed: client/dist missing"
+  exit 1
+fi
+
+if [ ! -f client/dist/index.html ]; then
+  echo "❌ Client build failed: client/dist/index.html missing"
+  exit 1
+fi
+
 mkdir -p dist/client
 cp -r client/dist/* dist/client/
-find dist/client -name "*.js" -o -name "*.css" | xargs gzip -9 --keep
+
+find dist/client -type f \( -name "*.js" -o -name "*.css" \) -print0 | xargs -0 -r gzip -9 --keep
+
+if ! npm run validate:client -- dist/client; then
+  echo "❌ Client bundle validation failed after compression"
+  exit 1
+fi
 
 echo "✅ Production build complete!"
 echo ""

@@ -110,6 +110,19 @@ npm test
 npm run build
 ```
 
+## Post-Deployment Verification
+
+The `Production Smoke` workflow (`.github/workflows/production-smoke.yml`) is attached to the `production` environment. When a deployment succeeds, it pulls the live SPA shell, verifies the `#root` container, and downloads each hashed JS/CSS asset. Any failure flips the environment check to failed so follow-up deployments are blocked until the regression is resolved.
+
+You can re-run the gate manually from the Actions tab (provide a `base_url` input if the environment URL is not published) or reproduce it locally with:
+
+```bash
+# After running npm run build:client and serving the dist folder
+npm run smoke:spa:local
+```
+
+Set `APP_BASE_URL` explicitly when targeting a staging environment, e.g. `APP_BASE_URL=https://staging.example.com npm run smoke:test`.
+
 ## Troubleshooting Validation Failures
 
 ### Common Issues

@@ -62,6 +62,7 @@ router.post(
         }
       }
 
+      const uploadStartedAt = Date.now();
       const uploadResult = await CatboxService.upload({
         reqtype: 'fileupload',
         file: fileBuffer,
@@ -69,6 +70,17 @@ router.post(
         mimeType,
         userhash
       });
+      const uploadDuration = Date.now() - uploadStartedAt;
+
+      const analyticsBase = req.user?.id
+        ? {
+            userId: req.user.id,
+            filename: sanitizedFilename,
+            fileSize: typeof req.file.size === 'number' ? req.file.size : undefined,
+            uploadDuration,
+            provider: 'catbox',
+          }
+        : null;
 
       if (!uploadResult.success || !uploadResult.url) {
         const statusCode =
@@ -86,6 +98,15 @@ router.post(
 
         if (detailedError && responseMessage !== detailedError) {
           responseBody.details = detailedError;
+        }
+
+        if (analyticsBase) {
+          await CatboxAnalyticsService.recordUpload({
+            ...analyticsBase,
+            url: uploadResult.url,
+            success: false,
+            errorMessage: detailedError ?? uploadResult.error ?? undefined,
+          });
         }
 
         logger.error('Catbox proxy upload failed', {
@@ -110,13 +131,11 @@ router.post(
         userId: req.user?.id ?? null
       });
 
-      if (req.user?.id && uploadResult.url) {
+      if (analyticsBase && uploadResult.url) {
         await CatboxAnalyticsService.recordUpload({
-          userId: req.user.id,
+          ...analyticsBase,
           url: uploadResult.url,
-          filename: sanitizedFilename,
-          fileSize: req.file.size,
-          provider: 'catbox',
+          success: true,
         });
       }
 

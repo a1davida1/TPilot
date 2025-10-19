@@ -17,6 +17,8 @@ export interface CatboxRecentUpload {
 
 export interface CatboxUploadStatsResponse {
   totalUploads: number;
+  successfulUploads: number;
+  failedUploads: number;
   totalSize: number;
   successRate: number;
   averageDuration: number;

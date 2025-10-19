@@ -31,6 +31,7 @@ vi.mock('../../server/services/catbox-analytics-service.ts', () => ({
 
 import catboxProxyRouter from '../../server/routes/catbox-proxy.js';
 import { CatboxService } from '../../server/lib/catbox-service.js';
+import { CatboxAnalyticsService } from '../../server/services/catbox-analytics-service.ts';
 
 describe('POST /api/upload/catbox-proxy', () => {
   let app: express.Application;
@@ -85,6 +86,17 @@ describe('POST /api/upload/catbox-proxy', () => {
 
     const uploadPayload = vi.mocked(CatboxService.upload).mock.calls[0]?.[0];
     expect(uploadPayload?.file).toBeInstanceOf(Uint8Array);
+
+    expect(CatboxAnalyticsService.recordUpload).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 1,
+        filename: 'test.png',
+        success: true,
+        provider: 'catbox',
+        url: 'https://files.catbox.moe/test.png',
+        uploadDuration: expect.any(Number),
+      })
+    );
   });
 
   it('propagates Catbox 412 errors with guidance', async () => {
@@ -114,6 +126,17 @@ describe('POST /api/upload/catbox-proxy', () => {
 
     const uploadPayload = vi.mocked(CatboxService.upload).mock.calls[0]?.[0];
     expect(uploadPayload?.file).toBeInstanceOf(Uint8Array);
+
+    expect(CatboxAnalyticsService.recordUpload).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 1,
+        filename: 'example.jpg',
+        success: false,
+        provider: 'catbox',
+        errorMessage: 'You must provide a userhash',
+        uploadDuration: expect.any(Number),
+      })
+    );
   });
 
   it('prefers request-provided userhash over stored value', async () => {
@@ -141,5 +164,16 @@ describe('POST /api/upload/catbox-proxy', () => {
 
     const uploadPayload = vi.mocked(CatboxService.upload).mock.calls[0]?.[0];
     expect(uploadPayload?.file).toBeInstanceOf(Uint8Array);
+
+    expect(CatboxAnalyticsService.recordUpload).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 1,
+        filename: 'from-request.png',
+        success: true,
+        provider: 'catbox',
+        url: 'https://files.catbox.moe/request.png',
+        uploadDuration: expect.any(Number),
+      })
+    );
   });
 });
