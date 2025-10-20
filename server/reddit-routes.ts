@@ -806,6 +806,14 @@ export function registerRedditRoutes(app: Express) {
   app.post('/api/reddit/post', authenticateToken(true), async (req: AuthRequest, res) => {
     const { title, subreddit, imageUrl, text, nsfw, spoiler } = req.body;
 
+    logger.info('Quick Post request received', {
+      userId: req.user?.id,
+      subreddit,
+      hasImage: !!imageUrl,
+      imageUrl: imageUrl ? imageUrl.substring(0, 100) : undefined,
+      titleLength: title?.length
+    });
+
     // Transform Quick Post format to submit format
     const transformedBody = {
       title,

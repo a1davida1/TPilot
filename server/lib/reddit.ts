@@ -146,7 +146,9 @@ async function secureFetchImage(imageUrl: string): Promise<Buffer> {
     'unsplash.com',
     'images.unsplash.com',
     'cdn.discordapp.com',
-    'media.discordapp.net'
+    'media.discordapp.net',
+    'files.catbox.moe',
+    'catbox.moe'
   ];
 
   const hostname = url.hostname.toLowerCase();
@@ -155,7 +157,12 @@ async function secureFetchImage(imageUrl: string): Promise<Buffer> {
   );
 
   if (!isAllowedHost) {
-    throw new Error('Image URL must be from an allowed hosting service');
+    logger.error('Image URL rejected - not from allowed host', {
+      url: imageUrl,
+      hostname,
+      allowedHosts
+    });
+    throw new Error(`Image URL must be from an allowed hosting service. Got: ${hostname}`);
   }
 
   // DNS resolution and IP validation to prevent SSRF
