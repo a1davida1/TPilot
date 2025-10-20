@@ -142,26 +142,32 @@ Start: node dist/server/index.js
 - NO analytics
 - Basic features only
 
-### STARTER ($9/month)
+### STARTER ($12.99/month)
 - 10 posts/day
 - 50 captions/day
 - NO scheduling (same as free)
 - Basic features
 
-### PRO ($29/month)
+### PRO ($24.99/month)
 - 50 posts/day
 - 500 captions/day
 - **7-day scheduling**
 - Basic analytics
 - Priority support
 
-### PREMIUM ($99/month)
+### PREMIUM ($49.99/month)
 - Unlimited posts
 - Unlimited captions
 - **30-day scheduling**
 - Full analytics dashboard
 - AI model selection
 - Dedicated support
+
+**Pricing:**
+- FREE: $0/month
+- STARTER: $12.99/month
+- PRO: $24.99/month
+- PREMIUM: $49.99/month
 
 **Enforcement:**
 - `/server/lib/tier-limits.ts` - Rate limiting logic

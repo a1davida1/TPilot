@@ -79,11 +79,11 @@ The system automatically retries with the next provider on failure and gracefull
 
 **Tier System**: Feature access controlled by `users.tier` column:
 - **Free** ($0/mo): 3 posts/day, 1 subreddit, 5 AI generations/day, no scheduling
-- **Starter** ($9/mo): Unlimited manual posts, 5 subreddits, 50 AI generations/day, **NO scheduling access**
-- **Pro** ($29/mo): Unlimited posts, unlimited subreddits, **7-day scheduling**, basic analytics, 500 AI generations/day, bulk operations (10)
-- **Premium** ($99/mo): **30-day scheduling**, max analytics with trends/forecasting, unlimited AI generations, API access, white-label options
+- **Starter** ($12.99/mo): Unlimited manual posts, 5 subreddits, 50 AI generations/day, **NO scheduling access**
+- **Pro** ($24.99/mo): Unlimited posts, unlimited subreddits, **7-day scheduling**, basic analytics, 500 AI generations/day, bulk operations (10)
+- **Premium** ($49.99/mo): **30-day scheduling**, max analytics with trends/forecasting, unlimited AI generations, API access, white-label options
 
-**Scheduling Access**: Critical business rule - only Pro ($29+) and Premium ($99+) tiers have access to scheduled posting. Starter tier ($9) is manual posting only. This is enforced in:
+**Scheduling Access**: Critical business rule - only Pro ($24.99+) and Premium ($49.99+) tiers have access to scheduled posting. Starter tier ($12.99) is manual posting only. This is enforced in:
 - Frontend: Scheduling UI hidden for Free/Starter tiers
 - Backend: `/api/scheduled-posts` endpoints check tier authorization
 - Database: `scheduled_posts` table with userId validation against tier
@@ -548,7 +548,7 @@ Scheduling Page → Bulk Upload → Select Images → Generate Captions → Set 
 ## Business Model & Monetization
 
 ### Revenue Streams
-1. **Subscription Tiers**: Free → Starter ($9) → Pro ($29) → Premium ($99)
+1. **Subscription Tiers**: Free → Starter ($12.99) → Pro ($24.99) → Premium ($49.99)
 2. **Referral Commissions**: $5 per converted referral (tracked in `referral_rewards` table)
 3. **API Access**: Premium tier feature (planned, not yet implemented)
 4. **White-Label Solutions**: Enterprise offering (planned)

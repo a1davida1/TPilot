@@ -158,8 +158,8 @@ PORT=5000               # Default 5000
 
 ## 📊 Tier Limits Quick Reference
 
-| Feature | FREE | STARTER | PRO | PREMIUM |
-|---------|------|---------|-----|---------|
+| Feature | FREE | STARTER ($12.99) | PRO ($24.99) | PREMIUM ($49.99) |
+|---------|------|------------------|--------------|------------------|
 | Posts/day | 3 | 10 | 50 | ∞ |
 | Captions/day | 5 | 50 | 500 | ∞ |
 | Scheduling | ❌ | ❌ | 7 days | 30 days |
