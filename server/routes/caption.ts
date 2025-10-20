@@ -62,6 +62,24 @@ function extractCaptionMetadata(final: unknown, titlesHint?: unknown): { caption
 
 const router = Router();
 
+function scheduleGenerationSave(
+  task: () => Promise<void>,
+  metadata?: Record<string, unknown>,
+): void {
+  void (async () => {
+    try {
+      await task();
+    } catch (error) {
+      logger.error('Failed to save generation to database', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        ...metadata,
+      });
+    }
+  })();
+}
+
+
 const generateSchema = z.object({
   imageUrl: z.string(),
   platform: z.enum(['instagram', 'x', 'reddit', 'tiktok']),
@@ -126,30 +144,31 @@ router.post('/generate', authenticateToken(true), async (req: AuthRequest, res: 
     // Save generation to database
     if (req.user?.id && result.final) {
       const { caption: captionText, titles } = extractCaptionMetadata(result.final, result.final.titles);
-      try {
-        await storage.createGeneration({
-          userId: req.user.id,
-          platform,
-          style: style || voice || 'default',
-          theme: 'image_based',
-          titles,
-          content: captionText || '',
-          photoInstructions: {
-            lighting: 'Natural lighting',
-            cameraAngle: 'Eye level',
-            composition: 'Center composition',
-            styling: 'Authentic styling',
-            mood: 'Confident and natural',
-            technicalSettings: 'Auto settings'
-          },
-          prompt: `Image-based generation for ${platform}`,
-          generationType: 'ai',
-          allowsPromotion: nsfw || false
-        });
-      } catch (dbError) {
-        logger.error('Failed to save generation to database', { error: dbError });
-        // Don't fail the request if database save fails
-      }
+      const userId = req.user.id;
+      scheduleGenerationSave(
+        async () => {
+          await storage.createGeneration({
+            userId,
+            platform,
+            style: style || voice || 'default',
+            theme: 'image_based',
+            titles,
+            content: captionText || '',
+            photoInstructions: {
+              lighting: 'Natural lighting',
+              cameraAngle: 'Eye level',
+              composition: 'Center composition',
+              styling: 'Authentic styling',
+              mood: 'Confident and natural',
+              technicalSettings: 'Auto settings'
+            },
+            prompt: `Image-based generation for ${platform}`,
+            generationType: 'ai',
+            allowsPromotion: nsfw || false
+          });
+        },
+        { userId, platform },
+      );
     }
     
     return res.status(200).json(validatedResult);
@@ -204,30 +223,31 @@ router.post('/generate-text', authenticateToken(true), async (req: AuthRequest, 
     // Save generation to database
     if (req.user?.id && result.final) {
       const { caption: captionText, titles } = extractCaptionMetadata(result.final, result.titles);
-      try {
-        await storage.createGeneration({
-          userId: req.user.id,
-          platform,
-          style: style || voice || 'default',
-          theme: theme || 'lifestyle',
-          titles,
-          content: captionText || '',
-          photoInstructions: {
-            lighting: 'Natural lighting',
-            cameraAngle: 'Eye level',
-            composition: 'Center composition',
-            styling: 'Authentic styling',
-            mood: 'Confident and natural',
-            technicalSettings: 'Auto settings'
-          },
-          prompt: `Text-based generation: ${theme} for ${platform}${context ? ` - ${context}` : ''}`,
-          generationType: 'ai',
-          allowsPromotion: nsfw || false
-        });
-      } catch (dbError) {
-        logger.error('Failed to save generation to database', { error: dbError });
-        // Don't fail the request if database save fails
-      }
+      const userId = req.user.id;
+      scheduleGenerationSave(
+        async () => {
+          await storage.createGeneration({
+            userId,
+            platform,
+            style: style || voice || 'default',
+            theme: theme || 'lifestyle',
+            titles,
+            content: captionText || '',
+            photoInstructions: {
+              lighting: 'Natural lighting',
+              cameraAngle: 'Eye level',
+              composition: 'Center composition',
+              styling: 'Authentic styling',
+              mood: 'Confident and natural',
+              technicalSettings: 'Auto settings'
+            },
+            prompt: `Text-based generation: ${theme} for ${platform}${context ? ` - ${context}` : ''}`,
+            generationType: 'ai',
+            allowsPromotion: nsfw || false
+          });
+        },
+        { userId, platform },
+      );
     }
     
     return res.status(200).json(validatedResult);
@@ -277,30 +297,31 @@ router.post('/rewrite', authenticateToken(true), async (req: AuthRequest, res: R
     // Save generation to database
     if (req.user?.id && result.final) {
       const { caption: captionText, titles } = extractCaptionMetadata(result.final, result.titles);
-      try {
-        await storage.createGeneration({
-          userId: req.user.id,
-          platform,
-          style: style || voice || 'default',
-          theme: 'rewrite',
-          titles,
-          content: captionText || '',
-          photoInstructions: {
-            lighting: 'Natural lighting',
-            cameraAngle: 'Eye level',
-            composition: 'Center composition',
-            styling: 'Authentic styling',
-            mood: 'Confident and natural',
-            technicalSettings: 'Auto settings'
-          },
-          prompt: `Rewrite existing content for ${platform}: "${existingCaption.substring(0, 100)}..."`,
-          generationType: 'ai',
-          allowsPromotion: nsfw || false
-        });
-      } catch (dbError) {
-        logger.error('Failed to save generation to database', { error: dbError });
-        // Don't fail the request if database save fails
-      }
+      const userId = req.user.id;
+      scheduleGenerationSave(
+        async () => {
+          await storage.createGeneration({
+            userId,
+            platform,
+            style: style || voice || 'default',
+            theme: 'rewrite',
+            titles,
+            content: captionText || '',
+            photoInstructions: {
+              lighting: 'Natural lighting',
+              cameraAngle: 'Eye level',
+              composition: 'Center composition',
+              styling: 'Authentic styling',
+              mood: 'Confident and natural',
+              technicalSettings: 'Auto settings'
+            },
+            prompt: `Rewrite existing content for ${platform}: "${existingCaption.substring(0, 100)}..."`,
+            generationType: 'ai',
+            allowsPromotion: nsfw || false
+          });
+        },
+        { userId, platform },
+      );
     }
     
     return res.status(200).json(validatedResult);
