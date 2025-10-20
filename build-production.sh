@@ -132,7 +132,7 @@ else
 fi
 
 # Only validate if script exists
-if [ -f scripts/validate-client.js ]; then
+if [ -f scripts/validate-client-bundle.ts ]; then
   if ! npm run validate:client -- dist/client; then
     echo "⚠️ Client bundle validation failed (non-critical)"
   fi

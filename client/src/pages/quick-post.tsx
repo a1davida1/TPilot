@@ -17,7 +17,10 @@ import {
   Settings2,
   BadgeCheck,
   AlertTriangle,
-  ChevronsUpDown
+  ChevronsUpDown,
+  Pencil,
+  Save,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +29,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -194,6 +198,9 @@ export default function QuickPostPage() {
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
   const [posted, setPosted] = useState(false);
   const [communityPickerOpen, setCommunityPickerOpen] = useState(false);
+  const [isEditingCaption, setIsEditingCaption] = useState(false);
+  const [editedCaptionText, setEditedCaptionText] = useState('');
+  const [captionBeingEdited, setCaptionBeingEdited] = useState<'A' | 'B' | null>(null);
 
   const toneOptions = useMemo(() => (nsfw ? NSFW_TONES : SFW_TONES), [nsfw]);
 
@@ -764,13 +771,66 @@ export default function QuickPostPage() {
                       {confirmedCaptionId ? (
                         <Card className="border-purple-500 bg-purple-50 dark:bg-purple-950/20">
                           <CardHeader className="pb-2">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary">Selected</Badge>
-                              <span className="text-sm text-muted-foreground">Caption {confirmedCaptionId}</span>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary">Selected</Badge>
+                                <span className="text-sm text-muted-foreground">Caption {confirmedCaptionId}</span>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() => {
+                                  setIsEditingCaption(true);
+                                  setCaptionBeingEdited(confirmedCaptionId);
+                                  setEditedCaptionText(selectedCaptionOption?.text || '');
+                                }}
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
                             </div>
                           </CardHeader>
                           <CardContent>
-                            <p className="text-sm">{selectedCaptionOption?.text}</p>
+                            {isEditingCaption && captionBeingEdited === confirmedCaptionId ? (
+                              <div className="space-y-2">
+                                <Textarea
+                                  value={editedCaptionText}
+                                  onChange={(e) => setEditedCaptionText(e.target.value)}
+                                  className="min-h-[60px] text-sm"
+                                  placeholder="Edit your caption..."
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => {
+                                      const updatedOptions = captionOptions.map(opt => 
+                                        opt.id === confirmedCaptionId ? { ...opt, text: editedCaptionText } : opt
+                                      );
+                                      setCaptionOptions(updatedOptions);
+                                      setIsEditingCaption(false);
+                                      setCaptionBeingEdited(null);
+                                    }}
+                                  >
+                                    <Save className="h-3 w-3 mr-1" />
+                                    Save
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setIsEditingCaption(false);
+                                      setCaptionBeingEdited(null);
+                                      setEditedCaptionText('');
+                                    }}
+                                  >
+                                    <X className="h-3 w-3 mr-1" />
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-sm">{selectedCaptionOption?.text}</p>
+                            )}
                           </CardContent>
                         </Card>
                       ) : (
@@ -786,14 +846,72 @@ export default function QuickPostPage() {
                                 onClick={() => setSelectedCaption(option.id)}
                               >
                                 <CardHeader className="pb-2">
-                                  <div className="flex items-center gap-2">
-                                    <RadioGroupItem value={option.id} />
-                                    <Badge variant="secondary">{option.style}</Badge>
-                                    <span className="text-xs text-muted-foreground">Caption {option.id}</span>
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <RadioGroupItem value={option.id} />
+                                      <Badge variant="secondary">{option.style}</Badge>
+                                      <span className="text-xs text-muted-foreground">Caption {option.id}</span>
+                                    </div>
+                                    {selectedCaption === option.id && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setIsEditingCaption(true);
+                                          setCaptionBeingEdited(option.id);
+                                          setEditedCaptionText(option.text);
+                                        }}
+                                      >
+                                        <Pencil className="h-3 w-3" />
+                                      </Button>
+                                    )}
                                   </div>
                                 </CardHeader>
                                 <CardContent>
-                                  <p className="text-sm">{option.text}</p>
+                                  {isEditingCaption && captionBeingEdited === option.id ? (
+                                    <div className="space-y-2">
+                                      <Textarea
+                                        value={editedCaptionText}
+                                        onChange={(e) => setEditedCaptionText(e.target.value)}
+                                        className="min-h-[60px] text-sm"
+                                        placeholder="Edit your caption..."
+                                      />
+                                      <div className="flex gap-2">
+                                        <Button
+                                          size="sm"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const updatedOptions = captionOptions.map(opt => 
+                                              opt.id === option.id ? { ...opt, text: editedCaptionText } : opt
+                                            );
+                                            setCaptionOptions(updatedOptions);
+                                            setIsEditingCaption(false);
+                                            setCaptionBeingEdited(null);
+                                          }}
+                                        >
+                                          <Save className="h-3 w-3 mr-1" />
+                                          Save
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsEditingCaption(false);
+                                            setCaptionBeingEdited(null);
+                                            setEditedCaptionText('');
+                                          }}
+                                        >
+                                          <X className="h-3 w-3 mr-1" />
+                                          Cancel
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <p className="text-sm">{option.text}</p>
+                                  )}
                                 </CardContent>
                               </Card>
                             ))}

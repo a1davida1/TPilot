@@ -123,3 +123,45 @@
 {"level":"info","message":"🔧 Using PostgreSQL queue backend","timestamp":"2025-10-20T18:56:21.398Z"}
 {"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-20T18:56:21.398Z"}
 {"level":"info","message":"Queue system initialized","timestamp":"2025-10-20T18:56:21.399Z"}
+{"level":"info","message":"Sentry initialized successfully","timestamp":"2025-10-20T21:57:55.651Z"}
+{"level":"info","message":"[Gemini] Text model: gemini-2.5-flash","timestamp":"2025-10-20T21:57:56.873Z"}
+{"level":"info","message":"[Gemini] Vision model: gemini-2.5-flash","timestamp":"2025-10-20T21:57:56.873Z"}
+{"level":"info","message":"[OpenRouter] Default model: x-ai/grok-4-fast","timestamp":"2025-10-20T21:57:56.873Z"}
+{"level":"info","message":"[HEALTH] Script executed directly, starting bootstrap...","timestamp":"2025-10-20T21:57:57.215Z"}
+{"level":"info","message":"[HEALTH] Starting application bootstrap...","timestamp":"2025-10-20T21:57:57.216Z"}
+{"level":"info","message":"[HEALTH] Environment: development","timestamp":"2025-10-20T21:57:57.216Z"}
+{"level":"info","message":"[HEALTH] Platform: linux","timestamp":"2025-10-20T21:57:57.216Z"}
+{"level":"info","message":"[HEALTH] Architecture: x64","timestamp":"2025-10-20T21:57:57.216Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-20T21:57:57.225Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-20T21:57:57.225Z"}
+{"error":"Connection is closed.","level":"warn","message":"Failed to connect to Redis cache","timestamp":"2025-10-20T21:57:57.225Z"}
+{"level":"info","message":"Using memory store for rate limiting (Redis disabled for beta)","timestamp":"2025-10-20T21:57:57.228Z"}
+{"level":"info","message":"Rate limiter using memory store for api","timestamp":"2025-10-20T21:57:57.228Z"}
+{"level":"info","message":"Rate limiter using memory store for posts","timestamp":"2025-10-20T21:57:57.230Z"}
+{"level":"info","message":"Rate limiter using memory store for captions","timestamp":"2025-10-20T21:57:57.230Z"}
+{"level":"info","message":"Rate limiter using memory store for default","timestamp":"2025-10-20T21:57:57.231Z"}
+{"endpoints":["api","auth","posting","captions","upload","feedback","passwordReset"],"level":"info","message":"Rate limiting middleware configured","redisAvailable":false,"timestamp":"2025-10-20T21:57:57.231Z"}
+{"level":"info","message":"Advanced rate limiting applied","timestamp":"2025-10-20T21:57:57.232Z"}
+{"level":"info","message":"Observability middleware configured","timestamp":"2025-10-20T21:57:57.237Z"}
+{"level":"info","message":"Observability middleware applied","timestamp":"2025-10-20T21:57:57.237Z"}
+{"level":"info","message":"Session store configured with PostgreSQL backend","timestamp":"2025-10-20T21:57:57.239Z"}
+{"apiPrefix":"/api","level":"info","loginRoute":"/api/auth/login","message":"Setting up auth routes","signupRoute":"/api/auth/signup","timestamp":"2025-10-20T21:57:57.239Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-20T21:57:57.327Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-20T21:57:57.328Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-20T21:57:57.529Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-20T21:57:57.530Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-20T21:57:57.830Z"}
+{"level":"warn","message":"Redis connection failed after 3 retries, disabling cache","timestamp":"2025-10-20T21:57:57.831Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-20T21:57:57.832Z"}
+{"email":"admin@thottopilot.com","level":"info","message":"Admin account configured successfully","timestamp":"2025-10-20T21:57:58.391Z","username":"admin@thottopilot.com"}
+{"level":"info","message":"🔧 Applying production database fixes...","timestamp":"2025-10-20T21:57:58.391Z"}
+{"level":"info","message":"✅ Admin account verified: admin@thottopilot.com","timestamp":"2025-10-20T21:57:58.622Z"}
+{"level":"info","message":"User a1davida1 already has tier: pro","timestamp":"2025-10-20T21:57:58.712Z"}
+{"level":"info","message":"User a1davida1 email already verified","timestamp":"2025-10-20T21:57:58.891Z"}
+{"level":"info","message":"✅ Production database fixes completed","timestamp":"2025-10-20T21:57:58.891Z"}
+{"level":"info","message":"Initializing queue system...","timestamp":"2025-10-20T21:57:58.894Z"}
+{"level":"info","message":"Queue backend selection: USE_PG_QUEUE=true, REDIS_URL=true","timestamp":"2025-10-20T21:57:58.894Z"}
+{"level":"info","message":"🔧 Using PostgreSQL queue backend","timestamp":"2025-10-20T21:57:58.894Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-20T21:57:58.894Z"}
+{"level":"info","message":"Queue system initialized","timestamp":"2025-10-20T21:57:58.895Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-20T21:57:58.901Z"}

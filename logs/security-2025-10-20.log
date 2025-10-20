@@ -33,3 +33,15 @@
 {"level":"warn","message":"Redis connection failed after 3 retries, disabling cache","timestamp":"2025-10-20T18:56:20.088Z"}
 {"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-20T18:56:20.089Z"}
 {"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-20T18:56:21.398Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-20T21:57:57.225Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-20T21:57:57.225Z"}
+{"error":"Connection is closed.","level":"warn","message":"Failed to connect to Redis cache","timestamp":"2025-10-20T21:57:57.225Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-20T21:57:57.327Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-20T21:57:57.328Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-20T21:57:57.529Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-20T21:57:57.530Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"warn","message":"Redis cache error, falling back to no-cache mode","timestamp":"2025-10-20T21:57:57.830Z"}
+{"level":"warn","message":"Redis connection failed after 3 retries, disabling cache","timestamp":"2025-10-20T21:57:57.831Z"}
+{"level":"warn","message":"Redis cache connection closed","timestamp":"2025-10-20T21:57:57.832Z"}
+{"level":"error","message":"🔧 Initializing PostgreSQL Queue backend","timestamp":"2025-10-20T21:57:58.894Z"}
+{"level":"error","message":"🔍 Starting queue monitoring...","timestamp":"2025-10-20T21:57:58.901Z"}
