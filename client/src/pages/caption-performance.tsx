@@ -55,7 +55,7 @@ export default function CaptionPerformanceDashboard() {
 
   const captionPerf = dashboardData?.captionPerformance || [];
   const badges = badgesData?.badges || [];
-  const earnedBadges = badges.filter((b: any) => b.earned);
+  const earnedBadges = badges.filter((b: { earned?: boolean }) => b.earned);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -78,7 +78,7 @@ export default function CaptionPerformanceDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {earnedBadges.map((badge: any) => (
+              {earnedBadges.map((badge: { type: string; icon: string; name: string; description: string }) => (
                 <div key={badge.type} className="p-4 border rounded-lg text-center">
                   <div className="text-4xl mb-2">{badge.icon}</div>
                   <div className="font-semibold">{badge.name}</div>
@@ -105,7 +105,7 @@ export default function CaptionPerformanceDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {captionPerf.map((item: any) => (
+                {captionPerf.map((item: { style: string; choice_rate?: string; avg_upvotes_24h?: string }) => (
                   <tr key={item.style} className="border-b">
                     <td className="p-2 font-medium capitalize">{item.style}</td>
                     <td className="text-right p-2">{Math.round(parseFloat(item.choice_rate || 0) * 100)}%</td>
