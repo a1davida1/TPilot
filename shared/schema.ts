@@ -1595,7 +1595,9 @@ export const insertRedditAuditLogSchema = createInsertSchema(redditAccountAuditL
   metadata: z.record(z.unknown()).optional(),
   ipAddress: z.string().ip().optional(),
   userAgent: z.string().optional(),
-}).required({ userId: true, action: true });
+  userId: z.number().int().positive(),
+  redditAccountId: z.number().int().positive().optional(),
+});
 
 export type RedditAccount = typeof redditAccounts.$inferSelect;
 export type InsertRedditAccount = z.infer<typeof insertRedditAccountSchema>;
