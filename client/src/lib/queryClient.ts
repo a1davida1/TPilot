@@ -107,7 +107,7 @@ function getErrorMessage(status: number, errorData: Record<string, unknown>): st
   }
 }
 
-async function throwIfResNotOk(res: Response) {
+async function _throwIfResNotOk(res: Response) {
   if (res.ok) {
     return;
   }
@@ -283,7 +283,7 @@ export async function apiRequest(
           data.append('_csrf', token);
         } else if (data && typeof data === 'object') {
           // Add CSRF token to JSON payload
-          (data as any)._csrf = token;
+          (data as Record<string, unknown> & { _csrf?: string })._csrf = token;
         }
       }
     } catch (error) {
@@ -326,7 +326,7 @@ export async function apiRequest(
             // FormData is mutable, update the token
             data.set('_csrf', newToken);
           } else if (data && typeof data === 'object') {
-            (data as any)._csrf = newToken;
+            (data as Record<string, unknown> & { _csrf?: string })._csrf = newToken;
             // Re-stringify the body with the new token
             if (headers["Content-Type"] === "application/json") {
               body = JSON.stringify(data);

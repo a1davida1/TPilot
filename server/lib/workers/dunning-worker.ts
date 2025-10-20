@@ -177,7 +177,7 @@ export class DunningWorker {
         };
       }
     } catch (error: unknown) {
-      const errorObj = error as any;
+      const errorObj = error as { decline_code?: string; message?: string };
       const errorMessage = errorObj?.decline_code || errorObj?.message || 'Payment failed';
       return { success: false, error: errorMessage, provider: 'stripe' };
     }
@@ -195,7 +195,7 @@ export class DunningWorker {
       if (!res.ok) {
         return { success: false, provider: 'ccbill', error: `HTTP ${res.status}` };
       }
-      const data = await res.json() as any;
+      const data = await res.json() as { success?: boolean; id?: string };
       return {
         success: Boolean(data.success),
         transactionId: data.id,

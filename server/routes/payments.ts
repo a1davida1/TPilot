@@ -58,15 +58,15 @@ router.post('/create-intent', authenticateToken(true), async (req: AuthRequest, 
     });
 
     const invoice = subscription.latest_invoice as Stripe.Invoice;
-    const paymentIntent = (invoice as any).payment_intent as Stripe.PaymentIntent;
+    const paymentIntent = (invoice as Stripe.Invoice & { payment_intent: Stripe.PaymentIntent }).payment_intent;
 
     res.json({
       clientSecret: paymentIntent.client_secret,
       subscriptionId: subscription.id
     });
 
-  } catch (error: any) {
-    logger.error('Failed to create payment intent', { error, userId: req.user?.id });
+  } catch (error: unknown) {
+    logger.error('Failed to create payment intent', { error: error instanceof Error ? error.message : String(error), userId: req.user?.id });
     res.status(500).json({ error: 'Failed to create payment' });
   }
 });
@@ -102,8 +102,8 @@ router.post('/webhook', async (req, res: Response) => {
     }
 
     res.json({ received: true });
-  } catch (error: any) {
-    logger.error('Webhook error', { error: error.message });
+  } catch (error: unknown) {
+    logger.error('Webhook error', { error: error instanceof Error ? error.message : String(error) });
     res.status(400).json({ error: 'Webhook error' });
   }
 });
@@ -154,7 +154,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     .set({
       tier,
       stripeSubscriptionId: subscription.id,
-      subscriptionStatus: subscription.status as any,
+      subscriptionStatus: subscription.status as 'active' | 'inactive' | 'cancelled' | 'past_due' | 'expired',
       updatedAt: new Date()
     })
     .where(eq(users.id, user.id));
@@ -221,8 +221,8 @@ router.get('/billing', authenticateToken(true), async (req: AuthRequest, res: Re
       .limit(20);
 
     res.json({ history });
-  } catch (error: any) {
-    logger.error('Failed to fetch billing history', { error, userId: req.user?.id });
+  } catch (error: unknown) {
+    logger.error('Failed to fetch billing history', { error: error instanceof Error ? error.message : String(error), userId: req.user?.id });
     res.status(500).json({ error: 'Failed to fetch billing history' });
   }
 });
@@ -240,8 +240,8 @@ router.post('/cancel', authenticateToken(true), async (req: AuthRequest, res: Re
     await stripe.subscriptions.cancel(req.user.stripeSubscriptionId);
 
     res.json({ message: 'Subscription cancelled' });
-  } catch (error: any) {
-    logger.error('Failed to cancel subscription', { error, userId: req.user?.id });
+  } catch (error: unknown) {
+    logger.error('Failed to cancel subscription', { error: error instanceof Error ? error.message : String(error), userId: req.user?.id });
     res.status(500).json({ error: 'Failed to cancel subscription' });
   }
 });

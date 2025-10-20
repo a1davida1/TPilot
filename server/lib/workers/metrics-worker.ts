@@ -13,7 +13,7 @@ type RedditSubmission = {
   view_count: number;
 };
 
-interface _RedditAPI {
+interface RedditAPI {
   getSubmission(id: string): Promise<RedditSubmission>;
 }
 
@@ -114,10 +114,10 @@ export class MetricsWorker {
     }
   }
 
-  private async fetchPostMetrics(reddit: any, redditPostId: string) {
+  private async fetchPostMetrics(reddit: RedditAPI, redditPostId: string) {
     try {
       // Use Reddit API to get post details
-      const post = await (reddit as any).getSubmission(redditPostId);
+      const post = await reddit.getSubmission(redditPostId);
       
       return {
         score: post.score ?? 0,

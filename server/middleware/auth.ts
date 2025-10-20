@@ -120,8 +120,6 @@ type UserType = typeof users.$inferSelect;
 
 export interface AuthRequest extends express.Request {
   user?: UserType;
-  body: any;
-  query: any;
 }
 
 // Get JWT secret (must be set in environment)
