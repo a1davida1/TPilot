@@ -167,6 +167,17 @@ export default function QuickPostPage() {
     setValidationWarnings([]);
   }, [subreddit, confirmedCaptionId]);
 
+  // Debug effect to monitor caption options state
+  useEffect(() => {
+    if (captionOptions.length > 0) {
+      console.warn('[Quick Post] Caption options updated:', {
+        count: captionOptions.length,
+        first: captionOptions[0]?.text?.substring(0, 50) + '...',
+        selectedCaption
+      });
+    }
+  }, [captionOptions, selectedCaption]);
+
   const generateCaptions = useMutation<GenerationApiResponse, Error, GenerationRequest>({
     mutationFn: async ({ url, service, tone, promotionMode: promoMode, nsfwFlag }) => {
       const style = nsfwFlag ? 'explicit' : 'authentic';
@@ -267,12 +278,16 @@ export default function QuickPostPage() {
 
       protectImage.mutate(variables.url);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('[Quick Post] Caption generation error:', error);
       toast({
         title: 'Caption generation failed',
-        description: 'Could not generate captions. Please adjust your settings and try again.',
+        description: error instanceof Error ? error.message : 'Could not generate captions. Please adjust your settings and try again.',
         variant: 'destructive'
       });
+      // Ensure UI state is reset on error
+      setCaptionOptions([]);
+      setSelectedCaption('');
     }
   });
 
