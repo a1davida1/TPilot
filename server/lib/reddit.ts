@@ -813,15 +813,31 @@ export class RedditManager {
       };
 
     } catch (error: unknown) {
-      logger.error('Reddit submission failed:', {
+      // Enhanced error logging for debugging
+      const errorDetails: Record<string, unknown> = {
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
-      });
+      };
+
+      // Capture additional error properties (statusCode, response, etc.)
+      if (error && typeof error === 'object') {
+        const err = error as Record<string, unknown>;
+        if (err.statusCode) errorDetails.statusCode = err.statusCode;
+        if (err.response) errorDetails.response = err.response;
+        if (err.error) errorDetails.errorBody = err.error;
+        if (err.options) {
+          const opts = err.options as Record<string, unknown>;
+          errorDetails.requestUrl = opts.uri || opts.url;
+          errorDetails.requestMethod = opts.method;
+        }
+      }
+
+      logger.error('Reddit submission failed:', errorDetails);
 
       let errorMessage = 'Failed to submit post';
 
       // Parse common Reddit API errors
-      const errorObj = error as { message?: string };
+      const errorObj = error as { message?: string; statusCode?: number };
       if (errorObj.message?.includes('RATELIMIT')) {
         errorMessage = 'Rate limited by Reddit. Please try again later.';
       } else if (errorObj.message?.includes('SUBREDDIT_NOTALLOWED')) {
@@ -830,6 +846,10 @@ export class RedditManager {
         errorMessage = 'Post content cannot be empty';
       } else if (errorObj.message?.includes('TOO_LONG')) {
         errorMessage = 'Post title or content is too long';
+      } else if (errorObj.statusCode === 500) {
+        errorMessage = 'Reddit API error (500). This may be a temporary Reddit issue or account restriction.';
+      } else if (errorObj.statusCode === 403) {
+        errorMessage = 'Permission denied. Check if your Reddit account can post to this subreddit.';
       }
 
       return {
@@ -888,7 +908,15 @@ export class RedditManager {
 
       // Direct image upload to Reddit
       if (options.imageBuffer || options.imagePath) {
-        logger.error('Uploading image directly to Reddit (i.redd.it)...');
+        logger.error('Uploading image directly to Reddit (i.redd.it)...', {
+          subreddit: options.subreddit,
+          title: options.title.substring(0, 50),
+          hasBuffer: !!options.imageBuffer,
+          bufferSize: options.imageBuffer?.length,
+          hasPath: !!options.imagePath,
+          nsfw: options.nsfw,
+          spoiler: options.spoiler
+        });
 
         const subreddit = (reddit as unknown as {
           getSubreddit(name: string): {
@@ -927,7 +955,21 @@ export class RedditManager {
             decision: permission,
           };
         } catch (imgError: unknown) {
-          logger.error('Direct image upload failed, falling back to link post:', (imgError as { message?: string }).message);
+          // Enhanced error logging for image upload failures
+          const errorDetails: Record<string, unknown> = {
+            message: imgError instanceof Error ? imgError.message : String(imgError),
+            stack: imgError instanceof Error ? imgError.stack : undefined,
+          };
+
+          if (imgError && typeof imgError === 'object') {
+            const err = imgError as Record<string, unknown>;
+            if (err.statusCode) errorDetails.statusCode = err.statusCode;
+            if (err.response) errorDetails.response = err.response;
+            if (err.error) errorDetails.errorBody = err.error;
+          }
+
+          logger.error('Direct image upload failed, falling back to link post:', errorDetails);
+
           // Fallback to link post if image upload fails
           if (options.imageUrl) {
             return this.submitPost({
