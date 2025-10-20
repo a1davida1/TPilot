@@ -6,8 +6,11 @@
 
 ## ⚡ Common Questions - Fast Answers
 
-### "Should I mention Imgur uploads?"
-**NO** - It's the default and required. Only mention if adding NEW upload methods.
+### "Can platform upload or host images?"
+**NEVER** - Legal liability. Users paste URLs from wherever they host (Catbox, Discord, Reddit). No API connections to hosting services.
+
+### "Should I mention Imgur?"
+**NO** - Imgur API Client ID would link platform to hosted content = legal liability. Not used.
 
 ### "Can I use Gemini for captions?"
 **NO** - Use OpenRouter pipeline (`/server/caption/openrouterPipeline.ts`) only. Gemini is **LEGACY/DEPRECATED**.
@@ -19,7 +22,7 @@
 - Mostly dev-time vulnerabilities, not runtime exploits
 
 ### "Can users store images locally?"
-**NEVER** - Legal compliance requires Imgur-only hosting. Zero local file storage.
+**NEVER** - Zero storage, zero API upload connections. URLs only.
 
 ### "Where is the AI caption generation?"
 **Current:** `/server/caption/openrouterPipeline.ts` → `pipeline()` function  

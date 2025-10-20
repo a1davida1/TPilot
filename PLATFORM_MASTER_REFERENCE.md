@@ -52,17 +52,18 @@ Adult content creator management platform focused on Reddit automation, AI capti
 
 ## 🚨 Critical Architecture Decisions
 
-### 1. **NO Local Image Storage - Imgur Only**
-**Why:** Legal compliance for adult content (2257 records, DMCA)
-- All images MUST be uploaded to Imgur
+### 1. **NO Image Storage OR API-Linked Hosting**
+**Why:** Legal compliance - avoid ALL liability for adult content
 - Zero local file system storage
-- No Catbox (tested but not primary)
-- User uploads → Imgur → URL → Database
+- NO Imgur (API Client ID links platform to content = liability)
+- NO API-based uploads that connect platform to hosted images
+- Users provide URLs from wherever they host (Catbox, Discord, Reddit, etc.)
+- Database stores URLs ONLY, never files or upload connections
 
 **Implementation:**
-- `/server/lib/imgur-service.ts` - Primary upload service
-- `/client/src/components/CatboxUploadPortal.tsx` - UI component
-- Environment: `IMGUR_CLIENT_ID` required
+- Users paste image URLs from external sources
+- `/client/src/components/CatboxUploadPortal.tsx` - URL input component (reused)
+- No environment variables for image hosting services
 
 ### 2. **OpenRouter AI with Grok-4-Fast (NOT Gemini)**
 **Why:** Gemini censors adult content, Grok is uncensored and faster
@@ -559,8 +560,8 @@ SENTRY_DSN=...  # Optional
 
 ## ❓ FAQ for AI Assistants
 
-**Q: Should I mention Imgur uploads?**  
-A: No need - it's the default and required. Only mention if adding NEW upload methods.
+**Q: Should I mention Imgur/Catbox uploads?**
+A: No - users paste URLs from wherever they host. Platform doesn't upload or host anything (legal liability).
 
 **Q: Can I use Gemini for caption generation?**  
 A: No - use OpenRouter pipeline exclusively. Gemini is legacy/deprecated.
@@ -568,8 +569,8 @@ A: No - use OpenRouter pipeline exclusively. Gemini is legacy/deprecated.
 **Q: Why do we have npm vulnerabilities?**  
 A: Snoowrap (Reddit library) has unavoidable dep vulnerabilities. It's an accepted risk.
 
-**Q: Can users store images locally?**  
-A: Absolutely not - legal compliance requires Imgur hosting only.
+**Q: Can users store images locally?**
+**NEVER** - Legal compliance requires zero storage AND no API connections to hosting services.
 
 **Q: Should I add a new AI provider?**  
 A: Only if OpenRouter fails long-term. Current system works well.
