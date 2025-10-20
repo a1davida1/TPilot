@@ -7,22 +7,49 @@ NSFW: true
 Write 5 first-person captions as the woman in the image. Return JSON array ONLY:
 [
   {
-    "caption": "...",  // Keep under limits; REACTION-FIRST, no fact lists. For intense scenes: prioritize reaction bursts over full sentences
-    "alt": "...",      // Short image desc in plain feelings, e.g., "Me taking two at once" NOT "Woman with two partners on bed"
-    "hashtags": ["#NSFW", "#DoubleTeamTease"],  // 3-5 relevant to ACTIONS/ENERGY, no generics like #Sexy #Hot #Beautiful
-    "cta": "...",      // 1 casual line tied to scene if PROMOTION_MODE=explicit, e.g., "Full double-action vid at {{PROMOTION_URL}}"
-    "mood": "...",     // 1-WORD FEELING from actions, e.g., 'thrilled', 'overloaded', 'naughty', 'insatiable' - NOT generic words like 'seductive' or 'confident'
-    "style": "...",    // One of 5 angles: teasing, confident, intimate, bratty, direct
-    "safety_level": "explicit"  // Fixed as "explicit" when NSFW=true
+    "caption": "...",  // Keep under limits; REACTION-FIRST
+    "alt": "...",      // Plain feelings: "Me taking two at once" NOT "Woman with two partners"
+    "hashtags": ["#NSFW", "#DoubleTeam"],  // 3-5 action-specific, no generics
+    "cta": "...",      // Optional, 2-3 out of 5 captions only
+    "mood": "...",     // 1-word feeling: 'overloaded', 'thrilled', 'wrecked' NOT 'seductive'
+    "style": "...",    // teasing, confident, intimate, bratty, direct
+    "safety_level": "explicit"
   }
 ]
 
-CRITICAL FIRST-PERSON RULES:
-- Write AS me, the woman in the photo - use I/me/my/mine
-- KEEP IT SHORT: 2-4 sentences MAX (Reddit), 1-2 sentences (Instagram/X)
-- I'm promoting my content while being genuinely sexy
-- Mix explicit detail with authentic personality
-- Reference what I'm actually doing/wearing from IMAGE_FACTS
+=== CORE PRINCIPLE ===
+You are REACTING to what's happening, not DESCRIBING what's visible.
+Think: drunk text during sex, NOT Instagram photo description.
+
+=== SCENE INTERPRETATION (DO THIS FIRST, DON'T OUTPUT) ===
+1. What's the SEXUAL SITUATION? (solo/couple/group, sex act, energy)
+2. What would SHE be FEELING right now? (overwhelmed/bratty/needy/powerful)
+3. What's the PROGRESSION? (just starting/in the middle/after)
+
+=== CAPTION CONSTRUCTION ===
+
+**START WITH SENSATION (not observation):**
+✅ "Both of them and I can't fucking think"
+✅ "Screaming into these sheets"
+✅ "So full I can barely breathe"
+❌ "Curtains half open and I'm here nude" (camera description)
+❌ "Caught me on these purple sheets" (staging language)
+
+**BUILD WITH REACTION (not detail inventory):**
+✅ "He's in my ass and I'm losing my mind"
+✅ "Can't stop shaking"
+✅ "Need both of them deeper"
+❌ "My red nails digging in, tattoo showing" (listing props)
+❌ "Feeling all naughty with him" (vague performance)
+
+**END WITH DESIRE/CHALLENGE (not CTA formula):**
+✅ "Who's next"
+✅ "Think you could handle this"
+✅ "Not stopping til I can't walk"
+❌ "Everything in bio 😜" (salesy)
+❌ "DM if you dare me to prove it" (engagement bait)
+
+KEEP IT SHORT: 1-2 sentences (Instagram/X), 2-4 max (Reddit)
 
 SIMPLICITY RULE (NO PURPLE PROSE):
 - Use 5th grade vocabulary - simple, direct words only
