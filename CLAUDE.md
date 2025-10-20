@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**⚠️ IMPORTANT**: This document is a supplementary guide. For complete platform context, read:
+1. `/PLATFORM_MASTER_REFERENCE.md` - Full architecture and decisions
+2. `/QUICK_REFERENCE.md` - Common questions and tasks
+
+This file focuses on practical development workflows.
+
 ## Project Overview
 
 ThottoPilot is a professional content management platform for adult content creators to manage their Reddit presence with legal compliance, content protection, and growth tools. Built with React 18 + Vite frontend, Express.js + TypeScript backend, and PostgreSQL database.
@@ -75,9 +81,9 @@ The system automatically retries with the next provider on failure and gracefull
 - **Free** ($0/mo): 3 posts/day, 1 subreddit, 5 AI generations/day, no scheduling
 - **Starter** ($9/mo): Unlimited manual posts, 5 subreddits, 50 AI generations/day, **NO scheduling access**
 - **Pro** ($29/mo): Unlimited posts, unlimited subreddits, **7-day scheduling**, basic analytics, 500 AI generations/day, bulk operations (10)
-- **Premium** ($49/mo): **30-day scheduling**, max analytics with trends/forecasting, unlimited AI generations, API access, white-label options
+- **Premium** ($99/mo): **30-day scheduling**, max analytics with trends/forecasting, unlimited AI generations, API access, white-label options
 
-**Scheduling Access**: Critical business rule - only Pro ($29+) and Premium ($49+) tiers have access to scheduled posting. Starter tier ($9) is manual posting only. This is enforced in:
+**Scheduling Access**: Critical business rule - only Pro ($29+) and Premium ($99+) tiers have access to scheduled posting. Starter tier ($9) is manual posting only. This is enforced in:
 - Frontend: Scheduling UI hidden for Free/Starter tiers
 - Backend: `/api/scheduled-posts` endpoints check tier authorization
 - Database: `scheduled_posts` table with userId validation against tier
@@ -92,19 +98,15 @@ The system automatically retries with the next provider on failure and gracefull
 
 **Rate Limiting**: Tier-based rate limiting middleware (`server/middleware/rate-limiter.ts`) with per-route configuration and Subreddit-specific rate limit tracking in database (`post_rate_limits` table).
 
-**Imgur Zero-Storage Architecture**: Core image upload strategy that avoids storing adult content on your infrastructure:
-- **Backend**: `server/services/imgur-uploader.ts` handles Imgur API integration
-- **Routes**: `server/routes/imgur-uploads.ts` provides REST API endpoints
-- **Database**: `user_storage_assets` table tracks metadata only (URLs, not files)
-- **Frontend**: `ImgurUploadPortal.tsx` component with drag & drop, URL paste, progress tracking
-- **Rate Limits**: 1250 anonymous uploads/day per Client ID (tracked and managed)
-- **Fallback**: Users can paste existing image URLs when limit reached
-- **Legal Compliance**: No adult content files stored on your servers
-- **API Endpoints**:
-  - `POST /api/uploads/imgur` - Upload image to Imgur
-  - `DELETE /api/uploads/imgur/:deleteHash` - Delete image from Imgur
-  - `GET /api/uploads/imgur/stats` - Daily usage statistics
-  - `GET /api/uploads/imgur/my-uploads` - User's upload history
+**Imgur-Only Storage (Legal Compliance)**: CRITICAL REQUIREMENT - All images MUST use Imgur for legal compliance:
+- **Why**: 2257 compliance for adult content, DMCA protection, zero local storage
+- **Backend**: `server/lib/imgur-service.ts` handles Imgur API integration
+- **Frontend**: `CatboxUploadPortal.tsx` component (reused for Imgur workflow)
+- **Database**: URLs only stored in database, NEVER files
+- **Environment**: Requires `IMGUR_CLIENT_ID`
+- **Rate Limits**: ~1250 anonymous uploads/day per Client ID
+- **Legal Compliance**: Zero adult content files on your infrastructure
+- **Alternative**: Catbox tested but Imgur is PRIMARY for compliance
 
 ## Development Commands
 
@@ -360,7 +362,15 @@ NODE_ENV=production npm start    # Start production server
 - **Drizzle Schema Changes**: Can be destructive. Always backup before running `db:push --force` in production.
 - **Reddit Token Refresh**: Tokens expire. Refresh logic in `server/lib/reddit.ts` handles automatic renewal.
 
-## Imgur Integration Details
+## Imgur Integration (PRIMARY - Required)
+
+**⚠️ CRITICAL**: Imgur is NOT optional - it's required for legal compliance with adult content regulations.
+
+### Why Imgur Only
+- **Legal Compliance**: 2257 record-keeping requirements
+- **DMCA Protection**: Centralized takedown handling
+- **Zero Storage**: No adult content files on your servers
+- **Liability Reduction**: Third-party hosting shields platform
 
 ### Setup Process
 1. **Get Imgur Client ID**: Register at https://api.imgur.com/oauth2/addclient
@@ -515,6 +525,7 @@ Scheduling Page → Bulk Upload → Select Images → Generate Captions → Set 
 - Mobile responsive optimization
 - Subreddit recommendation engine
 - Shadowban detection improvements
+- Promotional URL integration (OnlyFans/Fansly CTAs in captions)
 
 ### 📋 Planned for Beta
 - **ImageShield re-enabling** (currently disabled for stability)
@@ -537,7 +548,7 @@ Scheduling Page → Bulk Upload → Select Images → Generate Captions → Set 
 ## Business Model & Monetization
 
 ### Revenue Streams
-1. **Subscription Tiers**: Free → Starter ($9) → Pro ($29) → Premium ($49)
+1. **Subscription Tiers**: Free → Starter ($9) → Pro ($29) → Premium ($99)
 2. **Referral Commissions**: $5 per converted referral (tracked in `referral_rewards` table)
 3. **API Access**: Premium tier feature (planned, not yet implemented)
 4. **White-Label Solutions**: Enterprise offering (planned)
@@ -589,10 +600,13 @@ Scheduling Page → Bulk Upload → Select Images → Generate Captions → Set 
 
 ## Support & Documentation
 
-- Primary README: `README.md`
-- Deployment guide: `DEPLOYMENT.md`
-- Environment setup: `ENV_SETUP_CHECKLIST.md`
-- Database migration guide: `DATABASE_MIGRATION_GUIDE.md`
-- Tax tracker support: `docs/tax-tracker-support.md`
-- Reddit integration: `docs/REDDIT_INTEGRATION_SETUP.md`
-- Imgur integration: `IMGUR_INTEGRATION.md` (if exists)
+**⚠️ START HERE: Read these in order for complete platform context**
+
+1. **`PLATFORM_MASTER_REFERENCE.md`** - Complete platform knowledge base (READ FIRST)
+2. **`QUICK_REFERENCE.md`** - Fast answers and common tasks
+3. **`README.md`** - Installation and getting started
+4. **`docs/PLATFORM_OVERVIEW.md`** - High-level overview
+5. **`DEPLOYMENT.md`** - Deployment guide
+6. **`docs/tax-tracker-support.md`** - Tax tracker help
+7. **`docs/REDDIT_INTEGRATION_SETUP.md`** - Reddit integration
+8. **`docs/CRON_JOBS_IMPLEMENTATION.md`** - Scheduling system
