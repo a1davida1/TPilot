@@ -33,6 +33,7 @@ describe('OpenRouter Client', () => {
       apiKey: 'sk-or-test-key',
       baseURL: 'https://openrouter.ai/api/v1',
       defaultHeaders: {
+        'HTTP-Referer': 'https://test.com',
         'X-Title': 'TestApp'
       }
     });

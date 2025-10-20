@@ -164,7 +164,7 @@ analyticsRouter.get("/", authenticateToken(true), async (req: AuthRequest, res: 
       ((postData[0].week / Math.max(postData[0].month - postData[0].week, 1)) * 100 - 100) : 0;
     
     // Build base response (Pro tier)
-    const response: any = {
+    const response: Record<string, unknown> = {
       overview: {
         totalPosts: sanitizeCount(postData[0]?.count),
         totalEngagement: sanitizeCount(engagementData[0]?.totalPosts) * 100, // Estimate engagement
@@ -180,7 +180,7 @@ analyticsRouter.get("/", authenticateToken(true), async (req: AuthRequest, res: 
           { hour: 21, day: 'Saturday', engagement: 425 },
           { hour: 19, day: 'Thursday', engagement: 380 }
         ],
-        topSubreddits: subredditData.map((sub: any) => ({
+        topSubreddits: subredditData.map((sub: { subreddit: string; posts: number; successRate: number }) => ({
           name: sub.subreddit,
           posts: sanitizeCount(sub.posts),
           engagement: sanitizeCount(sub.posts) * 100, // Estimate engagement based on posts

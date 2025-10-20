@@ -59,7 +59,7 @@ router.post('/', authenticateToken(false), async (req: AuthRequest, res: Respons
       message: 'Thank you for your feedback! We\'ll review it shortly.'
     });
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Invalid feedback data',
@@ -67,7 +67,7 @@ router.post('/', authenticateToken(false), async (req: AuthRequest, res: Respons
       });
     }
     
-    logger.error('Failed to submit feedback', { error: error.message });
+    logger.error('Failed to submit feedback', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ 
       error: 'Failed to submit feedback',
       message: 'Please try again or email support@thottopilot.com'
@@ -105,8 +105,8 @@ router.get('/my-feedback', authenticateToken(true), async (req: AuthRequest, res
       count: userFeedback.length
     });
     
-  } catch (error: any) {
-    logger.error('Failed to fetch user feedback', { error: error.message });
+  } catch (error: unknown) {
+    logger.error('Failed to fetch user feedback', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ error: 'Failed to retrieve feedback' });
   }
 });
@@ -148,8 +148,8 @@ router.get('/stats', async (_req: Request, res: Response) => {
       lastUpdated: new Date().toISOString()
     });
     
-  } catch (error: any) {
-    logger.error('Failed to fetch feedback stats', { error: error.message });
+  } catch (error: unknown) {
+    logger.error('Failed to fetch feedback stats', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ error: 'Failed to retrieve statistics' });
   }
 });
@@ -196,8 +196,8 @@ router.get('/admin', authenticateToken(true), async (req: AuthRequest, res: Resp
       limit: Number(limit)
     });
     
-  } catch (error: any) {
-    logger.error('Failed to fetch admin feedback', { error: error.message });
+  } catch (error: unknown) {
+    logger.error('Failed to fetch admin feedback', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ error: 'Failed to retrieve feedback' });
   }
 });
@@ -242,8 +242,8 @@ router.put('/:id/resolve', authenticateToken(true), async (req: AuthRequest, res
       feedback: updated
     });
     
-  } catch (error: any) {
-    logger.error('Failed to resolve feedback', { error: error.message });
+  } catch (error: unknown) {
+    logger.error('Failed to resolve feedback', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ error: 'Failed to resolve feedback' });
   }
 });
@@ -279,8 +279,8 @@ router.delete('/:id', authenticateToken(true), async (req: AuthRequest, res: Res
       message: 'Feedback deleted successfully'
     });
     
-  } catch (error: any) {
-    logger.error('Failed to delete feedback', { error: error.message });
+  } catch (error: unknown) {
+    logger.error('Failed to delete feedback', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ error: 'Failed to delete feedback' });
   }
 });
@@ -313,8 +313,8 @@ router.get('/recent', authenticateToken(true), async (req: AuthRequest, res: Res
       period: '24h'
     });
     
-  } catch (error: any) {
-    logger.error('Failed to fetch recent feedback', { error: error.message });
+  } catch (error: unknown) {
+    logger.error('Failed to fetch recent feedback', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ error: 'Failed to retrieve recent feedback' });
   }
 });
