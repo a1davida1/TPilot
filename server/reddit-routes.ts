@@ -802,6 +802,171 @@ export function registerRedditRoutes(app: Express) {
     }
   });
 
+  // Alias for Quick Post - transforms Quick Post format to submit format
+  app.post('/api/reddit/post', authenticateToken(true), async (req: AuthRequest, res) => {
+    const { title, subreddit, imageUrl, text, nsfw, spoiler } = req.body;
+
+    // Transform Quick Post format to submit format
+    const transformedBody = {
+      title,
+      subreddit,
+      url: imageUrl,  // Quick Post uses imageUrl, submit uses url
+      body: text,     // Quick Post uses text, submit uses body
+      nsfw: nsfw || false,
+      spoiler: spoiler || false,
+      postType: imageUrl ? 'image' : 'text'
+    };
+
+    // Forward to the submit handler with transformed body
+    req.body = transformedBody;
+
+    // Call the submit endpoint logic directly
+    const userId = req.user?.id;
+
+    try {
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      if (!subreddit || !title) {
+        return res.status(400).json({ error: 'Subreddit and title are required' });
+      }
+
+      // Get Reddit manager
+      const reddit = await RedditManager.forUser(userId);
+      if (!reddit) {
+        return res.status(404).json({
+          error: 'No active Reddit account found. Please connect your Reddit account first.'
+        });
+      }
+
+      let result: RedditPostResult;
+
+      // Handle image post if URL provided
+      if (imageUrl) {
+        result = await reddit.submitImagePost({
+          subreddit,
+          title,
+          imageUrl,
+          nsfw: nsfw || false,
+          spoiler: spoiler || false
+        });
+      } else {
+        // Text post
+        result = await reddit.submitPost({
+          subreddit,
+          title,
+          body: text || '',
+          nsfw: nsfw || false,
+          spoiler: spoiler || false
+        });
+      }
+
+      if (result.success) {
+        try {
+          await recordPostOutcome(userId, subreddit, { status: 'posted' });
+        } catch (trackingError) {
+          logger.warn('Failed to persist successful Reddit outcome', {
+            userId,
+            subreddit,
+            error: trackingError instanceof Error ? trackingError.message : String(trackingError)
+          });
+        }
+        logger.info('Reddit post successful via /post endpoint', {
+          userId,
+          subreddit,
+          hasImage: !!imageUrl,
+          url: result.url
+        });
+
+        // Record post for rate limiting and duplicate detection
+        try {
+          await SafetyManager.recordPost(userId.toString(), subreddit);
+          await SafetyManager.recordPostForDuplicateDetection(
+            userId.toString(),
+            subreddit,
+            title,
+            text || imageUrl || ''
+          );
+        } catch (safetyError) {
+          logger.warn('Failed to record safety signals', {
+            userId,
+            subreddit,
+            error: safetyError instanceof Error ? safetyError.message : String(safetyError),
+          });
+        }
+
+        res.json({
+          success: true,
+          postId: result.postId,
+          url: result.url,
+          message: `Post submitted successfully to r/${subreddit}`,
+          warnings: result.decision?.warnings || []
+        });
+      } else {
+        const decisionReasons = Array.isArray(result.decision?.reasons) ? result.decision?.reasons.filter((value): value is string => typeof value === 'string' && value.trim().length > 0) : [];
+        const removalReason = result.error
+          ?? (typeof result.decision?.reason === 'string' ? result.decision.reason : undefined)
+          ?? decisionReasons[0]
+          ?? 'Reddit posting failed';
+
+        try {
+          await recordPostOutcome(userId, subreddit, {
+            status: 'removed',
+            reason: removalReason,
+          });
+        } catch (trackingError) {
+          logger.warn('Failed to persist removal outcome', {
+            userId,
+            subreddit,
+            error: trackingError instanceof Error ? trackingError.message : String(trackingError)
+          });
+        }
+        res.status(400).json({
+          success: false,
+          error: result.error || 'Failed to submit post',
+          reason: result.decision?.reason,
+          reasons: result.decision?.reasons || [],
+          warnings: result.decision?.warnings || [],
+          nextAllowedPost: result.decision?.nextAllowedPost,
+          rateLimit: {
+            postsInLast24h: result.decision?.postsInLast24h || 0,
+            maxPostsPer24h: result.decision?.maxPostsPer24h || 3
+          }
+        });
+      }
+    } catch (error: unknown) {
+      const failureMessage = error instanceof Error
+        ? error.message
+        : 'Failed to submit post to Reddit';
+
+      if (userId && subreddit) {
+        try {
+          await recordPostOutcome(userId, subreddit, {
+            status: 'removed',
+            reason: failureMessage,
+          });
+        } catch (trackingError) {
+          logger.warn('Failed to persist failure outcome', {
+            userId,
+            subreddit,
+            error: trackingError instanceof Error ? trackingError.message : String(trackingError)
+          });
+        }
+      }
+
+      logger.error('Reddit post error via /post endpoint', {
+        userId,
+        subreddit,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      res.status(500).json({
+        error: failureMessage
+      });
+    }
+  });
+
   // Add new endpoint to check subreddit capabilities
   app.get('/api/reddit/subreddit/:name/capabilities', authenticateToken(true), async (req: AuthRequest, res) => {
     try {
