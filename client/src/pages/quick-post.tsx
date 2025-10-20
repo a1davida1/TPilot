@@ -59,6 +59,7 @@ type PlatformService = 'reddit' | 'instagram' | 'fansly' | 'x' | 'tiktok';
 interface GenerationApiResponse {
   topVariants?: CaptionObject[];
   final?: string | CaptionObject;
+  captions?: Array<CaptionObject & { id?: string; text?: string; label?: string }>;
 }
 
 interface GenerationRequest {
@@ -108,22 +109,52 @@ const NSFW_TONES = [
 const DEFAULT_MODEL = 'openrouter:grok-4-fast';
 const DEFAULT_PROTECTION_PRESET = 'imageshield_auto';
 
-function normalizeCaption(value: string | CaptionObject | undefined, fallbackLabel: string): {
+interface NormalizedCaption {
   text: string;
   label: string;
-} {
+  id?: string;
+}
+
+type CaptionSource =
+  | string
+  | CaptionObject
+  | (CaptionObject & { id?: string; text?: string; label?: string })
+  | undefined;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function normalizeCaption(value: CaptionSource, fallbackLabel: string): NormalizedCaption {
   if (!value) {
     return { text: '', label: fallbackLabel };
   }
 
   if (typeof value === 'string') {
-    return { text: value, label: fallbackLabel };
+    const text = value.trim();
+    return { text, label: fallbackLabel };
   }
 
-  return {
-    text: value.caption,
-    label: value.style ?? fallbackLabel
-  };
+  if (isRecord(value)) {
+    const captionText =
+      typeof value.caption === 'string'
+        ? value.caption
+        : typeof value.text === 'string'
+          ? value.text
+          : '';
+    const normalizedText = captionText.trim();
+    const label =
+      typeof value.style === 'string'
+        ? value.style
+        : typeof value.label === 'string'
+          ? value.label
+          : fallbackLabel;
+    const id = typeof value.id === 'string' ? value.id : undefined;
+
+    return { text: normalizedText, label, id };
+  }
+
+  return { text: '', label: fallbackLabel };
 }
 
 function truncateTitle(text: string): string {
@@ -212,27 +243,25 @@ export default function QuickPostPage() {
         });
         return;
       }
-      
-      // Add detailed error info if topVariants is missing
-      if (!result.topVariants && !result.final) {
+
+      // Try to extract captions from various possible locations
+      const variantSources: CaptionSource[] = [];
+
+      if (Array.isArray(result.topVariants) && result.topVariants.length > 0) {
+        variantSources.push(...result.topVariants.slice(0, 2));
+      } else if (Array.isArray(result.captions) && result.captions.length > 0) {
+        variantSources.push(...result.captions.slice(0, 2));
+      } else if (result.final) {
+        variantSources.push(result.final);
+      }
+
+      if (variantSources.length === 0) {
         console.error('[Quick Post] Invalid API response format:', {
           hasTopVariants: 'topVariants' in result,
+          hasCaptions: 'captions' in result,
           hasFinal: 'final' in result,
           keys: Object.keys(result)
         });
-        toast({
-          title: 'Caption generation format error',
-          description: 'The server response is missing expected caption data. Check console for details.',
-          variant: 'destructive'
-        });
-      }
-      
-      const normalizedVariants = [
-        normalizeCaption(result.topVariants?.[0] ?? result.final, 'Top Choice'),
-        normalizeCaption(result.topVariants?.[1] ?? result.final, 'Alternative')
-      ];
-
-      if (!normalizedVariants[0].text) {
         toast({
           title: 'Caption generation failed',
           description: 'No caption text was returned by the AI. Try regenerating with different settings.',
@@ -241,21 +270,51 @@ export default function QuickPostPage() {
         return;
       }
 
-      const pairId = generatePairId();
-      const options: CaptionOption[] = normalizedVariants.map((variant, index) => ({
-        id: index === 0 ? 'A' : 'B',
-        text: variant.text,
-        style: variant.label,
-        captionId: `${pairId}_caption_${index === 0 ? 'a' : 'b'}`,
-        styleKey: index === 0 ? 'flirty' : 'slutty'
-      }));
+      const primary = normalizeCaption(variantSources[0], 'Top Choice');
+      const secondarySource = variantSources[1] ?? variantSources[0];
+      const secondary = normalizeCaption(secondarySource, 'Alternative');
 
-      if (options.length < 2) {
+      if (!primary.text) {
+        toast({
+          title: 'Caption generation failed',
+          description: 'No caption text was returned by the AI. Try regenerating with different settings.',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      const normalizedVariants: NormalizedCaption[] = [
+        primary,
+        secondary.text ? secondary : { ...primary, label: 'Alternative' }
+      ];
+
+      const pairId = generatePairId();
+      const options: CaptionOption[] = [];
+
+      normalizedVariants.forEach((variant, index) => {
+        if (!variant.text) {
+          return;
+        }
+
+        const baseId = variant.id ?? `${pairId}_caption_${index === 0 ? 'a' : 'b'}`;
+        const previousId = options[0]?.captionId;
+        const dedupedId = index === 1 && previousId === baseId ? `${baseId}_alt` : baseId;
+
+        options.push({
+          id: index === 0 ? 'A' : 'B',
+          text: variant.text,
+          style: variant.label,
+          captionId: dedupedId,
+          styleKey: index === 0 ? 'flirty' : 'slutty'
+        });
+      });
+
+      if (options.length === 1) {
         options.push({
           id: 'B',
           text: options[0].text,
-          style: 'Alternate',
-          captionId: `${pairId}_caption_b`,
+          style: options[0].style,
+          captionId: `${options[0].captionId}_alt`,
           styleKey: 'slutty'
         });
       }
