@@ -277,22 +277,28 @@ function checkCommunityEligibility(
     }
   }
 
-  // Include selling and watermark restrictions in eligibility
+  // Add informational notes about selling and watermark restrictions (but don't block eligibility)
   if (sellingPolicy === 'not_allowed') {
     badges.sellingOk = false;
-    reasons.push('Selling not allowed in this community');
-    isEligible = false;
+    reasons.push('⚠️ Selling not allowed');
+    // Don't set isEligible = false - this is just a warning
+  }
+
+  if (sellingPolicy === 'limited') {
+    badges.sellingOk = true;  // Limited selling is okay
+    reasons.push('ℹ️ Limited selling allowed');
   }
 
   if (sellingPolicy === 'unknown') {
     badges.sellingOk = false;
-    reasons.push('Selling policy unclear - check community rules');
+    reasons.push('⚠️ Selling policy unclear');
+    // Don't block eligibility for unknown policies
   }
 
   if (watermarksAllowed === false) {
     badges.watermarkOk = false;
-    reasons.push('Watermarks not allowed in this community');
-    isEligible = false;
+    reasons.push('⚠️ No watermarks allowed');
+    // Don't set isEligible = false - this is just a warning
   }
 
   return {
@@ -1149,11 +1155,17 @@ export default function RedditPostingPage() {
                                         <div className="text-xs text-gray-500 truncate">
                                           {sc.community.members.toLocaleString()} members • {sc.community.successProbability}% success
                                         </div>
+                                        {sc.reasons.length > 0 && (
+                                          <div className="text-xs text-orange-600 truncate">
+                                            {sc.reasons.join(' • ')}
+                                          </div>
+                                        )}
                                       </div>
                                       <div className="flex gap-1 ml-2">
-                                        {sc.badges.karmaOk && <Badge variant="secondary" className="text-xs">Karma OK</Badge>}
-                                        {sc.badges.ageOk && <Badge variant="secondary" className="text-xs">Age OK</Badge>}
-                                        {sc.badges.sellingOk && <Badge variant="secondary" className="text-xs">Selling OK</Badge>}
+                                        {sc.badges.karmaOk && <Badge variant="secondary" className="text-xs">✓ Karma</Badge>}
+                                        {sc.badges.ageOk && <Badge variant="secondary" className="text-xs">✓ Age</Badge>}
+                                        {!sc.badges.sellingOk && <Badge variant="outline" className="text-xs text-orange-600">No Selling</Badge>}
+                                        {!sc.badges.watermarkOk && <Badge variant="outline" className="text-xs text-orange-600">No WM</Badge>}
                                       </div>
                                     </div>
                                   </CommandItem>
@@ -1185,7 +1197,6 @@ export default function RedditPostingPage() {
                                           <div className="flex gap-1 ml-2">
                                             {!sc.badges.karmaOk && <Badge variant="destructive" className="text-xs">Karma</Badge>}
                                             {!sc.badges.ageOk && <Badge variant="destructive" className="text-xs">Age</Badge>}
-                                            {!sc.badges.sellingOk && <Badge variant="destructive" className="text-xs">Selling</Badge>}
                                           </div>
                                         </div>
                                       </CommandItem>
