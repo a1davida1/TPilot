@@ -202,7 +202,7 @@ describe('ImageGallery detail modal', () => {
     fetchMock.mockImplementation(async (input, init) => {
       const url = toUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
-      if (url.endsWith('/api/media') && method === 'GET') {
+      if (url.includes('/api/catbox/uploads') && method === 'GET') {
         return createJsonResponse(currentImages);
       }
       throw new Error(`Unhandled request ${method} ${url}`);
@@ -243,7 +243,7 @@ describe('ImageGallery detail modal', () => {
     fetchMock.mockImplementation(async (input, init) => {
       const url = toUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
-      if (url.endsWith('/api/media') && method === 'GET') {
+      if (url.includes('/api/catbox/uploads') && method === 'GET') {
         return createJsonResponse(currentImages);
       }
       if (url.endsWith('/api/reddit/quick-repost') && method === 'POST') {
@@ -289,7 +289,7 @@ describe('ImageGallery detail modal', () => {
     fetchMock.mockImplementation(async (input, init) => {
       const url = toUrl(input);
       const method = (init?.method ?? 'GET').toUpperCase();
-      if (url.endsWith('/api/media') && method === 'GET') {
+      if (url.includes('/api/catbox/uploads') && method === 'GET') {
         return createJsonResponse(currentImages);
       }
       if (url.includes('/api/protect-image/') && method === 'POST') {

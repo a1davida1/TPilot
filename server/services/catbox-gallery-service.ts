@@ -117,6 +117,13 @@ export interface CatboxGalleryUpload {
   provider: string;
 }
 
+export class CatboxGalleryServiceError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = 'CatboxGalleryServiceError';
+  }
+}
+
 export async function getUserCatboxGalleryUploads(
   userId: number,
   limit: number = DEFAULT_LIMIT
@@ -170,7 +177,8 @@ export async function getUserCatboxGalleryUploads(
     logger.error('Failed to load Catbox gallery uploads', {
       error: error instanceof Error ? error.message : String(error),
       userId,
+      limit: normalizedLimit,
     });
-    return [];
+    throw new CatboxGalleryServiceError('Failed to load Catbox gallery uploads', { cause: error });
   }
 }

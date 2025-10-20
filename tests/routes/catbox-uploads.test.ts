@@ -70,6 +70,15 @@ describe('GET /api/catbox/uploads', () => {
     expect(getUploadsMock).toHaveBeenCalledWith(1, 5);
   });
 
+  it('returns 500 when loading uploads fails', async () => {
+    getUploadsMock.mockRejectedValue(new Error('db offline'));
+
+    const response = await request(app).get('/api/catbox/uploads');
+
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual({ error: 'Failed to load Catbox uploads' });
+  });
+
   it('rejects invalid pagination parameters', async () => {
     const response = await request(app).get('/api/catbox/uploads?limit=NaN');
 

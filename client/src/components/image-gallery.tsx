@@ -4,99 +4,37 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { downloadProtectedImage } from '@/lib/image-protection';
 import { Upload, Shield, Download, Trash2, Tag, Share2 } from 'lucide-react';
-
-interface MediaAssetResponse {
-  id: number;
-  filename: string;
-  bytes: number;
-  mime: string;
-  visibility: string;
-  createdAt: string | Date;
-  signedUrl?: string;
-  downloadUrl?: string;
-  isProtected?: boolean;
-  protectionLevel?: ProtectionLevel;
-  lastRepostedAt?: string;
-}
-
-interface CatboxUploadResponse {
-  id: number;
-  url: string;
-  filename: string;
-  fileSize: number;
-  mime: string;
-  uploadedAt: string;
-  provider: string;
-}
-
-interface CatboxUploadsApiResponse {
-  uploads: CatboxUploadResponse[];
-}
+import { useGalleryAssets } from '@/hooks/useGalleryAssets';
+import { authenticatedRequest } from '@/lib/authenticated-request';
+import {
+  GalleryImage,
+  isLibraryImage,
+  getGalleryImageUrl,
+  formatMimeLabel
+} from '@/lib/gallery';
 
 type ProtectionLevel = 'light' | 'standard' | 'heavy';
 
-interface GalleryImageBase {
-  id: string;
-  filename: string;
-  bytes: number;
-  mime: string;
-  createdAt: string;
-  signedUrl?: string;
-  downloadUrl?: string;
-  isProtected?: boolean;
-  protectionLevel?: ProtectionLevel;
-  lastRepostedAt?: string;
+interface ProtectImageResponse {
+  success?: boolean;
+  protectedUrl?: string;
+  message?: string;
 }
 
-interface LibraryGalleryImage extends GalleryImageBase {
-  origin: 'library';
-  libraryId: number;
-  visibility: string;
+interface QuickRepostResponse {
+  success?: boolean;
+  repostedAt?: string;
+  message?: string;
 }
 
-interface CatboxGalleryImage extends GalleryImageBase {
-  origin: 'catbox';
-  catboxId: number;
-  provider: string;
-}
-
-type GalleryImage = LibraryGalleryImage | CatboxGalleryImage;
-
-function isLibraryImage(image: GalleryImage): image is LibraryGalleryImage {
-  return image.origin === 'library';
-}
-
-function toIsoString(value: Date | string | null | undefined): string {
-  if (!value) {
-    return new Date(0).toISOString();
-  }
-
-  if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? new Date(0).toISOString() : value.toISOString();
-  }
-
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? new Date(0).toISOString() : parsed.toISOString();
-}
-
-function normalizeBytes(value: unknown): number {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
-    return 0;
-  }
-  return Math.round(value);
-}
-
-function formatMimeLabel(mime: string): string {
-  if (!mime.includes('/')) {
-    return mime.toUpperCase();
-  }
-  const [, subtype] = mime.split('/');
-  return subtype ? subtype.toUpperCase() : mime.toUpperCase();
+interface DeleteImageResponse {
+  success?: boolean;
+  message?: string;
 }
 
 interface ImageDetailModalProps {
@@ -190,7 +128,6 @@ function ImageDetailModal({
                 disabled={!isLibrary || isProtecting}
                 data-testid="quick-protect-button"
                 title={isLibrary ? undefined : 'Protection is managed through the media library'}
-                data-testid="quick-protect-button"
               >
                 <Shield className="h-4 w-4 mr-1" />
                 {isProtecting ? 'Protecting...' : 'Quick Protect'}
@@ -245,83 +182,40 @@ function ImageDetailModal({
 
 export function ImageGallery() {
   const [selectedTags, setSelectedTags] = useState<string>('');
-  const [selectedImageId, setSelectedImageId] = useState<number | null>(null);
+  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuth();
 
-  // Authenticated API request - use session-based auth like the rest of the app
-  const authenticatedRequest = async <T,>(url: string, method: string = 'GET', data?: unknown): Promise<T> => {
-    let body: FormData | string | undefined;
-    const headers: Record<string, string> = {};
-
-    if (data instanceof FormData) {
-      body = data;
-      // Don't set Content-Type for FormData, browser sets it with boundary
-    } else if (data) {
-      headers['Content-Type'] = 'application/json';
-      body = JSON.stringify(data);
-    }
-
-    const response = await fetch(url, {
-      method,
-      headers,
-      body,
-      credentials: 'include' // Include session cookies for authentication
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorMessage;
-      try {
-        const errorJson = JSON.parse(errorText);
-        errorMessage = errorJson.message || errorText;
-      } catch {
-        errorMessage = errorText || response.statusText;
-      }
-      throw new Error(errorMessage);
-    }
-
-    if (response.status === 204) {
-      return {} as T;
-    }
-
-    const contentType = response.headers.get('content-type');
-    if (contentType?.includes('application/json')) {
-      return response.json() as Promise<T>;
-    }
-
-    return {} as T;
-  };
-
-  const { data: images = [] } = useQuery<UserImage[]>({
-    queryKey: ['/api/media'],
-    queryFn: () => authenticatedRequest<UserImage[]>('/api/media'),
-    enabled: true // Always enable to avoid blocking
-  });
+  const {
+    galleryImages,
+    isLoading: galleryLoading,
+    mediaError,
+    catboxError
+  } = useGalleryAssets();
 
   const selectedImage = useMemo(() => {
-    if (selectedImageId === null) {
+    if (!selectedImageId) {
       return null;
     }
-    return images.find(image => image.id === selectedImageId) ?? null;
-  }, [images, selectedImageId]);
+    return galleryImages.find(img => img.id === selectedImageId) || null;
+  }, [galleryImages, selectedImageId]);
 
-  const updateCachedImage = (imageId: number, updater: (image: UserImage) => UserImage): void => {
-    queryClient.setQueryData<UserImage[]>(['/api/media'], (current) => {
-      if (!current) {
+  const updateCachedLibraryImage = (imageId: number, updater: (asset: any) => any): void => {
+    queryClient.setQueryData(['/api/media'], (current: any) => {
+      if (!current || !Array.isArray(current)) {
         return current;
       }
-      return current.map(image => (image.id === imageId ? updater(image) : image));
+      return current.map((asset: any) => (asset.id === imageId ? updater(asset) : asset));
     });
   };
 
-  const removeCachedImage = (imageId: number): void => {
-    queryClient.setQueryData<UserImage[]>(['/api/media'], (current) => {
-      if (!current) {
+  const removeCachedLibraryImage = (imageId: number): void => {
+    queryClient.setQueryData(['/api/media'], (current: any) => {
+      if (!current || !Array.isArray(current)) {
         return current;
       }
-      return current.filter(image => image.id !== imageId);
+      return current.filter((asset: any) => asset.id !== imageId);
     });
   };
 
@@ -352,8 +246,8 @@ export function ImageGallery() {
     },
     onSuccess: (data, variables) => {
       const protectedUrl = data?.protectedUrl;
-      updateCachedImage(variables.imageId, (image) => ({
-        ...image,
+      updateCachedLibraryImage(variables.imageId, (asset) => ({
+        ...asset,
         protectionLevel: variables.protectionLevel,
         isProtected: true,
         ...(protectedUrl ? { signedUrl: protectedUrl, downloadUrl: protectedUrl } : {})
@@ -379,8 +273,8 @@ export function ImageGallery() {
     },
     onSuccess: (data, imageId) => {
       const timestamp = data?.repostedAt ?? new Date().toISOString();
-      updateCachedImage(imageId, (image) => ({
-        ...image,
+      updateCachedLibraryImage(imageId, (asset) => ({
+        ...asset,
         lastRepostedAt: timestamp
       }));
       queryClient.invalidateQueries({ queryKey: ['/api/reddit/posts'] });
@@ -403,8 +297,8 @@ export function ImageGallery() {
       return authenticatedRequest<DeleteImageResponse>(`/api/media/${imageId}`, 'DELETE');
     },
     onSuccess: (data, imageId) => {
-      removeCachedImage(imageId);
-      setSelectedImageId((current) => (current === imageId ? null : current));
+      removeCachedLibraryImage(imageId);
+      setSelectedImageId((current) => (current === `library-${imageId}` ? null : current));
       queryClient.invalidateQueries({ queryKey: ['/api/media'] });
       toast({
         title: "Image deleted",
@@ -460,37 +354,119 @@ export function ImageGallery() {
     setSelectedTags('');
   };
 
-  const handleProtectImage = (image: UserImage, level: ProtectionLevel) => {
-    protectMutation.mutate({ imageId: image.id, protectionLevel: level });
+  const handleProtectImage = (image: GalleryImage, level: ProtectionLevel) => {
+    if (!isLibraryImage(image)) {
+      toast({
+        title: 'Protection unavailable',
+        description: 'Import this Catbox upload into your media library to enable protection tools.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    protectMutation.mutate({ imageId: image.libraryId, protectionLevel: level });
   };
 
-  const handleQuickRepost = (image: UserImage) => {
-    quickRepostMutation.mutate(image.id);
+  const handleQuickRepost = (image: GalleryImage) => {
+    if (!isLibraryImage(image)) {
+      toast({
+        title: 'Quick repost unavailable',
+        description: 'Quick repost only works for media library uploads.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    quickRepostMutation.mutate(image.libraryId);
   };
 
-  const handleDeleteImage = (image: UserImage) => {
-    deleteMutation.mutate(image.id);
+  const handleDeleteImage = (image: GalleryImage) => {
+    if (!isLibraryImage(image)) {
+      toast({
+        title: 'Delete in Catbox',
+        description: 'Remove Catbox uploads from your Catbox dashboard.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    deleteMutation.mutate(image.libraryId);
   };
 
-  const handleDownloadProtected = async (image: UserImage) => {
+  const handleDownloadProtected = async (image: GalleryImage) => {
     try {
-      const response = await fetch(image.signedUrl || image.downloadUrl || '');
+      const sourceUrl = getGalleryImageUrl(image);
+      if (!sourceUrl) {
+        throw new Error('Missing download URL');
+      }
+
+      const response = await fetch(sourceUrl, { credentials: 'include' });
+      if (!response.ok) {
+        throw new Error(`Download failed with status ${response.status}`);
+      }
       const blob = await response.blob();
       downloadProtectedImage(blob, image.filename);
-    } catch {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not download image.';
       toast({
-        title: "Download failed",
-        description: "Could not download image.",
-        variant: "destructive"
+        title: 'Download failed',
+        description: message,
+        variant: 'destructive'
       });
     }
   };
 
-  const filteredImages = images.filter(image =>
-    !selectedTags || image.filename.toLowerCase().includes(selectedTags.toLowerCase())
-  );
+  useEffect(() => {
+    if (mediaError) {
+      const message = mediaError instanceof Error ? mediaError.message : 'Unable to load media library.';
+      toast({
+        title: 'Failed to load media library',
+        description: message,
+        variant: 'destructive'
+      });
+    }
+  }, [mediaError, toast]);
 
-  const handleImageSelection = (imageId: number) => {
+  useEffect(() => {
+    if (catboxError) {
+      const message = catboxError instanceof Error ? catboxError.message : 'Unable to load Catbox uploads.';
+      toast({
+        title: 'Failed to load Catbox uploads',
+        description: message,
+        variant: 'destructive'
+      });
+    }
+  }, [catboxError, toast]);
+
+  const galleryErrorMessage = useMemo(() => {
+    if (mediaError && catboxError) {
+      return 'Media library and Catbox uploads are unavailable right now.';
+    }
+    if (mediaError) {
+      return 'Media library uploads are temporarily unavailable.';
+    }
+    if (catboxError) {
+      return 'Catbox uploads are temporarily unavailable.';
+    }
+    return null;
+  }, [mediaError, catboxError]);
+
+  const normalizedFilter = selectedTags.trim().toLowerCase();
+
+  const filteredImages = useMemo(() => {
+    if (!normalizedFilter) {
+      return galleryImages;
+    }
+
+    return galleryImages.filter((image) => {
+      const providerLabel = isLibraryImage(image)
+        ? 'media library'
+        : (image.provider ?? 'catbox');
+      return (
+        image.filename.toLowerCase().includes(normalizedFilter) ||
+        providerLabel.toLowerCase().includes(normalizedFilter)
+      );
+    });
+  }, [galleryImages, normalizedFilter]);
+
+  const handleImageSelection = (imageId: string) => {
     setSelectedImageId(imageId);
   };
 
@@ -553,46 +529,62 @@ export function ImageGallery() {
       {/* Gallery */}
       <Card>
         <CardHeader>
-          <CardTitle>Your Image Gallery ({images.length} images)</CardTitle>
+          <CardTitle>Your Image Gallery ({galleryImages.length} images)</CardTitle>
           <CardDescription>
             Manage your uploaded images, apply protection, and generate content.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {filteredImages.length === 0 ? (
+          {galleryErrorMessage ? (
+            <div className="mb-4 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {galleryErrorMessage}
+            </div>
+          ) : null}
+
+          {galleryLoading ? (
+            <div className="text-center py-8 text-muted-foreground/80">
+              <Upload className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+              <p>Loading...</p>
+            </div>
+          ) : filteredImages.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground/80">
               <Upload className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
               <p>No images yet. Upload some photos to get started!</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filteredImages.map((image) => (
-                <button
-                  key={image.id}
-                  type="button"
-                  className="group relative aspect-square overflow-hidden rounded-lg border cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() => handleImageSelection(image.id)}
-                  data-testid={`image-card-${image.id}`}
+              {filteredImages.map((image) => {
+                const isLibrary = isLibraryImage(image);
+                const cardTestId = isLibrary ? `image-card-${image.libraryId}` : `image-card-catbox-${image.catboxId}`;
+                return (
+                  <button
+                    key={image.id}
+                    type="button"
+                    className="group relative aspect-square overflow-hidden rounded-lg border cursor-pointer hover:shadow-lg transition-shadow"
+                    onClick={() => handleImageSelection(image.id)}
+                    data-testid={cardTestId}
                 >
                   <img
-                    src={image.signedUrl || image.downloadUrl || ''}
+                    src={getGalleryImageUrl(image)}
                     alt={image.filename}
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-foreground bg-opacity-0 group-hover:bg-opacity-20 transition-all">
-                    <div className="absolute bottom-2 left-2 right-2">
-                      <div className="flex flex-wrap gap-1">
-                        <Badge variant="secondary" className="text-xs">
-                          {image.mime.split('/')[1].toUpperCase()}
-                        </Badge>
-                        <Badge variant="secondary" className="text-xs">
-                          {Math.round(image.bytes / 1024)}KB
-                        </Badge>
-                      </div>
+                    <div className="absolute top-2 left-2 flex gap-1">
+                      <Badge variant="secondary" className="text-xs">
+                        {isLibraryImage(image) ? 'Media Library' : image.provider || 'Catbox'}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {formatMimeLabel(image.mime)}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {Math.round(image.bytes / 1024)}KB
+                      </Badge>
                     </div>
                   </div>
                 </button>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
