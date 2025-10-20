@@ -1,5 +1,61 @@
 [
   {
+    "id": "test",
+    "name": "test",
+    "displayName": "Test",
+    "members": 200000,
+    "engagementRate": 3,
+    "category": "other",
+    "verificationRequired": false,
+    "promotionAllowed": "allowed",
+    "postingLimits": {
+      "perDay": null,
+      "perWeek": null,
+      "cooldownHours": null
+    },
+    "rules": {
+      "eligibility": {
+        "minKarma": null,
+        "minAccountAgeDays": null,
+        "verificationRequired": false,
+        "requiresApproval": false
+      },
+      "content": {
+        "sellingPolicy": "allowed",
+        "watermarksAllowed": true,
+        "promotionalLinks": "allowed",
+        "requiresOriginalContent": false,
+        "nsfwRequired": false,
+        "titleGuidelines": [],
+        "contentGuidelines": [
+          "For testing purposes only"
+        ],
+        "linkRestrictions": [],
+        "bannedContent": [],
+        "formattingRequirements": []
+      },
+      "posting": {
+        "maxPostsPerDay": null,
+        "cooldownHours": null
+      },
+      "notes": "Testing subreddit - no restrictions"
+    },
+    "bestPostingTimes": [
+      "morning",
+      "afternoon",
+      "evening"
+    ],
+    "averageUpvotes": 5,
+    "successProbability": 95,
+    "growthTrend": "stable",
+    "modActivity": "low",
+    "description": "A place to test posting without restrictions",
+    "tags": [
+      "testing"
+    ],
+    "competitionLevel": "low"
+  },
+  {
     "id": "photography",
     "name": "photography",
     "displayName": "Photography",
