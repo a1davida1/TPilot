@@ -38,6 +38,42 @@ declare module 'express-serve-static-core' {
   }
 }
 
+type SessionWithCsrf = Session & Partial<SessionData> & { csrfSessionId?: string };
+
+const resolveCsrfSessionIdentifier = (req: express.Request): string => {
+  const session = req.session as SessionWithCsrf | undefined;
+
+  if (session) {
+    if (typeof session.csrfSessionId === 'string' && session.csrfSessionId.length > 0) {
+      return session.csrfSessionId;
+    }
+
+    const existingSessionId = (session as { id?: unknown }).id;
+    const sessionIdCandidate =
+      typeof req.sessionID === 'string' && req.sessionID.length > 0
+        ? req.sessionID
+        : (typeof existingSessionId === 'string' && existingSessionId.length > 0 ? existingSessionId : null);
+
+    if (typeof sessionIdCandidate === 'string' && sessionIdCandidate.length > 0) {
+      session.csrfSessionId = sessionIdCandidate;
+      return session.csrfSessionId;
+    }
+
+    const generatedId = uuidv4();
+    session.csrfSessionId = generatedId;
+    return generatedId;
+  }
+
+  const requestWithFallback = req as express.Request & { csrfFallbackId?: string };
+  if (typeof requestWithFallback.csrfFallbackId === 'string' && requestWithFallback.csrfFallbackId.length > 0) {
+    return requestWithFallback.csrfFallbackId;
+  }
+
+  const generatedId = uuidv4();
+  requestWithFallback.csrfFallbackId = generatedId;
+  return generatedId;
+};
+
 function configureCors(app: express.Express): void {
   const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map((origin) => origin.trim()) ?? [];
 
@@ -295,7 +331,7 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
 
   const { doubleCsrfProtection, generateCsrfToken } = doubleCsrf({
     getSecret: () => process.env.SESSION_SECRET || 'fallback-secret-for-dev',
-    getSessionIdentifier: (req: express.Request) => req.sessionID || (req.session as { id?: string })?.id || '',
+    getSessionIdentifier: resolveCsrfSessionIdentifier,
     cookieName: csrfCookieName,
     cookieOptions: {
       httpOnly: true,
@@ -306,12 +342,15 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
     },
     size: 64,
     ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
-  }) as any;
+  }) as {
+    doubleCsrfProtection: RequestHandler;
+    generateCsrfToken: (req: express.Request, res: express.Response) => string;
+  };
 
   const csrfProtection: RequestHandler = doubleCsrfProtection;
 
   type SessionAwareRequest = express.Request & {
-    session: Session & Partial<SessionData>;
+    session: SessionWithCsrf;
     sessionStore: (Store & { generate?: (req: express.Request) => void }) | undefined;
   };
 
@@ -335,6 +374,7 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
         activeSession.touch();
       }
 
+      resolveCsrfSessionIdentifier(req);
       const token = generateCsrfToken(req, res);
       res.json({ csrfToken: token });
     } catch (error) {
