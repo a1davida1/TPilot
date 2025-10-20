@@ -824,3 +824,8 @@
 {"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-20T13:14:07.889Z"}
 {"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-20T13:14:11.772Z"}
 {"level":"warn","message":"API 404","method":"GET","originalUrl":"/api/debug/reddit-session","path":"/","timestamp":"2025-10-20T13:14:11.814Z","url":"/"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-20T18:55:07.081Z"}
+{"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-20T18:55:10.997Z"}
+{"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-20T18:55:10.997Z"}
+{"level":"error","message":"Error: SSL/TLS required","method":"GET","path":"/api/csrf-token","stack":"error: SSL/TLS required\n    at /home/dave/CascadeProjects/TPilot/node_modules/pg-pool/index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async PGStore._asyncQuery (/home/dave/CascadeProjects/TPilot/node_modules/connect-pg-simple/index.js:322:21)\n    at async PGStore._rawEnsureSessionStoreTable (/home/dave/CascadeProjects/TPilot/node_modules/connect-pg-simple/index.js:177:19)\n    at async PGStore._asyncQuery (/home/dave/CascadeProjects/TPilot/node_modules/connect-pg-simple/index.js:315:7)","timestamp":"2025-10-20T18:55:20.172Z"}
+{"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-20T18:56:19.166Z"}

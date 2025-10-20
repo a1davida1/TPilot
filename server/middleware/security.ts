@@ -531,6 +531,16 @@ export const errorHandler = async (
     await Promise.all(req.pendingOperations.map(op => op.cleanup().catch(() => undefined)));
   }
 
+  // Check if headers have already been sent to avoid the double-send error
+  if (res.headersSent) {
+    logger.error('Headers already sent in errorHandler', {
+      error: err.message,
+      path: req.path,
+      method: req.method
+    });
+    return;
+  }
+
   if (process.env.NODE_ENV === "production") {
     return res.status(appError.statusCode).json({
       error: appError.isOperational ? appError.message : "An unexpected error occurred"

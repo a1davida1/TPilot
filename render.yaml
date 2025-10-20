@@ -1,0 +1,56 @@
+services:
+  - type: web
+    name: thottopilot
+    runtime: node
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.9.0
+      - key: NODE_ENV
+        value: production
+      - key: USE_PG_QUEUE
+        value: true
+      # Database
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tpilot-db
+          property: connectionString
+      # Required environment variables - must be set in Render dashboard
+      - key: JWT_SECRET
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      # Optional but recommended
+      - key: CORS_ORIGINS
+        value: https://thottopilot.com,https://www.thottopilot.com
+      - key: API_PREFIX
+        value: /api
+      - key: COOKIE_DOMAIN
+        value: .thottopilot.com
+      # Redis (if using Redis for sessions)
+      - key: REDIS_URL
+        sync: false
+      # Monitoring (optional)
+      - key: SENTRY_DSN
+        sync: false
+      # Reddit OAuth (required for app functionality)
+      - key: REDDIT_CLIENT_ID
+        sync: false
+      - key: REDDIT_CLIENT_SECRET
+        sync: false
+      # OpenRouter (for AI features)
+      - key: OPENROUTER_API_KEY
+        sync: false
+      # Image storage (Imgur/Catbox)
+      - key: IMGUR_CLIENT_ID
+        sync: false
+    healthCheckPath: /api/health
+
+databases:
+  - name: tpilot-db
+    databaseName: tpilot_production
+    user: tpilot_user
+    plan: standard # or free for testing
