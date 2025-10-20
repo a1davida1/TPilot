@@ -182,24 +182,44 @@ export default function QuickPostPage() {
         promotionMode: promoMode
       });
 
-      const payload = (await response.json()) as GenerationApiResponse;
-      console.log('[Quick Post] Caption generation response:', payload);
+      if (!response.ok) {
+        console.error('[Quick Post] API response not ok:', response.status, response.statusText);
+        throw new Error(`API request failed: ${response.status}`);
+      }
+
+      const payload = await response.json() as GenerationApiResponse;
       return payload;
     },
     onSuccess: (result, variables) => {
-      console.log('[Quick Post] Processing result:', { 
-        result, 
-        hasTopVariants: !!result.topVariants,
-        topVariantsLength: result.topVariants?.length,
-        hasFinal: !!result.final
-      });
+      // Check what we received
+      if (!result) {
+        console.error('[Quick Post] No result received from API');
+        toast({
+          title: 'Caption generation failed',
+          description: 'No response received from the server.',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      // Add detailed error info if topVariants is missing
+      if (!result.topVariants && !result.final) {
+        console.error('[Quick Post] Invalid API response format:', {
+          hasTopVariants: 'topVariants' in result,
+          hasFinal: 'final' in result,
+          keys: Object.keys(result)
+        });
+        toast({
+          title: 'Caption generation format error',
+          description: 'The server response is missing expected caption data. Check console for details.',
+          variant: 'destructive'
+        });
+      }
       
       const normalizedVariants = [
         normalizeCaption(result.topVariants?.[0] ?? result.final, 'Top Choice'),
         normalizeCaption(result.topVariants?.[1] ?? result.final, 'Alternative')
       ];
-      
-      console.log('[Quick Post] Normalized variants:', normalizedVariants);
 
       if (!normalizedVariants[0].text) {
         toast({
@@ -229,18 +249,11 @@ export default function QuickPostPage() {
         });
       }
 
-      console.log('[Quick Post] Setting caption options:', options);
       setCaptionOptions(options);
       setSelectedCaption(options[0]?.id ?? '');
       setConfirmedCaptionId(null);
       setCaptionPairId(pairId);
       setCaptionShownAt(Date.now());
-      
-      console.log('[Quick Post] State after setting:', {
-        captionOptionsLength: options.length,
-        selectedCaption: options[0]?.id ?? '',
-        options
-      });
 
       trackCaptionShown({
         pairId,
@@ -650,13 +663,6 @@ export default function QuickPostPage() {
                     )}
                   </div>
 
-                  {console.log('[Quick Post Render] Caption state:', {
-                    captionOptionsLength: captionOptions.length,
-                    captionOptions,
-                    generateIsPending: generateCaptions.isPending,
-                    selectedCaption,
-                    confirmedCaptionId
-                  })}
                   {captionOptions.length > 0 ? (
                     <>
                       {confirmedCaptionId ? (
