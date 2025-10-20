@@ -76,7 +76,7 @@ interface _AnalyticsRequest extends express.Request {
 }
 
 // Import users table for type inference
-import { users, type ContentGeneration, insertSavedContentSchema, type InsertSavedContent, type InsertUserPreference } from "@shared/schema";
+import { users, type ContentGeneration, insertSavedContentSchema, type InsertSavedContent } from "@shared/schema";
 import type { IStorage } from "./storage.js";
 
 // AuthUser interface for passport serialization
@@ -1851,7 +1851,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
       const existingPreferences = await storage.getUserPreferences(req.user.id);
       const existingPlatformSettings = (existingPreferences?.platformSettings ?? {}) as Record<string, unknown>;
 
-      const preferenceUpdates: Partial<InsertUserPreference> = {
+      const preferenceUpdates: Record<string, unknown> = {
         theme: parsed.theme,
         pushNotifications: parsed.notifications,
         emailNotifications: parsed.emailUpdates,

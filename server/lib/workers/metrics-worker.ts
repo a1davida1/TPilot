@@ -6,17 +6,6 @@ import { eq } from "drizzle-orm";
 import { RedditManager } from "../reddit.js";
 import { logger } from "../logger.js";
 
-type RedditSubmission = {
-  score: number;
-  upvote_ratio: number;
-  num_comments: number;
-  view_count: number;
-};
-
-interface RedditAPI {
-  getSubmission(id: string): Promise<RedditSubmission>;
-}
-
 interface PostMetrics {
   score: number;
   upvoteRatio: number;
@@ -114,7 +103,7 @@ export class MetricsWorker {
     }
   }
 
-  private async fetchPostMetrics(reddit: RedditAPI, redditPostId: string) {
+  private async fetchPostMetrics(reddit: RedditManager, redditPostId: string) {
     try {
       // Use Reddit API to get post details
       const post = await reddit.getSubmission(redditPostId);
@@ -123,7 +112,7 @@ export class MetricsWorker {
         score: post.score ?? 0,
         upvoteRatio: post.upvote_ratio ?? 0,
         numComments: post.num_comments ?? 0,
-        views: post.view_count ?? 0,
+        views: post.view_count ?? null ?? 0,
         collectedAt: new Date(),
       };
     } catch (error) {

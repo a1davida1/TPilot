@@ -1761,6 +1761,29 @@ export class RedditManager {
       };
     }
   }
+
+  /**
+   * Get a submission by its ID
+   * @param submissionId The Reddit submission ID (without t3_ prefix)
+   */
+  async getSubmission(submissionId: string): Promise<{
+    score: number;
+    upvote_ratio: number;
+    num_comments: number;
+    view_count: number | null;
+  }> {
+    // Fetch submission and extract only the properties we need
+    // This avoids circular type references from snoowrap's Submission type
+    const sub: unknown = this.reddit.getSubmission(submissionId);
+    await (sub as any).fetch();
+    
+    return {
+      score: (sub as any).score,
+      upvote_ratio: (sub as any).upvote_ratio,
+      num_comments: (sub as any).num_comments,
+      view_count: (sub as any).view_count ?? null,
+    };
+  }
 }
 
 /**

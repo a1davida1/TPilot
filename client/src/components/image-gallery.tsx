@@ -15,7 +15,8 @@ import {
   GalleryImage,
   isLibraryImage,
   getGalleryImageUrl,
-  formatMimeLabel
+  formatMimeLabel,
+  type MediaAssetResponse
 } from '@/lib/gallery';
 
 type ProtectionLevel = 'light' | 'standard' | 'heavy';
@@ -201,21 +202,21 @@ export function ImageGallery() {
     return galleryImages.find(img => img.id === selectedImageId) || null;
   }, [galleryImages, selectedImageId]);
 
-  const updateCachedLibraryImage = (imageId: number, updater: (asset: any) => any): void => {
-    queryClient.setQueryData(['/api/media'], (current: any) => {
+  const updateCachedLibraryImage = (imageId: number, updater: (asset: MediaAssetResponse) => MediaAssetResponse): void => {
+    queryClient.setQueryData(['/api/media'], (current: unknown) => {
       if (!current || !Array.isArray(current)) {
         return current;
       }
-      return current.map((asset: any) => (asset.id === imageId ? updater(asset) : asset));
+      return current.map((asset: MediaAssetResponse) => (asset.id === imageId ? updater(asset) : asset));
     });
   };
 
   const removeCachedLibraryImage = (imageId: number): void => {
-    queryClient.setQueryData(['/api/media'], (current: any) => {
+    queryClient.setQueryData(['/api/media'], (current: unknown) => {
       if (!current || !Array.isArray(current)) {
         return current;
       }
-      return current.filter((asset: any) => asset.id !== imageId);
+      return current.filter((asset: MediaAssetResponse) => asset.id !== imageId);
     });
   };
 

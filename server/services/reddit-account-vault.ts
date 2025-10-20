@@ -275,7 +275,16 @@ export async function hasLinkedRedditAccount(userId: number): Promise<boolean> {
  */
 async function logRedditAccountAction(params: InsertRedditAccountAuditLog): Promise<void> {
   try {
-    await db.insert(redditAccountAuditLog).values(params);
+    // Ensure required fields are present
+    const auditEntry: typeof redditAccountAuditLog.$inferInsert = {
+      userId: params.userId,
+      action: params.action,
+      redditAccountId: params.redditAccountId,
+      metadata: params.metadata,
+      ipAddress: params.ipAddress,
+      userAgent: params.userAgent,
+    };
+    await db.insert(redditAccountAuditLog).values(auditEntry);
   } catch (error) {
     // Log but don't fail - audit logging shouldn't break functionality
     logger.error('[RedditVault] Failed to log audit action', {
