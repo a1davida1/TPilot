@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-console */
 
 // Test script to verify caption API response
 // Run with: node test-caption-api.js

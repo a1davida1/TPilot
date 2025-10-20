@@ -1,7 +1,6 @@
 import crypto from 'crypto';
 import type { Request } from 'express';
 import { stateStore } from '../services/state-store.js';
-import { logger } from '../bootstrap/logger.js';
 
 export const OAUTH_STATE_TTL_SECONDS = 600;
 const STATE_PREFIX = 'tpilot';
