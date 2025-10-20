@@ -38,17 +38,16 @@ export async function getCsrfToken(): Promise<string> {
       const data = await res.json();
       csrfToken = data.csrfToken;
       
-      // Also read from XSRF-TOKEN cookie if available
-      const cookies = document.cookie.split(';');
-      for (const cookie of cookies) {
-        const [name, value] = cookie.trim().split('=');
-        if (name === 'XSRF-TOKEN') {
-          csrfToken = decodeURIComponent(value);
-          break;
-        }
-      }
+      // The server provides the token in the response
+      // The csrf-csrf library handles the double submit cookie internally
       
       return csrfToken || '';
+    })
+    .catch((error) => {
+      console.error('Failed to fetch CSRF token:', error);
+      // Clear token on error so next request will try to fetch a new one
+      csrfToken = null;
+      throw error;
     })
     .finally(() => {
       csrfTokenPromise = null;
@@ -61,6 +60,34 @@ export async function getCsrfToken(): Promise<string> {
 export function clearCsrfToken() {
   csrfToken = null;
   csrfTokenPromise = null;
+}
+
+// Periodically refresh CSRF token to prevent staleness
+let csrfRefreshInterval: NodeJS.Timeout | null = null;
+
+export function startCsrfTokenRefresh() {
+  if (typeof window === "undefined") return;
+  
+  // Clear any existing interval
+  if (csrfRefreshInterval) {
+    clearInterval(csrfRefreshInterval);
+  }
+  
+  // Refresh token every 30 minutes
+  csrfRefreshInterval = setInterval(() => {
+    clearCsrfToken();
+    // Prefetch a new token
+    getCsrfToken().catch(error => {
+      console.warn('Failed to refresh CSRF token:', error);
+    });
+  }, 30 * 60 * 1000); // 30 minutes
+}
+
+export function stopCsrfTokenRefresh() {
+  if (csrfRefreshInterval) {
+    clearInterval(csrfRefreshInterval);
+    csrfRefreshInterval = null;
+  }
 }
 
 // Helper function to get an error message based on status and error data
@@ -245,7 +272,15 @@ export async function apiRequest(
     try {
       const token = await getCsrfToken();
       if (token) {
-        headers["X-CSRF-Token"] = token;
+        // csrf-csrf library typically expects the token in one of these locations:
+        // 1. x-csrf-token header (lowercase)
+        // 2. _csrf in the request body
+        headers["x-csrf-token"] = token;
+        
+        // Also include in body for non-FormData requests
+        if (!(data instanceof FormData) && data && typeof data === 'object') {
+          (data as any)._csrf = token;
+        }
       }
     } catch (error) {
       console.warn("Unable to get CSRF token", error);
@@ -259,46 +294,55 @@ export async function apiRequest(
     body = JSON.stringify(data);
   }
 
-  const res = await fetch(url, {
+  const response = await fetch(url, {
     method,
     headers,
     body,
     credentials: "include", // Cookie-based auth only
   });
 
-  // If we get a 403 with CSRF error, clear token and retry once
-  if (res.status === 403) {
-    // Clone response so we can read body multiple times
-    const clonedRes = res.clone();
-    const text = await clonedRes.text();
-    
-    if (text.includes('CSRF') || text.includes('csrf')) {
-      clearCsrfToken();
-      
-      // Retry with fresh token
-      const newToken = await getCsrfToken();
-      if (newToken) {
-        headers['X-CSRF-Token'] = newToken;
+  // If we get a 403 with CSRF error, clear the token and retry once
+  if (response.status === 403 && ["POST", "PUT", "DELETE", "PATCH"].includes(method.toUpperCase())) {
+    const clonedResponse = response.clone();
+    try {
+      const responseText = await clonedResponse.text();
+      if (responseText.toLowerCase().includes('csrf')) {
+        console.warn('CSRF token validation failed, fetching new token and retrying...');
         
-        const retryRes = await fetch(url, {
-          method,
-          headers,
-          body,
-          credentials: "include",
-        });
+        // Clear the stale token
+        clearCsrfToken();
         
-        await throwIfResNotOk(retryRes);
-        return retryRes;
+        // Get a fresh token
+        const newToken = await getCsrfToken();
+        if (newToken) {
+          headers["x-csrf-token"] = newToken;
+          
+          // Update token in body if needed  
+          if (!(data instanceof FormData) && data && typeof data === 'object') {
+            (data as any)._csrf = newToken;
+            // Re-stringify the body with the new token
+            if (headers["Content-Type"] === "application/json") {
+              body = JSON.stringify(data);
+            }
+          }
+          
+          // Retry the request with the new token
+          const retryResponse = await fetch(url, {
+            method,
+            headers,
+            body,
+            credentials: "include",
+          });
+          
+          return retryResponse;
+        }
       }
+    } catch (error) {
+      console.error('Error checking CSRF error:', error);
     }
-    
-    // Not a CSRF error, use throwIfResNotOk for proper error handling
-    await throwIfResNotOk(res);
-    return res;
   }
 
-  await throwIfResNotOk(res);
-  return res;
+  return response;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
