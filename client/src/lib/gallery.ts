@@ -165,7 +165,7 @@ const mediaAssetResponseSchema = z
     };
   });
 
-const mediaAssetsResponseSchema = z.array(mediaAssetResponseSchema);
+const _mediaAssetsResponseSchema = z.array(mediaAssetResponseSchema);
 
 export type MediaAssetResponse = z.infer<typeof mediaAssetResponseSchema>;
 
@@ -206,7 +206,7 @@ const catboxUploadsApiResponseSchema = z.object({
 export type CatboxUploadResponse = z.infer<typeof catboxUploadResponseSchema>;
 export type CatboxUploadsApiResponse = z.infer<typeof catboxUploadsApiResponseSchema>;
 
-function parseWithSchema<T>(schema: z.ZodType<T>, input: unknown, errorMessage: string): T {
+function _parseWithSchema<T>(schema: z.ZodType<T>, input: unknown, errorMessage: string): T {
   const parsed = schema.safeParse(input);
   if (!parsed.success) {
     throw new Error(errorMessage);

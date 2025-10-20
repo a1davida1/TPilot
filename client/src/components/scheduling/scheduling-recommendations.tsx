@@ -75,7 +75,7 @@ export function SchedulingRecommendations({
         body: JSON.stringify({ subreddit })
       });
       await refetch();
-    } catch (err) {
+    } catch {
       // Silent fail
     } finally {
       setIsRefreshing(false);

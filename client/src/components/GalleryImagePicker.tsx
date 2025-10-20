@@ -211,7 +211,7 @@ export function GalleryImagePicker({
     return (
       <div className="grid max-h-[420px] grid-cols-2 gap-4 overflow-y-auto pr-1 md:grid-cols-3 lg:grid-cols-4">
         {filteredImages.map((image) => {
-          const isLibrary = isLibraryImage(image);
+          const _isLibrary = isLibraryImage(image);
           const isSelected = selectedIds.has(image.id);
           const previewUrl = getGalleryImageUrl(image);
           const providerLabel = getProviderLabel(image);

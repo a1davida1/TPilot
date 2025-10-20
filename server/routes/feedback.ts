@@ -25,7 +25,7 @@ router.post('/', authenticateToken(false), async (req: AuthRequest, res: Respons
     const { type, message, url, userAgent } = feedbackSchema.parse(req.body);
     
     const userId = req.user?.id || null;
-    const userEmail = req.user?.email || null;
+    const _userEmail = req.user?.email || null;
     const username = req.user?.username || 'Anonymous';
     
     // Store feedback in database

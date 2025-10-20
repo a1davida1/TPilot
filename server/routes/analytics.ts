@@ -76,6 +76,10 @@ async function handleLandingMetrics(_req: Request, res: Response): Promise<void>
 analyticsRouter.get("/", authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
     const userTier = req.query.tier as string || 'free';
     const range = req.query.range as string || '7d';
     
@@ -120,7 +124,7 @@ analyticsRouter.get("/", authenticateToken(true), async (req: AuthRequest, res: 
           month: sql<number>`count(*) filter (where occurred_at >= current_date - interval '30 days')`
         })
         .from(redditPostOutcomes)
-        .where(eq(redditPostOutcomes.userId, userId!)),
+        .where(eq(redditPostOutcomes.userId, userId)),
       
       // Engagement metrics (simplified since we don't have upvotes/comments in schema)
       db
@@ -131,7 +135,7 @@ analyticsRouter.get("/", authenticateToken(true), async (req: AuthRequest, res: 
         .from(redditPostOutcomes)
         .where(
           and(
-            eq(redditPostOutcomes.userId, userId!),
+            eq(redditPostOutcomes.userId, userId),
             gte(redditPostOutcomes.occurredAt, startDate)
           )
         ),
@@ -146,7 +150,7 @@ analyticsRouter.get("/", authenticateToken(true), async (req: AuthRequest, res: 
         .from(redditPostOutcomes)
         .where(
           and(
-            eq(redditPostOutcomes.userId, userId!),
+            eq(redditPostOutcomes.userId, userId),
             gte(redditPostOutcomes.occurredAt, startDate)
           )
         )

@@ -63,8 +63,8 @@ function MetricCard({ title, value, change, icon: Icon, trend = 'neutral' }: Met
 }
 
 export function PolishedAnalytics() {
-  const { user } = useAuth();
-  const [timeRange, setTimeRange] = useState('7d');
+  const { user: _user } = useAuth();
+  const [timeRange, _setTimeRange] = useState('7d');
   
   // Mock data for now - replace with real API calls
   const metrics = [

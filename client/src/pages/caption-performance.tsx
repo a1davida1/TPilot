@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Award } from 'lucide-react';
 import { CaptionInsightsCard } from '@/components/analytics/caption-insights-card';
 
-const COLORS = {
+const _COLORS = {
   flirty: '#ec4899',
   slutty: '#a855f7'
 };

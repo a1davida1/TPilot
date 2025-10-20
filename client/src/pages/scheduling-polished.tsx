@@ -51,9 +51,9 @@ function StatusBadge({ status }: { status: ScheduledPost['status'] }) {
 }
 
 export function PolishedScheduling() {
-  const { user } = useAuth();
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  const { user: _user } = useAuth();
+  const [selectedDate] = useState(new Date());
+  const [_viewMode, _setViewMode] = useState<'calendar' | 'list'>('calendar');
 
   // Mock scheduled posts
   const scheduledPosts: ScheduledPost[] = [
