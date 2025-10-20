@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, type ApiError } from '@/lib/queryClient';
 import { 
   Settings, 
   User, 
@@ -30,16 +30,20 @@ import {
 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 
+type ThemeOption = 'light' | 'dark' | 'auto';
+type PlatformOption = 'reddit' | 'twitter' | 'instagram' | 'onlyfans' | 'fansly';
+
 type UserSettingsResponse = {
-  theme?: string;
-  notifications?: boolean;
-  emailUpdates?: boolean;
-  autoSave?: boolean;
-  defaultPlatform?: string;
-  defaultStyle?: string;
-  watermarkPosition?: string;
-  onlyFansUrl?: string;
-  fanslyUrl?: string;
+  theme: ThemeOption;
+  notifications: boolean;
+  emailUpdates: boolean;
+  autoSave: boolean;
+  defaultPlatform: PlatformOption;
+  onlyFansUrl: string;
+  fanslyUrl: string;
+  displayName: string;
+  email: string;
+  bio: string;
 };
 
 type UpdateSettingsResponse = {
@@ -48,21 +52,36 @@ type UpdateSettingsResponse = {
 };
 
 type UserSettingsPayload = {
-  theme: string;
+  theme: ThemeOption;
   notifications: boolean;
   emailUpdates: boolean;
   autoSave: boolean;
-  defaultPlatform: string;
-  onlyFansUrl?: string;
-  fanslyUrl?: string;
+  defaultPlatform: PlatformOption;
+  onlyFansUrl: string;
+  fanslyUrl: string;
+};
+
+type UpdateProfilePayload = {
+  username: string;
+  email?: string;
+  bio?: string;
+};
+
+type UpdateProfileResponse = {
+  message: string;
+  profile: {
+    username: string;
+    email: string | null;
+    bio: string | null;
+  };
 };
 
 export default function SettingsPage() {
-  const [theme, setTheme] = useState('light');
+  const [theme, setTheme] = useState<ThemeOption>('light');
   const [notifications, setNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(true);
   const [autoSave, setAutoSave] = useState(true);
-  const [defaultPlatform, setDefaultPlatform] = useState('reddit');
+  const [defaultPlatform, setDefaultPlatform] = useState<PlatformOption>('reddit');
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [bio, setBio] = useState('');
@@ -72,7 +91,14 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: userSettings } = useQuery<UserSettingsResponse>({
+  const [, setLocation] = useLocation();
+
+  const {
+    data: userSettings,
+    isLoading: isSettingsLoading,
+    isError: isSettingsError,
+    error: settingsError,
+  } = useQuery<UserSettingsResponse, ApiError>({
     queryKey: ['/api/user/settings'],
   });
 
@@ -94,28 +120,92 @@ export default function SettingsPage() {
     setEmailUpdates(userSettings.emailUpdates ?? true);
     setAutoSave(userSettings.autoSave ?? true);
     setDefaultPlatform(userSettings.defaultPlatform ?? 'reddit');
+    setDisplayName(userSettings.displayName ?? '');
+    setEmail(userSettings.email ?? '');
+    setBio(userSettings.bio ?? '');
     setOnlyFansUrl(userSettings.onlyFansUrl ?? '');
     setFanslyUrl(userSettings.fanslyUrl ?? '');
   }, [userSettings]);
 
-  const updateSettingsMutation = useMutation<UpdateSettingsResponse, Error, UserSettingsPayload>({
+  const updateSettingsMutation = useMutation<UpdateSettingsResponse, ApiError, UserSettingsPayload>({
     mutationFn: async (settings) => {
       const response = await apiRequest('PATCH', '/api/user/settings', settings);
       return response.json() as Promise<UpdateSettingsResponse>;
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(['/api/user/settings'], data.settings);
+      queryClient.setQueryData<UserSettingsResponse>(['/api/user/settings'], data.settings);
       setTheme(data.settings.theme ?? 'light');
       setNotifications(data.settings.notifications ?? true);
       setEmailUpdates(data.settings.emailUpdates ?? true);
       setAutoSave(data.settings.autoSave ?? true);
       setDefaultPlatform(data.settings.defaultPlatform ?? 'reddit');
+      setOnlyFansUrl(data.settings.onlyFansUrl ?? '');
+      setFanslyUrl(data.settings.fanslyUrl ?? '');
+      setDisplayName(data.settings.displayName ?? '');
+      setEmail(data.settings.email ?? '');
+      setBio(data.settings.bio ?? '');
       toast({
         title: "Settings updated",
         description: "Your preferences have been saved.",
       });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to update settings",
+        description: error.userMessage ?? error.message ?? "An unexpected error occurred.",
+        variant: 'destructive',
+      });
     }
   });
+
+  const updateProfileMutation = useMutation<UpdateProfileResponse, ApiError, UpdateProfilePayload>({
+    mutationFn: async (payload) => {
+      const response = await apiRequest('PUT', '/api/users/profile', payload);
+      return response.json() as Promise<UpdateProfileResponse>;
+    },
+    onSuccess: (data) => {
+      const normalizedUsername = data.profile.username ?? displayName;
+      const normalizedEmail = data.profile.email ?? '';
+      const normalizedBio = data.profile.bio ?? '';
+
+      setDisplayName(normalizedUsername);
+      setEmail(normalizedEmail);
+      setBio(normalizedBio);
+
+      queryClient.setQueryData<UserSettingsResponse>(['/api/user/settings'], (current) => {
+        if (!current) {
+          return current;
+        }
+
+        return {
+          ...current,
+          displayName: normalizedUsername,
+          email: normalizedEmail,
+          bio: normalizedBio,
+        };
+      });
+
+      toast({
+        title: 'Profile updated',
+        description: data.message || 'Your profile details have been saved.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Failed to update profile',
+        description: error.userMessage ?? error.message ?? 'Unable to update your profile. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  });
+
+  const handleSaveProfile = () => {
+    updateProfileMutation.mutate({
+      username: displayName.trim(),
+      email: email.trim() || undefined,
+      bio: bio.trim() || undefined,
+    });
+  };
 
   const deleteAccountMutation = useMutation({
     mutationFn: async () => {
@@ -159,20 +249,38 @@ export default function SettingsPage() {
       emailUpdates,
       autoSave,
       defaultPlatform,
-      onlyFansUrl: onlyFansUrl || undefined,
-      fanslyUrl: fanslyUrl || undefined
+      onlyFansUrl: onlyFansUrl.trim(),
+      fanslyUrl: fanslyUrl.trim()
     };
 
     updateSettingsMutation.mutate(payload);
   };
-
-  const [, setLocation] = useLocation();
   
   const handleUpgrade = () => {
     // Navigate to Stripe checkout page
     const selectedPlan = subscriptionData?.subscription?.plan === 'free' ? 'pro' : 'pro_plus';
     setLocation(`/checkout?plan=${selectedPlan}`);
   };
+
+  if (isSettingsLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
+        <span className="text-sm font-medium text-gray-600">Loading settings...</span>
+      </div>
+    );
+  }
+
+  if (isSettingsError || !userSettings) {
+    const message = settingsError?.userMessage ?? settingsError?.message ?? 'Failed to load settings.';
+
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-red-50">
+        <div className="rounded-lg border border-red-200 bg-white p-6 shadow-sm">
+          <p className="text-sm font-medium text-red-600">{message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
@@ -305,6 +413,15 @@ export default function SettingsPage() {
                 />
               </div>
             </CardContent>
+            <CardFooter className="flex justify-end">
+              <Button
+                onClick={handleSaveProfile}
+                disabled={updateProfileMutation.isPending}
+                className="bg-gradient-to-r from-purple-600 to-blue-600"
+              >
+                {updateProfileMutation.isPending ? 'Saving...' : 'Save Profile'}
+              </Button>
+            </CardFooter>
           </Card>
 
           {/* Promotional Links */}
@@ -351,6 +468,15 @@ export default function SettingsPage() {
                 </p>
               </div>
             </CardContent>
+            <CardFooter className="flex justify-end">
+              <Button
+                onClick={handleSaveSettings}
+                disabled={updateSettingsMutation.isPending}
+                className="bg-gradient-to-r from-purple-600 to-blue-600"
+              >
+                {updateSettingsMutation.isPending ? 'Saving...' : 'Save Promotional Links'}
+              </Button>
+            </CardFooter>
           </Card>
 
           {/* App Preferences */}
@@ -367,7 +493,7 @@ export default function SettingsPage() {
                   <Label htmlFor="theme">Theme</Label>
                   <p className="text-sm text-gray-600">Choose your preferred theme</p>
                 </div>
-                <Select value={theme} onValueChange={setTheme}>
+                <Select value={theme} onValueChange={(value) => setTheme(value as ThemeOption)}>
                   <SelectTrigger className="w-32">
                     <SelectValue />
                   </SelectTrigger>
@@ -393,7 +519,7 @@ export default function SettingsPage() {
                   <Label htmlFor="defaultPlatform">Default Platform</Label>
                   <p className="text-sm text-gray-600">Your preferred content platform</p>
                 </div>
-                <Select value={defaultPlatform} onValueChange={setDefaultPlatform}>
+                <Select value={defaultPlatform} onValueChange={(value) => setDefaultPlatform(value as PlatformOption)}>
                   <SelectTrigger className="w-32">
                     <SelectValue />
                   </SelectTrigger>
@@ -574,7 +700,7 @@ export default function SettingsPage() {
               disabled={updateSettingsMutation.isPending}
               className="bg-gradient-to-r from-purple-600 to-blue-600"
             >
-              {updateSettingsMutation.isPending ? 'Saving...' : 'Save Settings'}
+              {updateSettingsMutation.isPending ? 'Saving...' : 'Save Preferences'}
             </Button>
           </div>
         </div>

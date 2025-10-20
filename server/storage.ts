@@ -123,7 +123,7 @@ export interface IStorage {
 
   // Preference operations
   getUserPreferences(userId: number): Promise<UserPreference | undefined>;
-  updateUserPreferences(userId: number, preferences: InsertUserPreference): Promise<UserPreference>;
+  updateUserPreferences(userId: number, preferences: Partial<InsertUserPreference>): Promise<UserPreference>;
 
   // Onboarding state operations
   getOnboardingState(userId: number): Promise<OnboardingState | undefined>;
@@ -689,7 +689,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateUserPreferences(userId: number, preferences: InsertUserPreference): Promise<UserPreference> {
+  async updateUserPreferences(userId: number, preferences: Partial<InsertUserPreference>): Promise<UserPreference> {
     try {
       // Try to update first
       const updateResult = await db.update(userPreferences)

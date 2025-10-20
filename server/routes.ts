@@ -7,6 +7,7 @@ import passport from 'passport';
 import process from 'node:process';
 import { Pool } from 'pg';
 import Redis from 'ioredis';
+import { z } from 'zod';
 
 // Security and middleware
 import { validateEnvironment, securityMiddleware, ipLoggingMiddleware, errorHandler, logger, generationLimiter } from "./middleware/security.js";
@@ -32,6 +33,7 @@ import { feedbackRouter } from "./routes/feedback.js";
 
 // Core imports
 import { storage } from "./storage.js";
+import { buildUserSettingsResponse, normalizePromotionalUrl } from './lib/user-settings.js';
 import { setupAdminRoutes, requireAdmin } from "./admin-routes.js";
 import { makePaxum, makeCoinbase, makeStripe } from "./payments/payment-providers.js";
 import { deriveStripeConfig } from "./payments/stripe-config.js";
@@ -59,13 +61,22 @@ export function buildCsrfProtectedRoutes(apiPrefix: string = API_PREFIX): string
 }
 
 export const csrfProtectedRoutes = buildCsrfProtectedRoutes();
+const updateSettingsSchema = z.object({
+  theme: z.enum(['light', 'dark', 'auto']),
+  notifications: z.boolean(),
+  emailUpdates: z.boolean(),
+  autoSave: z.boolean(),
+  defaultPlatform: z.enum(['reddit', 'twitter', 'instagram', 'onlyfans', 'fansly']),
+  onlyFansUrl: z.string().trim().optional(),
+  fanslyUrl: z.string().trim().optional(),
+});
 // Analytics request type
 interface _AnalyticsRequest extends express.Request {
   sessionID: string;
 }
 
 // Import users table for type inference
-import { users, type ContentGeneration, insertSavedContentSchema, type InsertSavedContent } from "@shared/schema";
+import { users, type ContentGeneration, insertSavedContentSchema, type InsertSavedContent, type InsertUserPreference } from "@shared/schema";
 import type { IStorage } from "./storage.js";
 
 // AuthUser interface for passport serialization
@@ -1798,17 +1809,12 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
       }
-      const preferences = await storage.getUserPreferences(req.user.id);
+      const [preferences, user] = await Promise.all([
+        storage.getUserPreferences(req.user.id),
+        storage.getUser(req.user.id)
+      ]);
 
-      res.json(preferences || {
-        theme: 'light',
-        notifications: true,
-        emailUpdates: true,
-        autoSave: true,
-        defaultPlatform: 'reddit',
-        defaultStyle: 'playful',
-        watermarkPosition: 'bottom-right'
-      });
+      res.json(buildUserSettingsResponse(user, preferences));
     } catch (error) {
       logger.error('Failed to fetch settings:', error);
       if (options?.sentry) {
@@ -1823,9 +1829,52 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
       }
-      const updated = await storage.updateUserPreferences(req.user.id, req.body);
-      res.json({ success: true, settings: updated });
-  } catch (error) {
+
+      const rawBody = req.body as Record<string, unknown>;
+      const parsed = updateSettingsSchema.parse(rawBody);
+
+      let normalizedOnlyFans: string | null | undefined;
+      let normalizedFansly: string | null | undefined;
+
+      try {
+        normalizedOnlyFans = Object.prototype.hasOwnProperty.call(rawBody, 'onlyFansUrl')
+          ? (parsed.onlyFansUrl ? normalizePromotionalUrl(parsed.onlyFansUrl, 'onlyfans') : null)
+          : undefined;
+
+        normalizedFansly = Object.prototype.hasOwnProperty.call(rawBody, 'fanslyUrl')
+          ? (parsed.fanslyUrl ? normalizePromotionalUrl(parsed.fanslyUrl, 'fansly') : null)
+          : undefined;
+      } catch (validationError) {
+        return res.status(400).json({ message: (validationError as Error).message });
+      }
+
+      const existingPreferences = await storage.getUserPreferences(req.user.id);
+      const existingPlatformSettings = (existingPreferences?.platformSettings ?? {}) as Record<string, unknown>;
+
+      const preferenceUpdates: Partial<InsertUserPreference> = {
+        theme: parsed.theme,
+        pushNotifications: parsed.notifications,
+        emailNotifications: parsed.emailUpdates,
+        autoSchedulePosts: parsed.autoSave,
+        platformSettings: {
+          ...existingPlatformSettings,
+          defaultPlatform: parsed.defaultPlatform
+        }
+      };
+
+      if (normalizedOnlyFans !== undefined) {
+        preferenceUpdates.onlyFansUrl = normalizedOnlyFans;
+      }
+
+      if (normalizedFansly !== undefined) {
+        preferenceUpdates.fanslyUrl = normalizedFansly;
+      }
+
+      const updatedPreferences = await storage.updateUserPreferences(req.user.id, preferenceUpdates);
+      const user = await storage.getUser(req.user.id);
+
+      res.json({ success: true, settings: buildUserSettingsResponse(user, updatedPreferences) });
+    } catch (error) {
       logger.error('Failed to update settings:', error);
       if (options?.sentry) {
         options.sentry.captureException(error);
