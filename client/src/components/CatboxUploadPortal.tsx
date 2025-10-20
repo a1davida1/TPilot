@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -44,6 +45,7 @@ export function CatboxUploadPortal({
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Direct upload to Catbox (client-side only, no backend involvement)
   const uploadToCatbox = useCallback(async (file: File) => {
@@ -132,6 +134,7 @@ export function CatboxUploadPortal({
         title: "Upload successful",
         description: "Your image has been uploaded to Catbox",
       });
+      queryClient.invalidateQueries({ queryKey: ['/api/catbox/uploads'] });
 
       // Reset after a short delay
       setTimeout(() => {
@@ -156,7 +159,7 @@ export function CatboxUploadPortal({
         variant: "destructive"
       });
     }
-  }, [acceptedFormats, onComplete, toast]);
+  }, [acceptedFormats, onComplete, queryClient, toast]);
 
   // Handle external URL submission
   const handleExternalSubmit = useCallback(async () => {
@@ -212,6 +215,8 @@ export function CatboxUploadPortal({
         description: "Image uploaded from URL to Catbox",
       });
       
+      queryClient.invalidateQueries({ queryKey: ['/api/catbox/uploads'] });
+      
       setExternalUrl('');
       setTimeout(() => {
         setUploadProgress(0);
@@ -231,7 +236,7 @@ export function CatboxUploadPortal({
       setUploadProgress(0);
       setIsUploading(false);
     }
-  }, [externalUrl, onComplete, toast]);
+  }, [externalUrl, onComplete, queryClient, toast]);
 
   // Handle file selection
   const handleFileSelect = useCallback((file: File) => {

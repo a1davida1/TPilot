@@ -1,11 +1,17 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { authenticateToken, type AuthRequest } from '../middleware/auth.js';
 import { CatboxService } from '../lib/catbox-service.js';
 import { CatboxAnalyticsService } from '../services/catbox-analytics-service.js';
+import { getUserCatboxGalleryUploads } from '../services/catbox-gallery-service.js';
 import { logger } from '../bootstrap/logger.js';
 import multer from 'multer';
 
 const router = Router();
+
+const uploadsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(24),
+});
 
 function extractFilenameFromUrl(rawUrl: string): string | undefined {
   try {
@@ -26,6 +32,29 @@ function extractFilenameFromUrl(rawUrl: string): string | undefined {
 const upload = multer({ 
   storage: multer.memoryStorage(), 
   limits: { fileSize: 200 * 1024 * 1024 } // 200MB max
+});
+
+router.get('/uploads', authenticateToken(true), async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const parsed = uploadsQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request parameters' });
+    }
+
+    const uploads = await getUserCatboxGalleryUploads(userId, parsed.data.limit);
+    return res.status(200).json({ uploads });
+  } catch (error) {
+    logger.error('Failed to load Catbox uploads', {
+      error: error instanceof Error ? error.message : String(error),
+      userId: req.user?.id ?? null,
+    });
+    return res.status(500).json({ error: 'Failed to load Catbox uploads' });
+  }
 });
 
 /**

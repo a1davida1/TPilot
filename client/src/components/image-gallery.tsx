@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,11 +10,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { downloadProtectedImage } from '@/lib/image-protection';
 import { Upload, Shield, Download, Trash2, Tag, Share2 } from 'lucide-react';
 
-// Import MediaAsset type from schema
-import type { MediaAsset } from '@shared/schema';
-
-// Extended interface for gallery display with additional properties
-interface UserImage extends MediaAsset {
+interface MediaAssetResponse {
+  id: number;
+  filename: string;
+  bytes: number;
+  mime: string;
+  visibility: string;
+  createdAt: string | Date;
   signedUrl?: string;
   downloadUrl?: string;
   isProtected?: boolean;
@@ -22,33 +24,89 @@ interface UserImage extends MediaAsset {
   lastRepostedAt?: string;
 }
 
+interface CatboxUploadResponse {
+  id: number;
+  url: string;
+  filename: string;
+  fileSize: number;
+  mime: string;
+  uploadedAt: string;
+  provider: string;
+}
+
+interface CatboxUploadsApiResponse {
+  uploads: CatboxUploadResponse[];
+}
+
 type ProtectionLevel = 'light' | 'standard' | 'heavy';
 
-interface ProtectImageResponse {
-  success?: boolean;
-  protectedUrl?: string;
-  message?: string;
+interface GalleryImageBase {
+  id: string;
+  filename: string;
+  bytes: number;
+  mime: string;
+  createdAt: string;
+  signedUrl?: string;
+  downloadUrl?: string;
+  isProtected?: boolean;
+  protectionLevel?: ProtectionLevel;
+  lastRepostedAt?: string;
 }
 
-interface QuickRepostResponse {
-  success?: boolean;
-  repostedAt?: string;
-  message?: string;
+interface LibraryGalleryImage extends GalleryImageBase {
+  origin: 'library';
+  libraryId: number;
+  visibility: string;
 }
 
-interface DeleteImageResponse {
-  success?: boolean;
-  message?: string;
+interface CatboxGalleryImage extends GalleryImageBase {
+  origin: 'catbox';
+  catboxId: number;
+  provider: string;
+}
+
+type GalleryImage = LibraryGalleryImage | CatboxGalleryImage;
+
+function isLibraryImage(image: GalleryImage): image is LibraryGalleryImage {
+  return image.origin === 'library';
+}
+
+function toIsoString(value: Date | string | null | undefined): string {
+  if (!value) {
+    return new Date(0).toISOString();
+  }
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? new Date(0).toISOString() : value.toISOString();
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? new Date(0).toISOString() : parsed.toISOString();
+}
+
+function normalizeBytes(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    return 0;
+  }
+  return Math.round(value);
+}
+
+function formatMimeLabel(mime: string): string {
+  if (!mime.includes('/')) {
+    return mime.toUpperCase();
+  }
+  const [, subtype] = mime.split('/');
+  return subtype ? subtype.toUpperCase() : mime.toUpperCase();
 }
 
 interface ImageDetailModalProps {
-  image: UserImage | null;
+  image: GalleryImage | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onProtect: (image: UserImage, level: ProtectionLevel) => void;
-  onQuickRepost: (image: UserImage) => void;
-  onDownload: (image: UserImage) => void;
-  onDelete: (image: UserImage) => void;
+  onProtect: (image: GalleryImage, level: ProtectionLevel) => void;
+  onQuickRepost: (image: GalleryImage) => void;
+  onDownload: (image: GalleryImage) => void;
+  onDelete: (image: GalleryImage) => void;
   isProtecting: boolean;
   isReposting: boolean;
   isDeleting: boolean;
@@ -66,6 +124,7 @@ function ImageDetailModal({
   isReposting,
   isDeleting
 }: ImageDetailModalProps) {
+  const isLibrary = image ? isLibraryImage(image) : false;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {image ? (
@@ -85,13 +144,11 @@ function ImageDetailModal({
             <div className="flex flex-wrap gap-2">
               <Badge variant="outline">
                 <Tag className="h-3 w-3 mr-1" />
-                {image.mime}
+                {formatMimeLabel(image.mime)}
               </Badge>
-              <Badge variant="outline">
-                {Math.round(image.bytes / 1024)}KB
-              </Badge>
-              <Badge variant="outline">
-                {new Date(image.createdAt).toLocaleDateString()}
+              <Badge variant="outline">{Math.round(image.bytes / 1024)}KB</Badge>
+              <Badge variant="outline">{new Date(image.createdAt).toLocaleDateString()}</Badge>
+              <Badge variant="outline">{isLibrary ? 'Media Library' : 'Catbox Upload'}
               </Badge>
               {image.protectionLevel ? (
                 <Badge
@@ -119,8 +176,9 @@ function ImageDetailModal({
               <Button
                 size="sm"
                 onClick={() => onQuickRepost(image)}
-                disabled={isReposting}
+                disabled={!isLibrary || isReposting}
                 data-testid="quick-repost-button"
+                title={isLibrary ? undefined : 'Quick repost is only available for media library uploads'}
               >
                 <Share2 className="h-4 w-4 mr-1" />
                 {isReposting ? 'Reposting...' : 'Quick Repost'}
@@ -129,7 +187,9 @@ function ImageDetailModal({
                 size="sm"
                 variant="secondary"
                 onClick={() => onProtect(image, 'standard')}
-                disabled={isProtecting}
+                disabled={!isLibrary || isProtecting}
+                data-testid="quick-protect-button"
+                title={isLibrary ? undefined : 'Protection is managed through the media library'}
                 data-testid="quick-protect-button"
               >
                 <Shield className="h-4 w-4 mr-1" />
@@ -139,7 +199,8 @@ function ImageDetailModal({
                 size="sm"
                 variant="outline"
                 onClick={() => onProtect(image, 'light')}
-                disabled={isProtecting}
+                disabled={!isLibrary || isProtecting}
+                title={isLibrary ? undefined : 'Protection is managed through the media library'}
               >
                 <Shield className="h-4 w-4 mr-1" />
                 Light Shield
@@ -148,7 +209,8 @@ function ImageDetailModal({
                 size="sm"
                 variant="outline"
                 onClick={() => onProtect(image, 'heavy')}
-                disabled={isProtecting}
+                disabled={!isLibrary || isProtecting}
+                title={isLibrary ? undefined : 'Protection is managed through the media library'}
               >
                 <Shield className="h-4 w-4 mr-1" />
                 Heavy Shield
@@ -166,7 +228,9 @@ function ImageDetailModal({
                 size="sm"
                 variant="destructive"
                 onClick={() => onDelete(image)}
-                disabled={isDeleting}
+                disabled={!isLibrary || isDeleting}
+                title={isLibrary ? undefined : 'Delete Catbox uploads from the Catbox dashboard'}
+                data-testid="delete-button"
               >
                 <Trash2 className="h-4 w-4 mr-1" />
                 {isDeleting ? 'Deleting...' : 'Delete'}
