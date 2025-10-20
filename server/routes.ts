@@ -2156,12 +2156,47 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
       import('path').then((path) => {
         import('fs').then((fs) => {
           const __dirname = path.dirname(fileURLToPath(import.meta.url));
-          const clientPath = path.join(__dirname, '..', 'client');
+          
+          // Try production build locations first
+          const candidatePaths = [
+            path.join(__dirname, '..', 'dist', 'client'),  // dist/client
+            path.join(__dirname, '..', 'client', 'dist'),  // client/dist
+            path.join(__dirname, '..', 'client'),          // client (dev)
+          ];
 
-          if (fs.existsSync(path.join(clientPath, 'index.html'))) {
+          let clientPath = null;
+          for (const candidate of candidatePaths) {
+            if (fs.existsSync(path.join(candidate, 'index.html'))) {
+              clientPath = candidate;
+              break;
+            }
+          }
+
+          if (clientPath) {
             res.sendFile(path.join(clientPath, 'index.html'));
           } else {
-            res.status(404).send('Client build not found');
+            // In production, return a proper error page
+            if (process.env.NODE_ENV === 'production') {
+              res.status(503).send(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                  <title>Service Temporarily Unavailable</title>
+                  <style>
+                    body { font-family: -apple-system, sans-serif; padding: 50px; text-align: center; }
+                    h1 { color: #333; }
+                    p { color: #666; }
+                  </style>
+                </head>
+                <body>
+                  <h1>Service Temporarily Unavailable</h1>
+                  <p>The application is being deployed. Please refresh this page in a moment.</p>
+                </body>
+                </html>
+              `);
+            } else {
+              res.status(404).send('Client build not found - run npm run build:client');
+            }
           }
         }).catch(next);
       }).catch(next);

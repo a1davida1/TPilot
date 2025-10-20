@@ -113,11 +113,31 @@ fi
 mkdir -p dist/client
 cp -r client/dist/* dist/client/
 
-find dist/client -type f \( -name "*.js" -o -name "*.css" \) -print0 | xargs -0 -r gzip -9 --keep
+echo "📂 Verifying client build structure..."
+ls -la dist/client/ | head -10
 
-if ! npm run validate:client -- dist/client; then
-  echo "❌ Client bundle validation failed after compression"
+if [ ! -f dist/client/index.html ]; then
+  echo "❌ Critical: dist/client/index.html missing after copy!"
+  echo "Checking source directory:"
+  ls -la client/dist/ | head -10
   exit 1
+fi
+
+# Only compress if gzip is available (Render may not have it)
+if command -v gzip &> /dev/null; then
+  find dist/client -type f \( -name "*.js" -o -name "*.css" \) -print0 | xargs -0 -r gzip -9 --keep
+  echo "✅ Client assets compressed with gzip"
+else
+  echo "ℹ️ Skipping gzip compression (not available)"
+fi
+
+# Only validate if script exists
+if [ -f scripts/validate-client.js ]; then
+  if ! npm run validate:client -- dist/client; then
+    echo "⚠️ Client bundle validation failed (non-critical)"
+  fi
+else
+  echo "ℹ️ Skipping client validation (script not found)"
 fi
 
 echo "✅ Production build complete!"

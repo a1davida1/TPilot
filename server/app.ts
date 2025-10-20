@@ -193,9 +193,8 @@ async function configureStaticAssets(
     }
     logger.error('Client build not found; unable to locate compiled client assets in any known directory.');
 
-    app.get('*', (req, res) => {
-      res.status(404).send('Client build not found - static assets unavailable');
-    });
+    // Don't add a catch-all route here - let the API routes handle it
+    // The SPA fallback will be handled later after API routes are registered
     return;
   }
 
@@ -243,6 +242,33 @@ async function configureStaticAssets(
         req.path.startsWith('/assets/')) {
       logger.debug(`Asset request bypassed SPA fallback: ${req.path}`);
       return next();
+    }
+
+    // Check if clientPath was actually found
+    if (!clientPath) {
+      logger.warn(`Client path not set, unable to serve SPA for ${req.path}`);
+      if (process.env.NODE_ENV === 'production') {
+        res.status(503).send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Service Temporarily Unavailable</title>
+            <style>
+              body { font-family: -apple-system, sans-serif; padding: 50px; text-align: center; }
+              h1 { color: #333; }
+              p { color: #666; }
+            </style>
+          </head>
+          <body>
+            <h1>Service Temporarily Unavailable</h1>
+            <p>The application is being deployed. Please refresh this page in a moment.</p>
+          </body>
+          </html>
+        `);
+      } else {
+        res.status(404).send('Client build not found - run npm run build:client');
+      }
+      return;
     }
 
     const indexFile = path.join(clientPath, 'index.html');
