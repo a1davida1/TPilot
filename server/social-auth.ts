@@ -510,6 +510,7 @@ export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
       name?: string;
       icon_img?: string;
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     passport.use(new (RedditStrategy as any)({
       clientID: process.env.REDDIT_CLIENT_ID,
       clientSecret: process.env.REDDIT_CLIENT_SECRET,

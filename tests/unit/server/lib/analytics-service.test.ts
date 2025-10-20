@@ -13,16 +13,22 @@ import {
 } from '../../../../server/lib/analytics-service';
 
 // Mock dependencies
-vi.mock('../../../../server/db', () => ({
-  db: {
-    select: vi.fn().mockReturnThis(),
-    from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    groupBy: vi.fn().mockReturnThis(),
-    orderBy: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockReturnThis(),
-  }
-}));
+const mockDb = vi.hoisted(() => {
+  const chain: any = {};
+  // Make the chain thenable (promise-like) that resolves to an empty array
+  chain.select = vi.fn().mockReturnValue(chain);
+  chain.from = vi.fn().mockReturnValue(chain);
+  chain.where = vi.fn().mockReturnValue(chain);
+  chain.groupBy = vi.fn().mockReturnValue(chain);
+  chain.orderBy = vi.fn().mockReturnValue(chain);
+  chain.limit = vi.fn().mockReturnValue(chain);
+  // Make the chain itself awaitable, returning an empty array
+  chain.then = vi.fn((resolve) => Promise.resolve([]).then(resolve));
+  chain.catch = vi.fn((reject) => Promise.resolve([]).catch(reject));
+  return { db: chain };
+});
+
+vi.mock('../../../../server/db', () => mockDb);
 
 vi.mock('../../../../server/lib/cache', () => ({
   cacheGetOrSet: vi.fn((key, generator, ttl) => generator()),
@@ -381,16 +387,21 @@ describe('analytics-service', () => {
       };
 
       // Mock getUserSubredditMetrics
-      vi.mocked(db.select).mockReturnValueOnce({
+      const mockChain1 = {
         from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockResolvedValueOnce([{
+        where: vi.fn().mockReturnThis(),
+        groupBy: vi.fn().mockReturnThis(),
+        orderBy: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValueOnce([{
           avgScore: 247,
           avgComments: 18,
           totalPosts: 45,
           maxScore: 500,
           minScore: 50
         }])
-      } as any);
+      };
+      Object.assign(mockChain1, mockChain1);
+      vi.mocked(db.select).mockReturnValueOnce(mockChain1 as any);
 
       const result = await getPerformanceAnalytics(123, 'gonewild');
 
@@ -405,19 +416,23 @@ describe('analytics-service', () => {
       const { db } = await import('../../../../server/db');
       
       // Mock low success rate scenario
-      vi.mocked(db.select).mockReturnValue({
+      const mockChain = {
         from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockResolvedValue([{
+        where: vi.fn().mockReturnThis(),
+        groupBy: vi.fn().mockReturnThis(),
+        orderBy: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue([{
           avgScore: 50,
           avgComments: 5,
           totalPosts: 10,
           maxScore: 100,
           minScore: 10,
           totalAttempts: 15,
-          successfulPosts: 8,
-          avgScore: 50
+          successfulPosts: 8
         }])
-      } as any);
+      };
+      Object.assign(mockChain, mockChain); // Make it chainable
+      vi.mocked(db.select).mockReturnValue(mockChain as any);
 
       const result = await getPerformanceAnalytics(123, 'test');
 

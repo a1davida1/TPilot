@@ -276,10 +276,10 @@ async function checkImgur(): Promise<ServiceHealth> {
         limit: data.data?.ClientLimit
       }
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       status: 'down',
-      error: error.message
+      error: error instanceof Error ? error.message : String(error)
     };
   }
 }
