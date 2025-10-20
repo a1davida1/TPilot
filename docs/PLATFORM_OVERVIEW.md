@@ -1,7 +1,9 @@
 # ThottoPilot Platform Overview
 *Last Updated: October 19, 2025*
 
-**⚠️ CRITICAL: This is the source of truth for platform architecture. Always reference this document when making technical decisions or code changes.**
+**⚠️ SEE MASTER REFERENCE: `/PLATFORM_MASTER_REFERENCE.md` is the comprehensive source of truth.**
+
+This document provides a high-level overview. For technical details, architecture decisions, coding standards, and AI assistant context, refer to the master reference document.
 
 ## 🎯 Core Purpose
 ThottoPilot is a professional content management platform for adult content creators to manage their Reddit presence with legal compliance, content protection, and growth tools.

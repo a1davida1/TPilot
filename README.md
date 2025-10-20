@@ -2,13 +2,26 @@
 
 A comprehensive social media content creation platform for adult content creators, featuring AI-powered caption generation, image protection, post scheduling, and multi-platform management across Reddit, Twitter, Instagram, and OnlyFans.
 
+---
+
+## 📚 **Documentation Index**
+
+**Start Here:**
+- **[PLATFORM_MASTER_REFERENCE.md](/PLATFORM_MASTER_REFERENCE.md)** - Complete platform context, architecture, and AI assistant guide
+- **[QUICK_REFERENCE.md](/QUICK_REFERENCE.md)** - Fast answers to common questions
+- **[/docs/PLATFORM_OVERVIEW.md](/docs/PLATFORM_OVERVIEW.md)** - High-level overview and user flows
+
+**This README** provides installation and basic setup. For architecture decisions, coding standards, and technical details, **see the master reference.**
+
+---
+
 ## Prerequisites
 
 - Node.js 18+ and npm
-- PostgreSQL database (Neon Database recommended)
-- Google Gemini API key (primary) or OpenAI API key (fallback)
+- PostgreSQL database (Render PostgreSQL recommended)
+- **OpenRouter API key** (primary AI provider - Grok-4-Fast)
+- Imgur Client ID (required for image hosting - compliance)
 - Optional: Redis for enhanced queue performance
-- Optional: AWS S3 for media storage
 
 ## Installation
 
