@@ -18,29 +18,16 @@ describe('permissionsPolicy middleware', () => {
 
     expect(response.headers['permissions-policy']).toBe(
       [
-        'accelerometer=()',
-        'ambient-light-sensor=()',
-        'autoplay=()',
-        'battery=()',
-        'camera=()',
-        'display-capture=()',
-        'document-domain=()',
-        'encrypted-media=()',
-        'fullscreen=(self)',
         'geolocation=()',
-        'gyroscope=()',
-        'interest-cohort=()',
-        'magnetometer=()',
+        'camera=()',
         'microphone=()',
+        'accelerometer=()',
+        'autoplay=()',
+        'gyroscope=()',
+        'magnetometer=()',
         'midi=()',
-        'payment=()',
-        'picture-in-picture=()',
-        'publickey-credentials-get=()',
-        'screen-wake-lock=()',
-        'serial=()',
-        'sync-xhr=()',
         'usb=()',
-        'xr-spatial-tracking=()'
+        'fullscreen=(self)'
       ].join(', ')
     );
   });
