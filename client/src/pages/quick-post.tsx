@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   Zap,
   Sparkles,
@@ -16,13 +16,13 @@ import {
   Plus,
   Settings2,
   BadgeCheck,
-  AlertTriangle
+  AlertTriangle,
+  ChevronsUpDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
@@ -33,11 +33,21 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from '@/components/ui/command';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { CatboxUploadPortal } from '@/components/CatboxUploadPortal';
 import { cn } from '@/lib/utils';
 import type { CaptionObject } from '@shared/types/caption';
+import type { SubredditCommunity } from '@/types/reddit';
 import {
   generatePairId,
   getDeviceBucket,
@@ -183,8 +193,20 @@ export default function QuickPostPage() {
   const [validationStatus, setValidationStatus] = useState<'idle' | 'valid' | 'warning' | 'error'>('idle');
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
   const [posted, setPosted] = useState(false);
+  const [communityPickerOpen, setCommunityPickerOpen] = useState(false);
 
   const toneOptions = useMemo(() => (nsfw ? NSFW_TONES : SFW_TONES), [nsfw]);
+
+  // Fetch available subreddit communities
+  const { data: communities = [] } = useQuery<SubredditCommunity[]>({
+    queryKey: ['/api/reddit/communities'],
+    retry: false
+  });
+
+  // Sort communities by success probability for easy selection
+  const sortedCommunities = useMemo(() => {
+    return communities.sort((a, b) => b.successProbability - a.successProbability);
+  }, [communities]);
 
   useEffect(() => {
     if (!toneOptions.some((option) => option.value === selectedTone)) {
@@ -860,15 +882,55 @@ export default function QuickPostPage() {
                   <div className="space-y-4">
                     <div>
                       <Label htmlFor="subreddit">Subreddit</Label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-muted-foreground">r/</span>
-                        <Input
-                          id="subreddit"
-                          placeholder="gonewild"
-                          value={subreddit}
-                          onChange={(e) => setSubreddit(e.target.value)}
-                        />
-                      </div>
+                      <Popover open={communityPickerOpen} onOpenChange={setCommunityPickerOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={communityPickerOpen}
+                            className="w-full justify-between mt-1"
+                          >
+                            {subreddit ? (
+                              (() => {
+                                const selected = sortedCommunities.find(c => c.id === subreddit);
+                                return selected ? `r/${selected.displayName}` : `r/${subreddit}`;
+                              })()
+                            ) : (
+                              'Select subreddit...'
+                            )}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0">
+                          <Command>
+                            <CommandInput placeholder="Search subreddits..." />
+                            <CommandEmpty>No subreddit found.</CommandEmpty>
+                            <CommandList>
+                              <CommandGroup>
+                                {sortedCommunities.map((community) => (
+                                  <CommandItem
+                                    key={community.id}
+                                    value={community.id}
+                                    onSelect={(currentValue) => {
+                                      setSubreddit(currentValue === subreddit ? '' : currentValue);
+                                      setCommunityPickerOpen(false);
+                                    }}
+                                  >
+                                    <div className="flex items-center justify-between w-full">
+                                      <div className="flex-1">
+                                        <div className="font-medium">r/{community.displayName}</div>
+                                        <div className="text-xs text-muted-foreground">
+                                          {community.members.toLocaleString()} members • {community.successProbability}% success
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                     </div>
 
                     <div className="flex items-center space-x-2">
