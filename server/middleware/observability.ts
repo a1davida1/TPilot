@@ -7,7 +7,7 @@ import { Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../bootstrap/logger.js';
 import { performance } from 'perf_hooks';
-import os from 'os';
+import * as os from 'node:os';
 
 declare global {
   namespace Express {
