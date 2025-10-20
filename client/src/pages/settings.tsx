@@ -25,7 +25,8 @@ import {
   Key,
   ArrowLeft,
   Crown,
-  Zap
+  Zap,
+  Link2
 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 
@@ -37,6 +38,8 @@ type UserSettingsResponse = {
   defaultPlatform?: string;
   defaultStyle?: string;
   watermarkPosition?: string;
+  onlyFansUrl?: string;
+  fanslyUrl?: string;
 };
 
 type UpdateSettingsResponse = {
@@ -50,6 +53,8 @@ type UserSettingsPayload = {
   emailUpdates: boolean;
   autoSave: boolean;
   defaultPlatform: string;
+  onlyFansUrl?: string;
+  fanslyUrl?: string;
 };
 
 export default function SettingsPage() {
@@ -61,6 +66,8 @@ export default function SettingsPage() {
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [bio, setBio] = useState('');
+  const [onlyFansUrl, setOnlyFansUrl] = useState('');
+  const [fanslyUrl, setFanslyUrl] = useState('');
   const [apiUsage] = useState({ used: 0, limit: 1000 });
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -87,6 +94,8 @@ export default function SettingsPage() {
     setEmailUpdates(userSettings.emailUpdates ?? true);
     setAutoSave(userSettings.autoSave ?? true);
     setDefaultPlatform(userSettings.defaultPlatform ?? 'reddit');
+    setOnlyFansUrl(userSettings.onlyFansUrl ?? '');
+    setFanslyUrl(userSettings.fanslyUrl ?? '');
   }, [userSettings]);
 
   const updateSettingsMutation = useMutation<UpdateSettingsResponse, Error, UserSettingsPayload>({
@@ -149,7 +158,9 @@ export default function SettingsPage() {
       notifications,
       emailUpdates,
       autoSave,
-      defaultPlatform
+      defaultPlatform,
+      onlyFansUrl: onlyFansUrl || undefined,
+      fanslyUrl: fanslyUrl || undefined
     };
 
     updateSettingsMutation.mutate(payload);
@@ -292,6 +303,52 @@ export default function SettingsPage() {
                   rows={4}
                   data-testid="textarea-bio"
                 />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Promotional Links */}
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Link2 className="h-5 w-5 mr-2 text-blue-600" />
+                Promotional Links
+              </CardTitle>
+              <CardDescription>
+                Add your OnlyFans or Fansly URLs for use in caption CTAs
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="onlyFansUrl">OnlyFans URL</Label>
+                <Input 
+                  id="onlyFansUrl" 
+                  value={onlyFansUrl}
+                  onChange={(e) => setOnlyFansUrl(e.target.value)}
+                  placeholder="onlyfans.com/username"
+                  data-testid="input-onlyfans-url"
+                />
+                <p className="text-xs text-gray-500">
+                  Used when generating captions with explicit promotion mode
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="fanslyUrl">Fansly URL</Label>
+                <Input 
+                  id="fanslyUrl" 
+                  value={fanslyUrl}
+                  onChange={(e) => setFanslyUrl(e.target.value)}
+                  placeholder="fansly.com/username"
+                  data-testid="input-fansly-url"
+                />
+                <p className="text-xs text-gray-500">
+                  Alternative platform URL for promotional captions
+                </p>
+              </div>
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-sm text-blue-800">
+                  <strong>Tip:</strong> These URLs will be automatically included in your caption CTAs when you select "Explicit Promotion" mode in the caption generator.
+                </p>
               </div>
             </CardContent>
           </Card>

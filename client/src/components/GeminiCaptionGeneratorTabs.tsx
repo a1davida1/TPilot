@@ -78,6 +78,7 @@ export function GeminiCaptionGeneratorTabs() {
   const [style, setStyle] = useState<string>("playful");
   const [mood, setMood] = useState<string>("seductive");
   const [nsfw, setNsfw] = useState<boolean>(false);
+  const [promotionMode, setPromotionMode] = useState<'none' | 'subtle' | 'explicit'>('none');
   
   // Dynamic voice list based on NSFW state
   const availableVoices = nsfw ? NSFW_VOICES : SFW_VOICES;
@@ -155,7 +156,7 @@ export function GeminiCaptionGeneratorTabs() {
 
     try {
       const response = await apiRequest('POST', '/api/caption/generate', {
-        imageUrl, platform, voice, style, mood, nsfw, includeHashtags
+        imageUrl, platform, voice, style, mood, nsfw, includeHashtags, promotionMode
       });
 
       const result = await response.json() as { topVariants?: Array<{ caption: string; style?: string }>; final?: { caption: string } };
@@ -222,7 +223,7 @@ export function GeminiCaptionGeneratorTabs() {
 
     try {
       const response = await apiRequest('POST', '/api/caption/generate-text', {
-        platform, voice, style, mood, theme, context, nsfw, includeHashtags
+        platform, voice, style, mood, theme, context, nsfw, includeHashtags, promotionMode
       });
 
       const result = await response.json() as { topVariants?: Array<{ caption: string; style?: string }>; final?: { caption: string } };
@@ -295,6 +296,7 @@ export function GeminiCaptionGeneratorTabs() {
         imageUrl: rewriteImageUrl || undefined,
         nsfw,
         includeHashtags,
+        promotionMode,
       });
 
       const result = await response.json() as { topVariants?: Array<{ caption: string; style?: string }>; final?: { caption: string } };
@@ -441,6 +443,39 @@ export function GeminiCaptionGeneratorTabs() {
             Disable to generate clean captions without hashtag callouts. Enable for contextual tag recommendations.
           </p>
         </div>
+      </div>
+
+      {/* Promotion Mode */}
+      <div className="space-y-2 pt-4">
+        <Label className="text-sm font-medium">Promotion Mode</Label>
+        <RadioGroup value={promotionMode} onValueChange={(value) => setPromotionMode(value as 'none' | 'subtle' | 'explicit')}>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="none" id="promo-none" />
+            <Label htmlFor="promo-none" className="text-sm font-normal cursor-pointer">
+              None - No promotional CTAs
+            </Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="subtle" id="promo-subtle" />
+            <Label htmlFor="promo-subtle" className="text-sm font-normal cursor-pointer">
+              Subtle - "Check my profile", "DM for more"
+            </Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="explicit" id="promo-explicit" />
+            <Label htmlFor="promo-explicit" className="text-sm font-normal cursor-pointer">
+              Explicit - Includes your OnlyFans/Fansly URL
+            </Label>
+          </div>
+        </RadioGroup>
+        {promotionMode === 'explicit' && (
+          <Alert className="mt-2">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              Make sure to add your OnlyFans or Fansly URL in <a href="/settings" className="underline font-medium">Settings</a> for this to work.
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
     </>
   );

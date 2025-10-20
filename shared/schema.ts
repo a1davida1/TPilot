@@ -161,6 +161,9 @@ export const userPreferences = pgTable("user_preferences", {
   showOnboarding: boolean("show_onboarding").default(true),
   captionStyle: varchar("caption_style", { length: 50 }).default("casual"),
   watermarkPosition: varchar("watermark_position", { length: 20 }).default("bottom-right"),
+  // Promotion URLs for captions
+  onlyFansUrl: varchar("only_fans_url", { length: 255 }),
+  fanslyUrl: varchar("fansly_url", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

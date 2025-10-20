@@ -31,6 +31,7 @@ const ImageShieldPage = React.lazy(() => import("@/pages/imageshield"));
 const TaxTracker = React.lazy(() => import("@/pages/tax-tracker"));
 const ReferralPage = React.lazy(() => import("@/pages/referral"));
 const ProPerksPage = React.lazy(() => import("@/pages/pro-perks"));
+const HistoryPage = React.lazy(() => import("@/pages/history"));
 const AnalyticsPage = React.lazy(() => import("@/pages/analytics"));
 const PerformanceAnalyticsPage = React.lazy(() => import("@/pages/performance-analytics").then(module => ({ default: module.PerformanceAnalytics })));
 const PostSchedulingPage = React.lazy(() => import("@/pages/post-scheduling"));
@@ -133,7 +134,7 @@ function AuthenticatedRoutes() {
       <Route path="/support" component={Support} />
       <Route path="/feedback" component={FeedbackPage} />
       <Route path="/pro-perks" component={ProPerksPage} />
-      <Route path="/history" component={() => <div>History Page</div>} />
+      <Route path="/history" component={HistoryPage} />
       <Route path="/settings" component={Settings} />
       <Route path="/checkout" component={Checkout} />
       <Route path="/logout" component={LogoutPage} />

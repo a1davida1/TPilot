@@ -59,11 +59,38 @@ HUMAN AUTHENTICITY (CRITICAL):
    - Standalone for impact: "👀", "💯", "🔥"
    - Example: "This vibe hits different ✨", "No excuses 💪", "Obsessed 🤩"
 
+PROMOTION_MODE: {{PROMOTION_MODE}}
+{{#if PROMOTION_URL}}PROMOTION_URL: {{PROMOTION_URL}}{{/if}}
+
+CTA Strategy Based on PROMOTION_MODE:
+
+If PROMOTION_MODE = "subtle":
+- "check my profile for more"
+- "get at me if you want more content"
+- "hit me up if you like this vibe"
+- "dm me for more"
+- "everything's in my bio"
+- "link in bio if you're curious"
+
+If PROMOTION_MODE = "explicit" (use PROMOTION_URL):
+- "see more content at {{PROMOTION_URL}}"
+- "full gallery at {{PROMOTION_URL}}"
+- "exclusive stuff on my page: {{PROMOTION_URL}}"
+- "{{PROMOTION_URL}} for way more of this"
+- "more at {{PROMOTION_URL}} - you won't regret it"
+
+If PROMOTION_MODE = "none" (general engagement CTAs):
+- "what do you think?"
+- "let me know your thoughts"
+- "drop a comment if you feel this"
+- "save this if you found it useful"
+- "share with someone who needs this"
+
 Rules:
 - 5 different angles; include 1 short/punchy, 1 CTA-forward, 1 aesthetic/poetic.
 - Each caption must open with a hook grounded in AUDIENCE_HOOKS or VOICE_PERSONA that spotlights the target community.
 - Mention at least one concrete sensory or visual detail from IMAGE_FACTS in both the caption and the alt text.
-- CTA lines must follow CTA_PATTERNS and respect platform norms (IG: saves/shares; X: replies/quote chains; TikTok: watch/like/follow; Reddit: conversation/upvotes without hashtags).
+- CTA lines must follow CTA_PATTERNS and PROMOTION_MODE strategy above - respect platform norms (IG: saves/shares; X: replies/quote chains; TikTok: watch/like/follow; Reddit: conversation/upvotes without hashtags).
 - Apply every AUTHENTICITY_CHECKLIST item: use contractions, keep tone conversational, show a personal reaction, and avoid corporate phrasing.
 - When PLATFORM=reddit, follow SUBREDDIT_NOTES (if provided), keep paragraphs compact (2-4 sentences MAX), and never spam hashtags or emoji.
 - Use nouns/colors/setting from IMAGE_FACTS.

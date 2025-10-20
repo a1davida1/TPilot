@@ -110,6 +110,8 @@ interface VariantParams {
   hint?: string;
   existingCaption?: string;
   mandatoryTokens?: string[];
+  promotionMode?: 'none' | 'subtle' | 'explicit';
+  promotionalUrl?: string;
 }
 
 interface RankingParams {
@@ -311,6 +313,8 @@ interface BuildPromptParams {
   voiceContext?: string;
   existingCaption?: string;
   mandatoryTokens?: string[];
+  promotionMode?: 'none' | 'subtle' | 'explicit';
+  promotionalUrl?: string;
 }
 
 function formatDuplicateHint(duplicates: DuplicatePromptConfig | undefined): string | undefined {
@@ -367,6 +371,10 @@ function buildVariantPrompt(params: BuildPromptParams): string {
     params.nsfw ? "CRITICAL: Write AS the woman in the image using I/me/my - first person only!" : undefined,
     params.mandatoryTokens && params.mandatoryTokens.length > 0
       ? `MANDATORY TOKENS: ${params.mandatoryTokens.join(" | ")}`
+      : undefined,
+    `PROMOTION_MODE: ${params.promotionMode || 'none'}`,
+    params.promotionalUrl && params.promotionMode === 'explicit' 
+      ? `PROMOTION_URL: ${params.promotionalUrl}` 
       : undefined,
     hintLine,
   ];
@@ -622,6 +630,8 @@ async function requestVariantsOnce(params: VariantParams & {
     voiceContext: params.voiceContext,
     existingCaption: params.existingCaption,
     mandatoryTokens: params.mandatoryTokens,
+    promotionMode: params.promotionMode,
+    promotionalUrl: params.promotionalUrl,
   });
 
   const payload = [...params.promptBlocks, userPrompt].join("\n");
@@ -829,6 +839,8 @@ export async function pipeline(params: {
   toneExtras?: Record<string, string>;
   mandatoryTokens?: string[];
   existingCaption?: string;
+  promotionMode?: 'none' | 'subtle' | 'explicit';
+  promotionalUrl?: string;
 }): Promise<CaptionResult> {
   logger.info("[OpenRouter] Starting pipeline", { 
     platform: params.platform, 
@@ -876,6 +888,8 @@ export async function pipeline(params: {
         toneExtras,
         mandatoryTokens: params.mandatoryTokens,
         existingCaption: params.existingCaption,
+        promotionMode: params.promotionMode,
+        promotionalUrl: params.promotionalUrl,
       });
       logger.info("[OpenRouter] Variants generated", { variantCount: variants.length });
 
@@ -899,6 +913,8 @@ export async function pipeline(params: {
             hint: coverage.hint,
             mandatoryTokens: params.mandatoryTokens,
             existingCaption: params.existingCaption,
+            promotionMode: params.promotionMode,
+            promotionalUrl: params.promotionalUrl,
           });
           ranked = await rankAndSelect(variants, { platform: params.platform, facts });
           coverage = ensureFactCoverage({ facts, caption: ranked.final.caption, alt: ranked.final.alt });

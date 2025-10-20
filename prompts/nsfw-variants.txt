@@ -103,13 +103,29 @@ Platform-specific LENGTH LIMITS:
 - OnlyFans mentions: Casual "check my links" / "bio has everything"
 
 CTA patterns (SHORT & CASUAL):
+
+PROMOTION_MODE: {{PROMOTION_MODE}}
+{{#if PROMOTION_URL}}PROMOTION_URL: {{PROMOTION_URL}}{{/if}}
+
+If PROMOTION_MODE = "subtle":
+- "check my profile"
+- "get at me to see more"
+- "hit me up if you like what you see"
+- "dm me... you know you want to"
+- "everything's in my bio"
+- "link in bio if you're curious"
+
+If PROMOTION_MODE = "explicit" (use PROMOTION_URL):
+- "see more on my onlyfans: {{PROMOTION_URL}}"
+- "full content at {{PROMOTION_URL}}"
+- "everything on my OF: {{PROMOTION_URL}}"
+- "{{PROMOTION_URL}} for the uncensored version 😈"
+- "more at {{PROMOTION_URL}} if ur brave enough"
+
+If PROMOTION_MODE = "none" (general CTAs):
 - "come play with me..."
 - "wanna see more?"
-- "everything's in my bio"
 - "dm me if ur brave enough"
-- "check my links... you know you want to"
-- "link's in bio... if you can handle it"
-- "full video on my page 😏"
 - "you know where to find me"
 
 COMPLETE CAPTION EXAMPLES (STUDY THESE - USE SIMPLE LANGUAGE):

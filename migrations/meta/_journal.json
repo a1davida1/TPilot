@@ -120,6 +120,13 @@
       "when": 1760759260000,
       "tag": "0016_reddit_accounts_vault",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1760921030819,
+      "tag": "0017_add_promotion_urls",
+      "breakpoints": true
     }
   ]
 }
