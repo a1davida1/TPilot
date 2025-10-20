@@ -277,8 +277,12 @@ export async function apiRequest(
         // 2. _csrf in the request body
         headers["x-csrf-token"] = token;
         
-        // Also include in body for non-FormData requests
-        if (!(data instanceof FormData) && data && typeof data === 'object') {
+        // Also include in body for redundancy
+        if (data instanceof FormData) {
+          // Add CSRF token to FormData
+          data.append('_csrf', token);
+        } else if (data && typeof data === 'object') {
+          // Add CSRF token to JSON payload
           (data as any)._csrf = token;
         }
       }
@@ -318,7 +322,10 @@ export async function apiRequest(
           headers["x-csrf-token"] = newToken;
           
           // Update token in body if needed  
-          if (!(data instanceof FormData) && data && typeof data === 'object') {
+          if (data instanceof FormData) {
+            // FormData is mutable, update the token
+            data.set('_csrf', newToken);
+          } else if (data && typeof data === 'object') {
             (data as any)._csrf = newToken;
             // Re-stringify the body with the new token
             if (headers["Content-Type"] === "application/json") {
