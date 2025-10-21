@@ -108,8 +108,8 @@ export default function CaptionPerformanceDashboard() {
                 {captionPerf.map((item: { style: string; choice_rate?: string; avg_upvotes_24h?: string }) => (
                   <tr key={item.style} className="border-b">
                     <td className="p-2 font-medium capitalize">{item.style}</td>
-                    <td className="text-right p-2">{Math.round(parseFloat(item.choice_rate || 0) * 100)}%</td>
-                    <td className="text-right p-2">{Math.round(parseFloat(item.avg_upvotes_24h || 0))}</td>
+                    <td className="text-right p-2">{Math.round(parseFloat(item.choice_rate || '0') * 100)}%</td>
+                    <td className="text-right p-2">{Math.round(parseFloat(item.avg_upvotes_24h || '0'))}</td>
                   </tr>
                 ))}
               </tbody>

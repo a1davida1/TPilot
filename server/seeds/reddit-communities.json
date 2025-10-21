@@ -7,7 +7,7 @@
     "engagementRate": 3,
     "category": "other",
     "verificationRequired": false,
-    "promotionAllowed": "allowed",
+    "promotionAllowed": "yes",
     "postingLimits": {
       "perDay": null,
       "perWeek": null,
