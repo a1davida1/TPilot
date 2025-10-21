@@ -806,27 +806,30 @@ export function registerRedditRoutes(app: Express) {
   app.post('/api/reddit/post', authenticateToken(true), async (req: AuthRequest, res) => {
     const { title, subreddit, imageUrl, text, nsfw, spoiler } = req.body;
 
+    // Strip query parameters from image URL (e.g., ?protected=true)
+    let cleanImageUrl = imageUrl;
+    if (imageUrl) {
+      try {
+        const urlObj = new URL(imageUrl);
+        cleanImageUrl = `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}`;
+        if (imageUrl !== cleanImageUrl) {
+          logger.info('Stripped query parameters from image URL', {
+            original: imageUrl,
+            cleaned: cleanImageUrl
+          });
+        }
+      } catch (urlError) {
+        logger.warn('Failed to parse image URL, using as-is', { imageUrl });
+      }
+    }
+
     logger.info('Quick Post request received', {
       userId: req.user?.id,
       subreddit,
-      hasImage: !!imageUrl,
-      imageUrl: imageUrl ? imageUrl.substring(0, 100) : undefined,
+      hasImage: !!cleanImageUrl,
+      imageUrl: cleanImageUrl ? cleanImageUrl.substring(0, 100) : undefined,
       titleLength: title?.length
     });
-
-    // Transform Quick Post format to submit format
-    const transformedBody = {
-      title,
-      subreddit,
-      url: imageUrl,  // Quick Post uses imageUrl, submit uses url
-      body: text,     // Quick Post uses text, submit uses body
-      nsfw: nsfw || false,
-      spoiler: spoiler || false,
-      postType: imageUrl ? 'image' : 'text'
-    };
-
-    // Forward to the submit handler with transformed body
-    req.body = transformedBody;
 
     // Call the submit endpoint logic directly
     const userId = req.user?.id;
@@ -850,12 +853,18 @@ export function registerRedditRoutes(app: Express) {
 
       let result: RedditPostResult;
 
-      // Handle image post if URL provided
-      if (imageUrl) {
-        result = await reddit.submitImagePost({
+      // Use link post for images instead of direct upload
+      // This is more reliable and avoids Reddit API upload issues
+      if (cleanImageUrl) {
+        logger.info('Submitting image as link post to avoid upload issues', {
+          subreddit,
+          url: cleanImageUrl.substring(0, 100)
+        });
+
+        result = await reddit.submitPost({
           subreddit,
           title,
-          imageUrl,
+          url: cleanImageUrl,
           nsfw: nsfw || false,
           spoiler: spoiler || false
         });
