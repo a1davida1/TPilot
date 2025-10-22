@@ -81,7 +81,7 @@ export async function uploadAnonymousToImgur(
       headers: {
         Authorization: `Client-ID ${clientId}`
       },
-      body: form as any
+      body: form
     });
 
     const payload = await res.json() as ImgurResponse;
@@ -136,7 +136,7 @@ export async function uploadAuthorizedToImgur(
       headers: {
         Authorization: `Bearer ${accessToken}`
       },
-      body: form as any
+      body: form
     });
 
     const payload = await res.json() as ImgurResponse;

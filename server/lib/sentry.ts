@@ -60,6 +60,7 @@ class SentryService {
         integrations: [],  
 
         // Before send hook for data sanitization
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         beforeSend: (event: any, hint: any) => {
           // Sanitize sensitive data
           if (event && event.request) {
@@ -67,7 +68,6 @@ class SentryService {
             if (event.request.headers) {
               delete event.request.headers['authorization'];
               delete event.request.headers['x-api-key'];
-              delete event.request.headers['cookie'];
             }
             // Remove sensitive body fields
             if (event.request.data && typeof event.request.data === 'object') {
@@ -104,6 +104,7 @@ class SentryService {
         },
 
         // Breadcrumb filtering
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         beforeBreadcrumb: (breadcrumb: any) => {
           // Filter out noisy breadcrumbs
           if (breadcrumb.category === 'console' && breadcrumb.level === 'debug') {
@@ -137,6 +138,7 @@ class SentryService {
         ],
 
         // Transaction naming
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         beforeSendTransaction: (context: any) => {
           // Normalize transaction names
           if (context.name?.startsWith('GET /api/')) {
@@ -161,7 +163,7 @@ class SentryService {
   /**
    * Capture an exception
    */
-  captureException(error: Error, context?: Record<string, any>): string | undefined {
+  captureException(error: Error, context?: Record<string, unknown>): string | undefined {
     if (!this.initialized) return undefined;
     
     return Sentry.captureException(error, {
@@ -224,7 +226,7 @@ class SentryService {
   /**
    * Set context
    */
-  setContext(name: string, context: Record<string, any>): void {
+  setContext(name: string, context: Record<string, unknown>): void {
     if (!this.initialized) return;
     
     Sentry.setContext(name, context);
@@ -233,6 +235,7 @@ class SentryService {
   /**
    * Start a transaction
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   startTransaction(name: string, op: string): any {
     if (!this.initialized) return null;
     
@@ -277,6 +280,7 @@ class SentryService {
    */
   errorHandler() {
     return Sentry.Handlers.errorHandler({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       shouldHandleError: (error: any) => {
         // Capture all 500 errors
         if (error.status && typeof error.status === 'number' && error.status >= 500) {

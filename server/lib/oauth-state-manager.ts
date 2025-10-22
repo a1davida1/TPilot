@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import type { Request } from 'express';
 import { stateStore } from '../services/state-store.js';
+import type { AuthRequest } from '../middleware/auth.js';
 
 export const OAUTH_STATE_TTL_SECONDS = 600;
 const STATE_PREFIX = 'tpilot';
@@ -96,11 +97,11 @@ interface CreateOAuthStateOptions {
 
 export async function createOAuthState(
   provider: OAuthProvider,
-  req: Request,
+  req: Request | AuthRequest,
   options: CreateOAuthStateOptions = {}
 ): Promise<OAuthStateRecord> {
   const state = generateStateToken(provider);
-  const user = (req as any).user;
+  const user = 'user' in req ? req.user : undefined;
   
   const data: OAuthStateData = {
     provider,

@@ -158,6 +158,7 @@ export const socialAuthRoutes = {
     {
       scope: ['identity'],
       duration: 'permanent',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } satisfies RedditAuthenticateOptions as any,
   ),
   redditCallback: passport.authenticate('reddit', { 

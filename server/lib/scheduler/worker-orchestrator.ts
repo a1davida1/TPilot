@@ -106,7 +106,7 @@ export class WorkerOrchestrator {
   /**
    * Handle post error with exponential backoff retry
    */
-  private async handlePostError(postId: number, error: any, attempt: number): Promise<void> {
+  private async handlePostError(postId: number, error: unknown, attempt: number): Promise<void> {
     const errorMessage = error instanceof Error ? error.message : String(error);
     
     if (attempt >= this.retryConfig.maxRetries) {
@@ -222,7 +222,15 @@ export class WorkerOrchestrator {
   /**
    * Get retry status for a post
    */
-  async getRetryStatus(postId: number): Promise<any> {
+  async getRetryStatus(postId: number): Promise<{
+    postId: number;
+    status: string | null;
+    attempt: number;
+    maxRetries: number;
+    lastError: string | null;
+    nextRetryAt: null;
+    canRetry: boolean;
+  } | null> {
     const post = await this.getPost(postId);
     
     if (!post) {
@@ -315,7 +323,7 @@ export class WorkerOrchestrator {
   /**
    * Wait for job completion with timeout
    */
-  private async waitForJobCompletion(postId: number, jobId: any, timeoutMs: number = 60000): Promise<void> {
+  private async waitForJobCompletion(postId: number, _jobId: unknown, timeoutMs: number = 60000): Promise<void> {
     return new Promise((resolve, reject) => {
       const startTime = Date.now();
       
@@ -359,7 +367,18 @@ export class WorkerOrchestrator {
   /**
    * Get worker statistics
    */
-  async getWorkerStats(): Promise<any> {
+  async getWorkerStats(): Promise<{
+    total: number;
+    pending: number;
+    processing: number;
+    completed: number;
+    failed: number;
+    cancelled: number;
+    recentCompleted: number;
+    recentFailed: number;
+    retryConfig: RetryConfig;
+    successRate: string;
+  }> {
     const now = new Date();
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     

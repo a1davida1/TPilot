@@ -62,12 +62,18 @@ interface PeakHoursData {
   sampleSize: number;
 }
 
+interface HistoricalDataPoint {
+  date: string;
+  avgScore: number;
+  totalPosts: number;
+}
+
 export function PerformanceAnalytics() {
   const [subreddit, setSubreddit] = useState('gonewild');
   const [subreddits, setSubreddits] = useState<string[]>([]);
   const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
   const [peakHoursData, setPeakHoursData] = useState<PeakHoursData | null>(null);
-  const [historicalData, setHistoricalData] = useState<any[]>([]);
+  const [historicalData, setHistoricalData] = useState<HistoricalDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();

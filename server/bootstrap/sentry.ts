@@ -23,6 +23,7 @@ export function initializeSentry(): typeof Sentry | null {
       profilesSampleRate: parseFloat(process.env.SENTRY_PROFILES_SAMPLE_RATE || '0.1'),
       // Sentry v7 integrations (auto-included)
       // integrations: [],  
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         beforeSend(event: any, _hint: any) {
         const err = event.exception?.values?.[0];
         if (err?.type === 'ValidationError' || err?.type === 'AuthenticationError') {

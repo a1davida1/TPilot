@@ -7,10 +7,12 @@ const dbg = (...a: unknown[]) =>
   process.env.CAPTION_DEBUG ? logger.error("[gemini]", ...a) : undefined;
 
 // Flatten @google/genai candidates → single text
-export const extractTextFromCandidates = (resp: any): string | undefined => {
-  if (!resp || !Array.isArray(resp.candidates)) return;
+export const extractTextFromCandidates = (resp: unknown): string | undefined => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const response = resp as any;
+  if (!response || !Array.isArray(response.candidates)) return;
   const out: string[] = [];
-  for (const c of resp.candidates) {
+  for (const c of response.candidates) {
     const parts = c?.content?.parts;
     if (!Array.isArray(parts)) continue;
     for (const p of parts) {
@@ -27,7 +29,8 @@ export async function resolveResponseText(payload: unknown): Promise<string | un
   const clean = (s?: string) => (s && s.trim() ? s.trim() : undefined);
   if (typeof payload === "string") return clean(payload);
   if (!payload || typeof payload !== "object") return undefined;
-  const obj: any = payload;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const obj = payload as any;
 
   // 1) top-level text
   const top = clean(obj.text);
@@ -177,6 +180,7 @@ const createModelAdapter = (modelName: string): GeminiModel => ({
       request as unknown as Parameters<typeof client.models.generateContent>[0]
     );
     dbg("resp.keys", response && typeof response === "object" ? Object.keys(response) : typeof response);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     dbg("candidates.len", (response as any)?.candidates?.length);
     const normalizedText = (await resolveResponseText(response)) ?? "";
     dbg("normalized.len", normalizedText.length, normalizedText.slice(0, 160));
@@ -186,6 +190,7 @@ const createModelAdapter = (modelName: string): GeminiModel => ({
       ...response,
       text: normalizedText,
       response: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ...(typeof (response as any)?.response === "object" ? (response as any).response : {}),
         text: () => normalizedText,
       },

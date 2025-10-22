@@ -97,14 +97,15 @@ router.post('/imgur', upload.single('image'), async (req: Request, res: Response
       },
       provider: userImgurToken ? 'imgur-auth' : 'imgur-anon'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logger.error('Imgur upload failed', { 
-      error: error.message,
+      error: errorMessage,
       filename: req.file?.originalname 
     });
     
     // Check if it's a rate limit error
-    if (error.message?.includes('rate limit')) {
+    if (errorMessage.includes('rate limit')) {
       return res.status(429).json({
         error: 'Upload limit reached',
         message: 'Daily upload limit reached. Please paste an image URL instead.',
@@ -114,7 +115,7 @@ router.post('/imgur', upload.single('image'), async (req: Request, res: Response
     
     res.status(502).json({
       error: 'Upload failed',
-      message: error.message || 'Failed to upload to Imgur',
+      message: errorMessage || 'Failed to upload to Imgur',
       fallback: true,
       fallbackMessage: 'You can paste a direct image URL (Imgur, Catbox, Discord) instead.'
     });
@@ -159,11 +160,12 @@ router.delete('/imgur/:deleteHash', authenticateToken(false), async (req: AuthRe
       success: deleted,
       message: deleted ? 'Image deleted' : 'Failed to delete image'
     });
-  } catch (error: any) {
-    logger.error('Imgur delete failed', { error: error.message });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error('Imgur delete failed', { error: errorMessage });
     res.status(500).json({
       error: 'Delete failed',
-      message: error.message
+      message: errorMessage
     });
   }
 });
@@ -181,8 +183,8 @@ router.get('/imgur/stats', async (_req: Request, res: Response) => {
       percentUsed: Math.round((stats.used / stats.limit) * 100),
       nearLimit: stats.remaining < 100
     });
-  } catch (error: any) {
-    logger.error('Failed to get Imgur stats', { error: error.message });
+  } catch (error: unknown) {
+    logger.error('Failed to get Imgur stats', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ error: 'Failed to retrieve usage stats' });
   }
 });
@@ -210,8 +212,8 @@ router.get('/imgur/my-uploads', authenticateToken(true), async (req: AuthRequest
       uploads: result.rows,
       count: result.rows.length
     });
-  } catch (error: any) {
-    logger.error('Failed to fetch user uploads', { error: error.message });
+  } catch (error: unknown) {
+    logger.error('Failed to fetch user uploads', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ error: 'Failed to retrieve uploads' });
   }
 });

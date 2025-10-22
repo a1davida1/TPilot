@@ -6,7 +6,7 @@ import { eq, and, gt } from 'drizzle-orm';
 import { decrypt } from '../services/state-store.js';
 import { SafetyManager } from './safety-systems.js';
 import { getEligibleCommunitiesForUser } from '../reddit-communities.js';
-import type { RedditCommunity, ShadowbanSubmissionSummary } from '@shared/schema';
+import type { RedditCommunity, ShadowbanSubmissionSummary, ShadowbanEvidenceResponse, ShadowbanCheckApiResponse, ShadowbanStatusType } from '@shared/schema';
 import { lookup } from 'dns/promises';
 import { fileTypeFromBuffer } from 'file-type';
 import { logger } from '../bootstrap/logger.js';
@@ -1740,142 +1740,125 @@ export class RedditManager {
   /**
    * Check shadowban status by comparing self-view vs public submissions
    */
-  async checkShadowbanStatus(): Promise<import('../../shared/schema.js').ShadowbanCheckApiResponse> {
+  async checkShadowbanStatus(): Promise<ShadowbanCheckApiResponse> {
+    const buildEvidence = (
+      username: string,
+      privateSubmissions: ShadowbanSubmissionSummary[] = [],
+      publicSubmissions: ShadowbanSubmissionSummary[] = [],
+      missingSubmissionIds: string[] = []
+    ): ShadowbanEvidenceResponse => ({
+      username,
+      checkedAt: new Date().toISOString(),
+      privateCount: privateSubmissions.length,
+      publicCount: publicSubmissions.length,
+      privateSubmissions,
+      publicSubmissions,
+      missingSubmissionIds,
+    });
+
     try {
       // Get user's profile to get username
       const profile = await this.getProfile();
-      if (!profile) {
+
+      if (!profile || !profile.username) {
         return {
           status: 'unknown',
-          reason: 'Unable to fetch Reddit profile',
-          evidence: {
-            privateSubmissions: [],
-            publicSubmissions: [],
-            missingSubmissionIds: [],
-            privateCount: 0,
-            publicCount: 0,
-            username: ''
-          }
+          reason: 'Unable to fetch Reddit profile for shadowban check.',
+          evidence: buildEvidence('unknown'),
         };
       }
 
-      // Get recent submissions from user's profile (authenticated view)
-      const recentSubmissions = await this.reddit.getUser(profile.username).getSubmissions({ limit: 25 });
+      const username = profile.username;
+      let privateSubmissionsRaw: Array<{
+        id: string;
+        title?: string;
+        created_utc?: number;
+        subreddit?: { display_name?: string };
+      }> = [];
 
-      if (!recentSubmissions || recentSubmissions.length === 0) {
+      try {
+        privateSubmissionsRaw = await this.reddit.getUser(username).getSubmissions({ limit: 25 });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown Reddit API error';
+        logger.error('Failed to fetch private submissions for shadowban check', { username, error: message });
         return {
           status: 'unknown',
-          reason: 'No recent submissions found',
-          evidence: {
-            privateSubmissions: [],
-            publicSubmissions: [],
-            missingSubmissionIds: [],
-            privateCount: 0,
-            publicCount: 0,
-            username: profile.username
-          }
+          reason: `Reddit API error while fetching submissions: ${message}`,
+          evidence: buildEvidence(username),
+        };
+      }
+
+      const privateSubmissions: ShadowbanSubmissionSummary[] = privateSubmissionsRaw.map(submission => ({
+        id: submission.id,
+        subreddit: submission.subreddit?.display_name ?? 'unknown',
+        title: submission.title ?? '(untitled post)',
+        created: typeof submission.created_utc === 'number' ? submission.created_utc : 0,
+      }));
+
+      if (privateSubmissions.length === 0) {
+        return {
+          status: 'unknown',
+          reason: 'No recent submissions found to analyze.',
+          evidence: buildEvidence(username),
         };
       }
 
       // Get public submissions for comparison
-      const publicSubmissionsResult = await this.getPublicSubmissions(profile.username);
+      const publicSubmissionsResult = await this.getPublicSubmissions(username);
       if (publicSubmissionsResult.error) {
         return {
           status: 'unknown',
           reason: publicSubmissionsResult.error,
-          evidence: {
-            privateSubmissions: [],
-            publicSubmissions: [],
-            missingSubmissionIds: [],
-            privateCount: recentSubmissions.length,
-            publicCount: 0,
-            username: profile.username
-          }
+          evidence: buildEvidence(
+            username,
+            privateSubmissions,
+            publicSubmissionsResult.submissions,
+            privateSubmissions.map(sub => sub.id),
+          ),
         };
       }
+
       const publicSubmissions = publicSubmissionsResult.submissions;
 
-      // Create sets for easy comparison
-      interface SubmissionRecord {
-        id: string;
-        permalink: string;
-        title?: string;
-        num_comments?: number;
-        ups?: number;
-        created_utc?: number;
-        subreddit?: { display_name?: string } | string;
-      }
-      
       const publicPostIds = new Set(publicSubmissions.map(sub => sub.id));
+      const missingSubmissionIds = privateSubmissions
+        .filter(sub => !publicPostIds.has(sub.id))
+        .map(sub => sub.id);
 
-      // Find missing submission IDs (in self view but not in public view)
-      const missingSubmissionIds = recentSubmissions
-        .filter((sub: SubmissionRecord) => !publicPostIds.has(sub.id))
-        .map((sub: SubmissionRecord) => sub.id);
-
-      const totalSelfPosts = recentSubmissions.length;
+      const totalPrivatePosts = privateSubmissions.length;
+      const hiddenCount = missingSubmissionIds.length;
       const publicCount = publicSubmissions.length;
-      const missingCount = missingSubmissionIds.length;
 
-      // Convert submissions to summary format
-      const privateSubmissionsSummary = recentSubmissions.map((sub: SubmissionRecord) => ({
-        id: sub.id,
-        subreddit: typeof sub.subreddit === 'object' ? (sub.subreddit.display_name ?? '') : String(sub.subreddit ?? ''),
-        title: sub.title ?? '(untitled post)',
-        created: typeof sub.created_utc === 'number' ? sub.created_utc : 0
-      }));
-
-      const publicSubmissionsSummary = publicSubmissions.map(sub => ({
-        id: sub.id,
-        subreddit: sub.subreddit || '',
-        title: sub.title || '(untitled post)',
-        created: sub.created_utc || 0
-      }));
-
-      // Determine status and reason
-      let status: import('../../shared/schema.js').ShadowbanStatusType;
+      let status: ShadowbanStatusType;
       let reason: string;
 
-      if (missingCount === 0) {
+      if (hiddenCount === 0) {
         status = 'clear';
-        reason = 'All recent submissions are publicly visible';
+        reason = `All recent submissions are publicly visible (${publicCount}/${totalPrivatePosts}).`;
+      } else if (publicCount === 0) {
+        status = 'suspected';
+        reason = 'All recent submissions are missing from public view.';
+      } else if (hiddenCount >= Math.ceil(totalPrivatePosts / 2)) {
+        status = 'suspected';
+        reason = `${hiddenCount} of ${totalPrivatePosts} recent submissions are missing from public view.`;
       } else {
-        const missingPercentage = Math.round((missingCount / totalSelfPosts) * 100);
-        if (missingPercentage >= 50) {
-          status = 'suspected';
-          reason = `${missingPercentage}% of submissions are not visible publicly`;
-        } else {
-          status = 'clear';
-          reason = `Most submissions are publicly visible (${missingPercentage}% missing)`;
-        }
+        status = 'clear';
+        reason = `Most submissions are publicly visible (${publicCount}/${totalPrivatePosts}).`;
       }
 
       return {
         status,
         reason,
-        evidence: {
-          privateSubmissions: privateSubmissionsSummary,
-          publicSubmissions: publicSubmissionsSummary,
-          missingSubmissionIds,
-          privateCount: totalSelfPosts,
-          publicCount,
-          username: profile.username
-        }
+        evidence: buildEvidence(username, privateSubmissions, publicSubmissions, missingSubmissionIds),
       };
 
     } catch (error) {
-      logger.error('Shadowban check failed:', error);
+      const message = error instanceof Error ? error.message : 'Unknown error occurred';
+      logger.error('Shadowban check failed', { error: message });
       return {
         status: 'unknown',
-        reason: `Reddit API error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        evidence: {
-          privateSubmissions: [],
-          publicSubmissions: [],
-          missingSubmissionIds: [],
-          privateCount: 0,
-          publicCount: 0,
-          username: ''
-        }
+        reason: `Unable to check shadowban status: ${message}`,
+        evidence: buildEvidence('unknown'),
       };
     }
   }
@@ -1892,14 +1875,22 @@ export class RedditManager {
   }> {
     // Fetch submission and extract only the properties we need
     // This avoids circular type references from snoowrap's Submission type
-    const sub: unknown = this.reddit.getSubmission(submissionId);
-    await (sub as any).fetch();
+    interface SubmissionData {
+      fetch(): Promise<void>;
+      score: number;
+      upvote_ratio: number;
+      num_comments: number;
+      view_count?: number;
+    }
+    
+    const sub = this.reddit.getSubmission(submissionId) as unknown as SubmissionData;
+    await sub.fetch();
     
     return {
-      score: (sub as any).score,
-      upvote_ratio: (sub as any).upvote_ratio,
-      num_comments: (sub as any).num_comments,
-      view_count: (sub as any).view_count ?? null,
+      score: sub.score,
+      upvote_ratio: sub.upvote_ratio,
+      num_comments: sub.num_comments,
+      view_count: sub.view_count ?? null,
     };
   }
 }

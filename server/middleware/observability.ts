@@ -10,6 +10,7 @@ import { performance } from 'perf_hooks';
 import * as os from 'node:os';
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       correlationId: string;
@@ -53,7 +54,7 @@ export function requestLogging(req: Request, res: Response, next: NextFunction) 
   // Log response on finish
   const originalEnd = res.end.bind(res);
   res.end = function(
-    chunk?: any,
+    chunk?: unknown,
     encoding?: BufferEncoding | (() => void),
     callback?: () => void
   ): Response {
@@ -109,7 +110,7 @@ export function performanceMetrics(req: Request, res: Response, next: NextFuncti
   const metrics = {
     memoryUsage: process.memoryUsage(),
     cpuUsage: process.cpuUsage(),
-    activeConnections: (req.app as any)._connections || 0
+    activeConnections: (req.app as { _connections?: number })._connections || 0
   };
   
   // Add metrics to response headers for monitoring
@@ -145,7 +146,7 @@ export async function collectHealthMetrics() {
 }
 
 // Apply all observability middleware
-export function applyObservability(app: any) {
+export function applyObservability(app: { use: (middleware: unknown) => void }) {
   // Order matters: correlation ID first, then logging
   app.use(correlationId);
   app.use(requestLogging);

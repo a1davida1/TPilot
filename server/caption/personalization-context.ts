@@ -216,17 +216,17 @@ export async function loadCaptionPersonalizationContext(userId: number): Promise
     const promptLines: string[] = [];
 
     if (preferenceRecord) {
-      const writingStyleLine = buildWritingStyleLine(preferenceRecord.writingStyle);
+      const writingStyleLine = buildWritingStyleLine(preferenceRecord.writingStyle as WritingStylePreferences | null | undefined);
       if (writingStyleLine) {
         promptLines.push(writingStyleLine);
       }
 
-      const themesLine = buildThemesLine(preferenceRecord.contentPreferences);
+      const themesLine = buildThemesLine(preferenceRecord.contentPreferences as ContentPreferences | null | undefined);
       if (themesLine) {
         promptLines.push(themesLine);
       }
 
-      const avoidLine = buildAvoidTopicsLine(preferenceRecord.contentPreferences);
+      const avoidLine = buildAvoidTopicsLine(preferenceRecord.contentPreferences as ContentPreferences | null | undefined);
       if (avoidLine) {
         promptLines.push(avoidLine);
       }

@@ -39,9 +39,10 @@ export async function initializeQueue(): Promise<void> {
   try {
     const queue = getQueueBackend();
     await queue.initialize();
-  } catch (error: any) {
+  } catch (error: unknown) {
     // If Redis fails, fallback to PostgreSQL
-    if ((error.message?.includes('ECONNREFUSED') || error.message?.includes("Stream isn't writeable")) && env.REDIS_URL) {
+    const errorMessage = error instanceof Error ? error.message : '';
+    if ((errorMessage.includes('ECONNREFUSED') || errorMessage.includes("Stream isn't writeable")) && env.REDIS_URL) {
       logger.warn('Redis connection failed, falling back to PostgreSQL queue backend');
       env.USE_PG_QUEUE = true;
       queueInstance = new PgQueue();

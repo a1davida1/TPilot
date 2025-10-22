@@ -436,11 +436,15 @@ export function registerRedditRoutes(app: Express) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const fallbackEvidence: ShadowbanCheckApiResponse['evidence'] = {
+    const buildFallbackEvidence = (): ShadowbanCheckApiResponse['evidence'] => ({
+      username: 'unknown',
+      checkedAt: new Date().toISOString(),
+      privateCount: 0,
+      publicCount: 0,
       privateSubmissions: [],
       publicSubmissions: [],
-      missingSubmissionIds: []
-    };
+      missingSubmissionIds: [],
+    });
 
     try {
       const redditManager = await RedditManager.forUser(userId);
@@ -449,7 +453,7 @@ export function registerRedditRoutes(app: Express) {
         return res.json({
           status: 'unknown' as const,
           reason: 'No active Reddit account connected.',
-          evidence: fallbackEvidence,
+          evidence: buildFallbackEvidence(),
         });
       }
 
@@ -818,7 +822,7 @@ export function registerRedditRoutes(app: Express) {
             cleaned: cleanImageUrl
           });
         }
-      } catch (urlError) {
+      } catch (_urlError) {
         logger.warn('Failed to parse image URL, using as-is', { imageUrl });
       }
     }
@@ -1076,10 +1080,10 @@ export function registerRedditRoutes(app: Express) {
 
       logger.info('Shadowban status checked', {
         userId,
-        isShadowbanned: shadowbanResult.isShadowbanned,
-        publicCount: shadowbanResult.publicCount,
-        totalSelfPosts: shadowbanResult.totalSelfPosts,
-        hiddenCount: shadowbanResult.hiddenPosts.length
+        status: shadowbanResult.status,
+        reason: shadowbanResult.reason,
+        publicCount: shadowbanResult.evidence.publicCount,
+        privateCount: shadowbanResult.evidence.privateCount
       });
 
       res.json(shadowbanResult);

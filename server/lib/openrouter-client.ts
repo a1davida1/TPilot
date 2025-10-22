@@ -85,6 +85,7 @@ export async function generateVision(opts: {
     promptLength: opts.prompt.length
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const messages: any[] = [];
   
   if (opts.system) {
@@ -120,15 +121,13 @@ export async function generateVision(opts: {
       finishReason: resp.choices?.[0]?.finish_reason
     });
     return content;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error(`[OpenRouter] Vision generation failed`, {
       model,
       imageUrl: opts.imageUrl,
-      error: error?.message || String(error),
-      status: error?.status,
-      code: error?.code,
-      type: error?.type,
-      stack: error?.stack
+      error: error instanceof Error ? error.message : String(error),
+      status: (error as { status?: number }).status,
+      code: (error as { code?: string }).code,
     });
     throw error;
   }

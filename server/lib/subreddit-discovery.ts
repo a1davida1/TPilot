@@ -8,8 +8,21 @@ import { db } from '../db.js';
 import { postMetrics, redditCommunities, redditPostOutcomes } from '@shared/schema';
 import { and, eq, gte, sql } from 'drizzle-orm';
 import { logger } from '../bootstrap/logger.js';
-// RedditUser type from snoowrap
-type RedditUser = any; // Using any for now since we don't export it from reddit.ts
+
+// RedditClient type (minimal interface for what we need)
+interface RedditClient {
+  getSubreddit(name: string): {
+    fetch(): Promise<{
+      display_name: string;
+      subscribers: number;
+      over18: boolean;
+      public_description?: string;
+      description?: string;
+    }>;  
+  };
+}
+
+type RedditUser = RedditClient;
 
 interface SubredditInfo {
   name: string;
@@ -103,7 +116,7 @@ async function fetchSubredditInfo(
 ): Promise<SubredditInfo | null> {
   try {
     // Use snoowrap to get subreddit info
-    const subreddit = await (redditClient as any).getSubreddit(subredditName).fetch();
+    const subreddit = await redditClient.getSubreddit(subredditName).fetch();
 
     return {
       name: subreddit.display_name.toLowerCase(),

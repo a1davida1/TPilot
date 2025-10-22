@@ -299,8 +299,12 @@ export function GeminiCaptionGeneratorTabs() {
         promotionMode,
       });
 
-      const result = await response.json() as { topVariants?: Array<{ caption: string; style?: string }>; final?: { caption: string } };
-      if (!response.ok) throw new Error((result as any).error || 'Rewrite failed');
+      const result = await response.json() as { 
+        topVariants?: Array<{ caption: string; style?: string }>; 
+        final?: { caption: string };
+        error?: string;
+      };
+      if (!response.ok) throw new Error(result.error || 'Rewrite failed');
 
       // Extract top 2 variants from response
       const topVariants = result.topVariants || [];
