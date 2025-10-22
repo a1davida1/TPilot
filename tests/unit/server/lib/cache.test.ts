@@ -5,16 +5,27 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// Mock Redis
+// Mock Redis with event handlers
+const eventHandlers: Record<string, Function> = {};
 const mockRedisInstance = {
-  connect: vi.fn().mockResolvedValue(undefined),
+  connect: vi.fn().mockImplementation(() => {
+    // Simulate successful connection by triggering connect event synchronously
+    return Promise.resolve().then(() => {
+      if (eventHandlers['connect']) {
+        eventHandlers['connect']();
+      }
+    });
+  }),
   get: vi.fn(),
   setex: vi.fn(),
   del: vi.fn(),
   keys: vi.fn(),
   flushdb: vi.fn(),
   quit: vi.fn(),
-  on: vi.fn()
+  on: vi.fn().mockImplementation((event: string, handler: Function) => {
+    eventHandlers[event] = handler;
+    return mockRedisInstance;
+  })
 };
 
 vi.mock('ioredis', () => {
@@ -32,10 +43,25 @@ vi.mock('../../../../server/bootstrap/logger', () => ({
 }));
 
 describe('Cache Service', () => {
+  // Helper to wait for Redis connection and verify it's available
+  const waitForConnection = async () => {
+    await new Promise(resolve => setTimeout(resolve, 10));
+    // Give extra time for the connection event to fire
+    await new Promise(resolve => setTimeout(resolve, 10));
+  };
+  
   beforeEach(async () => {
     vi.clearAllMocks();
+    // Clear event handlers
+    Object.keys(eventHandlers).forEach(key => delete eventHandlers[key]);
     // Reset modules to get fresh cache state
     vi.resetModules();
+    // Set REDIS_URL so cache module initializes Redis
+    process.env.REDIS_URL = 'redis://localhost:6379';
+  });
+  
+  afterEach(() => {
+    delete process.env.REDIS_URL;
   });
 
   describe('cacheGet', () => {
@@ -43,6 +69,7 @@ describe('Cache Service', () => {
       mockRedisInstance.get.mockResolvedValueOnce(JSON.stringify({ test: 'data' }));
 
       const { cacheGet } = await import('../../../../server/lib/cache');
+      await waitForConnection(); // Wait for mock connection to establish
       const result = await cacheGet('test-key');
 
       expect(result).toEqual({ test: 'data' });
@@ -53,6 +80,7 @@ describe('Cache Service', () => {
       mockRedisInstance.get.mockResolvedValueOnce(null);
 
       const { cacheGet } = await import('../../../../server/lib/cache');
+      await waitForConnection();
       const result = await cacheGet('missing-key');
 
       expect(result).toBeNull();
@@ -62,6 +90,7 @@ describe('Cache Service', () => {
       mockRedisInstance.get.mockRejectedValueOnce(new Error('Redis error'));
 
       const { cacheGet } = await import('../../../../server/lib/cache');
+      await waitForConnection();
       const result = await cacheGet('test-key');
 
       expect(result).toBeNull();
@@ -76,6 +105,7 @@ describe('Cache Service', () => {
       mockRedisInstance.get.mockResolvedValueOnce(JSON.stringify(complexData));
 
       const { cacheGet } = await import('../../../../server/lib/cache');
+      await waitForConnection();
       const result = await cacheGet('complex-key');
 
       expect(result).toEqual(complexData);
@@ -87,6 +117,7 @@ describe('Cache Service', () => {
       mockRedisInstance.setex.mockResolvedValueOnce('OK');
 
       const { cacheSet } = await import('../../../../server/lib/cache');
+      await waitForConnection();
       const result = await cacheSet('test-key', { data: 'value' }, 3600);
 
       expect(result).toBe(true);
@@ -107,6 +138,7 @@ describe('Cache Service', () => {
       mockRedisInstance.setex.mockResolvedValueOnce('OK');
 
       const { cacheSet } = await import('../../../../server/lib/cache');
+      await waitForConnection();
       await cacheSet('complex-key', complexData, 60);
 
       expect(mockRedisInstance.setex).toHaveBeenCalledWith(
@@ -129,6 +161,7 @@ describe('Cache Service', () => {
       mockRedisInstance.setex.mockResolvedValue('OK');
 
       const { cacheSet, CACHE_TTL } = await import('../../../../server/lib/cache');
+      await waitForConnection();
       
       await cacheSet('key1', 'data', CACHE_TTL.FIVE_MINUTES);
       await cacheSet('key2', 'data', CACHE_TTL.ONE_HOUR);
@@ -143,6 +176,7 @@ describe('Cache Service', () => {
       mockRedisInstance.del.mockResolvedValueOnce(1);
 
       const { cacheDelete } = await import('../../../../server/lib/cache');
+      await waitForConnection();
       const result = await cacheDelete('test-key');
 
       expect(result).toBe(true);
@@ -168,6 +202,7 @@ describe('Cache Service', () => {
       mockRedisInstance.del.mockResolvedValueOnce(2);
 
       const { cacheDeletePattern } = await import('../../../../server/lib/cache');
+      await waitForConnection();
       const result = await cacheDeletePattern('analytics:user:123:*');
 
       expect(result).toBe(2);
@@ -203,6 +238,7 @@ describe('Cache Service', () => {
       mockRedisInstance.get.mockResolvedValueOnce(JSON.stringify({ cached: true }));
 
       const { cacheGetOrSet } = await import('../../../../server/lib/cache');
+      await waitForConnection();
       const generator = vi.fn();
       
       const result = await cacheGetOrSet('test-key', generator, 3600);
@@ -216,6 +252,7 @@ describe('Cache Service', () => {
       mockRedisInstance.setex.mockResolvedValueOnce('OK');
 
       const { cacheGetOrSet } = await import('../../../../server/lib/cache');
+      await waitForConnection();
       const generator = vi.fn().mockResolvedValue({ fresh: true });
       
       const result = await cacheGetOrSet('test-key', generator, 3600);
@@ -253,6 +290,7 @@ describe('Cache Service', () => {
       mockRedisInstance.get.mockResolvedValueOnce(JSON.stringify({ data: 'value' }));
 
       const { cacheGet, getCacheStats } = await import('../../../../server/lib/cache');
+      await waitForConnection();
       
       await cacheGet('test-key');
       const stats = getCacheStats();
@@ -275,6 +313,7 @@ describe('Cache Service', () => {
       mockRedisInstance.get.mockRejectedValueOnce(new Error('Redis error'));
 
       const { cacheGet, getCacheStats } = await import('../../../../server/lib/cache');
+      await waitForConnection();
       
       await cacheGet('test-key');
       const stats = getCacheStats();

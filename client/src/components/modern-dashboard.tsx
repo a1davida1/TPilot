@@ -231,6 +231,7 @@ function hasTierAccess(currentTier: UserTier, requiredTier: UserTier | undefined
 export function ModernDashboard({ isRedditConnected = false, user, userTier = 'free', isAdmin = false }: ModernDashboardProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
+  const sidebarLinkClasses = 'w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-100 transition-colors hover:bg-slate-800/70 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950';
   const [showMoreTools, setShowMoreTools] = useState(false);
   const [onboardingProgress, setOnboardingProgress] = useState<OnboardingProgress>(() => readStoredProgress());
   const [quickStartOpen, setQuickStartOpen] = useState(false);
@@ -680,13 +681,13 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                   <h3 className="text-xl font-bold text-white mb-1">
                     Connect your Reddit account to sync communities
                   </h3>
-                  <p className="text-white/80">
+                  <p className="text-slate-100/80">
                     Link your Reddit account to get started with automated posting
                   </p>
                 </div>
                 <Button
                   onClick={handleConnectReddit}
-                  className="bg-white text-orange-600 hover:bg-gray-100"
+                  className="bg-white text-orange-600 hover:bg-white/90"
                   data-testid="button-connect-reddit-to-start"
                 >
                   Connect Reddit to Start
@@ -707,13 +708,13 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                   <h3 className="text-xl font-bold text-white mb-1">
                     Pick your top subreddits next
                   </h3>
-                  <p className="text-white/80">
+                  <p className="text-slate-100/80">
                     Choose the communities where you want to share your content
                   </p>
                 </div>
                 <Button
                   onClick={() => setLocation('/reddit/communities')}
-                  className="bg-white text-blue-600 hover:bg-gray-100"
+                  className="bg-white text-blue-600 hover:bg-white/90"
                 >
                   Browse Communities
                 </Button>
@@ -733,13 +734,13 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                   <h3 className="text-xl font-bold text-white mb-1">
                     Ship your first Reddit post
                   </h3>
-                  <p className="text-white/80">
+                  <p className="text-slate-100/80">
                     Create and publish your first post to get things rolling
                   </p>
                 </div>
                 <Button
                   onClick={() => setLocation('/reddit')}
-                  className="bg-white text-green-600 hover:bg-gray-100"
+                  className="bg-white text-green-600 hover:bg-white/90"
                 >
                   Create Post
                 </Button>
@@ -759,7 +760,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                   <h3 className="text-xl font-bold text-white mb-1">
                     You're ready for deeper automation
                   </h3>
-                  <p className="text-white/80">
+                  <p className="text-slate-100/80">
                     Explore advanced tools to scale your content creation
                   </p>
                 </div>
@@ -778,7 +779,8 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900">
+    <div className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.28),transparent_55%),radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.22),transparent_60%)]" />
       {/* Sidebar Overlay */}
       {sidebarOpen && (
         <div
@@ -790,7 +792,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-0 h-full w-[280px] bg-gray-900 border-r border-gray-800 z-50 transform transition-transform duration-300",
+          "fixed left-0 top-0 h-full w-[280px] border-r border-slate-800/60 bg-slate-950/90 backdrop-blur-xl z-50 transform transition-transform duration-300",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -812,7 +814,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
               variant="ghost"
               size="sm"
               onClick={() => setSidebarOpen(false)}
-              className="text-gray-400 hover:text-white"
+              className="text-slate-400 transition-colors hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
             >
               <X className="h-5 w-5" />
             </Button>
@@ -822,64 +824,64 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
           <nav className="space-y-2">
             <button 
               onClick={() => setLocation('/dashboard')}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-white hover:bg-purple-600/20 rounded-lg transition-all"
+              className={sidebarLinkClasses}
             >
               <Home className="h-5 w-5" />
               <span>Dashboard</span>
             </button>
             <button 
               onClick={() => setLocation('/reddit')}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-white hover:bg-purple-600/20 rounded-lg transition-all"
+              className={sidebarLinkClasses}
             >
               <FaReddit className="h-5 w-5" />
               <span>Reddit Hub</span>
-              <Badge className="ml-auto" variant="secondary">NEW</Badge>
+              <Badge className="ml-auto border border-purple-400/30 bg-purple-500/20 text-purple-100" variant="secondary">NEW</Badge>
             </button>
             <button 
               onClick={() => setLocation('/caption-generator')}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-white hover:bg-purple-600/20 rounded-lg transition-all"
+              className={sidebarLinkClasses}
             >
               <Brain className="h-5 w-5" />
               <span>Content Creator</span>
             </button>
             <button 
               onClick={() => setLocation('/imageshield')}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-white hover:bg-purple-600/20 rounded-lg transition-all"
+              className={sidebarLinkClasses}
             >
               <Shield className="h-5 w-5" />
               <span>ImageShield</span>
             </button>
             <button 
               onClick={() => setLocation('/gallery')}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-white hover:bg-purple-600/20 rounded-lg transition-all"
+              className={sidebarLinkClasses}
             >
               <ImageIcon className="h-5 w-5" />
               <span>Media Gallery</span>
             </button>
             <button 
               onClick={() => setLocation('/reddit/communities')}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-white hover:bg-purple-600/20 rounded-lg transition-all"
+              className={sidebarLinkClasses}
             >
               <Users className="h-5 w-5" />
               <span>Communities</span>
             </button>
             <button 
               onClick={() => setLocation('/tax-tracker')}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-white hover:bg-purple-600/20 rounded-lg transition-all"
+              className={sidebarLinkClasses}
             >
               <Calculator className="h-5 w-5" />
               <span>Tax Tracker</span>
             </button>
             <button 
               onClick={() => setLocation('/history')}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-white hover:bg-purple-600/20 rounded-lg transition-all"
+              className={sidebarLinkClasses}
             >
               <HistoryIcon className="h-5 w-5" />
               <span>History</span>
             </button>
             <button 
               onClick={() => setLocation('/settings')}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-white hover:bg-purple-600/20 rounded-lg transition-all"
+              className={sidebarLinkClasses}
             >
               <Settings className="h-5 w-5" />
               <span>Settings</span>
@@ -889,28 +891,28 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
       </aside>
 
       {/* Main Content */}
-      <div className="p-6 md:p-8">
+      <div className="relative z-10 p-6 md:p-8">
         {/* Header with Action Buttons */}
         <div className="mb-8">
           <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
             <div className="flex gap-3">
               <Button
                 onClick={handleQuickAction}
-                className="bg-purple-600 hover:bg-purple-700 text-white"
+                className="bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white shadow-lg shadow-purple-500/30 transition-colors hover:from-purple-500/90 hover:to-fuchsia-500/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
               >
                 <Zap className="h-4 w-4 mr-2" />
                 Quick Action
               </Button>
               <Button
                 onClick={handleCommandCenter}
-                className="bg-white text-gray-900 hover:bg-gray-100 border border-gray-200 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:border-transparent"
+                className="border border-white/70 bg-white/90 text-slate-900 transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 dark:border-slate-700/70 dark:bg-slate-900/80 dark:text-slate-100 dark:hover:bg-slate-900"
               >
                 <Command className="h-4 w-4 mr-2" />
                 Command Center
               </Button>
               <Button
                 onClick={handleTaskFlow}
-                className="bg-gray-800 hover:bg-gray-700 text-white"
+                className="bg-slate-900/80 text-slate-100 transition-colors hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
               >
                 <ListChecks className="h-4 w-4 mr-2" />
                 Task Flow
@@ -918,10 +920,10 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
             </div>
             <div className="flex gap-3">
               <ThemeToggle />
-              <Button variant="ghost" size="icon" className="text-white">
+              <Button variant="ghost" size="icon" className="text-slate-200 transition-colors hover:bg-slate-900/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
                 <Bell className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="text-white">
+              <Button variant="ghost" size="icon" className="text-slate-200 transition-colors hover:bg-slate-900/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
                 <Settings className="h-5 w-5" />
               </Button>
             </div>
@@ -933,7 +935,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
             {getGreeting()}, {displayName}! 👋
           </h1>
-          <p className="text-xl text-gray-300">
+          <p className="text-xl text-slate-200">
             {dashboardPrompt}
           </p>
         </div>
@@ -941,29 +943,29 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
         {/* Stats Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {statsCards.map((stat) => (
-            <Card key={stat.label} className="bg-gray-800 border-gray-700">
+            <Card key={stat.label} className="bg-slate-950/60 border-slate-800/60 backdrop-blur">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-2">
                   <span className={stat.color}>{stat.icon}</span>
                   <span className="text-2xl font-bold text-white">{stat.value}</span>
                 </div>
-                <p className="text-gray-400 text-sm">{stat.label}</p>
+                <p className="text-slate-300 text-sm">{stat.label}</p>
               </CardContent>
             </Card>
           ))}
         </div>
 
         {/* Catbox Analytics */}
-        <Card className="bg-gray-800 border-gray-700 mb-8">
+        <Card className="bg-slate-950/60 border-slate-800/60 backdrop-blur mb-8">
           <CardHeader>
             <CardTitle className="text-white">Catbox Upload Insights</CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardDescription className="text-slate-300">
               Track your recent upload volume and performance
             </CardDescription>
           </CardHeader>
           <CardContent>
             {catboxStatsLoading ? (
-              <div className="h-48 w-full animate-pulse rounded-lg bg-gray-700/60" />
+              <div className="h-48 w-full animate-pulse rounded-lg bg-slate-900/70" />
             ) : catboxStats && catboxStats.totalUploads > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 h-72">
@@ -1022,83 +1024,83 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div>
-                      <p className="text-sm text-gray-400">Total attempts</p>
+                      <p className="text-sm text-slate-300">Total attempts</p>
                       <p className="text-lg font-semibold text-white">
                         {formatNumber(catboxTotalUploads)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-400">Successful uploads</p>
+                      <p className="text-sm text-slate-300">Successful uploads</p>
                       <p className="text-lg font-semibold text-white">
                         {formatNumber(catboxSuccessfulUploads)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-400">Failed attempts</p>
+                      <p className="text-sm text-slate-300">Failed attempts</p>
                       <p className="text-lg font-semibold text-white">
                         {formatNumber(catboxFailedUploads)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-400">Success rate</p>
+                      <p className="text-sm text-slate-300">Success rate</p>
                       <p className="text-lg font-semibold text-white">
                         {(catboxStats?.successRate ?? 0).toFixed(1)}%
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-400">Active streak</p>
+                      <p className="text-sm text-slate-300">Active streak</p>
                       <p className="text-lg font-semibold text-white">
                         {catboxStats?.streakDays ?? 0} {catboxStats && catboxStats.streakDays === 1 ? 'day' : 'days'}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-400">Average upload time</p>
+                      <p className="text-sm text-slate-300">Average upload time</p>
                       <p className="text-lg font-semibold text-white">
                         {formatDurationMs(catboxStats?.averageDuration ?? 0)}
                       </p>
                     </div>
                     <div className="md:col-span-2 lg:col-span-3">
-                      <p className="text-sm text-gray-400">Data transferred</p>
+                      <p className="text-sm text-slate-300">Data transferred</p>
                       <p className="text-lg font-semibold text-white">
                         {formatBytes(catboxStats?.totalSize ?? 0)}
                       </p>
                     </div>
                   </div>
                   <div>
-                    <p className="mb-2 text-sm font-semibold text-gray-300">Recent uploads</p>
+                    <p className="mb-2 text-sm font-semibold text-slate-200">Recent uploads</p>
                     <div className="space-y-2">
                       {catboxRecentUploads.slice(0, 3).map((upload) => (
-                        <div key={upload.id} className="flex items-center justify-between rounded-md bg-gray-700/60 px-3 py-2">
+                        <div key={upload.id} className="flex items-center justify-between rounded-md bg-slate-900/70 px-3 py-2">
                           <div className="mr-3 min-w-0">
-                            <p className="truncate text-sm text-gray-100">
+                            <p className="truncate text-sm text-slate-100">
                               {upload.filename ?? upload.url}
                             </p>
-                            <p className="text-xs text-gray-400">
+                            <p className="text-xs text-slate-300">
                               {upload.fileSize ? formatBytes(upload.fileSize) : 'Size unknown'}
                             </p>
                           </div>
-                          <div className="text-right text-xs text-gray-400">
+                          <div className="text-right text-xs text-slate-300">
                             {upload.uploadedAt ? formatChartDateLabel(upload.uploadedAt) : '—'}
                           </div>
                         </div>
                       ))}
                       {catboxStats.recentUploads.length === 0 && (
-                        <p className="text-sm text-gray-400">Uploads will appear here after your next Catbox transfer.</p>
+                        <p className="text-sm text-slate-300">Uploads will appear here after your next Catbox transfer.</p>
                       )}
                     </div>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-start gap-4 rounded-lg border border-dashed border-gray-700 bg-gray-900/60 p-6">
+              <div className="flex flex-col items-start gap-4 rounded-lg border border-dashed border-slate-800/60 bg-slate-950/70 p-6">
                 <div>
                   <h4 className="text-lg font-semibold text-white">Start tracking your Catbox uploads</h4>
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm text-slate-300">
                     Upload media through ThottoPilot to unlock analytics and performance trends.
                   </p>
                 </div>
                 <Button
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/30 transition-colors hover:from-purple-500/90 hover:to-indigo-500/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
                   onClick={() => setLocation('/settings')}
                 >
                   Configure Catbox
@@ -1125,7 +1127,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                 <Card
                   key={card.id}
                   className={cn(
-                    "bg-gray-800 border-gray-700 cursor-pointer transition-all hover:scale-105",
+                    "bg-slate-950/60 border-slate-800/60 backdrop-blur cursor-pointer transition-all hover:scale-105",
                     selectedCard === card.id && "ring-2 ring-purple-500"
                   )}
                   onClick={() => handleCardClick(card)}
@@ -1141,7 +1143,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                       {card.icon}
                     </div>
                     <h3 className="text-white font-semibold mb-1">{card.title}</h3>
-                    <p className="text-gray-400 text-sm">{card.description}</p>
+                    <p className="text-slate-300 text-sm">{card.description}</p>
                     {card.comingSoon && (
                       <Badge className="mt-2" variant="outline">Coming Soon</Badge>
                     )}
@@ -1164,7 +1166,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                 <Card
                   key={card.id}
                   className={cn(
-                    "bg-gray-800 border-gray-700 cursor-pointer transition-all hover:scale-105",
+                    "bg-slate-950/60 border-slate-800/60 backdrop-blur cursor-pointer transition-all hover:scale-105",
                     selectedCard === card.id && "ring-2 ring-purple-500"
                   )}
                   onClick={() => handleCardClick(card)}
@@ -1180,7 +1182,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                       {card.icon}
                     </div>
                     <h3 className="text-white font-semibold mb-1">{card.title}</h3>
-                    <p className="text-gray-400 text-sm">{card.description}</p>
+                    <p className="text-slate-300 text-sm">{card.description}</p>
                     {card.comingSoon && (
                       <Badge className="mt-2" variant="outline">Coming Soon</Badge>
                     )}
@@ -1202,7 +1204,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
               <Button
                 variant="ghost"
                 onClick={() => setShowMoreTools(!showMoreTools)}
-                className="text-gray-400 hover:text-white"
+                className="text-slate-300 hover:text-white"
                 data-testid={`button-${showMoreTools ? 'hide' : 'show'}-more-tools`}
               >
                 {showMoreTools ? 'Hide Tools' : 'Show More Tools'}
@@ -1217,7 +1219,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                       <Card
                         key={card.id}
                         className={cn(
-                          "bg-gray-800 border-gray-700 cursor-pointer transition-all hover:scale-105",
+                          "bg-slate-950/60 border-slate-800/60 backdrop-blur cursor-pointer transition-all hover:scale-105",
                           selectedCard === card.id && "ring-2 ring-purple-500"
                         )}
                         onClick={() => handleCardClick(card)}
@@ -1233,7 +1235,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                             {card.icon}
                           </div>
                           <h3 className="text-white font-semibold mb-1">{card.title}</h3>
-                          <p className="text-gray-400 text-sm">{card.description}</p>
+                          <p className="text-slate-300 text-sm">{card.description}</p>
                           {card.comingSoon && (
                             <Badge className="mt-2" variant="outline">Coming Soon</Badge>
                           )}
@@ -1245,13 +1247,13 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                     ))}
                   </div>
                 ) : (
-                  <Card className="bg-gray-800 border-gray-700">
+                  <Card className="bg-slate-950/60 border-slate-800/60 backdrop-blur">
                     <CardContent className="p-6 text-center">
                       <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center mx-auto mb-4">
                         <Gift className="h-8 w-8 text-white" />
                       </div>
                       <h3 className="text-white font-semibold mb-2">Upgrade to Unlock</h3>
-                      <p className="text-gray-400 text-sm mb-4">
+                      <p className="text-slate-300 text-sm mb-4">
                         Upgrade your plan to unlock analytics, takedown scanning, and finance workflows
                       </p>
                       <Button
@@ -1283,7 +1285,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                   "flex items-center gap-2 px-3 py-1",
                   onboardingProgress.connectedReddit
                     ? "bg-green-500/20 text-green-400 border-green-500/30"
-                    : "bg-gray-500/20 text-gray-400 border-gray-500/30"
+                    : "bg-slate-700/30 text-slate-300 border-slate-600/40"
                 )}
               >
                 {onboardingProgress.connectedReddit ? (
@@ -1298,7 +1300,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                   "flex items-center gap-2 px-3 py-1",
                   onboardingProgress.selectedCommunities
                     ? "bg-green-500/20 text-green-400 border-green-500/30"
-                    : "bg-gray-500/20 text-gray-400 border-gray-500/30"
+                    : "bg-slate-700/30 text-slate-300 border-slate-600/40"
                 )}
               >
                 {onboardingProgress.selectedCommunities ? (
@@ -1313,7 +1315,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                   "flex items-center gap-2 px-3 py-1",
                   onboardingProgress.createdFirstPost
                     ? "bg-green-500/20 text-green-400 border-green-500/30"
-                    : "bg-gray-500/20 text-gray-400 border-gray-500/30"
+                    : "bg-slate-700/30 text-slate-300 border-slate-600/40"
                 )}
               >
                 {onboardingProgress.createdFirstPost ? (
@@ -1330,10 +1332,10 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
         {/* Bottom Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent Gallery */}
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-slate-950/60 border-slate-800/60 backdrop-blur">
             <CardHeader>
               <CardTitle className="text-white">Recent Gallery</CardTitle>
-              <CardDescription className="text-gray-400">
+              <CardDescription className="text-slate-300">
                 Your latest uploads
               </CardDescription>
             </CardHeader>
@@ -1341,11 +1343,11 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
               {activityLoading ? (
                 <div className="grid grid-cols-4 gap-2">
                   {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="aspect-square bg-gray-700 rounded-lg animate-pulse" />
+                    <div key={i} className="aspect-square bg-slate-900/70 rounded-lg border border-slate-800/60 animate-pulse" />
                   ))}
                 </div>
               ) : showGalleryEmptyState ? (
-                <div className="text-center py-8 text-gray-400">
+                <div className="text-center py-8 text-slate-300">
                   <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
                   <p>No recent media</p>
                   <p className="text-sm">Upload some content to see it here</p>
@@ -1355,7 +1357,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                   {galleryItems.map((item) => (
                     <div
                       key={item.id}
-                      className="aspect-square bg-gray-700 rounded-lg overflow-hidden"
+                      className="aspect-square bg-slate-900/70 rounded-lg border border-slate-800/60 overflow-hidden"
                     >
                       <img
                         src={item.signedUrl ?? item.url}
@@ -1368,7 +1370,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                 </div>
               )}
               <Button 
-                className="w-full mt-4 bg-purple-600 hover:bg-purple-700"
+                className="w-full mt-4 bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/30 transition-colors hover:from-purple-500/90 hover:to-indigo-500/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
                 onClick={() => setLocation('/gallery')}
               >
                 View All
@@ -1378,39 +1380,39 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
           </Card>
 
           {/* Scheduled Posts */}
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-slate-950/60 border-slate-800/60 backdrop-blur">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-white">Scheduled Posts</CardTitle>
                 <Badge className="bg-orange-500 text-white">2 PENDING</Badge>
               </div>
-              <CardDescription className="text-gray-400">
+              <CardDescription className="text-slate-300">
                 Upcoming content
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-slate-900/70 rounded-lg border border-slate-800/60">
                   <div className="flex items-center gap-3">
                     <Clock className="h-5 w-5 text-purple-400" />
                     <div>
                       <p className="text-white text-sm font-medium">Morning Selfie</p>
-                      <p className="text-gray-400 text-xs">r/SelfieWorld • In 2 hours</p>
+                      <p className="text-slate-300 text-xs">r/SelfieWorld • In 2 hours</p>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-slate-900/70 rounded-lg border border-slate-800/60">
                   <div className="flex items-center gap-3">
                     <Clock className="h-5 w-5 text-purple-400" />
                     <div>
                       <p className="text-white text-sm font-medium">Sunset Vibes</p>
-                      <p className="text-gray-400 text-xs">r/FreeKarma4U • In 6 hours</p>
+                      <p className="text-slate-300 text-xs">r/FreeKarma4U • In 6 hours</p>
                     </div>
                   </div>
                 </div>
               </div>
               <Button
-                className="w-full mt-4 bg-purple-600 hover:bg-purple-700"
+                className="w-full mt-4 bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/30 transition-colors hover:from-purple-500/90 hover:to-indigo-500/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
                 onClick={handleManageSchedule}
                 disabled={isNavigatingToScheduler}
               >

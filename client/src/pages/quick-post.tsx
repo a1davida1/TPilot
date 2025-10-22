@@ -30,6 +30,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -82,6 +83,21 @@ interface GenerationRequest {
   tone: string;
   promotionMode: PromotionMode;
   nsfwFlag: boolean;
+}
+
+interface RedditPostSuccessResponse {
+  success?: boolean;
+  postId?: string;
+  url?: string;
+  message?: string;
+  warnings?: string[];
+}
+
+interface RedditPostErrorResponse {
+  error?: string;
+  message?: string;
+  reason?: string;
+  reasons?: string[];
 }
 
 interface SubredditLintResponse {
@@ -205,15 +221,24 @@ export default function QuickPostPage() {
   const toneOptions = useMemo(() => (nsfw ? NSFW_TONES : SFW_TONES), [nsfw]);
 
   // Fetch available subreddit communities
-  const { data: communities = [] } = useQuery<SubredditCommunity[]>({
+  const {
+    data: communities = [],
+    isLoading: communitiesLoading,
+    error: communitiesError
+  } = useQuery<SubredditCommunity[]>({
     queryKey: ['/api/reddit/communities'],
-    retry: false
+    retry: 1
   });
 
   // Sort communities by success probability for easy selection
   const sortedCommunities = useMemo(() => {
-    return communities.sort((a, b) => b.successProbability - a.successProbability);
+    return [...communities].sort((a, b) => (b.successProbability ?? 0) - (a.successProbability ?? 0));
   }, [communities]);
+
+  const hasCommunityError = Boolean(communitiesError);
+  const communityErrorMessage = communitiesError instanceof Error
+    ? communitiesError.message
+    : 'We could not load your saved communities.';
 
   useEffect(() => {
     if (!toneOptions.some((option) => option.value === selectedTone)) {
@@ -431,25 +456,70 @@ export default function QuickPostPage() {
 
       const chosen = captionOptions.find((option) => option.id === confirmedCaptionId);
       const captionText = chosen?.text ?? '';
+      const normalizedSubreddit = subreddit.trim();
 
-      if (!captionText || !subreddit) {
+      if (!captionText || !normalizedSubreddit) {
         throw new Error('Missing caption or subreddit');
       }
 
-      return apiRequest('POST', '/api/reddit/post', {
+      const response = await apiRequest('POST', '/api/reddit/post', {
         title: truncateTitle(captionText),
-        subreddit,
+        subreddit: normalizedSubreddit,
         imageUrl: protectedImageUrl || imageUrl,
         text: captionText,
         nsfw,
         sendReplies: true
       });
+
+      if (!response.ok) {
+        let errorMessage = `Failed to post to Reddit (${response.status})`;
+        try {
+          const errorData = await response.clone().json() as RedditPostErrorResponse;
+          const serverMessage = errorData?.error || errorData?.message || errorData?.reason;
+          const combinedReasons = Array.isArray(errorData?.reasons)
+            ? errorData.reasons.filter((value): value is string => Boolean(value?.trim()))
+            : [];
+          if (serverMessage) {
+            errorMessage = serverMessage;
+          } else if (combinedReasons.length > 0) {
+            errorMessage = combinedReasons.join(' • ');
+          }
+        } catch {
+          try {
+            const fallbackText = await response.text();
+            if (fallbackText) {
+              errorMessage = fallbackText;
+            }
+          } catch {
+            // ignore parsing errors
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      try {
+        return await response.json() as RedditPostSuccessResponse;
+      } catch {
+        return { success: true } satisfies RedditPostSuccessResponse;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       setPosted(true);
+      const postUrl = result?.url;
+      const warnings = Array.isArray(result?.warnings)
+        ? (result?.warnings ?? []).filter((value): value is string => Boolean(value?.trim()))
+        : [];
+      const safeSubreddit = subreddit.trim();
+      const baseDescription = postUrl
+        ? `Your post is now live: ${postUrl}` 
+        : safeSubreddit
+          ? `Your post is now live on r/${safeSubreddit}` 
+          : 'Your post is now live on Reddit';
+      const warningSuffix = warnings.length > 0 ? ` Warnings: ${warnings.join(' • ')}` : '';
+
       toast({
-        title: '🎉 Posted successfully!',
-        description: `Your post is now live on r/${subreddit}` 
+        title: result?.message ?? '🎉 Posted successfully!',
+        description: `${baseDescription}${warningSuffix}` 
       });
     },
     onError: (error: unknown) => {
@@ -574,6 +644,7 @@ export default function QuickPostPage() {
     imageUrl &&
     confirmedCaptionId &&
     subreddit &&
+    subreddit.trim() &&
     selectedService === 'reddit' &&
     !postToReddit.isPending
   );
@@ -1000,6 +1071,13 @@ export default function QuickPostPage() {
                   <div className="space-y-4">
                     <div>
                       <Label htmlFor="subreddit">Subreddit</Label>
+                      {hasCommunityError ? (
+                        <Alert variant="destructive" className="mt-2">
+                          <AlertDescription>
+                            Unable to load your saved communities. {communityErrorMessage} You can still type a subreddit manually below.
+                          </AlertDescription>
+                        </Alert>
+                      ) : null}
                       <Popover open={communityPickerOpen} onOpenChange={setCommunityPickerOpen}>
                         <PopoverTrigger asChild>
                           <Button
@@ -1007,48 +1085,81 @@ export default function QuickPostPage() {
                             role="combobox"
                             aria-expanded={communityPickerOpen}
                             className="w-full justify-between mt-1"
+                            disabled={communitiesLoading || hasCommunityError}
                           >
-                            {subreddit ? (
+                            {communitiesLoading ? (
+                              'Loading communities...'
+                            ) : subreddit ? (
                               (() => {
-                                const selected = sortedCommunities.find(c => c.id === subreddit);
+                                const selected = sortedCommunities.find((community) => community.id.toLowerCase() === subreddit.toLowerCase());
                                 return selected ? `r/${selected.displayName}` : `r/${subreddit}`;
                               })()
-                            ) : (
+                            ) : sortedCommunities.length > 0 ? (
                               'Select subreddit...'
+                            ) : (
+                              'No saved communities yet'
                             )}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-full p-0">
                           <Command>
-                            <CommandInput placeholder="Search subreddits..." />
-                            <CommandEmpty>No subreddit found.</CommandEmpty>
+                            <CommandInput
+                              placeholder="Search subreddits..."
+                              disabled={communitiesLoading}
+                            />
+                            <CommandEmpty>
+                              {communitiesLoading
+                                ? 'Loading communities...'
+                                : hasCommunityError
+                                  ? 'Communities unavailable. Use the manual input below.'
+                                  : 'No subreddit found.'}
+                            </CommandEmpty>
                             <CommandList>
-                              <CommandGroup>
-                                {sortedCommunities.map((community) => (
-                                  <CommandItem
-                                    key={community.id}
-                                    value={community.id}
-                                    onSelect={(currentValue) => {
-                                      setSubreddit(currentValue === subreddit ? '' : currentValue);
-                                      setCommunityPickerOpen(false);
-                                    }}
-                                  >
-                                    <div className="flex items-center justify-between w-full">
-                                      <div className="flex-1">
-                                        <div className="font-medium">r/{community.displayName}</div>
-                                        <div className="text-xs text-muted-foreground">
-                                          {community.members.toLocaleString()} members • {community.successProbability}% success
+                              {communitiesLoading ? (
+                                <div className="py-6 text-center text-sm text-muted-foreground">
+                                  <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
+                                  Fetching communities...
+                                </div>
+                              ) : (
+                                <CommandGroup>
+                                  {sortedCommunities.map((community) => (
+                                    <CommandItem
+                                      key={community.id}
+                                      value={community.id}
+                                      onSelect={(currentValue) => {
+                                        setSubreddit(currentValue === subreddit ? '' : currentValue);
+                                        setCommunityPickerOpen(false);
+                                      }}
+                                    >
+                                      <div className="flex items-center justify-between w-full">
+                                        <div className="flex-1">
+                                          <div className="font-medium">r/{community.displayName}</div>
+                                          <div className="text-xs text-muted-foreground">
+                                            {community.members.toLocaleString()} members • {Math.round(community.successProbability ?? 0)}% success
+                                          </div>
                                         </div>
                                       </div>
-                                    </div>
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              )}
                             </CommandList>
                           </Command>
                         </PopoverContent>
                       </Popover>
+                      <Input
+                        id="subreddit"
+                        value={subreddit}
+                        onChange={(event) => setSubreddit(event.target.value.replace(/^r\//i, ''))}
+                        onBlur={() => setSubreddit((current) => current.trim().replace(/^r\//i, ''))}
+                        placeholder="Type a subreddit (e.g., gonewild)"
+                        className="mt-3"
+                        autoComplete="off"
+                      />
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Pick from your saved list or type any subreddit manually.
+                      </p>
                     </div>
 
                     <div className="flex items-center space-x-2">

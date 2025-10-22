@@ -4,16 +4,22 @@ import type { GeminiGenerateContentInput } from '../../../../server/lib/gemini-c
 
 const {
   geminiModel,
+  geminiClient,
   googleGenerativeAIConstructor
 } = vi.hoisted(() => {
   const geminiModel = {
     generateContent: vi.fn()
   };
+  const geminiClient = {
+    models: {
+      generateContent: vi.fn()
+    }
+  };
   const googleGenerativeAIConstructor = vi.fn(() => ({
     getGenerativeModel: vi.fn().mockReturnValue(geminiModel)
   }));
 
-  return { geminiModel, googleGenerativeAIConstructor };
+  return { geminiModel, geminiClient, googleGenerativeAIConstructor };
 });
 
 vi.mock('@google/generative-ai', () => ({
@@ -21,7 +27,7 @@ vi.mock('@google/generative-ai', () => ({
 }));
 
 vi.mock('@google/genai', () => ({
-  GoogleGenAI: googleGenerativeAIConstructor
+  GoogleGenAI: vi.fn(() => geminiClient)
 }));
 
 let originalGeminiKey: string | undefined;
@@ -31,6 +37,7 @@ describe('Gemini client model adapter', () => {
     originalGeminiKey = process.env.GOOGLE_GENAI_API_KEY;
     vi.clearAllMocks();
     geminiModel.generateContent.mockReset();
+    geminiClient.models.generateContent.mockReset();
     googleGenerativeAIConstructor.mockReset();
     process.env.GOOGLE_GENAI_API_KEY = 'unit-test-gemini-key';
     vi.resetModules();
@@ -62,7 +69,8 @@ describe('Gemini client model adapter', () => {
       usageMetadata: { totalTokenCount: 42 }
     };
 
-    geminiModel.generateContent.mockResolvedValueOnce(nestedResponse);
+    // Mock the client.models.generateContent method
+    geminiClient.models.generateContent.mockResolvedValueOnce(nestedResponse);
 
     const { getTextModel } = await import('../../../../server/lib/gemini-client.ts');
     const textModel = getTextModel();

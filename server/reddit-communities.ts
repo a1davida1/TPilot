@@ -4,6 +4,8 @@ import {
   redditCommunities,
   subredditRules,
   type RedditCommunity,
+  type CompetitionLevel,
+  type ModActivity,
   insertRedditCommunitySchema,
   type InsertRedditCommunity,
   type RedditCommunityRuleSet,
@@ -19,6 +21,58 @@ import { getGrowthTrendLabel } from '@shared/growth-trends';
 import { eq, ilike, desc, or } from 'drizzle-orm';
 import { lintCaption } from './lib/policy-linter.js';
 import { logger } from './bootstrap/logger.js';
+
+let hasLoggedCompetitionFallback = false;
+let hasLoggedModActivityFallback = false;
+
+const safeCanonicalizeCompetitionLevel =
+  typeof canonicalizeCompetitionLevel === 'function'
+    ? canonicalizeCompetitionLevel
+    : (value: string | null | undefined): CompetitionLevel => {
+        if (!hasLoggedCompetitionFallback) {
+          logger.warn('canonicalizeCompetitionLevel fallback engaged');
+          hasLoggedCompetitionFallback = true;
+        }
+        if (!value) {
+          return null;
+        }
+        const normalized = value.toLowerCase();
+        if (normalized.includes('low')) {
+          return 'low';
+        }
+        if (normalized.includes('high')) {
+          return 'high';
+        }
+        if (normalized.includes('medium')) {
+          return 'medium';
+        }
+        return null;
+      };
+
+const safeCanonicalizeModActivity =
+  typeof canonicalizeModActivity === 'function'
+    ? canonicalizeModActivity
+    : (value: string | null | undefined): ModActivity => {
+        if (!hasLoggedModActivityFallback) {
+          logger.warn('canonicalizeModActivity fallback engaged');
+          hasLoggedModActivityFallback = true;
+        }
+        if (!value) {
+          return null;
+        }
+        const normalized = value.toLowerCase();
+        if (normalized.includes('low')) {
+          return 'low';
+        }
+        if (normalized.includes('high')) {
+          return 'high';
+        }
+        if (normalized.includes('medium')) {
+          return 'medium';
+        }
+        return 'unknown';
+      };
+
 
 async function loadSeedCommunities(): Promise<InsertRedditCommunity[]> {
   // Prefer the larger dataset when available so production environments stay populated.
@@ -218,8 +272,8 @@ export function normalizeCommunityRecord(community: RedditCommunity): Normalized
   return {
     ...community,
     rules: normalizeRules(community.rules, community.promotionAllowed, community.category),
-    competitionLevel: canonicalizeCompetitionLevel(community.competitionLevel),
-    modActivity: canonicalizeModActivity(community.modActivity)
+    competitionLevel: safeCanonicalizeCompetitionLevel(community.competitionLevel),
+    modActivity: safeCanonicalizeModActivity(community.modActivity)
   };
 }
 
