@@ -8,6 +8,7 @@ import { SafetyManager } from './safety-systems.js';
 import { getEligibleCommunitiesForUser } from '../reddit-communities.js';
 import type { RedditCommunity, ShadowbanSubmissionSummary } from '@shared/schema';
 import { lookup } from 'dns/promises';
+import { fileTypeFromBuffer } from 'file-type';
 import { logger } from '../bootstrap/logger.js';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;

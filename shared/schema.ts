@@ -1466,12 +1466,13 @@ export interface ShadowbanSubmissionSummary {
 }
 
 export interface ShadowbanEvidenceResponse {
+  username: string;
+  checkedAt: string;
+  privateCount: number;
+  publicCount: number;
   privateSubmissions: ShadowbanSubmissionSummary[];
   publicSubmissions: ShadowbanSubmissionSummary[];
   missingSubmissionIds: string[];
-  privateCount: number;
-  publicCount: number;
-  username: string;
 }
 
 export interface ShadowbanCheckApiResponse {
