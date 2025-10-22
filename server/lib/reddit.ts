@@ -108,6 +108,39 @@ function combineContentSegments(...segments: Array<string | undefined>): string 
     .join('\n');
 }
 
+async function determineImageUploadFilename(imageBuffer?: Buffer, imageUrl?: string): Promise<string> {
+  if (imageBuffer) {
+    try {
+      const detected = await fileTypeFromBuffer(imageBuffer);
+      const extension = detected?.ext;
+      if (extension && /^[a-z0-9]+$/i.test(extension)) {
+        return `upload.${extension.toLowerCase()}`;
+      }
+    } catch (error) {
+      logger.warn('Unable to detect image type from buffer for Reddit upload', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  if (imageUrl) {
+    try {
+      const parsedUrl = new URL(imageUrl);
+      const pathname = parsedUrl.pathname;
+      const extensionCandidate = pathname.includes('.') ? pathname.split('.').pop() ?? '' : '';
+      if (extensionCandidate && /^[a-z0-9]+$/i.test(extensionCandidate)) {
+        return `upload.${extensionCandidate.toLowerCase()}`;
+      }
+    } catch (error) {
+      logger.warn('Unable to derive image filename from URL for Reddit upload', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  return 'upload.jpg';
+}
+
 function resolvePostType(context: PostCheckContext): PostType {
   if (context.postType) {
     return context.postType;
@@ -922,7 +955,7 @@ export class RedditManager {
           getSubreddit(name: string): {
             submitImage(input: {
               title: string;
-              imageFile: Buffer | string;
+              imageFile: Buffer | string | { file: Buffer; name: string };
               nsfw: boolean;
               spoiler: boolean;
               sendReplies: boolean;
@@ -932,8 +965,21 @@ export class RedditManager {
 
         try {
           // Try direct image upload first
-          const imageFile = options.imageBuffer ?? options.imagePath;
-          if (!imageFile) {
+          const imageBuffer = options.imageBuffer;
+          const imagePath = options.imagePath;
+
+          if (!imageBuffer && !imagePath) {
+            throw new Error('No image file or path provided');
+          }
+
+          let imageFile: Buffer | string | { file: Buffer; name: string };
+
+          if (imageBuffer) {
+            const uploadName = await determineImageUploadFilename(imageBuffer, options.imageUrl);
+            imageFile = { file: imageBuffer, name: uploadName };
+          } else if (imagePath) {
+            imageFile = imagePath;
+          } else {
             throw new Error('No image file or path provided');
           }
 
@@ -1693,31 +1739,22 @@ export class RedditManager {
   /**
    * Check shadowban status by comparing self-view vs public submissions
    */
-  async checkShadowbanStatus(): Promise<{
-    isShadowbanned: boolean;
-    statusMessage: string;
-    checkedAt: string;
-    publicCount: number;
-    totalSelfPosts: number;
-    hiddenPosts: Array<{
-      id: string;
-      title: string;
-      createdUtc: number;
-    }>;
-    error?: string;
-  }> {
+  async checkShadowbanStatus(): Promise<import('../../shared/schema.js').ShadowbanCheckApiResponse> {
     try {
       // Get user's profile to get username
       const profile = await this.getProfile();
       if (!profile) {
         return {
-          isShadowbanned: false,
-          statusMessage: 'Unable to fetch profile',
-          checkedAt: new Date().toISOString(),
-          publicCount: 0,
-          totalSelfPosts: 0,
-          hiddenPosts: [],
-          error: 'Could not access Reddit profile'
+          status: 'unknown',
+          reason: 'Unable to fetch Reddit profile',
+          evidence: {
+            privateSubmissions: [],
+            publicSubmissions: [],
+            missingSubmissionIds: [],
+            privateCount: 0,
+            publicCount: 0,
+            username: ''
+          }
         };
       }
 
@@ -1726,13 +1763,16 @@ export class RedditManager {
 
       if (!recentSubmissions || recentSubmissions.length === 0) {
         return {
-          isShadowbanned: false,
-          statusMessage: 'No recent submissions found',
-          checkedAt: new Date().toISOString(),
-          publicCount: 0,
-          totalSelfPosts: 0,
-          hiddenPosts: [],
-          error: 'No submissions to analyze'
+          status: 'unknown',
+          reason: 'No recent submissions found',
+          evidence: {
+            privateSubmissions: [],
+            publicSubmissions: [],
+            missingSubmissionIds: [],
+            privateCount: 0,
+            publicCount: 0,
+            username: profile.username
+          }
         };
       }
 
@@ -1740,13 +1780,16 @@ export class RedditManager {
       const publicSubmissionsResult = await this.getPublicSubmissions(profile.username);
       if (publicSubmissionsResult.error) {
         return {
-          isShadowbanned: false,
-          statusMessage: 'Error fetching public submissions',
-          checkedAt: new Date().toISOString(),
-          publicCount: 0,
-          totalSelfPosts: recentSubmissions.length,
-          hiddenPosts: [],
-          error: publicSubmissionsResult.error
+          status: 'unknown',
+          reason: publicSubmissionsResult.error,
+          evidence: {
+            privateSubmissions: [],
+            publicSubmissions: [],
+            missingSubmissionIds: [],
+            privateCount: recentSubmissions.length,
+            publicCount: 0,
+            username: profile.username
+          }
         };
       }
       const publicSubmissions = publicSubmissionsResult.submissions;
@@ -1759,54 +1802,79 @@ export class RedditManager {
         num_comments?: number;
         ups?: number;
         created_utc?: number;
+        subreddit?: { display_name?: string } | string;
       }
       
-      const _selfPostIds = new Set(recentSubmissions.map((sub: SubmissionRecord) => sub.id));
       const publicPostIds = new Set(publicSubmissions.map(sub => sub.id));
 
-      // Find hidden posts (in self view but not in public view)
-      const hiddenPosts = recentSubmissions
+      // Find missing submission IDs (in self view but not in public view)
+      const missingSubmissionIds = recentSubmissions
         .filter((sub: SubmissionRecord) => !publicPostIds.has(sub.id))
-        .map((sub: SubmissionRecord) => ({
-          id: sub.id,
-          title: sub.title ?? '(untitled post)',
-          createdUtc: typeof sub.created_utc === 'number' ? sub.created_utc : 0,
-        }));
+        .map((sub: SubmissionRecord) => sub.id);
 
       const totalSelfPosts = recentSubmissions.length;
       const publicCount = publicSubmissions.length;
-      const hiddenCount = hiddenPosts.length;
+      const missingCount = missingSubmissionIds.length;
 
-      const isShadowbanned = hiddenCount > 0;
+      // Convert submissions to summary format
+      const privateSubmissionsSummary = recentSubmissions.map((sub: SubmissionRecord) => ({
+        id: sub.id,
+        subreddit: typeof sub.subreddit === 'object' ? (sub.subreddit.display_name ?? '') : String(sub.subreddit ?? ''),
+        title: sub.title ?? '(untitled post)',
+        created: typeof sub.created_utc === 'number' ? sub.created_utc : 0
+      }));
 
-      let statusMessage = '';
-      if (isShadowbanned) {
-        const percentage = Math.round((hiddenCount / totalSelfPosts) * 100);
-        statusMessage = `${percentage}% of recent posts are hidden from public view.`;
+      const publicSubmissionsSummary = publicSubmissions.map(sub => ({
+        id: sub.id,
+        subreddit: sub.subreddit || '',
+        title: sub.title || '(untitled post)',
+        created: sub.created_utc || 0
+      }));
+
+      // Determine status and reason
+      let status: import('../../shared/schema.js').ShadowbanStatusType;
+      let reason: string;
+
+      if (missingCount === 0) {
+        status = 'clear';
+        reason = 'All recent submissions are publicly visible';
       } else {
-        statusMessage = 'All recent posts are visible publicly.';
+        const missingPercentage = Math.round((missingCount / totalSelfPosts) * 100);
+        if (missingPercentage >= 50) {
+          status = 'suspected';
+          reason = `${missingPercentage}% of submissions are not visible publicly`;
+        } else {
+          status = 'clear';
+          reason = `Most submissions are publicly visible (${missingPercentage}% missing)`;
+        }
       }
 
       return {
-        isShadowbanned,
-        statusMessage,
-        checkedAt: new Date().toISOString(),
-        publicCount,
-        totalSelfPosts,
-        hiddenPosts: hiddenPosts.slice(0, 5), // Limit to first 5 for UI
-        error: undefined
+        status,
+        reason,
+        evidence: {
+          privateSubmissions: privateSubmissionsSummary,
+          publicSubmissions: publicSubmissionsSummary,
+          missingSubmissionIds,
+          privateCount: totalSelfPosts,
+          publicCount,
+          username: profile.username
+        }
       };
 
     } catch (error) {
       logger.error('Shadowban check failed:', error);
       return {
-        isShadowbanned: false,
-        statusMessage: 'Unable to check shadowban status',
-        checkedAt: new Date().toISOString(),
-        publicCount: 0,
-        totalSelfPosts: 0,
-        hiddenPosts: [],
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
+        status: 'unknown',
+        reason: `Reddit API error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        evidence: {
+          privateSubmissions: [],
+          publicSubmissions: [],
+          missingSubmissionIds: [],
+          privateCount: 0,
+          publicCount: 0,
+          username: ''
+        }
       };
     }
   }

@@ -1,5 +1,6 @@
 import { Router, type Response } from 'express';
 import { pipeline, OpenRouterError } from '../caption/openrouterPipeline';
+import { loadCaptionPersonalizationContext } from '../caption/personalization-context';
 import { storage } from '../storage';
 import { authenticateToken, type AuthRequest } from '../middleware/auth';
 import { type CaptionObject } from '@shared/types/caption';
@@ -127,6 +128,8 @@ router.post('/generate', authenticateToken(true), async (req: AuthRequest, res: 
       }
     }
     
+    const personalization = req.user?.id ? await loadCaptionPersonalizationContext(req.user.id) : null;
+
     const result = await pipeline({ 
       imageUrl, 
       platform, 
@@ -135,7 +138,8 @@ router.post('/generate', authenticateToken(true), async (req: AuthRequest, res: 
       mood, 
       nsfw: nsfw || false,
       promotionMode,
-      promotionalUrl
+      promotionalUrl,
+      personalization,
     });
     
     // Validate response payload matches expected schema
@@ -204,6 +208,8 @@ router.post('/generate-text', authenticateToken(true), async (req: AuthRequest, 
     // Create a 1x1 transparent PNG as a placeholder (OpenRouter pipeline requires an image)
     const transparentPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
     
+    const personalization = req.user?.id ? await loadCaptionPersonalizationContext(req.user.id) : null;
+
     // Use the pipeline but inject synthetic facts
     const result = await pipeline({
       imageUrl: transparentPng,
@@ -214,7 +220,8 @@ router.post('/generate-text', authenticateToken(true), async (req: AuthRequest, 
       nsfw: nsfw || false,
       mandatoryTokens: theme ? [theme] : undefined,
       promotionMode,
-      promotionalUrl
+      promotionalUrl,
+      personalization,
     });
     
     // Validate response payload matches expected schema
@@ -278,6 +285,8 @@ router.post('/rewrite', authenticateToken(true), async (req: AuthRequest, res: R
     // If no image provided, use a transparent placeholder
     const transparentPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
     const finalImageUrl = imageUrl || transparentPng;
+
+    const personalization = req.user?.id ? await loadCaptionPersonalizationContext(req.user.id) : null;
     
     const result = await pipeline({
       imageUrl: finalImageUrl,
@@ -288,7 +297,8 @@ router.post('/rewrite', authenticateToken(true), async (req: AuthRequest, res: R
       nsfw: nsfw || false,
       existingCaption,
       promotionMode,
-      promotionalUrl
+      promotionalUrl,
+      personalization,
     });
     
     // Validate response payload matches expected schema

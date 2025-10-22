@@ -18,7 +18,7 @@ export const extractTextFromCandidates = (resp: any): string | undefined => {
       else if (p && typeof p.text === "string") out.push(p.text);
     }
   }
-  const s = out.join("\n").trim();
+  const s = out.join("").trim();
   return s.length ? s : undefined;
 };
 

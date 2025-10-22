@@ -352,9 +352,14 @@ describe('Cache Service', () => {
   describe('Graceful Degradation', () => {
     it('should work without Redis connection', async () => {
       // Simulate Redis not configured
-      vi.stubEnv('REDIS_URL', '');
+      vi.clearAllMocks();
+      delete process.env.REDIS_URL;
+      vi.resetModules(); // Reset modules AFTER clearing env
 
-      const { cacheGet, cacheSet } = await import('../../../../server/lib/cache');
+      const { cacheGet, cacheSet, isCacheAvailable } = await import('../../../../server/lib/cache');
+      
+      // Cache should not be available without REDIS_URL
+      expect(isCacheAvailable()).toBe(false);
       
       const getResult = await cacheGet('test-key');
       const setResult = await cacheSet('test-key', 'value', 60);

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z, ZodError } from 'zod';
 
 import { pipeline } from '@server/caption/openrouterPipeline';
+import { loadCaptionPersonalizationContext } from '@server/caption/personalization-context';
 import { auth, clearAuthRequestContext, setAuthRequestContext } from '../../_lib/auth';
 
 const schema = z.object({
@@ -24,6 +25,8 @@ export async function POST(request: Request) {
     const payload = await request.json();
     const validated = schema.parse(payload);
 
+    const personalization = typeof userId === 'number' ? await loadCaptionPersonalizationContext(userId) : null;
+
     const result = await pipeline({
       imageUrl: validated.imageUrl,
       platform: validated.platform,
@@ -31,6 +34,7 @@ export async function POST(request: Request) {
       style: validated.style,
       mood: validated.mood,
       nsfw: validated.nsfw ?? false,
+      personalization,
     });
 
     return NextResponse.json({ success: true, data: result });

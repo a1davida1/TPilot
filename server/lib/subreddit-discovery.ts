@@ -5,8 +5,8 @@
  */
 
 import { db } from '../db.js';
-import { redditCommunities } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+import { postMetrics, redditCommunities, redditPostOutcomes } from '@shared/schema';
+import { and, eq, gte, sql } from 'drizzle-orm';
 import { logger } from '../bootstrap/logger.js';
 // RedditUser type from snoowrap
 type RedditUser = any; // Using any for now since we don't export it from reddit.ts
@@ -138,15 +138,24 @@ export async function updateSubredditMetadata(
   try {
     const normalizedName = subredditName.toLowerCase().replace(/^r\//, '');
 
-    // This would be enhanced with aggregated calculations
-    // For now, just log that we could update it
-    logger.debug(`Could aggregate data for r/${normalizedName}`, postData);
+    const metrics = await calculateSubredditMetrics(normalizedName);
 
-    // TODO: Implement aggregation logic
-    // - Calculate average upvotes from postMetrics
-    // - Determine best posting times from successful posts
-    // - Calculate success probability
-    // - Update engagement rate
+    if (!metrics) {
+      logger.debug(`No aggregated metrics available for r/${normalizedName}`, postData);
+      return;
+    }
+
+    const updatePayload = buildCommunityMetricsUpdate(metrics);
+
+    await db
+      .update(redditCommunities)
+      .set(updatePayload)
+      .where(eq(redditCommunities.name, normalizedName));
+
+    logger.debug(`Updated aggregated metrics for r/${normalizedName}`, {
+      ...postData,
+      ...updatePayload
+    });
 
   } catch (error) {
     logger.error('Failed to update subreddit metadata', {
@@ -175,22 +184,21 @@ export async function enrichDiscoveredSubreddits(): Promise<void> {
 
     for (const subreddit of discovered) {
       try {
-        // Calculate aggregated metrics from postMetrics table
         const metrics = await calculateSubredditMetrics(subreddit.name);
 
-        if (metrics) {
-          await db
-            .update(redditCommunities)
-            .set({
-              averageUpvotes: metrics.avgUpvotes,
-              successProbability: Math.round(metrics.successRate * 100),
-              engagementRate: Math.round(metrics.avgComments),
-              bestPostingTimes: metrics.bestHours?.map((h: number) => `${h}:00`)
-            })
-            .where(eq(redditCommunities.id, subreddit.id));
-
-          logger.info(`✅ Enriched r/${subreddit.name} with user data`);
+        if (!metrics) {
+          logger.debug(`Skipping enrichment for r/${subreddit.name} due to missing metrics`);
+          continue;
         }
+
+        const updatePayload = buildCommunityMetricsUpdate(metrics);
+
+        await db
+          .update(redditCommunities)
+          .set(updatePayload)
+          .where(eq(redditCommunities.id, subreddit.id));
+
+        logger.info(`✅ Enriched r/${subreddit.name} with user data`);
 
       } catch (error) {
         logger.error(`Failed to enrich r/${subreddit.name}`, {
@@ -208,21 +216,76 @@ export async function enrichDiscoveredSubreddits(): Promise<void> {
   }
 }
 
+interface AggregatedSubredditMetrics {
+  avgUpvotes: number;
+  avgComments: number;
+  successRate: number | null;
+  totalPosts: number;
+  bestHours: number[];
+}
+
 /**
  * Helper to calculate subreddit metrics from all users' posts
  */
-async function calculateSubredditMetrics(subredditName: string) {
-  // This would use the analytics-service functions to calculate
-  // aggregated metrics across ALL users who posted to this subreddit
-  const { getGlobalSubredditMetrics } = await import('./analytics-service.js');
-  
+async function calculateSubredditMetrics(
+  subredditName: string
+): Promise<AggregatedSubredditMetrics | null> {
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
   try {
-    const metrics = await getGlobalSubredditMetrics(subredditName);
+    const [metricsRow] = await db
+      .select({
+        avgScore: sql<number>`COALESCE(AVG(${postMetrics.score}), 0)`,
+        avgComments: sql<number>`COALESCE(AVG(${postMetrics.comments}), 0)`,
+        totalPosts: sql<number>`COUNT(*)` 
+      })
+      .from(postMetrics)
+      .where(
+        and(
+          eq(postMetrics.subreddit, subredditName),
+          gte(postMetrics.postedAt, ninetyDaysAgo)
+        )
+      );
+
+    const avgUpvotes = Number(metricsRow?.avgScore ?? 0);
+    const avgComments = Number(metricsRow?.avgComments ?? 0);
+    const totalPosts = Number(metricsRow?.totalPosts ?? 0);
+
+    const [outcomeRow] = await db
+      .select({
+        totalAttempts: sql<number>`COUNT(*)`,
+        successfulPosts: sql<number>`SUM(CASE WHEN ${redditPostOutcomes.success} = true OR ${redditPostOutcomes.status} = 'completed' THEN 1 ELSE 0 END)` 
+      })
+      .from(redditPostOutcomes)
+      .where(
+        and(
+          eq(redditPostOutcomes.subreddit, subredditName),
+          gte(redditPostOutcomes.occurredAt, ninetyDaysAgo)
+        )
+      );
+
+    const totalAttempts = Number(outcomeRow?.totalAttempts ?? 0);
+    const successfulPosts = Number(outcomeRow?.successfulPosts ?? 0);
+    const successRate = totalAttempts > 0 ? successfulPosts / totalAttempts : null;
+
+    let bestHours: number[] = [];
+    try {
+      const { detectPeakHours } = await import('./analytics-service.js');
+      const peakAnalysis = await detectPeakHours(subredditName);
+      bestHours = peakAnalysis.peakHours.slice(0, 5);
+    } catch (peakError) {
+      logger.warn(`Failed to detect peak hours for r/${subredditName}`, {
+        error: peakError instanceof Error ? peakError.message : 'Unknown error'
+      });
+    }
+
     return {
-      avgUpvotes: metrics.avgUpvotes,
-      successRate: metrics.successRate,
-      avgComments: metrics.avgComments,
-      bestHours: [] as number[] // Would need to import detectPeakHours
+      avgUpvotes,
+      avgComments,
+      successRate,
+      totalPosts,
+      bestHours
     };
   } catch (error) {
     logger.error(`Failed to calculate metrics for r/${subredditName}`, {
@@ -230,4 +293,25 @@ async function calculateSubredditMetrics(subredditName: string) {
     });
     return null;
   }
+}
+
+function buildCommunityMetricsUpdate(metrics: AggregatedSubredditMetrics): {
+  averageUpvotes: number | null;
+  engagementRate: number;
+  successProbability: number | null;
+  bestPostingTimes: string[] | null;
+} {
+  const averageUpvotes = metrics.totalPosts > 0 ? Math.round(metrics.avgUpvotes) : null;
+  const engagementRate = metrics.totalPosts > 0 ? Math.max(0, Math.round(metrics.avgComments)) : 0;
+  const successProbability =
+    metrics.successRate === null ? null : Math.round(metrics.successRate * 100);
+  const bestPostingTimes =
+    metrics.bestHours.length > 0 ? metrics.bestHours.map(formatPostingHour) : null;
+
+  return { averageUpvotes, engagementRate, successProbability, bestPostingTimes };
+}
+
+function formatPostingHour(hour: number): string {
+  const normalizedHour = Number.isFinite(hour) ? Math.min(23, Math.max(0, Math.trunc(hour))) : 0;
+  return `${normalizedHour.toString().padStart(2, '0')}:00`;
 }

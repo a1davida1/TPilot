@@ -20,8 +20,8 @@ describe("resolveResponseText for @google/genai shapes", () => {
       ],
     };
     const flat = extractTextFromCandidates(payload);
-    expect(flat).toBe("A\nB\nC");
+    expect(flat).toBe("ABC");
     const t = await resolveResponseText(payload);
-    expect(t).toBe("A\nB\nC");
+    expect(t).toBe("ABC");
   });
 });

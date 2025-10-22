@@ -31,6 +31,7 @@ import {
   sanitizeFinalVariant,
 } from "./rankGuards.js";
 import type { Violation } from "./rankGuards.js";
+import { type CaptionPersonalizationContext } from "./personalization-context.js";
 
 const VARIANT_TARGET = 5;
 const VARIANT_RETRY_LIMIT = 4;
@@ -112,6 +113,8 @@ interface VariantParams {
   mandatoryTokens?: string[];
   promotionMode?: 'none' | 'subtle' | 'explicit';
   promotionalUrl?: string;
+  personalizationLines?: string[];
+  userBannedWords?: string[];
 }
 
 interface RankingParams {
@@ -295,6 +298,69 @@ function sanitizeToneExtras(extras: Record<string, string> | undefined): Record<
   return Object.fromEntries(entries);
 }
 
+function sanitizePersonalizationLines(lines: string[] | undefined): string[] | undefined {
+  if (!Array.isArray(lines) || lines.length === 0) {
+    return undefined;
+  }
+  const sanitized = Array.from(
+    new Set(
+      lines
+        .map(line => (typeof line === "string" ? line.replace(/[\r\n]+/g, " ").trim() : ""))
+        .filter((line): line is string => line.length > 0),
+    ),
+  );
+  return sanitized.length > 0 ? sanitized : undefined;
+}
+
+function sanitizeBannedWords(words: string[] | undefined): string[] {
+  if (!Array.isArray(words) || words.length === 0) {
+    return [];
+  }
+  const sanitized = Array.from(
+    new Set(
+      words
+        .map(word => (typeof word === "string" ? word.replace(/[\r\n]+/g, " ").trim() : ""))
+        .filter((word): word is string => word.length > 0),
+    ),
+  );
+  return sanitized;
+}
+
+function buildCustomBannedPattern(words: string[]): RegExp | null {
+  if (words.length === 0) {
+    return null;
+  }
+  const escaped = words
+    .map(word => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .filter(word => word.length > 0);
+  if (escaped.length === 0) {
+    return null;
+  }
+  return new RegExp(`\\b(?:${escaped.join("|")})\\b`, "i");
+}
+
+function variantContainsCustomBannedWord(
+  variant: { caption?: unknown; cta?: unknown; hashtags?: unknown; alt?: unknown },
+  pattern: RegExp | null,
+): boolean {
+  if (!pattern) {
+    return false;
+  }
+  if (typeof variant.caption === "string" && pattern.test(variant.caption)) {
+    return true;
+  }
+  if (typeof variant.cta === "string" && pattern.test(variant.cta)) {
+    return true;
+  }
+  if (typeof variant.alt === "string" && pattern.test(variant.alt)) {
+    return true;
+  }
+  if (Array.isArray(variant.hashtags)) {
+    return variant.hashtags.some(tag => typeof tag === "string" && pattern.test(tag));
+  }
+  return false;
+}
+
 interface DuplicatePromptConfig {
   captions: string[];
   mode?: "avoid" | "rewrite";
@@ -315,6 +381,7 @@ interface BuildPromptParams {
   mandatoryTokens?: string[];
   promotionMode?: 'none' | 'subtle' | 'explicit';
   promotionalUrl?: string;
+  personalizationLines?: string[];
 }
 
 function formatDuplicateHint(duplicates: DuplicatePromptConfig | undefined): string | undefined {
@@ -376,6 +443,7 @@ function buildVariantPrompt(params: BuildPromptParams): string {
     params.promotionalUrl && params.promotionMode === 'explicit' 
       ? `PROMOTION_URL: ${params.promotionalUrl}` 
       : undefined,
+    ...(params.personalizationLines ?? []),
     hintLine,
   ];
 
@@ -632,6 +700,7 @@ async function requestVariantsOnce(params: VariantParams & {
     mandatoryTokens: params.mandatoryTokens,
     promotionMode: params.promotionMode,
     promotionalUrl: params.promotionalUrl,
+    personalizationLines: params.personalizationLines,
   });
 
   const payload = [...params.promptBlocks, userPrompt].join("\n");
@@ -662,6 +731,10 @@ async function generateVariants(params: VariantParams): Promise<z.infer<typeof C
     toneLines.push(`MOOD: ${mood.trim()}`);
   }
   const toneExtras = toneOptions.toneExtras || {};
+  const personalizationLines = sanitizePersonalizationLines(params.personalizationLines);
+  const userBannedWords = sanitizeBannedWords(params.userBannedWords);
+  const userBannedPattern = buildCustomBannedPattern(userBannedWords);
+  let encounteredUserBannedWord = false;
   for (const [key, value] of Object.entries(toneExtras)) {
     if (typeof value === 'string' && value.trim().length > 0) {
       toneLines.push(`${key.toUpperCase()}: ${value.trim()}`);
@@ -695,9 +768,17 @@ async function generateVariants(params: VariantParams): Promise<z.infer<typeof C
   for (let attempt = 0; attempt < VARIANT_RETRY_LIMIT && collected.length < VARIANT_TARGET; attempt += 1) {
     const needed = VARIANT_TARGET - collected.length;
     const initialHint = params.hint ? sanitizeHintForRetry(params.hint) : undefined;
-    const baseHint = hasBannedWords
-      ? `${initialHint ?? ""} ${BANNED_WORDS_HINT}`.trim()
-      : initialHint;
+    const hintParts: string[] = [];
+    if (initialHint && initialHint.trim().length > 0) {
+      hintParts.push(initialHint.trim());
+    }
+    if (hasBannedWords) {
+      hintParts.push(BANNED_WORDS_HINT);
+    }
+    if (encounteredUserBannedWord && userBannedWords.length > 0) {
+      hintParts.push(`Avoid creator banned words: ${userBannedWords.join(', ')}`);
+    }
+    const baseHint = hintParts.length > 0 ? hintParts.join(' ').trim() : undefined;
     const retryHint = attempt === 0
       ? baseHint
       : buildRetryHint(baseHint, duplicatesForHint, needed);
@@ -715,6 +796,7 @@ async function generateVariants(params: VariantParams): Promise<z.infer<typeof C
         duplicates: duplicatesForHint.length > 0
           ? { captions: [duplicatesForHint[duplicatesForHint.length - 1]], mode: "rewrite" }
           : undefined,
+        personalizationLines,
       });
     } catch (error) {
       logger.warn("[OpenRouter] Variant request failed", { attempt: attempt + 1, error });
@@ -736,6 +818,11 @@ async function generateVariants(params: VariantParams): Promise<z.infer<typeof C
       const normalized = normalizeVariantFields(entry as Record<string, unknown>, params.platform, params.facts, params.existingCaption);
       if (variantContainsBannedWord(normalized)) {
         hasBannedWords = true;
+        continue;
+      }
+      if (variantContainsCustomBannedWord(normalized, userBannedPattern)) {
+        hasBannedWords = true;
+        encounteredUserBannedWord = true;
         continue;
       }
       if (
@@ -841,6 +928,7 @@ export async function pipeline(params: {
   existingCaption?: string;
   promotionMode?: 'none' | 'subtle' | 'explicit';
   promotionalUrl?: string;
+  personalization?: CaptionPersonalizationContext | null;
 }): Promise<CaptionResult> {
   logger.info("[OpenRouter] Starting pipeline", { 
     platform: params.platform, 
@@ -862,6 +950,8 @@ export async function pipeline(params: {
   const baseStyle = baseTone.style?.trim();
   const baseMood = baseTone.mood?.trim();
   const toneExtras = sanitizeToneExtras(params.toneExtras);
+  const personalizationLines = sanitizePersonalizationLines(params.personalization?.promptLines);
+  const userBannedWords = sanitizeBannedWords(params.personalization?.bannedWords);
 
   let facts: Record<string, unknown> = {};
   let variants: z.infer<typeof CaptionArray> = [];
@@ -890,6 +980,8 @@ export async function pipeline(params: {
         existingCaption: params.existingCaption,
         promotionMode: params.promotionMode,
         promotionalUrl: params.promotionalUrl,
+        personalizationLines,
+        userBannedWords,
       });
       logger.info("[OpenRouter] Variants generated", { variantCount: variants.length });
 
@@ -915,6 +1007,8 @@ export async function pipeline(params: {
             existingCaption: params.existingCaption,
             promotionMode: params.promotionMode,
             promotionalUrl: params.promotionalUrl,
+            personalizationLines,
+            userBannedWords,
           });
           ranked = await rankAndSelect(variants, { platform: params.platform, facts });
           coverage = ensureFactCoverage({ facts, caption: ranked.final.caption, alt: ranked.final.alt });
@@ -936,6 +1030,8 @@ export async function pipeline(params: {
           hint: `Fix: ${platformError}. Use IMAGE_FACTS nouns/colors/setting explicitly.`,
           mandatoryTokens: params.mandatoryTokens,
           existingCaption: params.existingCaption,
+          personalizationLines,
+          userBannedWords,
         });
         ranked = await rankAndSelect(variants, { platform: params.platform, facts });
       }

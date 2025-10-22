@@ -4,6 +4,7 @@ import { sign } from 'jsonwebtoken';
 import type { CaptionResult } from '@shared/types/caption';
 
 type PipelineModule = typeof import('@server/caption/openrouterPipeline');
+type PersonalizationModule = typeof import('@server/caption/personalization-context');
 
 jest.mock('@server/caption/openrouterPipeline', () => {
   const actual = jest.requireActual<PipelineModule>('@server/caption/openrouterPipeline');
@@ -13,8 +14,16 @@ jest.mock('@server/caption/openrouterPipeline', () => {
   };
 });
 
+jest.mock('@server/caption/personalization-context', () => ({
+  loadCaptionPersonalizationContext: jest.fn().mockResolvedValue(null),
+}));
+
 const pipeline = jest.requireMock('@server/caption/openrouterPipeline') as {
   pipeline: jest.MockedFunction<PipelineModule['pipeline']>;
+};
+
+const personalization = jest.requireMock('@server/caption/personalization-context') as {
+  loadCaptionPersonalizationContext: jest.MockedFunction<PersonalizationModule['loadCaptionPersonalizationContext']>;
 };
 
 function buildRequestBody(req: Parameters<Parameters<typeof testApiHandler>[0]['handler']>[0]): string {
@@ -78,11 +87,13 @@ describe('POST /api/ai/generate', () => {
       },
     });
 
+    expect(personalization.loadCaptionPersonalizationContext).toHaveBeenCalledWith(101);
     expect(pipeline.pipeline).toHaveBeenCalledWith({
       imageUrl: 'https://cdn.example.com/photo.jpg',
       platform: 'reddit',
       voice: 'confident',
       nsfw: false,
+      personalization: null,
     });
   });
 
@@ -121,6 +132,7 @@ describe('POST /api/ai/generate', () => {
     });
 
     expect(pipeline.pipeline).not.toHaveBeenCalled();
+    expect(personalization.loadCaptionPersonalizationContext).not.toHaveBeenCalled();
   });
 
   it('validates payload and returns 400 for bad input', async () => {
@@ -160,5 +172,6 @@ describe('POST /api/ai/generate', () => {
     });
 
     expect(pipeline.pipeline).not.toHaveBeenCalled();
+    expect(personalization.loadCaptionPersonalizationContext).not.toHaveBeenCalled();
   });
 });
