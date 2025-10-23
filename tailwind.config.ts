@@ -104,6 +104,16 @@ export default {
           "5": "hsl(var(--chart-5))",
         },
         
+        // Redis-inspired color scheme 🔥
+        redis: {
+          red: '#DC382C',
+          orange: '#FF6B35',
+          dark: '#0A0E27',
+          navy: '#1A1F3A',
+          slate: '#252B47',
+          gradient: 'linear-gradient(135deg, #DC382C 0%, #FF6B35 100%)',
+        },
+        
         // Sidebar colors
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
@@ -179,7 +189,7 @@ export default {
     tailwindcssAnimate,
     typography,
     // Custom plugin for accessibility utilities
-    function({ addUtilities }: unknown) {
+    function({ addUtilities }: { addUtilities: (utilities: Record<string, Record<string, string>>) => void }) {
       addUtilities({
         '.text-readable': {
           color: 'hsl(var(--foreground))',
@@ -197,6 +207,15 @@ export default {
         '.border-bubble': {
           'border-radius': '1.5rem',
           border: '1px solid hsl(var(--border))',
+        },
+        '.bg-redis-gradient': {
+          background: 'linear-gradient(135deg, #DC382C 0%, #FF6B35 100%)',
+        },
+        '.text-redis-gradient': {
+          background: 'linear-gradient(135deg, #DC382C 0%, #FF6B35 100%)',
+          '-webkit-background-clip': 'text',
+          'background-clip': 'text',
+          '-webkit-text-fill-color': 'transparent',
         },
       })
     }

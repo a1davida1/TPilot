@@ -31,6 +31,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { ProgressWithLabel } from '@/components/ui/progress-with-label';
 import {
   Select,
   SelectContent,
@@ -217,6 +218,9 @@ export default function QuickPostPage() {
   const [isEditingCaption, setIsEditingCaption] = useState(false);
   const [editedCaptionText, setEditedCaptionText] = useState('');
   const [captionBeingEdited, setCaptionBeingEdited] = useState<'A' | 'B' | null>(null);
+  const [captionProgress, setCaptionProgress] = useState(0);
+  const [protectionProgress, setProtectionProgress] = useState(0);
+  const [postingProgress, setPostingProgress] = useState(0);
 
   const toneOptions = useMemo(() => (nsfw ? NSFW_TONES : SFW_TONES), [nsfw]);
 
@@ -265,26 +269,41 @@ export default function QuickPostPage() {
 
   const generateCaptions = useMutation<GenerationApiResponse, Error, GenerationRequest>({
     mutationFn: async ({ url, service, tone, promotionMode: promoMode, nsfwFlag }) => {
-      const style = nsfwFlag ? 'explicit' : 'authentic';
-      const mood = nsfwFlag ? 'seductive' : 'engaging';
+      // Reset and start progress
+      setCaptionProgress(0);
+      const progressInterval = setInterval(() => {
+        setCaptionProgress(prev => Math.min(prev + 5, 90));
+      }, 200);
 
-      const response = await apiRequest('POST', '/api/caption/generate', {
-        imageUrl: url,
-        platform: service,
-        voice: tone,
-        style,
-        mood,
-        nsfw: nsfwFlag,
-        promotionMode: promoMode
-      });
+      try {
+        const style = nsfwFlag ? 'explicit' : 'authentic';
+        const mood = nsfwFlag ? 'seductive' : 'engaging';
 
-      if (!response.ok) {
-        console.error('[Quick Post] API response not ok:', response.status, response.statusText);
-        throw new Error(`API request failed: ${response.status}`);
+        const response = await apiRequest('POST', '/api/caption/generate', {
+          imageUrl: url,
+          platform: service,
+          voice: tone,
+          style,
+          mood,
+          nsfw: nsfwFlag,
+          promotionMode: promoMode
+        });
+
+        clearInterval(progressInterval);
+
+        if (!response.ok) {
+          console.error('[Quick Post] API response not ok:', response.status, response.statusText);
+          throw new Error(`API request failed: ${response.status}`);
+        }
+
+        setCaptionProgress(100);
+        const payload = await response.json() as GenerationApiResponse;
+        return payload;
+      } catch (error) {
+        clearInterval(progressInterval);
+        setCaptionProgress(0);
+        throw error;
       }
-
-      const payload = await response.json() as GenerationApiResponse;
-      return payload;
     },
     onSuccess: (result, variables) => {
       // Check what we received
@@ -393,6 +412,7 @@ export default function QuickPostPage() {
     },
     onError: (error) => {
       console.error('[Quick Post] Caption generation error:', error);
+      setCaptionProgress(0);
       toast({
         title: 'Caption generation failed',
         description: error instanceof Error ? error.message : 'Could not generate captions. Please adjust your settings and try again.',
@@ -406,8 +426,21 @@ export default function QuickPostPage() {
 
   const protectImage = useMutation<string, Error, string>({
     mutationFn: async (url: string) => {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      return `${url}?protected=true`;
+      setProtectionProgress(0);
+      const progressInterval = setInterval(() => {
+        setProtectionProgress(prev => Math.min(prev + 10, 90));
+      }, 150);
+
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        clearInterval(progressInterval);
+        setProtectionProgress(100);
+        return `${url}?protected=true`;
+      } catch (error) {
+        clearInterval(progressInterval);
+        setProtectionProgress(0);
+        throw error;
+      }
     },
     onSuccess: (protectedUrl) => {
       setProtectedImageUrl(protectedUrl);
@@ -415,6 +448,7 @@ export default function QuickPostPage() {
         title: 'Image protected',
         description: 'ImageShield protection applied automatically'
       });
+      setTimeout(() => setProtectionProgress(0), 1000);
     }
   });
 
@@ -462,48 +496,63 @@ export default function QuickPostPage() {
         throw new Error('Missing caption or subreddit');
       }
 
-      const response = await apiRequest('POST', '/api/reddit/post', {
-        title: truncateTitle(captionText),
-        subreddit: normalizedSubreddit,
-        imageUrl: protectedImageUrl || imageUrl,
-        text: captionText,
-        nsfw,
-        sendReplies: true
-      });
-
-      if (!response.ok) {
-        let errorMessage = `Failed to post to Reddit (${response.status})`;
-        try {
-          const errorData = await response.clone().json() as RedditPostErrorResponse;
-          const serverMessage = errorData?.error || errorData?.message || errorData?.reason;
-          const combinedReasons = Array.isArray(errorData?.reasons)
-            ? errorData.reasons.filter((value): value is string => Boolean(value?.trim()))
-            : [];
-          if (serverMessage) {
-            errorMessage = serverMessage;
-          } else if (combinedReasons.length > 0) {
-            errorMessage = combinedReasons.join(' • ');
-          }
-        } catch {
-          try {
-            const fallbackText = await response.text();
-            if (fallbackText) {
-              errorMessage = fallbackText;
-            }
-          } catch {
-            // ignore parsing errors
-          }
-        }
-        throw new Error(errorMessage);
-      }
+      setPostingProgress(0);
+      const progressInterval = setInterval(() => {
+        setPostingProgress(prev => Math.min(prev + 8, 90));
+      }, 200);
 
       try {
-        return await response.json() as RedditPostSuccessResponse;
-      } catch {
-        return { success: true } satisfies RedditPostSuccessResponse;
+        const response = await apiRequest('POST', '/api/reddit/post', {
+          title: truncateTitle(captionText),
+          subreddit: normalizedSubreddit,
+          imageUrl: protectedImageUrl || imageUrl,
+          text: captionText,
+          nsfw,
+          sendReplies: true
+        });
+
+        clearInterval(progressInterval);
+
+        if (!response.ok) {
+          let errorMessage = `Failed to post to Reddit (${response.status})`;
+          try {
+            const errorData = await response.clone().json() as RedditPostErrorResponse;
+            const serverMessage = errorData?.error || errorData?.message || errorData?.reason;
+            const combinedReasons = Array.isArray(errorData?.reasons)
+              ? errorData.reasons.filter((value): value is string => Boolean(value?.trim()))
+              : [];
+            if (serverMessage) {
+              errorMessage = serverMessage;
+            } else if (combinedReasons.length > 0) {
+              errorMessage = combinedReasons.join(' • ');
+            }
+          } catch {
+            try {
+              const fallbackText = await response.text();
+              if (fallbackText) {
+                errorMessage = fallbackText;
+              }
+            } catch {
+              // ignore parsing errors
+            }
+          }
+          throw new Error(errorMessage);
+        }
+
+        setPostingProgress(100);
+        try {
+          return await response.json() as RedditPostSuccessResponse;
+        } catch {
+          return { success: true } satisfies RedditPostSuccessResponse;
+        }
+      } catch (error) {
+        clearInterval(progressInterval);
+        setPostingProgress(0);
+        throw error;
       }
     },
     onSuccess: (result) => {
+      setTimeout(() => setPostingProgress(0), 1000);
       setPosted(true);
       const postUrl = result?.url;
       const warnings = Array.isArray(result?.warnings)
@@ -523,6 +572,7 @@ export default function QuickPostPage() {
       });
     },
     onError: (error: unknown) => {
+      setPostingProgress(0);
       toast({
         title: 'Post failed',
         description: error instanceof Error ? error.message : 'Could not post to Reddit',
@@ -836,6 +886,28 @@ export default function QuickPostPage() {
                       <Loader2 className="h-4 w-4 animate-spin text-purple-500" />
                     )}
                   </div>
+
+                  {/* Caption Generation Progress */}
+                  {generateCaptions.isPending && captionProgress > 0 && (
+                    <div className="mb-4">
+                      <ProgressWithLabel 
+                        value={captionProgress} 
+                        label="Generating captions..."
+                        className="mb-2"
+                      />
+                    </div>
+                  )}
+
+                  {/* Image Protection Progress */}
+                  {protectImage.isPending && protectionProgress > 0 && (
+                    <div className="mb-4">
+                      <ProgressWithLabel 
+                        value={protectionProgress} 
+                        label="Applying ImageShield protection..."
+                        className="mb-2"
+                      />
+                    </div>
+                  )}
 
                   {captionOptions.length > 0 ? (
                     <>
@@ -1173,6 +1245,17 @@ export default function QuickPostPage() {
 
                     {confirmedCaptionId && (
                       <div className="space-y-3">
+                        {/* Posting Progress */}
+                        {postToReddit.isPending && postingProgress > 0 && (
+                          <div className="mb-4">
+                            <ProgressWithLabel 
+                              value={postingProgress} 
+                              label="Posting to Reddit..."
+                              className="mb-2"
+                            />
+                          </div>
+                        )}
+
                         <div className="flex flex-wrap items-center gap-2">
                           <Button
                             variant="outline"
