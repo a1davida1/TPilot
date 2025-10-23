@@ -71,7 +71,7 @@ export const envSchema = z
   USE_PG_QUEUE: z.coerce.boolean().optional(),
   
   // Rate Limiting (Phase 5)
-  MAX_POSTS_PER_SUBREDDIT_24H: z.coerce.number().default(1),
+  MAX_POSTS_PER_SUBREDDIT_24H: z.coerce.number().default(10), // Loosened for testing
   
   // Daily Generation Limits by Tier
   DAILY_GENERATIONS_FREE: z.coerce.number().default(5),
@@ -200,7 +200,7 @@ try {
       WATERMARK_TEXT: 'ThottoPilot',
       WATERMARK_OPACITY: 0.18,
       USE_PG_QUEUE: process.env.USE_PG_QUEUE === 'true' || !process.env.REDIS_URL, // Auto-enable when no Redis or explicitly set
-      MAX_POSTS_PER_SUBREDDIT_24H: 1,
+      MAX_POSTS_PER_SUBREDDIT_24H: 10, // Loosened for testing
       DAILY_GENERATIONS_FREE: 5,
       DAILY_GENERATIONS_STARTER: 50,
       DAILY_GENERATIONS_PRO: -1,

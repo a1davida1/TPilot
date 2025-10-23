@@ -19,8 +19,8 @@ logger.info('Using memory store for rate limiting (Redis disabled for beta)');
 const TIER_LIMITS = {
   free: {
     default: 60,      // 1 per second
-    posts: 3,         // 3 posts per day (checked differently)
-    captions: 5,      // 5 captions per day
+    posts: 50,        // 50 posts per day (loosened for testing)
+    captions: 100,    // 100 captions per day (loosened for testing)
     api: 100,         // 100 API calls per minute
   },
   starter: {
