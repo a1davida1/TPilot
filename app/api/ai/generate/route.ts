@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z, ZodError } from 'zod';
 import { eq } from 'drizzle-orm';
+import pLimit from 'p-limit';
 
 import { pipeline } from '@server/caption/openrouterPipeline';
 import { loadCaptionPersonalizationContext } from '@server/caption/personalization-context';
@@ -85,6 +86,7 @@ const rateLimits: Record<TierKey, { windowMs: number; max: number }> = {
 };
 
 const rateLimiterStore = new Map<string, RateLimitState>();
+const TARGET_CONCURRENCY = 3;
 
 const toneHintPresets: Record<ToneToggle, { key: string; value: string }> = {
   story: {
@@ -190,6 +192,26 @@ function resolveVoice(persona: Persona | undefined, fallback: string | undefined
   return nsfw ? DEFAULT_NSFW_VOICE : DEFAULT_SFW_VOICE;
 }
 
+interface TargetVariantResponse {
+  variantId: number;
+  subreddit: string;
+  persona: string;
+  tones: string[];
+  suggestion: {
+    caption: string;
+    alt?: string;
+    hashtags?: string[];
+    cta?: string;
+    mood?: string;
+    style?: string;
+    nsfw?: boolean;
+    titles: string[];
+  };
+  ranked: unknown;
+  variants: unknown;
+  createdAt: string;
+}
+
 export async function POST(request: Request) {
   try {
     setAuthRequestContext(request);
@@ -206,82 +228,96 @@ export async function POST(request: Request) {
 
     const personalization = await loadCaptionPersonalizationContext(userId);
 
-    const responses: Array<{
-      variantId: number;
-      subreddit: string;
-      persona: string;
-      tones: string[];
-      suggestion: {
-        caption: string;
-        alt?: string;
-        hashtags?: string[];
-        cta?: string;
-        mood?: string;
-        style?: string;
-        nsfw?: boolean;
-        titles: string[];
-      };
-      ranked: unknown;
-      variants: unknown;
-      createdAt: string;
-    }> = [];
+    const limit = pLimit(TARGET_CONCURRENCY);
 
-    for (const target of validated.targets) {
-      const voice = resolveVoice(target.persona, validated.voice, validated.nsfw);
-      const toneExtras = resolveToneExtras(target.tones);
+    const tasks = validated.targets.map((target, index) =>
+      limit(async () => {
+        const voice = resolveVoice(target.persona, validated.voice, validated.nsfw);
+        const toneExtras = resolveToneExtras(target.tones);
 
-      const result = await pipeline({
-        imageUrl: validated.imageUrl,
-        platform: 'reddit',
-        voice,
-        style: validated.style,
-        mood: validated.mood,
-        nsfw: validated.nsfw ?? false,
-        toneExtras,
-        personalization,
-      });
-
-      const [row] = await db
-        .insert(captionVariants)
-        .values({
-          userId,
+        const result = await pipeline({
           imageUrl: validated.imageUrl,
-          imageId: validated.imageId ?? null,
-          subreddit: target.subreddit,
-          persona: voice,
-          toneHints: target.tones ?? [],
-          finalCaption: result.final.caption,
-          finalAlt: result.final.alt ?? null,
-          finalCta: result.final.cta ?? null,
-          hashtags: result.final.hashtags ?? null,
-          rankedMetadata: result.ranked,
-          variants: result.variants,
-        })
-        .returning();
+          platform: 'reddit',
+          voice,
+          style: validated.style,
+          mood: validated.mood,
+          nsfw: validated.nsfw ?? false,
+          toneExtras,
+          personalization,
+        });
 
-      const createdAtIso = row?.createdAt instanceof Date ? row.createdAt.toISOString() : String(row?.createdAt ?? new Date().toISOString());
-      const tones = Array.isArray(row?.toneHints) ? (row?.toneHints as string[]) : target.tones ?? [];
+        const [row] = await db
+          .insert(captionVariants)
+          .values({
+            userId,
+            imageUrl: validated.imageUrl,
+            imageId: validated.imageId ?? null,
+            subreddit: target.subreddit,
+            persona: voice,
+            toneHints: target.tones ?? [],
+            finalCaption: result.final.caption,
+            finalAlt: result.final.alt ?? null,
+            finalCta: result.final.cta ?? null,
+            hashtags: result.final.hashtags ?? null,
+            rankedMetadata: result.ranked,
+            variants: result.variants,
+          })
+          .returning();
 
-      responses.push({
-        variantId: row?.id ?? 0,
-        subreddit: row?.subreddit ?? target.subreddit,
-        persona: row?.persona ?? voice,
-        tones,
-        suggestion: {
-          caption: result.final.caption,
-          alt: result.final.alt ?? undefined,
-          hashtags: result.final.hashtags ?? undefined,
-          cta: result.final.cta ?? undefined,
-          mood: result.final.mood ?? undefined,
-          style: result.final.style ?? undefined,
-          nsfw: result.final.nsfw ?? undefined,
-          titles: result.final.titles ?? result.titles ?? [],
-        },
-        ranked: result.ranked,
-        variants: result.variants,
-        createdAt: createdAtIso,
-      });
+        const createdAtIso = row?.createdAt instanceof Date ? row.createdAt.toISOString() : String(row?.createdAt ?? new Date().toISOString());
+        const tones = Array.isArray(row?.toneHints) ? (row?.toneHints as string[]) : target.tones ?? [];
+
+        return {
+          index,
+          response: {
+            variantId: row?.id ?? 0,
+            subreddit: row?.subreddit ?? target.subreddit,
+            persona: row?.persona ?? voice,
+            tones,
+            suggestion: {
+              caption: result.final.caption,
+              alt: result.final.alt ?? undefined,
+              hashtags: result.final.hashtags ?? undefined,
+              cta: result.final.cta ?? undefined,
+              mood: result.final.mood ?? undefined,
+              style: result.final.style ?? undefined,
+              nsfw: result.final.nsfw ?? undefined,
+              titles: result.final.titles ?? result.titles ?? [],
+            },
+            ranked: result.ranked,
+            variants: result.variants,
+            createdAt: createdAtIso,
+          },
+        };
+      }),
+    );
+
+    const settledResults = await Promise.allSettled(tasks);
+
+    const orderedResponses: TargetVariantResponse[] = new Array(validated.targets.length);
+    const errors: unknown[] = [];
+
+    for (const settled of settledResults) {
+      if (settled.status === 'fulfilled') {
+        orderedResponses[settled.value.index] = settled.value.response;
+      } else {
+        errors.push(settled.reason);
+      }
     }
+
+    if (errors.length > 0) {
+      if (errors.length === 1) {
+        throw errors[0];
+      }
+      throw new AggregateError(errors, 'Failed to generate caption variants for all targets');
+    }
+
+    const responses = orderedResponses.map((entry, idx) => {
+      if (!entry) {
+        throw new Error(`Missing caption variant result for target index ${idx}`);
+      }
+      return entry;
+    });
 
     return NextResponse.json({
       success: true,
