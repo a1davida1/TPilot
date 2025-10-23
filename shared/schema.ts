@@ -124,6 +124,28 @@ export const contentGenerations = pgTable("content_generations", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const captionVariants = pgTable("caption_variants", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  imageUrl: text("image_url").notNull(),
+  imageId: integer("image_id").references(() => userImages.id, { onDelete: "set null" }),
+  subreddit: varchar("subreddit", { length: 100 }).notNull(),
+  persona: varchar("persona", { length: 120 }),
+  toneHints: jsonb("tone_hints").$type<string[]>().notNull().default([]),
+  finalCaption: text("final_caption").notNull(),
+  finalAlt: text("final_alt"),
+  finalCta: text("final_cta"),
+  hashtags: text("hashtags").array(),
+  rankedMetadata: jsonb("ranked_metadata"),
+  variants: jsonb("variants").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("caption_variants_user_idx").on(table.userId),
+  subredditIdx: index("caption_variants_subreddit_idx").on(table.subreddit),
+  imageIdx: index("caption_variants_image_idx").on(table.imageId),
+}));
+
 export const userSamples = pgTable("user_samples", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
@@ -851,6 +873,12 @@ export const insertPostDuplicateSchema = createInsertSchema(postDuplicates);
 // Insert schemas for existing tables
 export const insertUserSchema = createInsertSchema(users);
 export const insertContentGenerationSchema = createInsertSchema(contentGenerations);
+export const insertCaptionVariantSchema = createInsertSchema(captionVariants, {
+  toneHints: z.array(z.string()).optional(),
+  hashtags: z.array(z.string()).optional(),
+  rankedMetadata: z.record(z.string(), z.unknown()).optional(),
+  variants: z.unknown(),
+});
 export const insertUserSampleSchema = createInsertSchema(userSamples);
 export const insertUserPreferenceSchema = createInsertSchema(userPreferences);
 export const insertOnboardingStateSchema = z.object({
@@ -878,6 +906,8 @@ export type VerificationToken = typeof verificationTokens.$inferSelect;
 export type InsertVerificationToken = z.infer<typeof insertVerificationTokenSchema>;
 
 export type ContentGeneration = typeof contentGenerations.$inferSelect;
+export type CaptionVariant = typeof captionVariants.$inferSelect;
+export type InsertCaptionVariant = typeof captionVariants.$inferInsert;
 export type InsertContentGeneration = z.infer<typeof insertContentGenerationSchema>;
 
 export type UserSample = typeof userSamples.$inferSelect;

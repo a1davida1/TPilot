@@ -1048,6 +1048,28 @@ export class RedditManager {
     }
   }
 
+  async applyFlair(postId: string | undefined, options: { flairId?: string | null; flairText?: string | null }): Promise<void> {
+    if (!postId || (!options.flairId && !options.flairText)) {
+      return;
+    }
+
+    try {
+      const reddit = await this.initReddit();
+      const submission = (reddit as unknown as {
+        getSubmission(id: string): {
+          selectFlair(input: { flair_template_id?: string; text?: string }): Promise<void>;
+        };
+      }).getSubmission(postId);
+
+      await submission.selectFlair({
+        flair_template_id: options.flairId ?? undefined,
+        text: options.flairText ?? undefined,
+      });
+    } catch (error) {
+      logger.warn('Failed to apply flair to Reddit submission', { postId, error });
+    }
+  }
+
   /**
    * Submit gallery post with multiple images
    */

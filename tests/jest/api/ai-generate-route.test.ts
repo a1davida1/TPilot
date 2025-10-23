@@ -5,6 +5,22 @@ import type { CaptionResult } from '@shared/types/caption';
 
 type PipelineModule = typeof import('@server/caption/openrouterPipeline');
 type PersonalizationModule = typeof import('@server/caption/personalization-context');
+type DbModule = typeof import('@server/db');
+
+const selectLimitMock = jest.fn();
+const selectWhereMock = jest.fn();
+const selectFromMock = jest.fn();
+const selectMock = jest.fn();
+const insertReturningMock = jest.fn();
+const insertValuesMock = jest.fn();
+const insertMock = jest.fn();
+
+jest.mock('@server/db', () => ({
+  db: {
+    select: selectMock,
+    insert: insertMock,
+  },
+}) satisfies DbModule);
 
 jest.mock('@server/caption/openrouterPipeline', () => {
   const actual = jest.requireActual<PipelineModule>('@server/caption/openrouterPipeline');
