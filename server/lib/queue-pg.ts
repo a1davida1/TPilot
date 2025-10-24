@@ -6,17 +6,17 @@
 import { db } from '../db';
 import { queueJobs } from '@shared/schema';
 import { eq, and, gte, sql } from 'drizzle-orm';
-import type { IQueue, QueueJobHandler, QueueJobOptions, QueueFailureStats } from './queue-interface';
+import type { IQueue, QueueJobHandler, QueueJobOptions, QueueFailureStats, QueueProcessOptions } from './queue-interface';
 import { logger } from '../bootstrap/logger.js';
 
-interface ProcessorConfig<T = unknown> {
-  handler: QueueJobHandler<T>;
+interface ProcessorConfig {
+  handler: QueueJobHandler<unknown>;
   concurrency: number;
   active: boolean;
 }
 
 export class PgQueue implements IQueue {
-  private processors = new Map<string, ProcessorConfig<unknown>>();
+  private processors = new Map<string, ProcessorConfig>();
   private polling = false;
   private pollInterval = 2000; // 2 seconds
   private pollTimer?: NodeJS.Timeout;
@@ -55,11 +55,20 @@ export class PgQueue implements IQueue {
   async process<T = unknown>(
     queueName: string,
     handler: QueueJobHandler<T>,
-    options: { concurrency?: number } = {}
+    options: QueueProcessOptions<T> = {}
   ): Promise<void> {
+    const { concurrency = 1, validatePayload } = options;
+    const wrappedHandler: QueueJobHandler<unknown> = async (payload, jobId) => {
+      if (validatePayload && !validatePayload(payload)) {
+        throw new Error(`Invalid payload received for queue ${queueName}`);
+      }
+
+      await handler(payload as T, jobId);
+    };
+
     this.processors.set(queueName, {
-      handler: handler as QueueJobHandler<unknown>,
-      concurrency: options.concurrency || 1,
+      handler: wrappedHandler,
+      concurrency,
       active: true,
     });
   }
@@ -160,7 +169,7 @@ export class PgQueue implements IQueue {
       );
   }
 
-  private async processQueueJobs(queueName: string, processor: ProcessorConfig<unknown>): Promise<void> {
+  private async processQueueJobs(queueName: string, processor: ProcessorConfig): Promise<void> {
     // Use PostgreSQL FOR UPDATE SKIP LOCKED for job claiming
     const jobs = await db
       .select()

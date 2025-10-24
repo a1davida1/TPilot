@@ -163,7 +163,7 @@ export function validateEnvironment() {
     }
   }
 
-  const env = result.data;
+  const env = result.success ? result.data : undefined;
   const usePgQueue = parseBoolean(process.env.USE_PG_QUEUE);
 
   if (env?.NODE_ENV === 'production' && !env?.REDIS_URL && !usePgQueue) {

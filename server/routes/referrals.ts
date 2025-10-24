@@ -156,16 +156,18 @@ referralRouter.post('/apply', authenticateToken(false), async (req: AuthRequest,
         });
       }
 
+      const applicantEmail = sanitizedApplicant.email;
+
       const [emailOwner] = await db
         .select({ id: users.id })
         .from(users)
-        .where(eq(users.email, sanitizedApplicant.email))
+        .where(eq(users.email, applicantEmail))
         .limit(1);
 
       if (emailOwner) {
         logger.warn('Anonymous referral attempt for existing account', {
           referralCode: normalizedCode,
-          applicantEmail: sanitizedApplicant.email,
+          applicantEmail,
         });
 
         return res.status(401).json({

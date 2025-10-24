@@ -48,8 +48,8 @@ export const safeArray = <T>(value: unknown, fallback: T[] = []): T[] => {
 };
 
 // Safe object validation
-export const safeObject = <T>(value: unknown, fallback: T): T => {
-  return value && typeof value === 'object' && !Array.isArray(value) ? value as T : fallback;
+export const safeObject = <T extends Record<string, unknown>>(value: unknown, fallback: T): T => {
+  return isRecord(value) ? value as T : fallback;
 };
 
 // Safe percentage formatting

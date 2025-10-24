@@ -5,7 +5,7 @@
 
 import { Queue, Worker, QueueEvents } from 'bullmq';
 import IORedis from 'ioredis';
-import type { IQueue, QueueJobHandler, QueueJobOptions, QueueFailureStats } from './queue-interface';
+import type { IQueue, QueueJobHandler, QueueJobOptions, QueueFailureStats, QueueProcessOptions } from './queue-interface';
 import { logger } from '../bootstrap/logger.js';
 
 export class RedisBullQueue implements IQueue {
@@ -83,20 +83,26 @@ export class RedisBullQueue implements IQueue {
   async process<T = unknown>(
     queueName: string,
     handler: QueueJobHandler<T>,
-    options: { concurrency?: number } = {}
+    options: QueueProcessOptions<T> = {}
   ): Promise<void> {
     if (!this.redis) {
       throw new Error('Redis connection not initialized');
     }
-    
+
+    const { concurrency = 1, validatePayload } = options;
+
     const worker = new Worker(
       queueName,
       async (job) => {
-        await handler(job.data, job.id ?? '');
+        const payload = job.data as unknown;
+        if (validatePayload && !validatePayload(payload)) {
+          throw new Error(`Invalid payload received for queue ${queueName}`);
+        }
+        await handler(payload as T, job.id ?? '');
       },
       {
         connection: this.redis,
-        concurrency: options.concurrency || 1,
+        concurrency,
       }
     );
 

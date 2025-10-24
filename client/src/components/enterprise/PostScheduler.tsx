@@ -15,8 +15,8 @@ interface PostJob {
   id: number;
   subreddit: string;
   titleFinal: string;
-  bodyFinal: string;
-  mediaKey?: string;
+  bodyFinal?: string | null;
+  mediaKey?: string | null;
   scheduledAt: string;
   status: 'pending' | 'sent' | 'failed';
   resultJson?: unknown;
@@ -26,6 +26,61 @@ interface PostJob {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
+
+const isValidStatus = (value: unknown): value is PostJob['status'] =>
+  value === 'pending' || value === 'sent' || value === 'failed';
+
+function parsePostJobs(data: unknown): PostJob[] {
+  if (!Array.isArray(data)) {
+    throw new Error('Invalid scheduled posts response format');
+  }
+
+  return data.reduce<PostJob[]>((posts, item) => {
+    if (!isRecord(item)) {
+      return posts;
+    }
+
+    const {
+      id,
+      subreddit,
+      titleFinal,
+      bodyFinal,
+      mediaKey,
+      scheduledAt,
+      status,
+      resultJson,
+      createdAt,
+      updatedAt,
+    } = item;
+
+    if (
+      typeof id !== 'number' ||
+      typeof subreddit !== 'string' ||
+      typeof titleFinal !== 'string' ||
+      typeof scheduledAt !== 'string' ||
+      !isValidStatus(status) ||
+      typeof createdAt !== 'string' ||
+      typeof updatedAt !== 'string'
+    ) {
+      return posts;
+    }
+
+    posts.push({
+      id,
+      subreddit,
+      titleFinal,
+      bodyFinal: typeof bodyFinal === 'string' ? bodyFinal : null,
+      mediaKey: typeof mediaKey === 'string' ? mediaKey : null,
+      scheduledAt,
+      status,
+      resultJson,
+      createdAt,
+      updatedAt,
+    });
+
+    return posts;
+  }, []);
+}
 
 interface SchedulePostForm {
   subreddit: string;
@@ -59,8 +114,13 @@ export default function PostScheduler() {
   const { toast } = useToast();
 
   // Fetch scheduled posts
-  const { data: scheduledPosts = [], isLoading } = useQuery({
+  const { data: scheduledPosts = [], isLoading } = useQuery<PostJob[]>({
     queryKey: ['/api/posts/scheduled'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/posts/scheduled');
+      const payload = await response.json();
+      return parsePostJobs(payload);
+    },
   });
 
   // Schedule post mutation
@@ -285,14 +345,14 @@ export default function PostScheduler() {
                 </div>
               ))}
             </div>
-          ) : (scheduledPosts as PostJob[])?.length === 0 ? (
+          ) : scheduledPosts.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <CalendarIcon className="mx-auto h-12 w-12 mb-4 opacity-50" />
               <p>No scheduled posts yet. Schedule your first post to get started!</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {(scheduledPosts as PostJob[])?.map((post: PostJob) => {
+              {scheduledPosts.map((post) => {
                 const { date, time } = formatDateTime(post.scheduledAt);
                 const resultData = isRecord(post.resultJson) ? post.resultJson : null;
                 const resultUrl = typeof resultData?.url === 'string' ? resultData.url : undefined;

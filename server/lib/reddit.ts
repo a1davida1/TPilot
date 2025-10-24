@@ -13,6 +13,9 @@ import { logger } from '../bootstrap/logger.js';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
 interface NormalizedSubredditRules {
   linkPolicy?: 'no-link' | 'one-link' | 'ok';
   cooldownMinutes?: number;
@@ -1727,26 +1730,26 @@ export class RedditManager {
         };
       }
 
-      const data = await response.json() as {
-        data: {
-          children: Array<{
-            data: {
-              id: string;
-              created_utc: number;
-              permalink: string;
-              title: string;
-              subreddit: string;
-            };
-          }>;
-        };
-      };
+      const rawResponse: unknown = await response.json();
+      const children = Array.isArray((rawResponse as { data?: { children?: unknown } }).data?.children)
+        ? (rawResponse as { data: { children: unknown[] } }).data.children
+        : [];
 
-      const submissions: ShadowbanSubmissionSummary[] = data.data.children.map(child => ({
-        id: child.data.id,
-        subreddit: child.data.subreddit,
-        title: child.data.title,
-        created: child.data.created_utc
-      }));
+      const submissions: ShadowbanSubmissionSummary[] = children
+        .map((child) => (isRecord(child) ? (child as { data?: unknown }).data : undefined))
+        .filter((child): child is Record<string, unknown> => isRecord(child))
+        .filter((child): child is { id: string; subreddit: string; title: string; created_utc: number } =>
+          typeof child.id === 'string' &&
+          typeof child.subreddit === 'string' &&
+          typeof child.title === 'string' &&
+          typeof child.created_utc === 'number'
+        )
+        .map((child) => ({
+          id: child.id,
+          subreddit: child.subreddit,
+          title: child.title,
+          created: child.created_utc,
+        }));
 
       return { submissions };
 

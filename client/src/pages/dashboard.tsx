@@ -11,6 +11,8 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { ModernDashboard } from "@/components/modern-dashboard";
 import { DashboardLoading } from "@/app/(dashboard)/loading";
+type ModernDashboardUser = Parameters<typeof ModernDashboard>[0]['user'];
+
 import { DashboardErrorBoundary } from "@/app/(dashboard)/error-boundary";
 import { useToast } from "@/hooks/use-toast";
 import { type User } from "@shared/schema.js";
@@ -154,21 +156,27 @@ export default function Dashboard() {
   const userTier = resolveUserTier(user);
   
   // Check Reddit connection status
-  const typedUser = user as DashboardUser;
+  const typedUser = user as DashboardUser | undefined;
   const isRedditConnected = Boolean(
     typedUser?.redditUsername ||
       typedUser?.reddit_username ||
       typedUser?.provider
   );
   
+  const sanitizedUser: ModernDashboardUser = user
+    ? {
+        id: user.id,
+        username: user.username || user.email || 'User',
+        email: user.email ?? undefined,
+        tier: user.tier ?? undefined,
+        isVerified: user.emailVerified ?? undefined,
+      }
+    : undefined;
+
   return (
     <DashboardErrorBoundary>
       <ModernDashboard
-        user={user ? {
-          ...user,
-          username: user.username || user.email || 'User',
-          email: user.email ?? undefined,
-        } : undefined}
+        user={sanitizedUser}
         userTier={userTier}
         isAdmin={isAdmin}
         isRedditConnected={isRedditConnected}

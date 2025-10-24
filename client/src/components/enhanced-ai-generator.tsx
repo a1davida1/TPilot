@@ -26,33 +26,14 @@ interface GenerateContentVariables {
 }
 
 // Assuming GeneratedContent is defined elsewhere and matches the structure of UnifiedAIResponse or similar
-interface GeneratedContent {
+type PhotoInstructions = ContentGeneration["photoInstructions"];
+
+interface GeneratedContent extends Partial<Omit<ContentGeneration, 'photoInstructions' | 'titles'>> {
   titles?: string[] | string;
-  content?: string;
-  photoInstructions?:
-    | {
-        lighting: string;
-        cameraAngle: string;
-        composition: string;
-        styling: string;
-        mood: string;
-        technicalSettings: string;
-      }
-    | string;
+  photoInstructions?: PhotoInstructions | Record<string, unknown> | string;
   hashtags?: string[];
   caption?: string;
-  id?: number;
-  userId?: number;
-  platform?: string;
-  style?: string;
-  theme?: string;
-  prompt?: string;
-  subreddit?: string;
-  allowsPromotion?: boolean;
-  generationType?: string;
-  createdAt?: Date | string;
 }
-
 
 const photoInstructionFields: Array<{ key: keyof ContentGeneration["photoInstructions"]; label: string }> = [
   { key: "lighting", label: "Lighting" },
@@ -62,6 +43,26 @@ const photoInstructionFields: Array<{ key: keyof ContentGeneration["photoInstruc
   { key: "mood", label: "Mood" },
   { key: "technicalSettings", label: "Technical Settings" }
 ];
+
+const normalizePhotoInstructions = (instructions: GeneratedContent['photoInstructions']): Partial<PhotoInstructions> => {
+  if (!instructions || typeof instructions === 'string') {
+    return {};
+  }
+
+  if (typeof instructions !== 'object' || Array.isArray(instructions)) {
+    return {};
+  }
+
+  const result: Partial<PhotoInstructions> = {};
+  for (const field of photoInstructionFields) {
+    const value = (instructions as Record<string, unknown>)[field.key];
+    if (typeof value === 'string') {
+      result[field.key] = value;
+    }
+  }
+
+  return result;
+};
 
 const photoTypes = [
   { id: 'selfie', label: 'Selfie', description: 'Casual self-portrait' },
@@ -99,6 +100,9 @@ export function EnhancedAIGenerator({
   const [customPrompt, setCustomPrompt] = useState<string>("");
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   // Copy feedback state with timeout tracking
+  const photoInstructionValues: Partial<PhotoInstructions> = generatedContent
+    ? normalizePhotoInstructions(generatedContent.photoInstructions)
+    : {};
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<"login" | "signup">("signup");
@@ -645,11 +649,7 @@ export function EnhancedAIGenerator({
                   {photoInstructionFields.map(({ key, label }) => (
                     <div key={key} className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1">
                       <dt className="font-semibold text-orange-700">{label}</dt>
-                      <dd className="sm:text-right">
-                        {typeof generatedContent.photoInstructions === 'object' && generatedContent.photoInstructions
-                          ? (generatedContent.photoInstructions as Record<string, string | undefined>)[key] ?? ''
-                          : ''}
-                      </dd>
+                      <dd className="sm:text-right">{photoInstructionValues[key] ?? ''}</dd>
                     </div>
                   ))}
                 </dl>
@@ -658,7 +658,7 @@ export function EnhancedAIGenerator({
                   size="sm"
                   onClick={() =>
                     copyToClipboard(
-                      JSON.stringify(generatedContent.photoInstructions ?? {}, null, 2),
+                      JSON.stringify(photoInstructionValues, null, 2),
                       "Photo Instructions"
                     )
                   }
