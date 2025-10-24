@@ -22,6 +22,11 @@ export interface QueueFailureStats {
   windowMinutes: number;
 }
 
+export interface QueueProcessOptions<T = unknown> {
+  concurrency?: number;
+  validatePayload?: (payload: unknown) => payload is T;
+}
+
 export interface IQueue {
   /**
    * Add a job to the queue
@@ -38,7 +43,7 @@ export interface IQueue {
   process<T = unknown>(
     queueName: string,
     handler: QueueJobHandler<T>,
-    options?: { concurrency?: number }
+    options?: QueueProcessOptions<T>
   ): Promise<void>;
 
   /**

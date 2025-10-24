@@ -66,23 +66,23 @@ async function detectNSFW(image: Buffer): Promise<boolean> {
       return response;
     });
     const data: unknown = await res.json();
-    if (Array.isArray(data)) {
-      const nsfwScore = data
-        .filter(
-          (d: unknown): d is { label: string; score: number } =>
-            typeof d === 'object' &&
-            d !== null &&
-            typeof (d as { label?: unknown }).label === 'string' &&
-            typeof (d as { score?: unknown }).score === 'number',
-        )
-        .find((d) => d.label.toLowerCase() === 'nsfw')?.score;
-      return (nsfwScore ?? 0) > 0.5;
+    if (!Array.isArray(data)) {
+      return false;
     }
+
+    const nsfwScore = data
+      .filter(
+        (d: unknown): d is { label: string; score: number } =>
+          typeof d === 'object' &&
+          d !== null &&
+          typeof (d as { label?: unknown }).label === 'string' &&
+          typeof (d as { score?: unknown }).score === 'number',
+      )
+      .find((d) => d.label.toLowerCase() === 'nsfw')?.score;
+    return (nsfwScore ?? 0) > 0.5;
   } catch (_error) {
     return false;
   }
-
-  return false;
 }
 
 async function captionImage(image: Buffer): Promise<string> {

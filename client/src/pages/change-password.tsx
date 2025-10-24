@@ -6,7 +6,6 @@ import { useEffect } from 'react';
 export default function ChangePasswordPage() {
   const [_location, navigate] = useLocation();
   const { user } = useAuth();
-  const typedUser: AuthUser | null = user ?? null;
 
   // Get userId from URL params
   const urlParams = new URLSearchParams(window.location.search);
@@ -14,10 +13,10 @@ export default function ChangePasswordPage() {
 
   useEffect(() => {
     // If user is already logged in normally (not requiring password change), redirect to dashboard
-    if (typedUser && !typedUser.mustChangePassword) {
+    if (user && !user.mustChangePassword) {
       navigate('/dashboard');
     }
-  }, [typedUser, navigate]);
+  }, [user, navigate]);
 
   const handlePasswordChangeSuccess = () => {
     // After successful password change, redirect to dashboard

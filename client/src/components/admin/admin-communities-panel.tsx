@@ -85,6 +85,13 @@ type StructuredEligibility = NonNullable<StructuredRules['eligibility']>;
 type StructuredContent = NonNullable<StructuredRules['content']>;
 type StructuredPosting = NonNullable<StructuredRules['posting']>;
 
+type RulePayload = {
+  eligibility?: StructuredEligibility;
+  content?: StructuredContent;
+  posting?: StructuredPosting;
+  notes?: StructuredRules['notes'];
+};
+
 const defaultFormState: CommunityFormState = {
   id: '',
   name: '',
@@ -147,7 +154,7 @@ function splitRuleContext(community: AdminCommunity): {
 }
 
 function formToPayload(formState: CommunityFormState): CommunityPayload {
-  const rulesPayload: Partial<StructuredRules> = {};
+  let rulesPayload: RulePayload = {};
 
   const minKarma = parseNumber(formState.rulesMinKarma);
   const minAccountAgeDays = parseNumber(formState.rulesMinAccountAge);
@@ -159,12 +166,12 @@ function formToPayload(formState: CommunityFormState): CommunityPayload {
     eligibilitySection.minAccountAgeDays = minAccountAgeDays;
   }
   if (Object.keys(eligibilitySection).length > 0) {
-    rulesPayload.eligibility = eligibilitySection;
+    rulesPayload = { ...rulesPayload, eligibility: eligibilitySection };
   }
 
-  const titleGuidelines = parseList(formState.rulesTitleRules);
-  const contentGuidelines = parseList(formState.rulesContentRules);
-  const linkRestrictions = parseList(formState.rulesLinkRestrictions);
+  const titleGuidelines = parseList(formState.rulesTitleRules) ?? [];
+  const contentGuidelines = parseList(formState.rulesContentRules) ?? [];
+  const linkRestrictions = parseList(formState.rulesLinkRestrictions) ?? [];
 
   const sellingPolicy =
     formState.rulesSellingAllowed === 'unspecified'
@@ -181,15 +188,15 @@ function formToPayload(formState: CommunityFormState): CommunityPayload {
   const hasContentData =
     sellingPolicy !== undefined ||
     watermarksAllowed !== null ||
-    (titleGuidelines?.length ?? 0) > 0 ||
-    (contentGuidelines?.length ?? 0) > 0 ||
-    (linkRestrictions?.length ?? 0) > 0;
+    titleGuidelines.length > 0 ||
+    contentGuidelines.length > 0 ||
+    linkRestrictions.length > 0;
 
   if (hasContentData) {
     const contentSection: StructuredContent = {
-      titleGuidelines: titleGuidelines ?? [],
-      contentGuidelines: contentGuidelines ?? [],
-      linkRestrictions: linkRestrictions ?? [],
+      titleGuidelines,
+      contentGuidelines,
+      linkRestrictions,
       bannedContent: [],
       formattingRequirements: [],
     };
@@ -201,7 +208,7 @@ function formToPayload(formState: CommunityFormState): CommunityPayload {
       contentSection.watermarksAllowed = watermarksAllowed;
     }
 
-    rulesPayload.content = contentSection;
+    rulesPayload = { ...rulesPayload, content: contentSection };
   }
 
   const postingLimits: PostingLimits = {};
@@ -218,7 +225,7 @@ function formToPayload(formState: CommunityFormState): CommunityPayload {
       maxPostsPerDay: perDay ?? null,
       cooldownHours: cooldownHours ?? null,
     };
-    rulesPayload.posting = postingRule;
+    rulesPayload = { ...rulesPayload, posting: postingRule };
   }
 
   return {

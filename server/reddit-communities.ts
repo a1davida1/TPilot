@@ -107,6 +107,7 @@ export interface CommunityRules {
 
 export type NormalizedRedditCommunity = Omit<RedditCommunity, 'rules'> & {
   rules: RedditCommunityRuleSet;
+  checkedAt?: string | null;
 };
 
 /**

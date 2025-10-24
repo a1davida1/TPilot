@@ -212,7 +212,9 @@ function performBasicMalwareCheck(buffer: Buffer): boolean {
 router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken(true), cleanupUploadedFiles, imageStreamingUpload, async (req: Request, res: Response) => {
   const authReq = req as UploadAuthRequest;
   let processedFilePath: string | undefined;
-  
+  const rawUserId = authReq.user?.id;
+  const userId = typeof rawUserId === 'number' ? rawUserId : null;
+
   try {
     // Check if files were uploaded via streaming
     if (!authReq.streamingFiles || authReq.streamingFiles.length === 0) {
@@ -221,6 +223,11 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken(t
 
     const uploadedFile = authReq.streamingFiles[0];
     const tempFilePath = uploadedFile.path;
+
+    if (userId === null) {
+      await fs.unlink(uploadedFile.path).catch(() => {});
+      return res.status(401).json({ message: 'Authentication required for uploads' });
+    }
 
     if (!tempFilePath) {
       return res.status(400).json({ message: 'Invalid file path' });
@@ -231,7 +238,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken(t
     if (!fileValidation.isValid) {
       await fs.unlink(tempFilePath);
       logger.warn('Streaming file validation failed', {
-        userId: authReq.user?.id,
+        userId,
         originalName: uploadedFile.originalname || 'unknown',
         declaredMime: uploadedFile.mimetype,
         detectedType: fileValidation.detectedType,
@@ -248,7 +255,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken(t
     if (performBasicMalwareCheck(fileBuffer)) {
       await fs.unlink(tempFilePath);
       logger.warn('Malware detected in streaming upload', {
-        userId: authReq.user?.id,
+        userId,
         originalName: uploadedFile.originalname || 'unknown',
         detectedType: fileValidation.detectedType
       });
@@ -256,7 +263,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken(t
     }
     
     logger.info('Streaming file validation successful', {
-      userId: authReq.user?.id,
+      userId,
       originalName: uploadedFile.originalname || 'unknown',
       declaredMime: uploadedFile.mimetype,
       detectedType: fileValidation.detectedType,
@@ -271,7 +278,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken(t
       await fs.unlink(tempFilePath);
       if (error instanceof ZodError) {
         logger.warn('Streaming upload validation failed', {
-          userId: authReq.user?.id,
+          userId,
           errors: error.errors
         });
         return res.status(400).json({ 
@@ -289,7 +296,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken(t
       processedFilePath = path.join(process.cwd(), 'uploads', outputFilename);
     } catch (filenameError) {
       logger.error('Failed to generate secure filename for streaming upload', {
-        userId: authReq.user?.id,
+        userId,
         error: filenameError instanceof Error ? filenameError.message : String(filenameError)
       });
     }
@@ -297,7 +304,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken(t
     if (!outputFilename) {
       await fs.unlink(tempFilePath).catch(() => {});
       logger.error('Filename generation failed: no output filename created', {
-        userId: authReq.user?.id,
+        userId,
         hasFilename: false,
         hasPath: Boolean(processedFilePath)
       });
@@ -307,7 +314,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken(t
     if (!processedFilePath) {
       await fs.unlink(tempFilePath).catch(() => {});
       logger.error('Filename generation failed: no processed file path created', {
-        userId: authReq.user?.id,
+        userId,
         hasFilename: true,
         hasPath: false
       });
@@ -321,7 +328,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken(t
       targetFilePath,
       validatedRequest.protectionLevel,
       validatedRequest.addWatermark,
-      String(authReq.user?.id)
+      String(userId)
     );
     let _lastError: unknown;
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -344,7 +351,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken(t
     await fs.unlink(tempFilePath);
     
     logger.info('ImageShield protection applied successfully (streaming)', {
-      userId: authReq.user?.id,
+      userId,
       originalName: uploadedFile.originalname || 'unknown',
       protectionLevel: validatedRequest.protectionLevel,
       watermark: validatedRequest.addWatermark,
@@ -363,7 +370,7 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken(t
     
   } catch (error) {
     logger.error('Streaming upload processing error', {
-      userId: authReq.user?.id,
+      userId,
       error: error instanceof Error ? (error as Error).message : String(error),
       stack: error instanceof Error ? (error as Error).stack : undefined
     });
@@ -389,13 +396,20 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken(tr
   const authReq = req as UploadAuthRequest;
   let tempFilePath = '';
   let protectedFilePath = '';
-  
+  const rawUserId = authReq.user?.id;
+  const userId = typeof rawUserId === 'number' ? rawUserId : null;
+
   try {
     if (!authReq.file) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
     tempFilePath = authReq.file.path;
+
+    if (userId === null) {
+      await fs.unlink(tempFilePath).catch(() => {});
+      return res.status(401).json({ message: 'Authentication required for uploads' });
+    }
     
     if (!tempFilePath) {
       return res.status(400).json({ message: 'Invalid file path' });
@@ -406,7 +420,7 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken(tr
     if (!fileValidation.isValid) {
       await fs.unlink(tempFilePath);
       logger.warn('File validation failed', {
-        userId: authReq.user?.id,
+        userId,
         originalName: authReq.file.originalname,
         declaredMime: authReq.file.mimetype,
         detectedType: fileValidation.detectedType,
@@ -423,7 +437,7 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken(tr
     if (performBasicMalwareCheck(fileBuffer)) {
       await fs.unlink(tempFilePath);
       logger.warn('Malware detected in upload', {
-        userId: authReq.user?.id,
+        userId,
         originalName: authReq.file.originalname,
         detectedType: fileValidation.detectedType
       });
@@ -431,7 +445,7 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken(tr
     }
     
     logger.info('File validation successful', {
-      userId: authReq.user?.id,
+      userId,
       originalName: authReq.file.originalname,
       declaredMime: authReq.file.mimetype,
       detectedType: fileValidation.detectedType
@@ -444,7 +458,7 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken(tr
     } catch (error) {
       if (error instanceof ZodError) {
         logger.warn('Upload request validation failed', { 
-          userId: authReq.user?.id, 
+          userId, 
           errors: error.errors,
           body: authReq.body 
         });
@@ -464,7 +478,7 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken(tr
       : ['free', 'starter'].includes(userTier);
     
     logger.info('Upload request validated', {
-      userId: authReq.user?.id,
+      userId,
       userTier,
       protectionLevel,
       addWatermark,
@@ -480,7 +494,7 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken(tr
       protectedFilePath,
       protectionLevel as 'light' | 'standard' | 'heavy',
       addWatermark,
-      String(authReq.user?.id)
+      userId.toString()
     );
     
     const signature = crypto.randomUUID();
@@ -497,7 +511,7 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken(tr
     const fileUrl = buildUploadUrl(protectedFileName);
     const protectedStats = await fs.stat(protectedFilePath);
     
-    logger.info(`Protected file uploaded: ${protectedFileName} by user ${authReq.user?.id}, tier: ${userTier}`);
+    logger.info(`Protected file uploaded: ${protectedFileName} by user ${userId}, tier: ${userTier}`);
     
     res.json({
       message: 'File uploaded and protected successfully',

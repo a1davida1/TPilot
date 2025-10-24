@@ -78,11 +78,8 @@ interface UserActionData {
   duration?: string;
 }
 
-interface Provider {
-  name: string;
-  status: string;
-  cost?: number;
-}
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
 
 interface SystemHealth {
   status: string;
@@ -208,7 +205,14 @@ export function AdminDashboard() {
         const errorText = await response.text();
         throw new Error(errorText || `Failed to ${data.action}`);
       }
-      return response.json();
+
+      const payload: unknown = await response.json();
+      if (!isRecord(payload)) {
+        return {};
+      }
+
+      const tempPassword = typeof payload.tempPassword === 'string' ? payload.tempPassword : undefined;
+      return tempPassword ? { tempPassword } : {};
     },
     onSuccess: (data, variables) => {
       if (variables.action === 'reset-password') {
