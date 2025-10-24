@@ -138,6 +138,7 @@ describe('POST /api/reddit/post', () => {
       subreddit: 'test',
       title: 'Native upload verification',
       imageUrl: 'https://cdn.example.com/photo.png',
+      assetId: undefined,
       nsfw: true,
       spoiler: false,
       allowImgboxFallback: true,

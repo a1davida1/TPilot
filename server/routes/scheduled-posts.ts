@@ -18,7 +18,8 @@ const router = Router();
 const createScheduledPostSchema = z.object({
   subreddit: z.string(),
   title: z.string(),
-  imageUrl: z.string().url(), // Imgur URL (already uploaded)
+  imageUrl: z.string().url(), // Preview URL (Imgbox fallback)
+  imageAssetId: z.number().int().optional(),
   nsfw: z.boolean().default(true),
   flair: z.string().optional(),
   scheduledFor: z.string().datetime(), // ISO timestamp
@@ -86,6 +87,7 @@ router.post('/', authenticateToken(true), async (req: AuthRequest, res: Response
       title: data.title,
       content: data.captionId || '',
       imageUrl: data.imageUrl,
+      imageAssetId: data.imageAssetId ?? null,
       scheduledFor: scheduledDate,
       status: 'pending',
       nsfw: data.nsfw,

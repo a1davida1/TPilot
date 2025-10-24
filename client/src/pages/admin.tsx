@@ -10,6 +10,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { AdminCommunitiesPanel } from '@/components/admin/admin-communities-panel';
+import { apiRequest } from '@/lib/queryClient';
 
 // Lazy load compliance dashboard
 const ComplianceStatusDashboard = lazy(() =>
@@ -143,14 +144,13 @@ export function AdminDashboard() {
   const [newTier, setNewTier] = useState('free');
 
   // Authenticated API request helper (using cookies)
-  const authenticatedFetch = async (url: string) => {
-    const response = await fetch(url, {
-      credentials: 'include' // Use cookie-based authentication
-    });
+  const authenticatedFetch = async <T,>(url: string): Promise<T> => {
+    const response = await apiRequest('GET', url);
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
+      const errorText = await response.text().catch(() => '');
+      throw new Error(errorText || `API request failed: ${response.status}`);
     }
-    return response.json();
+    return response.json() as Promise<T>;
   };
 
   // Fetch admin stats
@@ -196,16 +196,9 @@ export function AdminDashboard() {
       if (data.action === 'reset-password') endpoint = '/api/admin/reset-password';
       else if (data.action === 'tier-management') endpoint = '/api/admin/upgrade-user';
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data),
-        credentials: 'include' // Use cookie-based authentication
-      });
+      const response = await apiRequest('POST', endpoint, data);
       if (!response.ok) {
-        const errorText = await response.text();
+        const errorText = await response.text().catch(() => '');
         throw new Error(errorText || `Failed to ${data.action}`);
       }
       return response.json();

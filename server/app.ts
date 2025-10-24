@@ -368,6 +368,35 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
     },
     size: 64,
     ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
+    getTokenFromRequest: (req: express.Request) => {
+      const headerToken =
+        req.get('x-csrf-token') ??
+        req.get('X-CSRF-Token') ??
+        req.get('csrf-token') ??
+        req.get('X-XSRF-TOKEN');
+
+      if (typeof headerToken === 'string' && headerToken.length > 0) {
+        return headerToken;
+      }
+
+      const bodyToken = typeof req.body === 'object' && req.body !== null
+        ? (req.body as Record<string, unknown>)._csrf ?? (req.body as Record<string, unknown>).csrfToken
+        : undefined;
+
+      if (typeof bodyToken === 'string' && bodyToken.length > 0) {
+        return bodyToken;
+      }
+
+      const queryToken = typeof req.query === 'object' && req.query !== null
+        ? (req.query as Record<string, unknown>)._csrf ?? (req.query as Record<string, unknown>).csrfToken
+        : undefined;
+
+      if (typeof queryToken === 'string' && queryToken.length > 0) {
+        return queryToken;
+      }
+
+      return null;
+    },
   }) as {
     doubleCsrfProtection: RequestHandler;
     generateCsrfToken: (req: express.Request, res: express.Response) => string;

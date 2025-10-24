@@ -50,7 +50,7 @@ import {
 } from '@/components/ui/command';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { CatboxUploadPortal } from '@/components/CatboxUploadPortal';
+import { RedditNativeUploadPortal } from '@/components/RedditNativeUploadPortal';
 import { cn } from '@/lib/utils';
 import type { CaptionObject } from '@shared/types/caption';
 import type { SubredditCommunity } from '@/types/reddit';
@@ -235,6 +235,7 @@ export default function QuickPostPage() {
   const { toast } = useToast();
 
   const [imageUrl, setImageUrl] = useState<string>('');
+  const [imageAssetId, setImageAssetId] = useState<number | null>(null);
   const [protectedImageUrl, setProtectedImageUrl] = useState<string>('');
   const [captionOptions, setCaptionOptions] = useState<CaptionOption[]>([]);
   const [selectedCaption, setSelectedCaption] = useState<'A' | 'B' | ''>('');
@@ -542,6 +543,7 @@ export default function QuickPostPage() {
           title: truncateTitle(captionText),
           subreddit: normalizedSubreddit,
           imageUrl: protectedImageUrl || imageUrl,
+          imageAssetId: imageAssetId ?? undefined,
           text: captionText,
           nsfw,
           sendReplies: true
@@ -617,8 +619,9 @@ export default function QuickPostPage() {
     }
   });
 
-  const handleImageUpload = (result: { imageUrl: string }) => {
+  const handleImageUpload = (result: { imageUrl: string; assetId: number }) => {
     setImageUrl(result.imageUrl);
+    setImageAssetId(result.assetId);
     setPosted(false);
     setCaptionOptions([]);
     setSelectedCaption('');
@@ -715,6 +718,7 @@ export default function QuickPostPage() {
 
   const startNewPost = () => {
     setImageUrl('');
+    setImageAssetId(null);
     setProtectedImageUrl('');
     setCaptionOptions([]);
     setSelectedCaption('');
@@ -728,6 +732,7 @@ export default function QuickPostPage() {
 
   const isReadyToPost = Boolean(
     imageUrl &&
+    imageAssetId !== null &&
     confirmedCaptionId &&
     subreddit &&
     subreddit.trim() &&
@@ -770,7 +775,7 @@ export default function QuickPostPage() {
                 </div>
 
                 {!imageUrl ? (
-                  <CatboxUploadPortal onComplete={handleImageUpload} />
+                  <RedditNativeUploadPortal onComplete={handleImageUpload} nsfw={nsfw} />
                 ) : (
                   <div className="flex items-center gap-4">
                     {sanitizeImageUrl(imageUrl) ? (

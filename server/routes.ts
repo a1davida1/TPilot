@@ -29,6 +29,7 @@ import { adminCommunitiesRouter } from "./routes/admin-communities.js";
 import { createCancelSubscriptionHandler } from "./routes/subscription-management.js";
 // import { createLocalDownloadRouter } from "./routes/downloads.js"; // REMOVED - No local files
 import imgurUploadRouter from "./routes/imgur-uploads.js";
+import redditNativeUploadPortalRouter from "./routes/reddit-native-upload-portal.js";
 import { feedbackRouter } from "./routes/feedback.js";
 
 // Core imports
@@ -1428,6 +1429,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // Reddit quick-repost endpoint (NO cooldown enforcement - allows infinite reposts)
   const quickRepostRouter = (await import('./routes/reddit-quick-repost.js')).default;
   app.use('/api/reddit/quick-repost', quickRepostRouter);
+
+  const redditNativeUploadRouter = redditNativeUploadPortalRouter;
+  app.use('/api/reddit/native-upload', redditNativeUploadRouter);
 
   // Register Analytics Routes
   registerAnalyticsRoutes(app);

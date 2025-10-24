@@ -1438,6 +1438,7 @@ export const scheduledPosts = pgTable("scheduled_posts", {
   title: varchar("title", { length: 300 }).notNull(),
   content: text("content"),
   imageUrl: text("image_url"),
+  imageAssetId: integer("image_asset_id"),
   caption: text("caption"),
   subreddit: varchar("subreddit", { length: 100 }).notNull(),
   scheduledFor: timestamp("scheduled_for", { withTimezone: true }).notNull(),

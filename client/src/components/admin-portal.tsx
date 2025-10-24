@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient } from '@/lib/queryClient';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import {
   Users,
@@ -155,31 +155,29 @@ export function AdminPortal() {
   const { user: currentUser } = useAuth();
   
   // Authenticated API request with cookie-based auth
-  const authenticatedRequest = async (url: string, method: string = 'GET', data?: unknown) => {
-    const response = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      credentials: 'include', // Include cookies for session-based auth
-      body: data ? JSON.stringify(data) : undefined
-    });
-    
-if (!response.ok) {
-  const errorText = await response.text();
-  let errorMessage = errorText || response.statusText;
-  try {
-    const errorJson = JSON.parse(errorText);
-    errorMessage = errorJson.message || errorText;
-  } catch {
-    // If parsing fails, we already have errorMessage set to errorText
-  }
-  throw new Error(errorMessage);
-}
-    }
-    
-    return response.json();
-  };
+    const authenticatedRequest = async <T,>(url: string, method: string = 'GET', data?: unknown): Promise<T> => {
+      const response = await apiRequest(method, url, data);
+
+      if (!response.ok) {
+        const rawText = await response.text().catch(() => '');
+        let errorMessage = rawText || response.statusText;
+        try {
+          if (rawText) {
+            const parsed = JSON.parse(rawText) as { message?: string; error?: string };
+            errorMessage = parsed.message || parsed.error || errorMessage;
+          }
+        } catch {
+          // Ignore JSON parse errors and use raw response text
+        }
+        throw new Error(errorMessage);
+      }
+
+      if (response.status === 204) {
+        return undefined as T;
+      }
+
+      return response.json() as Promise<T>;
+    };
 
   // Fetch user statistics
   const { data: stats, isLoading: _statsLoading } = useQuery<AdminStats>({

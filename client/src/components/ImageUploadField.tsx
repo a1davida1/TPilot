@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Upload, Link, Loader2, CheckCircle } from 'lucide-react';
-import { CatboxUploadPortal } from './CatboxUploadPortal';
+import { RedditNativeUploadPortal } from './RedditNativeUploadPortal';
 import { ImgurUploadPortal } from './ImgurUploadPortal';
 
 interface ImageUploadFieldProps {
@@ -72,7 +72,7 @@ export function ImageUploadField({
         <TabsContent value="upload" className="mt-4">
           <div className="space-y-4">
             {preferredService === 'catbox' ? (
-              <CatboxUploadPortal
+              <RedditNativeUploadPortal
                 onComplete={(result) => {
                   handleUploadComplete(result.imageUrl);
                 }}

@@ -29,7 +29,7 @@ import {
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { CatboxUploadPortal } from './CatboxUploadPortal';
+import { RedditNativeUploadPortal } from './RedditNativeUploadPortal';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
@@ -235,7 +235,9 @@ export function EnhancedRedditPostForm({ mode = 'immediate', onSuccess, defaultV
           <TabsContent value="image" className="space-y-4">
             {/* Image Upload */}
             {!imageUrl ? (
-              <CatboxUploadPortal onComplete={(result) => handleImageUpload({ imageUrl: result.imageUrl })} />
+              <RedditNativeUploadPortal
+                onComplete={(result) => handleImageUpload({ imageUrl: result.imageUrl })}
+              />
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center gap-4">

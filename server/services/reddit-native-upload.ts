@@ -16,6 +16,25 @@ import { applyImageShieldProtection } from '../routes/upload.js';
 import type { PostingPermission } from '../lib/reddit.js';
 import { ImgboxService } from '../lib/imgbox-service.js';
 
+export interface PortalUploadOptions {
+  userId: number;
+  imageBuffer?: Buffer;
+  imageUrl?: string;
+  nsfw?: boolean;
+  applyWatermark?: boolean;
+}
+
+export interface PortalUploadResult {
+  success: boolean;
+  assetId?: number;
+  previewUrl?: string;
+  provider?: 'imgbox';
+  width?: number;
+  height?: number;
+  warnings?: string[];
+  error?: string;
+}
+
 export interface RedditUploadOptions {
   assetId?: number;
   imageBuffer?: Buffer;
@@ -218,6 +237,133 @@ export class RedditNativeUploadService {
 
     } finally {
       // Cleanup temp files
+      if (tempDir) {
+        await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+      }
+    }
+  }
+
+  static async preparePortalUpload(options: PortalUploadOptions): Promise<PortalUploadResult> {
+    let tempDir: string | null = null;
+
+    try {
+      if (!options.imageBuffer && !options.imageUrl) {
+        return {
+          success: false,
+          error: 'No image provided for upload',
+        };
+      }
+
+      const redditManager = await RedditManager.forUser(options.userId);
+
+      if (!redditManager) {
+        return {
+          success: false,
+          error: 'Connect your Reddit account to prepare Reddit-native uploads.',
+        };
+      }
+
+      try {
+        await redditManager.refreshTokenIfNeeded();
+        const connectionOk = typeof redditManager.testConnection === 'function'
+          ? await redditManager.testConnection()
+          : true;
+
+        if (!connectionOk) {
+          return {
+            success: false,
+            error: 'Unable to verify Reddit connection. Please reconnect your Reddit account and try again.',
+          };
+        }
+      } catch (connectionError) {
+        logger.error('Reddit connection verification failed before portal upload', {
+          userId: options.userId,
+          error: connectionError instanceof Error ? connectionError.message : String(connectionError),
+        });
+
+        return {
+          success: false,
+          error: 'Unable to verify Reddit connection. Please reconnect your Reddit account and try again.',
+        };
+      }
+
+      tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'reddit-portal-upload-'));
+
+      let workingBuffer: Buffer;
+      if (options.imageBuffer) {
+        workingBuffer = options.imageBuffer;
+      } else {
+        workingBuffer = await this.downloadImage(options.imageUrl as string, tempDir);
+      }
+
+      if (options.applyWatermark) {
+        const sourcePath = path.join(tempDir, 'portal-source');
+        const watermarkedPath = path.join(tempDir, 'portal-watermarked.jpg');
+        await fs.writeFile(sourcePath, workingBuffer);
+        await applyImageShieldProtection(
+          sourcePath,
+          watermarkedPath,
+          'standard',
+          true,
+          String(options.userId)
+        );
+        workingBuffer = await fs.readFile(watermarkedPath);
+      }
+
+      const optimizedBuffer = await this.optimizeForReddit(workingBuffer, tempDir);
+      const metadata = await sharp(optimizedBuffer).metadata();
+
+      const asset = await MediaManager.uploadFile(optimizedBuffer, {
+        userId: options.userId,
+        filename: `reddit-native-${Date.now()}.jpg`,
+        visibility: 'private',
+        applyWatermark: false,
+      });
+
+      let previewUrl: string | undefined;
+      let warnings: string[] | undefined;
+
+      try {
+        const imgboxResult = await ImgboxService.upload({
+          buffer: optimizedBuffer,
+          filename: `reddit-preview-${Date.now()}.jpg`,
+          contentType: 'image/jpeg',
+          nsfw: options.nsfw ?? false,
+        });
+
+        if (imgboxResult.success && imgboxResult.url) {
+          previewUrl = imgboxResult.url;
+        } else {
+          warnings = this.mergeWarnings([
+            imgboxResult.error ?? 'Imgbox upload failed without providing a URL.',
+          ]);
+        }
+      } catch (error) {
+        warnings = this.mergeWarnings([
+          error instanceof Error ? error.message : 'Imgbox fallback failed',
+        ]);
+      }
+
+      return {
+        success: true,
+        assetId: asset.id,
+        previewUrl,
+        provider: previewUrl ? 'imgbox' : undefined,
+        width: metadata.width ?? undefined,
+        height: metadata.height ?? undefined,
+        warnings,
+      };
+    } catch (error) {
+      logger.error('Failed to prepare Reddit native upload for portal', {
+        error: error instanceof Error ? error.message : String(error),
+        userId: options.userId,
+      });
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to prepare image for Reddit upload',
+      };
+    } finally {
       if (tempDir) {
         await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
       }

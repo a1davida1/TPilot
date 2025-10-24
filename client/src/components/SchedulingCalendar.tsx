@@ -25,11 +25,13 @@ interface SchedulingCalendarProps {
   selectedImages: Array<{
     id: string;
     url: string;
+    assetId?: number;
     caption?: string;
     subreddit?: string;
   }>;
   onSchedule: (data: {
     imageUrl: string;
+    assetId?: number;
     caption: string;
     subreddit: string;
     scheduledFor: string;
@@ -136,6 +138,7 @@ export function SchedulingCalendar({
       // Schedule all images at once
       const scheduleData = selectedImages.map(img => ({
         imageUrl: img.url,
+        assetId: img.assetId,
         caption: img.caption || '',
         subreddit: img.subreddit || selectedSubreddit,
         scheduledFor: scheduledTime.toISOString()
@@ -162,6 +165,7 @@ export function SchedulingCalendar({
   const scheduleAllPosts = () => {
     const scheduleData: Array<{
       imageUrl: string;
+      assetId?: number;
       caption: string;
       subreddit: string;
       scheduledFor: string;
@@ -171,6 +175,7 @@ export function SchedulingCalendar({
       selectedImages.forEach(img => {
         scheduleData.push({
           imageUrl: img.url,
+          assetId: img.assetId,
           caption: img.caption || '',
           subreddit: subreddit,
           scheduledFor: new Date(dateTimeKey).toISOString()

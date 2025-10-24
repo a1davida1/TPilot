@@ -603,7 +603,7 @@ export function registerRedditRoutes(app: Express) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      const { title, body, url, nsfw, spoiler, postType, imageData } = req.body;
+      const { title, body, url, nsfw, spoiler, postType, imageData, imageAssetId } = req.body;
 
       if (!subreddit || !title) {
         return res.status(400).json({ error: 'Subreddit and title are required' });
@@ -623,11 +623,16 @@ export function registerRedditRoutes(app: Express) {
       switch (postType || 'text') {
         case 'image': {
           // Single image post
-          if (!imageData && !url) {
-            return res.status(400).json({ error: 'Image data or URL required for image post' });
+          if (!imageData && !url && !imageAssetId) {
+            return res.status(400).json({ error: 'Image data, asset, or URL required for image post' });
           }
 
           let imageBuffer: Buffer | undefined;
+          const assetId = typeof imageAssetId === 'number'
+            ? imageAssetId
+            : typeof imageAssetId === 'string'
+              ? Number.parseInt(imageAssetId, 10)
+              : undefined;
           if (imageData) {
             // Convert base64 to buffer if needed
             const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
@@ -640,6 +645,7 @@ export function registerRedditRoutes(app: Express) {
             title,
             imageBuffer,
             imageUrl: url,
+            assetId,
             nsfw: nsfw || false,
             spoiler: spoiler || false,
             allowImgboxFallback: true,
@@ -802,9 +808,14 @@ export function registerRedditRoutes(app: Express) {
 
   // Alias for Quick Post - transforms Quick Post format to submit format
   app.post('/api/reddit/post', authenticateToken(true), async (req: AuthRequest, res) => {
-    const { title, subreddit, imageUrl, text, nsfw, spoiler } = req.body ?? {};
+    const { title, subreddit, imageUrl, imageAssetId, text, nsfw, spoiler } = req.body ?? {};
 
     let cleanImageUrl: string | undefined = typeof imageUrl === 'string' ? imageUrl : undefined;
+    const assetId = typeof imageAssetId === 'number'
+      ? imageAssetId
+      : typeof imageAssetId === 'string'
+        ? Number.parseInt(imageAssetId, 10)
+        : undefined;
     if (typeof cleanImageUrl === 'string' && cleanImageUrl.trim().length > 0) {
       try {
         const urlObj = new URL(cleanImageUrl);
@@ -858,12 +869,13 @@ export function registerRedditRoutes(app: Express) {
       const isNsfw = toBoolean(nsfw);
       const isSpoiler = toBoolean(spoiler);
 
-      if (normalizedImageUrl) {
+      if (normalizedImageUrl || assetId) {
         const uploadResult = await RedditNativeUploadService.uploadAndPost({
           userId,
           subreddit,
           title,
           imageUrl: normalizedImageUrl,
+          assetId,
           nsfw: isNsfw,
           spoiler: isSpoiler,
           allowImgboxFallback: true,

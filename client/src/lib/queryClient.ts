@@ -275,7 +275,8 @@ export async function apiRequest(
         // csrf-csrf library typically expects the token in one of these locations:
         // 1. x-csrf-token header (lowercase)
         // 2. _csrf in the request body
-        headers["x-csrf-token"] = token;
+        headers['x-csrf-token'] = token;
+        headers['X-CSRF-Token'] = token;
         
         // Also include in body for redundancy
         if (data instanceof FormData) {
@@ -319,7 +320,8 @@ export async function apiRequest(
         // Get a fresh token
         const newToken = await getCsrfToken();
         if (newToken) {
-          headers["x-csrf-token"] = newToken;
+          headers['x-csrf-token'] = newToken;
+          headers['X-CSRF-Token'] = newToken;
           
           // Update token in body if needed  
           if (data instanceof FormData) {

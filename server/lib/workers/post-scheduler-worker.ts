@@ -91,13 +91,16 @@ export function createPostSchedulerWorker() {
         // Submit post to Reddit
         let result;
         
-        if (post.imageUrl) {
+        const assetId = typeof post.imageAssetId === 'number' ? post.imageAssetId : undefined;
+
+        if (post.imageUrl || assetId) {
           // Image post
           result = await RedditNativeUploadService.uploadAndPost({
             userId,
             subreddit,
             title: post.title,
-            imageUrl: post.imageUrl,
+            imageUrl: post.imageUrl ?? undefined,
+            assetId,
             nsfw: post.nsfw ?? false,
             spoiler: post.spoiler ?? false,
             allowImgboxFallback: true,

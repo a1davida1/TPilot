@@ -23,13 +23,14 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest } from '@/lib/queryClient';
-import { CatboxUploadPortal } from '@/components/CatboxUploadPortal';
+import { RedditNativeUploadPortal } from '@/components/RedditNativeUploadPortal';
 import { cn } from '@/lib/utils';
 import { SchedulingCalendar } from '@/components/SchedulingCalendar';
 
 interface UploadedImage {
   id: string;
   url: string;
+  assetId?: number;
   deleteHash?: string;
   selected: boolean;
   caption?: string;
@@ -40,6 +41,7 @@ interface UploadedImage {
 
 interface ScheduleData {
   imageUrl: string;
+  assetId?: number;
   caption: string;
   subreddit: string;
   scheduledFor: string;
@@ -60,10 +62,11 @@ export default function PostSchedulingPage() {
   const [nsfw, setNsfw] = useState(false);
 
   // Handle image upload
-  const handleImageUpload = (result: { imageUrl: string; deleteHash?: string }) => {
+  const handleImageUpload = (result: { imageUrl: string; deleteHash?: string; assetId: number }) => {
     const newImage: UploadedImage = {
       id: Date.now().toString(),
       url: result.imageUrl,
+      assetId: result.assetId,
       deleteHash: result.deleteHash,
       selected: false
     };
@@ -146,6 +149,7 @@ export default function PostSchedulingPage() {
           title: post.caption.substring(0, 100) + '...',
           subreddit: post.subreddit,
           imageUrl: post.imageUrl,
+          imageAssetId: post.assetId,
           caption: post.caption,
           scheduledFor: post.scheduledFor,
           nsfw: post.nsfw
@@ -275,7 +279,7 @@ export default function PostSchedulingPage() {
                 </p>
               </div>
               
-              <CatboxUploadPortal onComplete={handleImageUpload} />
+              <RedditNativeUploadPortal onComplete={handleImageUpload} nsfw={nsfw} />
               
               {uploadedImages.length > 0 && (
                 <div>
@@ -463,10 +467,11 @@ export default function PostSchedulingPage() {
                 </p>
               </div>
               
-              <SchedulingCalendar 
+              <SchedulingCalendar
                 selectedImages={selectedImages.map(img => ({
                   id: img.id,
                   url: img.url,
+                  assetId: img.assetId,
                   caption: img.caption,
                   subreddit: ''
                 }))}
