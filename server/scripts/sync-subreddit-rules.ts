@@ -268,14 +268,14 @@ type ContentRulesDefaults = NonNullable<StructuredRuleSet['content']>;
 type PostingRulesDefaults = NonNullable<StructuredRuleSet['posting']>;
 
 function mapRuleSpecToCommunityRules(spec: RuleSpec): RedditCommunityRuleSet {
-  const defaults = createDefaultRules() as RedditCommunityRuleSet | undefined;
+  const defaults = createDefaultRules() as StructuredRuleSet;
 
   const eligibilityDefaults: EligibilityRulesDefaults = {
     minKarma: null,
     minAccountAgeDays: null,
     verificationRequired: false,
     requiresApproval: false,
-    ...(defaults?.eligibility ?? {}),
+    ...(defaults.eligibility ?? {}),
   };
 
   const contentDefaults: ContentRulesDefaults = {
@@ -288,16 +288,16 @@ function mapRuleSpecToCommunityRules(spec: RuleSpec): RedditCommunityRuleSet {
     linkRestrictions: [],
     bannedContent: [],
     formattingRequirements: [],
-    ...(defaults?.content ?? {}),
+    ...(defaults.content ?? {}),
   };
 
   const postingDefaults: PostingRulesDefaults = {
     maxPostsPerDay: null,
     cooldownHours: null,
-    ...(defaults?.posting ?? {}),
+    ...(defaults.posting ?? {}),
   };
 
-  const defaultNotes = defaults?.notes ?? null;
+  const defaultNotes = defaults.notes ?? null;
   const sellingPolicy = (() => {
     if (spec.linkPolicy === 'no-link') return 'not_allowed';
     if (spec.linkPolicy === 'one-link') return 'limited';

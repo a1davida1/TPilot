@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect as _useEffect } from 'react';
 import { getErrorMessage } from '@/utils/typeHelpers';
 import type { UserData } from '@/types/user';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,22 +11,26 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient } from '@/lib/queryClient';
+import { queryClient, apiRequest as _apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import {
   Users,
   Gift,
   TrendingUp,
   Settings,
+  Mail as _Mail,
   Shield,
   Activity,
   DollarSign,
+  UserPlus as _UserPlus,
   Clock,
   CheckCircle,
+  AlertCircle as _AlertCircle,
   Star,
   Zap,
   Crown,
   Sparkles,
+  ChevronRight as _ChevronRight,
   RefreshCw,
   Target,
   Rocket,
@@ -148,12 +152,12 @@ export function AdminPortal() {
   });
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [actionType, setActionType] = useState<string | null>(null);
-  const [_duration, _setDuration] = useState<string>('24');
-  const [_tempPassword, _setTempPassword] = useState<string>('');
-  const [_reason, _setReason] = useState<string>('');
+  const [duration, setDuration] = useState<string>('24');
+  const [tempPassword, setTempPassword] = useState<string>('');
+  const [reason, setReason] = useState<string>('');
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
-  
+
   // Authenticated API request with cookie-based auth
   const authenticatedRequest = async (url: string, method: string = 'GET', data?: unknown) => {
     const response = await fetch(url, {
@@ -164,20 +168,19 @@ export function AdminPortal() {
       credentials: 'include', // Include cookies for session-based auth
       body: data ? JSON.stringify(data) : undefined
     });
-    
-if (!response.ok) {
-  const errorText = await response.text();
-  let errorMessage = errorText || response.statusText;
-  try {
-    const errorJson = JSON.parse(errorText);
-    errorMessage = errorJson.message || errorText;
-  } catch {
-    // If parsing fails, we already have errorMessage set to errorText
-  }
-  throw new Error(errorMessage);
-}
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorText;
+      } catch {
+        errorMessage = errorText || response.statusText;
+      }
+      throw new Error(errorMessage);
     }
-    
+
     return response.json();
   };
 
@@ -189,11 +192,11 @@ if (!response.ok) {
   });
 
   // Fetch all users
-  const { data: users, isLoading: usersLoading, error: _usersError } = useQuery<UserData[]>({
+  const { data: users, isLoading: usersLoading, error: usersError } = useQuery<UserData[]>({
     queryKey: ['/api/admin/users'],
     enabled: !!currentUser
   });
-  
+
   const typedUsers: UserData[] = users || [];
 
   // Create trial user mutation
@@ -278,7 +281,7 @@ if (!response.ok) {
 
   const _handleAction = () => {
     if (!selectedUser || !actionType) return;
-    
+
     const userWithId = selectedUser as { id: number };
     if (actionType === 'reset-password') {
       actionMutation.mutate({ 
@@ -289,7 +292,7 @@ if (!response.ok) {
       actionMutation.mutate({ 
         userId: userWithId.id, 
         action: actionType, 
-        duration: actionType === 'suspend' ? _duration : undefined 
+        duration: actionType === 'suspend' ? duration : undefined 
       });
     }
   };
@@ -318,70 +321,77 @@ if (!response.ok) {
       </Card>
 
       {/* Statistics Dashboard */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Users</p>
-                <p className="text-3xl font-bold">{stats?.totalUsers ?? 0}</p>
-                <p className="text-xs text-green-600 mt-1">
-                  +{stats?.newUsersToday ?? 0} today
-                </p>
+      {_statsLoading ? (
+        <div className="text-center py-8">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+          <p className="text-muted-foreground mt-2">Loading statistics...</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Users</p>
+                  <p className="text-3xl font-bold">{stats?.totalUsers ?? 0}</p>
+                  <p className="text-xs text-green-600 mt-1">
+                    +{stats?.newUsersToday ?? 0} today
+                  </p>
+                </div>
+                <Users className="h-8 w-8 text-blue-500" />
               </div>
-              <Users className="h-8 w-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Pro/Premium</p>
-                <p className="text-3xl font-bold">
-                  {(stats?.proUsers ?? 0) + (stats?.premiumUsers ?? 0)}
-                </p>
-                <p className="text-xs text-purple-600 mt-1">
-                  {stats?.trialUsers ?? 0} trials active
-                </p>
+          <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Pro/Premium</p>
+                  <p className="text-3xl font-bold">
+                    {(stats?.proUsers ?? 0) + (stats?.premiumUsers ?? 0)}
+                  </p>
+                  <p className="text-xs text-purple-600 mt-1">
+                    {stats?.trialUsers ?? 0} trials active
+                  </p>
+                </div>
+                <Crown className="h-8 w-8 text-purple-500" />
               </div>
-              <Crown className="h-8 w-8 text-purple-500" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Monthly Revenue</p>
-                <p className="text-3xl font-bold">${stats?.revenue ?? 0}</p>
-                <p className="text-xs text-green-600 mt-1">
-                  <TrendingUp className="h-3 w-3 inline mr-1" />
-                  12% increase
-                </p>
+          <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Monthly Revenue</p>
+                  <p className="text-3xl font-bold">${stats?.revenue ?? 0}</p>
+                  <p className="text-xs text-green-600 mt-1">
+                    <TrendingUp className="h-3 w-3 inline mr-1" />
+                    12% increase
+                  </p>
+                </div>
+                <DollarSign className="h-8 w-8 text-green-500" />
               </div>
-              <DollarSign className="h-8 w-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border-orange-500/20">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Active Today</p>
-                <p className="text-3xl font-bold">{stats?.activeToday ?? 0}</p>
-                <p className="text-xs text-orange-600 mt-1">
-                  Real-time activity
-                </p>
+          <Card className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border-orange-500/20">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Active Today</p>
+                  <p className="text-3xl font-bold">{stats?.activeToday ?? 0}</p>
+                  <p className="text-xs text-orange-600 mt-1">
+                    Real-time activity
+                  </p>
+                </div>
+                <Activity className="h-8 w-8 text-orange-500" />
               </div>
-              <Activity className="h-8 w-8 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Management Tabs */}
       <Tabs defaultValue="live-dashboard" className="w-full">
@@ -766,6 +776,10 @@ if (!response.ok) {
                     <RefreshCw className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
                     <p className="text-muted-foreground mt-2">Loading users...</p>
                   </div>
+                ) : usersError ? (
+                  <Alert variant="destructive">
+                    <AlertDescription>{getErrorMessage(usersError)}</AlertDescription>
+                  </Alert>
                 ) : (
                   typedUsers.slice(0, 10).map((user) => (
                     <div key={user.id} className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
@@ -819,7 +833,7 @@ if (!response.ok) {
                   <strong>Email System:</strong> {stats?.emailConfigured ? 'Configured ✓' : 'Not configured - Add SendGrid API key'}
                 </AlertDescription>
               </Alert>
-              
+
               <Alert className="border-blue-500/30 bg-blue-500/5">
                 <Shield className="h-4 w-4 text-blue-600" />
                 <AlertDescription>
@@ -1398,7 +1412,7 @@ function UserManagementTab({ authenticatedRequest, users }: { authenticatedReque
   const handleAction = () => {
     if (!selectedUser || !actionType) return;
     if (actionType !== 'reset-password' && !reason) return;
-    
+
     const actionData: AdminActionRequest = {
       userId: (selectedUser as UserData).id,
       action: actionType,

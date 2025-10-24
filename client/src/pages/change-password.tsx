@@ -1,12 +1,12 @@
 import { useLocation } from 'wouter';
 import { PasswordChangeForm } from '@/components/PasswordChangeForm';
-import { useAuth, type AuthUser } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { useEffect } from 'react';
 
 export default function ChangePasswordPage() {
   const [_location, navigate] = useLocation();
   const { user } = useAuth();
-  const typedUser: AuthUser | null = user ?? null;
+  const typedUser = user ?? null;
 
   // Get userId from URL params
   const urlParams = new URLSearchParams(window.location.search);

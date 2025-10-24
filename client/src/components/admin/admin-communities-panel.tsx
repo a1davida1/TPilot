@@ -85,6 +85,13 @@ type StructuredEligibility = NonNullable<StructuredRules['eligibility']>;
 type StructuredContent = NonNullable<StructuredRules['content']>;
 type StructuredPosting = NonNullable<StructuredRules['posting']>;
 
+interface StructuredRulePayload {
+  eligibility?: StructuredEligibility;
+  content?: StructuredContent;
+  posting?: StructuredPosting;
+  notes?: string | null;
+}
+
 const defaultFormState: CommunityFormState = {
   id: '',
   name: '',
@@ -147,7 +154,7 @@ function splitRuleContext(community: AdminCommunity): {
 }
 
 function formToPayload(formState: CommunityFormState): CommunityPayload {
-  const rulesPayload: Partial<StructuredRules> = {};
+  const rulesPayload: StructuredRulePayload = {};
 
   const minKarma = parseNumber(formState.rulesMinKarma);
   const minAccountAgeDays = parseNumber(formState.rulesMinAccountAge);

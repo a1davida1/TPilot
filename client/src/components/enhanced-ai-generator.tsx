@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -381,6 +381,10 @@ export function EnhancedAIGenerator({
     }
   };
 
+  const normalizedPhotoInstructions = useMemo<ContentGeneration["photoInstructions"]>(() => (
+    generatedContent ? normalizePhotoInstructions(generatedContent.photoInstructions) : basePhotoInstructions
+  ), [generatedContent]);
+
   return (
     <div className="space-y-6">
       <div className="space-y-4">
@@ -646,9 +650,7 @@ export function EnhancedAIGenerator({
                     <div key={key} className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1">
                       <dt className="font-semibold text-orange-700">{label}</dt>
                       <dd className="sm:text-right">
-                        {typeof generatedContent.photoInstructions === 'object' && generatedContent.photoInstructions
-                          ? (generatedContent.photoInstructions as Record<string, string | undefined>)[key] ?? ''
-                          : ''}
+                        {normalizedPhotoInstructions[key]}
                       </dd>
                     </div>
                   ))}
@@ -658,7 +660,7 @@ export function EnhancedAIGenerator({
                   size="sm"
                   onClick={() =>
                     copyToClipboard(
-                      JSON.stringify(generatedContent.photoInstructions ?? {}, null, 2),
+                      JSON.stringify(normalizedPhotoInstructions, null, 2),
                       "Photo Instructions"
                     )
                   }

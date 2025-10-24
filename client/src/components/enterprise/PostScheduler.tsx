@@ -59,7 +59,7 @@ export default function PostScheduler() {
   const { toast } = useToast();
 
   // Fetch scheduled posts
-  const { data: scheduledPosts = [], isLoading } = useQuery({
+  const { data: scheduledPosts = [], isLoading } = useQuery<PostJob[]>({
     queryKey: ['/api/posts/scheduled'],
   });
 

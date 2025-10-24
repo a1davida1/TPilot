@@ -145,7 +145,8 @@ referralRouter.post('/apply', authenticateToken(false), async (req: AuthRequest,
         });
       }
 
-      if (!sanitizedApplicant.email) {
+      const applicantEmail = sanitizedApplicant.email;
+      if (!applicantEmail) {
         logger.warn('Anonymous referral attempt missing applicant email', {
           referralCode: normalizedCode,
         });
@@ -159,7 +160,7 @@ referralRouter.post('/apply', authenticateToken(false), async (req: AuthRequest,
       const [emailOwner] = await db
         .select({ id: users.id })
         .from(users)
-        .where(eq(users.email, sanitizedApplicant.email))
+        .where(eq(users.email, applicantEmail))
         .limit(1);
 
       if (emailOwner) {

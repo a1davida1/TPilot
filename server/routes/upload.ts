@@ -220,11 +220,13 @@ router.post('/stream', uploadLimiter, tierProtectionLimiter, authenticateToken(t
     }
 
     const uploadedFile = authReq.streamingFiles[0];
-    const tempFilePath = uploadedFile.path;
+    const rawTempFilePath = uploadedFile.path;
 
-    if (!tempFilePath) {
+    if (typeof rawTempFilePath !== 'string' || rawTempFilePath.length === 0) {
       return res.status(400).json({ message: 'Invalid file path' });
     }
+
+    const tempFilePath = rawTempFilePath;
     
     // Real MIME type validation using file content analysis
     const fileValidation = await validateImageFile(tempFilePath, uploadedFile.mimetype || 'application/octet-stream');

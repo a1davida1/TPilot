@@ -57,8 +57,12 @@ export class PgQueue implements IQueue {
     handler: QueueJobHandler<T>,
     options: { concurrency?: number } = {}
   ): Promise<void> {
+    const wrappedHandler: QueueJobHandler<unknown> = async (payload, jobId) => {
+      await handler(payload as T, jobId);
+    };
+
     this.processors.set(queueName, {
-      handler: handler as QueueJobHandler<unknown>,
+      handler: wrappedHandler,
       concurrency: options.concurrency || 1,
       active: true,
     });

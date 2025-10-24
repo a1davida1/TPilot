@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { AdminCommunitiesPanel } from '@/components/admin/admin-communities-panel';
 
@@ -144,11 +145,10 @@ export function AdminDashboard() {
 
   // Authenticated API request helper (using cookies)
   const authenticatedFetch = async (url: string) => {
-    const response = await fetch(url, {
-      credentials: 'include' // Use cookie-based authentication
-    });
+    const response = await apiRequest('GET', url);
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(errorText || `API request failed: ${response.status}`);
     }
     return response.json();
   };
@@ -196,26 +196,33 @@ export function AdminDashboard() {
       if (data.action === 'reset-password') endpoint = '/api/admin/reset-password';
       else if (data.action === 'tier-management') endpoint = '/api/admin/upgrade-user';
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data),
-        credentials: 'include' // Use cookie-based authentication
-      });
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || `Failed to ${data.action}`);
+      const payload: UserActionData = { ...data };
+      const response = await apiRequest('POST', endpoint, payload);
+
+      let responseData: unknown = null;
+      try {
+        responseData = await response.json();
+      } catch (_error) {
+        responseData = null;
       }
-      return response.json();
+
+      if (!response.ok) {
+        const message = typeof responseData === 'object' && responseData !== null && 'message' in responseData
+          && typeof (responseData as { message?: unknown }).message === 'string'
+            ? (responseData as { message: string }).message
+            : `Failed to ${data.action}`;
+        throw new Error(message);
+      }
+
+      return (responseData as { tempPassword?: string }) ?? {};
     },
     onSuccess: (data, variables) => {
       if (variables.action === 'reset-password') {
-        setTempPassword(data.tempPassword ?? '');
+        const nextTempPassword = typeof data.tempPassword === 'string' ? data.tempPassword : '';
+        setTempPassword(nextTempPassword);
         toast({ title: "Password Reset Successful", description: "Temporary password generated." });
       } else if (variables.action === 'tier-management') {
-        toast({ title: "Tier Updated", description: `User tier changed to ${variables.newTier}` });
+        toast({ title: "Tier Updated", description: `User tier changed to ${variables.tier ?? newTier}` });
         setSelectedUser(null);
         setActionType(null);
       } else {
