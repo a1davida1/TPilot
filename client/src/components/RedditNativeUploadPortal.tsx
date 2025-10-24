@@ -75,7 +75,6 @@ function toAbsoluteUrl(url: string | null | undefined): string {
     return trimmed;
   }
 }
-}
 
 export function RedditNativeUploadPortal({
   onComplete,
