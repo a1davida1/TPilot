@@ -14,6 +14,7 @@ import { MediaManager } from '../lib/media.js';
 import { recordPostOutcome } from '../compliance/ruleViolationTracker.js';
 import { applyImageShieldProtection } from '../routes/upload.js';
 import type { PostingPermission } from '../lib/reddit.js';
+import { CatboxService } from '../lib/catbox-service.js';
 
 export interface RedditUploadOptions {
   assetId?: number;
@@ -27,7 +28,9 @@ export interface RedditUploadOptions {
   spoiler?: boolean;
   flairText?: string;
   applyWatermark?: boolean;
+  allowCatboxFallback?: boolean;
 }
+
 
 export interface RedditUploadResult {
   success: boolean;
@@ -37,7 +40,10 @@ export interface RedditUploadResult {
   error?: string;
   warnings?: string[];
   decision?: PostingPermission;
+  fallbackUsed?: 'catbox';
+  fallbackUrl?: string;
 }
+
 
 // Interface for future Reddit media upload API integration
 interface _RedditMediaUploadResponse {
@@ -144,8 +150,24 @@ export class RedditNativeUploadService {
         }
       );
 
-      if (!uploadResult.success) {
-        return uploadResult;
+      let finalResult = uploadResult;
+
+      if (!finalResult.success && options.allowCatboxFallback) {
+        finalResult = await this.fallbackToCatbox({
+          redditManager: reddit,
+          imageBuffer,
+          userId: options.userId,
+          subreddit: options.subreddit,
+          title: options.title,
+          nsfw: options.nsfw ?? false,
+          spoiler: options.spoiler ?? false,
+          permission,
+          originalError: uploadResult.error,
+        });
+      }
+
+      if (!finalResult.success) {
+        return finalResult;
       }
 
       // Record successful upload
@@ -161,14 +183,22 @@ export class RedditNativeUploadService {
         status: 'posted',
       });
 
-      logger.info('Reddit native upload successful', {
+      const logContext = {
         userId: options.userId,
         subreddit: options.subreddit,
-        postId: uploadResult.postId,
+        postId: finalResult.postId,
         duration: Date.now() - startTime,
-      });
+        fallbackUsed: finalResult.fallbackUsed ?? 'native',
+      };
 
-      return uploadResult;
+      logger.info(
+        finalResult.fallbackUsed === 'catbox'
+          ? 'Reddit upload completed via Catbox fallback'
+          : 'Reddit native upload successful',
+        logContext
+      );
+
+      return finalResult;
 
     } catch (error) {
       logger.error('Reddit native upload failed', {
@@ -430,6 +460,142 @@ export class RedditNativeUploadService {
       return {
         success: false,
         error: errorMessage,
+      };
+    }
+  }
+
+  private static async fallbackToCatbox(params: {
+    redditManager: RedditManager;
+    imageBuffer: Buffer | null;
+    userId: number;
+    subreddit: string;
+    title: string;
+    nsfw: boolean;
+    spoiler: boolean;
+    permission: PostingPermission;
+    originalError?: string;
+  }): Promise<RedditUploadResult> {
+    const {
+      redditManager,
+      imageBuffer,
+      userId,
+      subreddit,
+      title,
+      nsfw,
+      spoiler,
+      permission,
+      originalError,
+    } = params;
+
+    const baseError = originalError
+      ? `Reddit native upload failed: ${originalError}`
+      : 'Reddit native upload failed';
+
+    if (!imageBuffer || imageBuffer.length === 0) {
+      logger.warn('Catbox fallback skipped: missing processed image buffer', {
+        userId,
+        subreddit,
+      });
+
+      return {
+        success: false,
+        error: `${baseError}. Catbox fallback unavailable because the processed image buffer is empty.`,
+        warnings: originalError ? [originalError] : undefined,
+        decision: permission,
+      };
+    }
+
+    try {
+      const userHash = await CatboxService.getUserHash(userId);
+      if (!userHash) {
+        logger.warn('Catbox fallback unavailable: user hash not configured', {
+          userId,
+          subreddit,
+        });
+
+        return {
+          success: false,
+          error: `${baseError}. Catbox fallback requires a Catbox user hash. Please add your hash in settings.`,
+          warnings: originalError ? [originalError] : undefined,
+          decision: permission,
+        };
+      }
+
+      const catboxUpload = await CatboxService.upload({
+        reqtype: 'fileupload',
+        file: imageBuffer,
+        filename: `reddit-fallback-${Date.now()}.jpg`,
+        mimeType: 'image/jpeg',
+        userhash: userHash,
+      });
+
+      if (!catboxUpload.success || !catboxUpload.url) {
+        logger.error('Catbox fallback upload failed', {
+          userId,
+          subreddit,
+          error: catboxUpload.error,
+          status: catboxUpload.status,
+        });
+
+        return {
+          success: false,
+          error: `${baseError}. Catbox fallback failed: ${catboxUpload.error ?? 'Catbox did not return a URL.'}`,
+          warnings: originalError ? [originalError] : undefined,
+          decision: permission,
+        };
+      }
+
+      logger.info('Catbox fallback upload succeeded', {
+        userId,
+        subreddit,
+        fallbackUrl: catboxUpload.url,
+      });
+
+      const linkResult = await redditManager.submitPost({
+        subreddit,
+        title,
+        url: catboxUpload.url,
+        nsfw,
+        spoiler,
+      });
+
+      if (!linkResult.success) {
+        logger.error('Catbox fallback Reddit post failed', {
+          userId,
+          subreddit,
+          error: linkResult.error,
+        });
+
+        return {
+          success: false,
+          error: `${baseError}. Catbox fallback upload succeeded but Reddit link post failed: ${linkResult.error ?? 'Unknown error.'}`,
+          warnings: originalError ? [originalError] : undefined,
+          decision: linkResult.decision ?? permission,
+        };
+      }
+
+      return {
+        success: true,
+        postId: linkResult.postId,
+        url: linkResult.url,
+        redditImageUrl: catboxUpload.url,
+        warnings: ['Posted using Catbox fallback because Reddit CDN upload failed'],
+        decision: linkResult.decision ?? permission,
+        fallbackUsed: 'catbox',
+        fallbackUrl: catboxUpload.url,
+      };
+    } catch (error) {
+      logger.error('Catbox fallback encountered an unexpected error', {
+        userId,
+        subreddit,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      return {
+        success: false,
+        error: `${baseError}. Catbox fallback encountered an unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+        warnings: originalError ? [originalError] : undefined,
+        decision: permission,
       };
     }
   }
