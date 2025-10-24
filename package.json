@@ -254,7 +254,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "ts-jest": "^29.2.5",
     "next": "^14.2.10",
-    "next-test-api-route-handler": "^3.1.0"
+    "next-test-api-route-handler": "^5.0.3"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
