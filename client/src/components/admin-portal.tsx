@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient, getCsrfToken } from '@/lib/queryClient';
+import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import {
   Users,
@@ -153,49 +153,11 @@ export function AdminPortal() {
   const [_reason, _setReason] = useState<string>('');
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
-  
-  // Authenticated API request with cookie-based auth and CSRF protection
+
+  // Wrapper around apiRequest for admin endpoints (uses built-in CSRF handling)
   const authenticatedRequest = async (url: string, method: string = 'GET', data?: unknown) => {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json'
-    };
-
-    // Include CSRF token for state-changing requests
-    if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method.toUpperCase())) {
-      try {
-        const csrfToken = await getCsrfToken();
-        if (csrfToken) {
-          headers['x-csrf-token'] = csrfToken;
-          // Also include in body for redundancy
-          if (data && typeof data === 'object') {
-            (data as Record<string, unknown>)._csrf = csrfToken;
-          }
-        }
-      } catch (error) {
-        console.warn('Failed to get CSRF token:', error);
-      }
-    }
-
-    const response = await fetch(url, {
-      method,
-      headers,
-      credentials: 'include', // Include cookies for session-based auth
-      body: data ? JSON.stringify(data) : undefined
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorMessage;
-      try {
-        const errorJson = JSON.parse(errorText);
-        errorMessage = errorJson.message || errorText;
-      } catch {
-        errorMessage = errorText || response.statusText;
-      }
-      throw new Error(errorMessage);
-    }
-
-    return response.json();
+    const response = await apiRequest(method, url, data);
+    return response.json ? await response.json() : response;
   };
 
   // Fetch user statistics
