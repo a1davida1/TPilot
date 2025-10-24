@@ -20,7 +20,8 @@ import {
   ChevronsUpDown,
   Pencil,
   Save,
-  X
+  X,
+  Upload
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,7 +51,7 @@ import {
 } from '@/components/ui/command';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { CatboxUploadPortal } from '@/components/CatboxUploadPortal';
+import { createLowResPreview } from '@/lib/imageshield';
 import { cn } from '@/lib/utils';
 import type { CaptionObject } from '@shared/types/caption';
 import type { SubredditCommunity } from '@/types/reddit';
@@ -198,7 +199,9 @@ function truncateTitle(text: string): string {
 export default function QuickPostPage() {
   const { toast } = useToast();
 
-  const [imageUrl, setImageUrl] = useState<string>('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string>('');
+  const [imageBase64, setImageBase64] = useState<string>(''); // For caption generation
   const [protectedImageUrl, setProtectedImageUrl] = useState<string>('');
   const [captionOptions, setCaptionOptions] = useState<CaptionOption[]>([]);
   const [selectedCaption, setSelectedCaption] = useState<'A' | 'B' | ''>('');
@@ -502,13 +505,23 @@ export default function QuickPostPage() {
       }, 200);
 
       try {
-        const response = await apiRequest('POST', '/api/reddit/post', {
-          title: truncateTitle(captionText),
-          subreddit: normalizedSubreddit,
-          imageUrl: protectedImageUrl || imageUrl,
-          text: captionText,
-          nsfw,
-          sendReplies: true
+        // Use FormData to send file directly (no Catbox!)
+        const formData = new FormData();
+        formData.append('title', truncateTitle(captionText));
+        formData.append('subreddit', normalizedSubreddit);
+        formData.append('text', captionText);
+        formData.append('nsfw', String(nsfw));
+        formData.append('sendReplies', 'true');
+
+        // Attach the actual file for direct Reddit upload
+        if (selectedFile) {
+          formData.append('image', selectedFile);
+        }
+
+        const response = await fetch('/api/reddit/post', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
         });
 
         clearInterval(progressInterval);
@@ -581,8 +594,22 @@ export default function QuickPostPage() {
     }
   });
 
-  const handleImageUpload = (result: { imageUrl: string }) => {
-    setImageUrl(result.imageUrl);
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid File',
+        description: 'Please select an image file',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setSelectedFile(file);
+    setImagePreviewUrl(URL.createObjectURL(file));
     setPosted(false);
     setCaptionOptions([]);
     setSelectedCaption('');
@@ -593,7 +620,21 @@ export default function QuickPostPage() {
     setValidationStatus('idle');
     setValidationWarnings([]);
 
-    runCaptionGeneration(result.imageUrl, selectedService, selectedTone, promotionMode, nsfw);
+    // Auto-generate captions using base64 preview
+    try {
+      const base64 = await createLowResPreview(file);
+      const dataUrl = `data:image/jpeg;base64,${base64}`;
+      setImageBase64(dataUrl);
+      // The caption API expects imageUrl but can handle base64 data URLs
+      runCaptionGeneration(dataUrl, selectedService, selectedTone, promotionMode, nsfw);
+    } catch (error) {
+      console.error('Failed to create image preview:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to process image',
+        variant: 'destructive'
+      });
+    }
   };
 
   const runCaptionGeneration = (
@@ -678,7 +719,9 @@ export default function QuickPostPage() {
   };
 
   const startNewPost = () => {
-    setImageUrl('');
+    setSelectedFile(null);
+    setImagePreviewUrl('');
+    setImageBase64('');
     setProtectedImageUrl('');
     setCaptionOptions([]);
     setSelectedCaption('');
@@ -691,7 +734,7 @@ export default function QuickPostPage() {
   };
 
   const isReadyToPost = Boolean(
-    imageUrl &&
+    selectedFile &&
     confirmedCaptionId &&
     subreddit &&
     subreddit.trim() &&
@@ -727,36 +770,54 @@ export default function QuickPostPage() {
             <div className="space-y-6">
               <div>
                 <div className="flex items-center gap-2 mb-4">
-                  <Badge variant={imageUrl ? 'default' : 'outline'}>
-                    {imageUrl ? <CheckCircle className="h-3 w-3 mr-1" /> : '1'}
+                  <Badge variant={selectedFile ? 'default' : 'outline'}>
+                    {selectedFile ? <CheckCircle className="h-3 w-3 mr-1" /> : '1'}
                   </Badge>
                   <Label>Upload Image</Label>
                 </div>
 
-                {!imageUrl ? (
-                  <CatboxUploadPortal onComplete={handleImageUpload} />
+                {!selectedFile ? (
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                    <Input
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      id="file-upload"
+                    />
+                    <Label
+                      htmlFor="file-upload"
+                      className="cursor-pointer flex flex-col items-center gap-2"
+                    >
+                      <Upload className="h-10 w-10 text-gray-400" />
+                      <span className="text-sm font-medium">Select image from your device</span>
+                      <span className="text-xs text-gray-500">Reddit Native Upload - No Catbox needed!</span>
+                    </Label>
+                  </div>
                 ) : (
                   <div className="flex items-center gap-4">
                     <img
-                      src={imageUrl}
-                      alt="Uploaded"
+                      src={imagePreviewUrl}
+                      alt="Selected"
                       className="w-32 h-32 object-cover rounded-lg"
                     />
                     <div>
-                      <p className="text-sm text-muted-foreground mb-2">Image uploaded to Catbox</p>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {selectedFile.name} ({Math.round(selectedFile.size / 1024)}KB)
+                      </p>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={startNewPost}
                       >
-                        Upload Different Image
+                        Select Different Image
                       </Button>
                     </div>
                   </div>
                 )}
               </div>
 
-              {imageUrl && (
+              {selectedFile && (
                 <div>
                   <div className="flex items-center gap-2 mb-4">
                     <Badge variant="outline">2</Badge>
@@ -772,8 +833,8 @@ export default function QuickPostPage() {
                         onValueChange={(value) => {
                           const nextService = value as PlatformService;
                           setSelectedService(nextService);
-                          if (imageUrl) {
-                            runCaptionGeneration(imageUrl, nextService, selectedTone, promotionMode, nsfw);
+                          if (imageBase64) {
+                            runCaptionGeneration(imageBase64, nextService, selectedTone, promotionMode, nsfw);
                           }
                         }}
                       >
@@ -799,8 +860,8 @@ export default function QuickPostPage() {
                         value={selectedTone}
                         onValueChange={(value) => {
                           setSelectedTone(value);
-                          if (imageUrl) {
-                            runCaptionGeneration(imageUrl, selectedService, value, promotionMode, nsfw);
+                          if (imageBase64) {
+                            runCaptionGeneration(imageBase64, selectedService, value, promotionMode, nsfw);
                           }
                         }}
                       >
@@ -823,9 +884,9 @@ export default function QuickPostPage() {
                         checked={promotionEnabled}
                         onCheckedChange={(checked) => {
                           setPromotionEnabled(checked);
-                          if (imageUrl) {
+                          if (imageBase64) {
                             runCaptionGeneration(
-                              imageUrl,
+                              imageBase64,
                               selectedService,
                               selectedTone,
                               checked ? 'explicit' : 'none',
@@ -853,9 +914,9 @@ export default function QuickPostPage() {
                             : availableTones[0]?.value ?? selectedTone;
                           setNsfw(checked);
                           setSelectedTone(nextTone);
-                          if (imageUrl) {
+                          if (imageBase64) {
                             runCaptionGeneration(
-                              imageUrl,
+                              imageBase64,
                               selectedService,
                               nextTone,
                               promotionMode,
@@ -875,7 +936,7 @@ export default function QuickPostPage() {
                 </div>
               )}
 
-              {imageUrl && (
+              {selectedFile && (
                 <div>
                   <div className="flex items-center gap-2 mb-4">
                     <Badge variant={captionOptions.length > 0 ? 'default' : 'outline'}>
@@ -1075,7 +1136,7 @@ export default function QuickPostPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => runCaptionGeneration(imageUrl, selectedService, selectedTone, promotionMode, nsfw)}
+                            onClick={() => runCaptionGeneration(imageBase64, selectedService, selectedTone, promotionMode, nsfw)}
                             disabled={generateCaptions.isPending}
                           >
                             <RefreshCw className="h-3 w-3 mr-1" />
@@ -1095,7 +1156,7 @@ export default function QuickPostPage() {
                 </div>
               )}
 
-              {imageUrl && (
+              {selectedFile && (
                 <div>
                   <div className="flex items-center gap-2 mb-4">
                     <Badge variant={protectedImageUrl ? 'default' : 'outline'}>

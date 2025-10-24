@@ -1,5 +1,6 @@
 import type { Express } from 'express';
 import crypto from 'crypto';
+import multer from 'multer';
 import { RedditManager, getRedditAuthUrl, exchangeRedditCode, type RedditPostResult } from './lib/reddit.js';
 import { SafetyManager } from './lib/safety-systems.js';
 import { db } from './db.js';
@@ -20,6 +21,22 @@ import { logger } from './bootstrap/logger.js';
 import { recordPostOutcome, summarizeRemovalReasons } from './compliance/ruleViolationTracker.js';
 import { redditIntelligenceService } from './services/reddit-intelligence.js';
 import { RedditNativeUploadService } from './services/reddit-native-upload.js';
+
+// Multer configuration for direct file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 20 * 1024 * 1024 // 20MB max (Reddit limit)
+  },
+  fileFilter: (_req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.'));
+    }
+  }
+});
 
 interface RedditProfile {
   username: string;
@@ -800,9 +817,13 @@ export function registerRedditRoutes(app: Express) {
     }
   });
 
-  // Alias for Quick Post - transforms Quick Post format to submit format
-  app.post('/api/reddit/post', authenticateToken(true), async (req: AuthRequest, res) => {
+  // Alias for Quick Post - supports both file uploads and URLs (no Catbox required!)
+  app.post('/api/reddit/post', authenticateToken(true), upload.single('image'), async (req: AuthRequest, res) => {
     const { title, subreddit, imageUrl, text, nsfw, spoiler } = req.body ?? {};
+    const uploadedFile = (req as AuthRequest & { file?: Express.Multer.File }).file;
+
+    // Check for direct file upload first (new flow - no Catbox!)
+    const hasFileUpload = !!uploadedFile;
 
     let cleanImageUrl: string | undefined = typeof imageUrl === 'string' ? imageUrl : undefined;
     if (typeof cleanImageUrl === 'string' && cleanImageUrl.trim().length > 0) {
@@ -826,9 +847,11 @@ export function registerRedditRoutes(app: Express) {
     logger.info('Quick Post request received', {
       userId: req.user?.id,
       subreddit,
-      hasImage: !!cleanImageUrl,
+      hasFileUpload,
+      hasImageUrl: !!cleanImageUrl,
       imageUrl: cleanImageUrl ? cleanImageUrl.substring(0, 100) : undefined,
-      titleLength: title?.length
+      titleLength: title?.length,
+      fileSize: uploadedFile?.size
     });
 
     const userId = req.user?.id;
@@ -858,12 +881,14 @@ export function registerRedditRoutes(app: Express) {
       const isNsfw = toBoolean(nsfw);
       const isSpoiler = toBoolean(spoiler);
 
-      if (normalizedImageUrl) {
+      // Prefer file upload over URL (direct Reddit upload, no Catbox!)
+      if (hasFileUpload || normalizedImageUrl) {
         const uploadResult = await RedditNativeUploadService.uploadAndPost({
           userId,
           subreddit,
           title,
-          imageUrl: normalizedImageUrl,
+          imageBuffer: hasFileUpload ? uploadedFile.buffer : undefined,
+          imageUrl: !hasFileUpload ? normalizedImageUrl : undefined,
           nsfw: isNsfw,
           spoiler: isSpoiler,
           allowImgboxFallback: true,
@@ -876,7 +901,7 @@ export function registerRedditRoutes(app: Express) {
               userId.toString(),
               subreddit,
               title,
-              typeof text === 'string' && text.trim().length > 0 ? text : normalizedImageUrl
+              typeof text === 'string' && text.trim().length > 0 ? text : (normalizedImageUrl || 'file-upload')
             );
           } catch (safetyError) {
             logger.warn('Failed to record safety signals', {

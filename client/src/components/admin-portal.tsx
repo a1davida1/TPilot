@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient } from '@/lib/queryClient';
+import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import {
   Users,
@@ -153,31 +153,11 @@ export function AdminPortal() {
   const [_reason, _setReason] = useState<string>('');
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
-  
-  // Authenticated API request with cookie-based auth
+
+  // Wrapper around apiRequest for admin endpoints (uses built-in CSRF handling)
   const authenticatedRequest = async (url: string, method: string = 'GET', data?: unknown) => {
-    const response = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      credentials: 'include', // Include cookies for session-based auth
-      body: data ? JSON.stringify(data) : undefined
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorMessage;
-      try {
-        const errorJson = JSON.parse(errorText);
-        errorMessage = errorJson.message || errorText;
-      } catch {
-        errorMessage = errorText || response.statusText;
-      }
-      throw new Error(errorMessage);
-    }
-    
-    return response.json();
+    const response = await apiRequest(method, url, data);
+    return response.json ? await response.json() : response;
   };
 
   // Fetch user statistics
