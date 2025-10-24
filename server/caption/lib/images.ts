@@ -1,4 +1,5 @@
 import { logger } from '../../bootstrap/logger.js';
+import { ImgboxService } from '../../lib/imgbox-service.js';
 
 /**
  * Fetches an image URL and converts it to a data URL (base64)
@@ -47,7 +48,30 @@ export async function imageUrlToDataUrl(imageUrl: string): Promise<string> {
       imageUrl,
       error: error instanceof Error ? error.message : String(error)
     });
-    // Return original URL as fallback
+
+    try {
+      const fallbackUpload = await ImgboxService.uploadFromUrl(imageUrl, { nsfw: true });
+      if (fallbackUpload.success && fallbackUpload.url) {
+        logger.info('[Images] Imgbox fallback succeeded for caption workflow', {
+          originalUrl: imageUrl.substring(0, 100),
+          fallbackUrl: fallbackUpload.url,
+        });
+        return fallbackUpload.url;
+      }
+
+      logger.warn('[Images] Imgbox fallback did not provide a URL', {
+        originalUrl: imageUrl.substring(0, 100),
+        error: fallbackUpload.error,
+        status: fallbackUpload.status,
+      });
+    } catch (fallbackError) {
+      logger.error('[Images] Imgbox fallback failed for caption workflow', {
+        imageUrl,
+        error: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
+      });
+    }
+
+    // Return original URL as final fallback
     return imageUrl;
   }
 }

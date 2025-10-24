@@ -182,7 +182,8 @@ async function secureFetchImage(imageUrl: string): Promise<Buffer> {
     'cdn.discordapp.com',
     'media.discordapp.net',
     'files.catbox.moe',
-    'catbox.moe'
+    'catbox.moe',
+    'imgbox.com'
   ];
 
   const hostname = url.hostname.toLowerCase();

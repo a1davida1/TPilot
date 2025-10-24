@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { RedditNativeUploadService } from '../../server/services/reddit-native-upload.js';
 import { RedditManager } from '../../server/lib/reddit.js';
 import { MediaManager } from '../../server/lib/media.js';
-import { CatboxService } from '../../server/lib/catbox-service.js';
+import { ImgboxService } from '../../server/lib/imgbox-service.js';
 
 vi.mock('../../server/lib/reddit.js', () => ({
   RedditManager: {
@@ -19,10 +19,10 @@ vi.mock('../../server/lib/media.js', () => ({
   }
 }));
 
-vi.mock('../../server/lib/catbox-service.js', () => ({
-  CatboxService: {
-    getUserHash: vi.fn(),
+vi.mock('../../server/lib/imgbox-service.js', () => ({
+  ImgboxService: {
     upload: vi.fn(),
+    uploadFromUrl: vi.fn(),
   }
 }));
 
@@ -85,8 +85,7 @@ describe('RedditNativeUploadService', () => {
       postsInLast24h: 0,
       maxPostsPer24h: 1,
     } as any);
-    vi.mocked(CatboxService.getUserHash).mockResolvedValue('fallback-hash');
-    vi.mocked(CatboxService.upload).mockResolvedValue({ success: true, url: 'https://files.catbox.moe/fallback.jpg' });
+    vi.mocked(ImgboxService.upload).mockResolvedValue({ success: true, url: 'https://imgbox.com/fallback.jpg' });
   });
 
   afterEach(() => {
@@ -163,7 +162,7 @@ describe('RedditNativeUploadService', () => {
     );
   });
 
-  it('falls back to Catbox when Reddit upload fails and fallback is enabled', async () => {
+  it('falls back to Imgbox when Reddit CDN upload fails', async () => {
     const mockAsset = {
       id: mockAssetId,
       key: 'test-key',
@@ -193,10 +192,11 @@ describe('RedditNativeUploadService', () => {
       error: 'temporary failure',
     });
 
+    vi.mocked(ImgboxService.upload).mockResolvedValue({ success: true, url: 'https://images.imgbox.com/fallback.jpg' });
     mockRedditManager.submitPost.mockResolvedValue({
       success: true,
-      postId: 'fallback123',
-      url: 'https://www.reddit.com/r/test_subreddit/comments/fallback123/',
+      postId: 'imgbox123',
+      url: 'https://www.reddit.com/r/test_subreddit/comments/imgbox123/',
     });
 
     const result = await RedditNativeUploadService.uploadAndPost({
@@ -207,18 +207,21 @@ describe('RedditNativeUploadService', () => {
       nsfw: false,
       spoiler: false,
       applyWatermark: false,
-      allowCatboxFallback: true,
+      allowImgboxFallback: true,
     });
 
     expect(mockRedditManager.submitImagePost).toHaveBeenCalledTimes(1);
+    expect(ImgboxService.upload).toHaveBeenCalledTimes(1);
     expect(mockRedditManager.submitPost).toHaveBeenCalledTimes(1);
-    expect(CatboxService.upload).toHaveBeenCalledTimes(1);
     expect(result.success).toBe(true);
-    expect(result.fallbackUsed).toBe('catbox');
-    expect(result.redditImageUrl).toBe('https://files.catbox.moe/fallback.jpg');
+    expect(result.fallbackUsed).toBe('imgbox');
+    expect(result.redditImageUrl).toBe('https://images.imgbox.com/fallback.jpg');
+    expect(result.warnings).toEqual(
+      expect.arrayContaining(['Posted using Imgbox fallback because Reddit CDN upload failed'])
+    );
   });
-
-  it('returns a descriptive error when Catbox fallback cannot run without a user hash', async () => {
+ 
+  it('returns a descriptive error when Imgbox fallback fails', async () => {
     const mockAsset = {
       id: mockAssetId,
       key: 'test-key',
@@ -248,19 +251,19 @@ describe('RedditNativeUploadService', () => {
       error: 'temporary failure',
     });
 
-    vi.mocked(CatboxService.getUserHash).mockResolvedValueOnce(null);
+    vi.mocked(ImgboxService.upload).mockResolvedValue({ success: false, error: 'Imgbox upload failed' });
 
     const result = await RedditNativeUploadService.uploadAndPost({
       userId: mockUserId,
       assetId: mockAssetId,
       subreddit: mockSubreddit,
       title: mockTitle,
-      allowCatboxFallback: true,
+      allowImgboxFallback: true,
     });
 
     expect(result.success).toBe(false);
-    expect(result.error).toContain('Catbox fallback requires');
-    expect(CatboxService.upload).not.toHaveBeenCalled();
+    expect(result.error).toContain('Imgbox fallback failed');
+    expect(ImgboxService.upload).toHaveBeenCalledTimes(1);
     expect(mockRedditManager.submitPost).not.toHaveBeenCalled();
   });
 

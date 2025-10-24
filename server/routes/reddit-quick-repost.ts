@@ -49,7 +49,7 @@ router.post('/', authenticateToken(true), async (req: AuthRequest, res) => {
       spoiler: spoiler ?? false,
       flairText,
       applyWatermark: true, // Apply ImageShield protection
-      allowCatboxFallback: true,
+      allowImgboxFallback: true,
     });
 
     if (!result.success) {

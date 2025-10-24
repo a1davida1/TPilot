@@ -642,7 +642,7 @@ export function registerRedditRoutes(app: Express) {
             imageUrl: url,
             nsfw: nsfw || false,
             spoiler: spoiler || false,
-            allowCatboxFallback: true,
+            allowImgboxFallback: true,
           });
           break;
         }
@@ -866,7 +866,7 @@ export function registerRedditRoutes(app: Express) {
           imageUrl: normalizedImageUrl,
           nsfw: isNsfw,
           spoiler: isSpoiler,
-          allowCatboxFallback: true,
+          allowImgboxFallback: true,
         });
 
         if (uploadResult.success && uploadResult.url) {

@@ -4,7 +4,7 @@
  */
 
 interface UploadMetrics {
-  provider: 'catbox' | 'proxy' | 'external';
+  provider: 'catbox' | 'imgbox' | 'proxy' | 'external';
   success: boolean;
   duration?: number;
   fileSize?: number;

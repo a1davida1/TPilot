@@ -108,7 +108,7 @@ describe('POST /api/reddit/post', () => {
       postId: 't3_test123',
       url: 'https://www.reddit.com/r/test/comments/test123/title',
       redditImageUrl: 'https://i.redd.it/test-image.jpg',
-      warnings: ['Catbox fallback skipped'],
+      warnings: ['Imgbox fallback skipped'],
     };
     vi.mocked(RedditNativeUploadService.uploadAndPost).mockResolvedValue(uploadResult);
 
@@ -140,7 +140,7 @@ describe('POST /api/reddit/post', () => {
       imageUrl: 'https://cdn.example.com/photo.png',
       nsfw: true,
       spoiler: false,
-      allowCatboxFallback: true,
+      allowImgboxFallback: true,
     });
 
     expect(SafetyManager.recordPost).toHaveBeenCalledWith('42', 'test');
