@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { RedditNativeUploadService } from '../../server/services/reddit-native-upload.js';
 import { RedditManager } from '../../server/lib/reddit.js';
 import { MediaManager } from '../../server/lib/media.js';
-import { CatboxService } from '../../server/lib/catbox-service.js';
 
 vi.mock('../../server/lib/reddit.js', () => ({
   RedditManager: {
@@ -19,12 +18,6 @@ vi.mock('../../server/lib/media.js', () => ({
   }
 }));
 
-vi.mock('../../server/lib/catbox-service.js', () => ({
-  CatboxService: {
-    getUserHash: vi.fn(),
-    upload: vi.fn(),
-  }
-}));
 
 vi.mock('../../server/compliance/ruleViolationTracker.js', () => ({
   recordPostOutcome: vi.fn(),
@@ -85,8 +78,6 @@ describe('RedditNativeUploadService', () => {
       postsInLast24h: 0,
       maxPostsPer24h: 1,
     } as any);
-    vi.mocked(CatboxService.getUserHash).mockResolvedValue('fallback-hash');
-    vi.mocked(CatboxService.upload).mockResolvedValue({ success: true, url: 'https://files.catbox.moe/fallback.jpg' });
   });
 
   afterEach(() => {
@@ -163,7 +154,9 @@ describe('RedditNativeUploadService', () => {
     );
   });
 
-  it('falls back to Catbox when Reddit upload fails and fallback is enabled', async () => {
+
+
+  it('propagates Reddit upload failures without Catbox fallback', async () => {
     const mockAsset = {
       id: mockAssetId,
       key: 'test-key',
@@ -173,108 +166,6 @@ describe('RedditNativeUploadService', () => {
       visibility: 'private',
     };
 
-    const mockImageBuffer = Buffer.from([
-      0xFF, 0xD8, 0xFF, 0xE0,
-      0x00, 0x10,
-      0x4A, 0x46, 0x49, 0x46, 0x00,
-      0x01, 0x01,
-      0x00,
-      0x00, 0x01,
-      0x00, 0x01,
-      0x00, 0x00,
-      0xFF, 0xD9,
-    ]);
-
-    vi.mocked(MediaManager.getAsset).mockResolvedValue(mockAsset as any);
-    vi.mocked(MediaManager.getAssetBuffer).mockResolvedValue(mockImageBuffer);
-
-    mockRedditManager.submitImagePost.mockResolvedValue({
-      success: false,
-      error: 'temporary failure',
-    });
-
-    mockRedditManager.submitPost.mockResolvedValue({
-      success: true,
-      postId: 'fallback123',
-      url: 'https://www.reddit.com/r/test_subreddit/comments/fallback123/',
-    });
-
-    const result = await RedditNativeUploadService.uploadAndPost({
-      userId: mockUserId,
-      assetId: mockAssetId,
-      subreddit: mockSubreddit,
-      title: mockTitle,
-      nsfw: false,
-      spoiler: false,
-      applyWatermark: false,
-      allowCatboxFallback: true,
-    });
-
-    expect(mockRedditManager.submitImagePost).toHaveBeenCalledTimes(1);
-    expect(mockRedditManager.submitPost).toHaveBeenCalledTimes(1);
-    expect(CatboxService.upload).toHaveBeenCalledTimes(1);
-    expect(result.success).toBe(true);
-    expect(result.fallbackUsed).toBe('catbox');
-    expect(result.redditImageUrl).toBe('https://files.catbox.moe/fallback.jpg');
-  });
-
-  it('returns a descriptive error when Catbox fallback cannot run without a user hash', async () => {
-    const mockAsset = {
-      id: mockAssetId,
-      key: 'test-key',
-      filename: 'test.jpg',
-      mime: 'image/jpeg',
-      bytes: 1024,
-      visibility: 'private',
-    };
-
-    const mockImageBuffer = Buffer.from([
-      0xFF, 0xD8, 0xFF, 0xE0,
-      0x00, 0x10,
-      0x4A, 0x46, 0x49, 0x46, 0x00,
-      0x01, 0x01,
-      0x00,
-      0x00, 0x01,
-      0x00, 0x01,
-      0x00, 0x00,
-      0xFF, 0xD9,
-    ]);
-
-    vi.mocked(MediaManager.getAsset).mockResolvedValue(mockAsset as any);
-    vi.mocked(MediaManager.getAssetBuffer).mockResolvedValue(mockImageBuffer);
-
-    mockRedditManager.submitImagePost.mockResolvedValue({
-      success: false,
-      error: 'temporary failure',
-    });
-
-    vi.mocked(CatboxService.getUserHash).mockResolvedValueOnce(null);
-
-    const result = await RedditNativeUploadService.uploadAndPost({
-      userId: mockUserId,
-      assetId: mockAssetId,
-      subreddit: mockSubreddit,
-      title: mockTitle,
-      allowCatboxFallback: true,
-    });
-
-    expect(result.success).toBe(false);
-    expect(result.error).toContain('Catbox fallback requires');
-    expect(CatboxService.upload).not.toHaveBeenCalled();
-    expect(mockRedditManager.submitPost).not.toHaveBeenCalled();
-  });
-
-  it.skip('should handle Reddit upload failures gracefully', async () => {
-    const mockAsset = {
-      id: mockAssetId,
-      key: 'test-key',
-      filename: 'test.jpg',
-      mime: 'image/jpeg',
-      bytes: 1024,
-      visibility: 'private',
-    };
-    
-    // Create a minimal valid JPEG buffer
     const mockImageBuffer = Buffer.from([
       0xFF, 0xD8, 0xFF, 0xE0, // JPEG SOI and APP0 marker
       0x00, 0x10, // Length
@@ -286,28 +177,27 @@ describe('RedditNativeUploadService', () => {
       0x00, 0x00, // Thumbnail dimensions
       0xFF, 0xD9, // EOI marker
     ]);
-    
+
     vi.mocked(MediaManager.getAsset).mockResolvedValue(mockAsset as any);
     vi.mocked(MediaManager.getAssetBuffer).mockResolvedValue(mockImageBuffer);
-    
-    // Mock Reddit upload failure
+
     mockRedditManager.submitImagePost.mockResolvedValue({
       success: false,
       error: 'Reddit rate limit exceeded',
     });
-    
-    // Perform upload
+
     const result = await RedditNativeUploadService.uploadAndPost({
       userId: mockUserId,
       assetId: mockAssetId,
       subreddit: mockSubreddit,
       title: mockTitle,
     });
-    
-    // Assertions
+
     expect(result.success).toBe(false);
     expect(result.error).toBe('Reddit rate limit exceeded');
     expect(result.postId).toBeUndefined();
+    expect(MediaManager.recordUsage).not.toHaveBeenCalled();
+    expect(mockRedditManager.submitPost).not.toHaveBeenCalled();
   });
 
   it.skip('should apply watermark when requested', async () => {

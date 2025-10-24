@@ -71,9 +71,9 @@ Simplified to use Reddit native upload:
 
 ### 3. Quick Post & Generator Submissions (`server/reddit-routes.ts` and `app/api/reddit/post/route.ts`)
 
-- `/api/reddit/post` now routes through `RedditNativeUploadService.uploadAndPost`, so the Quick Post workflow in `client/src/pages/quick-post.tsx` and the caption generator share the same native upload plus Catbox fallback behavior.
+- `/api/reddit/post` now routes through `RedditNativeUploadService.uploadAndPost`, so the Quick Post workflow in `client/src/pages/quick-post.tsx` and the caption generator share the same native-only Reddit upload behavior and identical validation logic.
 - The dashboard posting page (`app/(dashboard)/posting/posting-client.tsx`) already uses the Next.js API at `app/api/reddit/post/route.ts`, which posts via the native service and schedules through the same pipeline.
-- Successful responses surface the Reddit CDN URL, and failures include Catbox guidance whenever the fallback path is engaged.
+- Successful responses surface the Reddit CDN URL, and failures propagate explicit Reddit errors so users can take corrective action without relying on third-party hosts.
 
 ### 4. Gallery Service Updates (`server/services/gallery-service.ts`)
 
@@ -109,7 +109,7 @@ The service gracefully handles:
 - **Permission Errors**: Subreddit restrictions
 - **Size Issues**: Automatic optimization
 - **Network Failures**: Proper error propagation
-- **Catbox Fallback**: When enabled, failed native uploads trigger an authenticated Catbox transfer and link post so long as the user has configured a Catbox user hash
+- **Native Failure Propagation**: If Reddit rejects the upload, the request fails fast with the Reddit error (no Catbox fallback).
 
 ## API Responses
 

@@ -190,7 +190,6 @@ export async function POST(request: Request) {
         title: deriveTitle(row),
         imageUrl: row.imageUrl,
         nsfw: deriveNsfw(row, requestEntry.nsfw),
-        allowCatboxFallback: true,
       });
 
       if (postResult.success && postResult.url) {
