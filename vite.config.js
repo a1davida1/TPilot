@@ -65,7 +65,9 @@ const isModuleNotFoundError = (error) => {
 
     const referencesPlugin =
         typeof error.message === "string" && error.message.includes("vite-plugin-pwa");
-    return "code" in error && error.code === "ERR_MODULE_NOT_FOUND" && referencesPlugin;
+    const referencesPlugin =
+        typeof error.message === "string" && error.message.includes("vite-plugin-pwa");
+    return error && typeof error === "object" && "code" in error && error.code === "ERR_MODULE_NOT_FOUND" && referencesPlugin;
 };
 
 const createPwaPlugin = async () => {
