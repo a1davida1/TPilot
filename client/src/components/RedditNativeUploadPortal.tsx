@@ -215,8 +215,9 @@ export function RedditNativeUploadPortal({
       return;
     }
 
-    setPreviewUrl(sanitized);
-    onComplete({ imageUrl: sanitized, provider: 'external' });
+    const absoluteUrl = toAbsoluteUrl(sanitized);
+    setPreviewUrl(absoluteUrl);
+    onComplete({ imageUrl: absoluteUrl, provider: 'external' });
     trackUpload({ provider: 'external', success: true });
     toast({ title: 'URL accepted', description: 'We will pull this image directly when posting to Reddit.' });
   }, [externalUrl, onComplete, toast]);
