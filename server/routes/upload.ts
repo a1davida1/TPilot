@@ -2,6 +2,7 @@ import express, { type Request, type Response } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
+import { realpathSync } from 'fs';
 import crypto from 'crypto';
 import sharp from 'sharp';
 import { fileTypeFromBuffer } from 'file-type';
@@ -14,9 +15,6 @@ import { imageStreamingUpload, cleanupUploadedFiles } from '../middleware/stream
 import { embedSignature } from '../lib/steganography.js';
 import { buildUploadUrl } from '../lib/uploads.js';
 
-interface UploadAuthRequest extends AuthRequest {
-  file?: Express.Multer.File;
-}
 
 const router = express.Router();
 
@@ -407,7 +405,11 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken(tr
     tempFilePath = authReq.file.path;
 
     if (userId === null) {
-      await fs.unlink(tempFilePath).catch(() => {});
+      if (isPathWithin(tempFilePath)) {
+        await fs.unlink(tempFilePath).catch(() => {});
+      } else {
+        logger.warn('Attempted to unlink file outside upload directory.', { tempFilePath, userId });
+      }
       return res.status(401).json({ message: 'Authentication required for uploads' });
     }
     
@@ -418,7 +420,11 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken(tr
     // Real MIME type validation using file content analysis
     const fileValidation = await validateImageFile(tempFilePath, authReq.file.mimetype);
     if (!fileValidation.isValid) {
-      await fs.unlink(tempFilePath);
+      if (isPathWithin(tempFilePath)) {
+        await fs.unlink(tempFilePath);
+      } else {
+        logger.warn('Attempted to unlink file outside upload directory.', { tempFilePath, userId });
+      }
       logger.warn('File validation failed', {
         userId,
         originalName: authReq.file.originalname,
@@ -529,7 +535,11 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken(tr
     
     // Clean up any temp files
     if (tempFilePath) {
-      try { await fs.unlink(tempFilePath); } catch (_e) { /* ignore cleanup errors */ }
+      if (isPathWithin(tempFilePath)) {
+        try { await fs.unlink(tempFilePath); } catch (_e) { /* ignore cleanup errors */ }
+      } else {
+        logger.warn('Attempted to unlink file outside upload directory during error cleanup.', { tempFilePath });
+      }
     }
     if (protectedFilePath) {
       try { await fs.unlink(protectedFilePath); } catch (_e) { /* ignore cleanup errors */ }
