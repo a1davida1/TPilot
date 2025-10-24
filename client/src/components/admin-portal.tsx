@@ -165,16 +165,17 @@ export function AdminPortal() {
       body: data ? JSON.stringify(data) : undefined
     });
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorMessage;
-      try {
-        const errorJson = JSON.parse(errorText);
-        errorMessage = errorJson.message || errorText;
-      } catch {
-        errorMessage = errorText || response.statusText;
-      }
-      throw new Error(errorMessage);
+if (!response.ok) {
+  const errorText = await response.text();
+  let errorMessage = errorText || response.statusText;
+  try {
+    const errorJson = JSON.parse(errorText);
+    errorMessage = errorJson.message || errorText;
+  } catch {
+    // If parsing fails, we already have errorMessage set to errorText
+  }
+  throw new Error(errorMessage);
+}
     }
     
     return response.json();
