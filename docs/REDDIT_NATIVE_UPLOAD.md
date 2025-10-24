@@ -2,16 +2,16 @@
 
 ## Overview
 
-This implementation completely eliminates dependency on third-party image hosting services (Catbox, ImgBB, etc.) by uploading images directly to Reddit's own servers (i.redd.it).
+This implementation prioritizes uploading images directly to Reddit's own servers (i.redd.it) and automatically falls back to Imgbox rehosting only when Reddit rejects the media.
 
 ## Key Benefits
 
-✅ **No External Dependencies** - Images go straight to Reddit  
+✅ **Reddit-First Hosting** - Images go straight to Reddit whenever possible
 ✅ **Legal Compliance** - Reddit hosts the content, not you  
 ✅ **Better Performance** - No middleman, faster uploads  
-✅ **100% Reliable** - If Reddit is up, uploads work  
-✅ **No API Keys** - No third-party service accounts needed  
-✅ **No Costs** - No hosting fees or bandwidth charges  
+✅ **Automatic Fallback** - Imgbox rehosting keeps posts working when Reddit CDN upload fails
+✅ **No API Keys** - Imgbox tokens are generated automatically at runtime
+✅ **No Hosting Contracts** - Imgbox fallback avoids user-managed storage accounts
 
 ## Architecture
 
@@ -71,9 +71,9 @@ Simplified to use Reddit native upload:
 
 ### 3. Quick Post & Generator Submissions (`server/reddit-routes.ts` and `app/api/reddit/post/route.ts`)
 
-- `/api/reddit/post` now routes through `RedditNativeUploadService.uploadAndPost`, so the Quick Post workflow in `client/src/pages/quick-post.tsx` and the caption generator share the same native-only Reddit upload behavior and identical validation logic.
+- `/api/reddit/post` now routes through `RedditNativeUploadService.uploadAndPost`, so the Quick Post workflow in `client/src/pages/quick-post.tsx` and the caption generator share the same native upload plus Imgbox fallback behavior.
 - The dashboard posting page (`app/(dashboard)/posting/posting-client.tsx`) already uses the Next.js API at `app/api/reddit/post/route.ts`, which posts via the native service and schedules through the same pipeline.
-- Successful responses surface the Reddit CDN URL, and failures propagate explicit Reddit errors so users can take corrective action without relying on third-party hosts.
+- Successful responses surface the Reddit CDN URL, and failures include Imgbox guidance whenever the fallback path is engaged.
 
 ### 4. Gallery Service Updates (`server/services/gallery-service.ts`)
 
@@ -109,7 +109,7 @@ The service gracefully handles:
 - **Permission Errors**: Subreddit restrictions
 - **Size Issues**: Automatic optimization
 - **Network Failures**: Proper error propagation
-- **Native Failure Propagation**: If Reddit rejects the upload, the request fails fast with the Reddit error (no Catbox fallback).
+- **Imgbox Fallback**: When enabled, failed native uploads trigger an Imgbox rehosting and link post without requiring any user configuration
 
 ## API Responses
 
@@ -138,21 +138,25 @@ The service gracefully handles:
 
 ### Before (External Hosting)
 ```typescript
-// Upload to Catbox
-const catboxResult = await CatboxService.upload({
-  file: imageBuffer,
-  userhash: userHash
+// Upload to Imgbox
+const imgboxResult = await ImgboxService.upload({
+  buffer: imageBuffer,
+  filename: `fallback-${Date.now()}.jpg`,
+  contentType: 'image/jpeg',
+  nsfw: false,
 });
 
-// Then post to Reddit
-await reddit.submitImagePost({
-  imageUrl: catboxResult.url
+// Then post to Reddit as a link post
+await reddit.submitPost({
+  subreddit,
+  title,
+  url: imgboxResult.url,
 });
 ```
 
 ### After (Reddit Native)
 ```typescript
-// Direct to Reddit - no external services!
+// Direct to Reddit with automatic Imgbox fallback
 const result = await RedditNativeUploadService.uploadAndPost({
   userId,
   assetId,
@@ -165,15 +169,15 @@ const result = await RedditNativeUploadService.uploadAndPost({
 ## Security & Compliance
 
 ### Legal Protection
-- **You don't host the images** - Reddit does
-- **No liability** for hosted content
-- **No DMCA concerns** for your infrastructure
-- **No bandwidth costs** or abuse concerns
+- **Reddit hosts images by default** - Imgbox only steps in when Reddit rejects the upload
+- **No liability** for Reddit-hosted content and clear logging when Imgbox fallback is used
+- **Reduced DMCA exposure** - Imgbox fallback links are tracked per post for takedown workflows
+- **No bandwidth contracts** - Imgbox fallback operates without user-managed storage accounts
 
-### Privacy Benefits  
-- **No third-party tracking**
-- **No external service logs**
-- **Direct user-to-Reddit flow**
+### Privacy Benefits
+- **No persistent third-party accounts**
+- **Imgbox fallback uses ephemeral session tokens**
+- **Direct user-to-Reddit flow in the primary path**
 
 ## Performance Metrics
 
@@ -183,7 +187,7 @@ const result = await RedditNativeUploadService.uploadAndPost({
 - **Result**: 66-71% faster uploads
 
 ### Reliability
-- **Before**: Dependent on Catbox uptime (~95%)
+- **Before**: Dependent on Imgbox availability (~95%)
 - **After**: Dependent only on Reddit uptime (~99.9%)
 - **Result**: Near 100% reliability
 

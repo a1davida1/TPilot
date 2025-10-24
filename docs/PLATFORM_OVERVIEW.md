@@ -87,7 +87,7 @@ Scheduling Page → Bulk Upload → Select Images → Generate Captions → Set 
 - Rate limiting protection
 
 ### **Content Pipeline**
-- **Image Storage**: Reddit native uploads (i.redd.it) are the primary path. Catbox remains available for manual gallery tooling, but Reddit posting now relies exclusively on native uploads (no automatic fallback).
+- **Image Storage**: Reddit native uploads (i.redd.it) are the primary path with Imgbox fallback when Reddit rejects media
 - **Catbox.moe Integration**: Optional secondary hosting with authenticated uploads
 - **AI Caption Generation**: OpenRouter ONLY (Grok-4-Fast primary model)
   - **SFW Voices**: flirty_playful, gamer_nerdy, luxury_minimal, arts_muse, gym_energy, cozy_girl
@@ -173,7 +173,8 @@ Scheduling Page → Bulk Upload → Select Images → Generate Captions → Set 
 
 ### **External Services**
 - **Imgur API** (primary image hosting, legal compliance)
-- **Catbox.moe API** (secondary hosting, optional authenticated uploads)
+- **Imgbox API** (automatic fallback hosting when Reddit CDN rejects uploads)
+- **Catbox.moe API** (legacy optional hosting with authenticated uploads)
 - **Reddit API** (OAuth, posting, monitoring, subreddit discovery)
 - **OpenRouter API** (AI caption generation via Grok-4-Fast)
   - Model: `x-ai/grok-4-fast`
@@ -203,7 +204,8 @@ Scheduling Page → Bulk Upload → Select Images → Generate Captions → Set 
 - Authentication system (email/password, Reddit OAuth)
 - Reddit integration (multi-account, posting, monitoring)
 - Imgur uploads (primary hosting)
-- Catbox.moe uploads (secondary hosting)
+- Imgbox fallback uploads (automatic when Reddit CDN fails)
+- Catbox.moe uploads (legacy/optional hosting)
 - OpenRouter caption generation (3 modes: Image, Text, Rewrite)
 - NSFW voice system (4 explicit voices with first-person prompts)
 - Scheduled posting (cron-based processing)

@@ -80,7 +80,14 @@ function sanitizeProvider(value: unknown): string {
     return 'catbox';
   }
   const trimmed = value.trim();
-  return trimmed || 'catbox';
+  if (!trimmed) {
+    return 'catbox';
+  }
+  const normalized = trimmed.toLowerCase();
+  if (normalized === 'imgbox') {
+    return 'imgbox';
+  }
+  return trimmed;
 }
 
 function coerceBoolean(value: unknown): boolean {

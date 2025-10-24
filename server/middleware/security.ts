@@ -399,6 +399,8 @@ export const securityMiddleware = [
           "https://i.imgur.com",
           "https://i.redd.it",
           "https://cdn.discordapp.com",
+          "https://imgbox.com",
+          "https://*.imgbox.com",
           "*.stripe.com",
           "*.googleapis.com",
           // Fallback for other image hosts
@@ -414,6 +416,8 @@ export const securityMiddleware = [
           "https://catbox.moe",
           "https://files.catbox.moe",
           "https://litterbox.catbox.moe",
+          "https://imgbox.com",
+          "https://*.imgbox.com",
           "wss://*.replit.dev",
           "wss://*.replit.app",
           "ws://localhost:*"

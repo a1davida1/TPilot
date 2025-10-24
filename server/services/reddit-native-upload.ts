@@ -14,6 +14,7 @@ import { MediaManager } from '../lib/media.js';
 import { recordPostOutcome } from '../compliance/ruleViolationTracker.js';
 import { applyImageShieldProtection } from '../routes/upload.js';
 import type { PostingPermission } from '../lib/reddit.js';
+import { ImgboxService } from '../lib/imgbox-service.js';
 
 export interface RedditUploadOptions {
   assetId?: number;
@@ -27,6 +28,7 @@ export interface RedditUploadOptions {
   spoiler?: boolean;
   flairText?: string;
   applyWatermark?: boolean;
+  allowImgboxFallback?: boolean;
 }
 
 
@@ -38,6 +40,8 @@ export interface RedditUploadResult {
   error?: string;
   warnings?: string[];
   decision?: PostingPermission;
+  fallbackUsed?: 'imgbox';
+  fallbackUrl?: string;
 }
 
 
@@ -146,8 +150,28 @@ export class RedditNativeUploadService {
         }
       );
 
-      if (!uploadResult.success) {
-        return uploadResult;
+      let finalResult = uploadResult;
+
+      if (!finalResult.success && options.allowImgboxFallback) {
+        finalResult = await this.fallbackToImgbox({
+          redditManager: reddit,
+          imageBuffer,
+          userId: options.userId,
+          subreddit: options.subreddit,
+          title: options.title,
+          nsfw: options.nsfw ?? false,
+          spoiler: options.spoiler ?? false,
+          permission,
+          originalError: uploadResult.error,
+          priorWarnings: this.mergeWarnings(
+            uploadResult.warnings,
+            uploadResult.error ? [uploadResult.error] : undefined,
+          ),
+        });
+      }
+
+      if (!finalResult.success) {
+        return finalResult;
       }
 
       // Record successful upload
@@ -170,7 +194,12 @@ export class RedditNativeUploadService {
         duration: Date.now() - startTime,
       };
 
-      logger.info('Reddit native upload successful', logContext);
+      const logMessage =
+        finalResult.fallbackUsed === 'imgbox'
+          ? 'Reddit upload completed via Imgbox fallback'
+          : 'Reddit native upload successful';
+
+      logger.info(logMessage, logContext);
 
       return uploadResult;
 
@@ -438,6 +467,142 @@ export class RedditNativeUploadService {
     }
   }
 
+  private static mergeWarnings(...sources: Array<ReadonlyArray<string> | undefined>): string[] | undefined {
+    const values = (sources || [])
+      .flatMap(source => (source ?? []).filter(item => typeof item === 'string' && item.trim().length > 0));
+
+    if (values.length === 0) {
+      return undefined;
+    }
+
+    return Array.from(new Set(values));
+  }
+
+  private static async fallbackToImgbox(params: {
+    redditManager: RedditManager;
+    imageBuffer: Buffer | null;
+    userId: number;
+    subreddit: string;
+    title: string;
+    nsfw: boolean;
+    spoiler: boolean;
+    permission: PostingPermission;
+    originalError?: string;
+    priorWarnings?: ReadonlyArray<string>;
+  }): Promise<RedditUploadResult> {
+    const {
+      redditManager,
+      imageBuffer,
+      userId,
+      subreddit,
+      title,
+      nsfw,
+      spoiler,
+      permission,
+      originalError,
+      priorWarnings,
+    } = params;
+
+    const baseError = originalError
+      ? `Reddit native upload failed: ${originalError}`
+      : 'Reddit native upload failed';
+
+    if (!imageBuffer || imageBuffer.length === 0) {
+      const warnings = this.mergeWarnings(priorWarnings);
+      return {
+        success: false,
+        error: `${baseError}. Imgbox fallback unavailable because the processed image buffer is empty.`,
+        warnings,
+        decision: permission,
+      };
+    }
+
+    try {
+      const upload = await ImgboxService.upload({
+        buffer: imageBuffer,
+        filename: `reddit-fallback-${Date.now()}.jpg`,
+        contentType: 'image/jpeg',
+        nsfw,
+      });
+
+      if (!upload.success || !upload.url) {
+        const warnings = this.mergeWarnings(priorWarnings);
+        logger.error('Imgbox fallback upload failed', {
+          userId,
+          subreddit,
+          error: upload.error,
+          status: upload.status,
+        });
+
+        return {
+          success: false,
+          error: `${baseError}. Imgbox fallback failed: ${upload.error ?? 'Imgbox did not return a URL.'}`,
+          warnings,
+          decision: permission,
+        };
+      }
+
+      logger.info('Imgbox fallback upload succeeded', {
+        userId,
+        subreddit,
+        fallbackUrl: upload.url,
+      });
+
+      const linkResult = await redditManager.submitPost({
+        subreddit,
+        title,
+        url: upload.url,
+        nsfw,
+        spoiler,
+      });
+
+      if (!linkResult.success) {
+        const warnings = this.mergeWarnings(priorWarnings);
+        logger.error('Imgbox fallback Reddit post failed', {
+          userId,
+          subreddit,
+          error: linkResult.error,
+        });
+
+        return {
+          success: false,
+          error: `${baseError}. Imgbox fallback upload succeeded but Reddit link post failed: ${linkResult.error ?? 'Unknown error.'}`,
+          warnings,
+          decision: linkResult.decision ?? permission,
+        };
+      }
+
+      const warnings = this.mergeWarnings(
+        priorWarnings,
+        ['Posted using Imgbox fallback because Reddit CDN upload failed'],
+      );
+
+      return {
+        success: true,
+        postId: linkResult.postId,
+        url: linkResult.url,
+        redditImageUrl: upload.url,
+        warnings,
+        decision: linkResult.decision ?? permission,
+        fallbackUsed: 'imgbox',
+        fallbackUrl: upload.url,
+      };
+    } catch (error) {
+      const warnings = this.mergeWarnings(priorWarnings);
+      logger.error('Imgbox fallback encountered an unexpected error', {
+        userId,
+        subreddit,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      return {
+        success: false,
+        error: `${baseError}. Imgbox fallback encountered an unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+        warnings,
+        decision: permission,
+      };
+    }
+  }
 
   /**
    * Batch upload multiple images (for future gallery support)
@@ -450,7 +615,7 @@ export class RedditNativeUploadService {
     options: {
       nsfw?: boolean;
       spoiler?: boolean;
-    } = {}
+    } = {},
   ): Promise<RedditUploadResult> {
     // For now, just upload the first image
     // Reddit's gallery API is more complex and requires special handling
@@ -473,4 +638,6 @@ export class RedditNativeUploadService {
       applyWatermark: true,
     });
   }
+
 }
+
