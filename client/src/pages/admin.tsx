@@ -222,7 +222,7 @@ export function AdminDashboard() {
         setTempPassword(nextTempPassword);
         toast({ title: "Password Reset Successful", description: "Temporary password generated." });
       } else if (variables.action === 'tier-management') {
-        toast({ title: "Tier Updated", description: `User tier changed to ${variables.tier ?? newTier}` });
+toast({ title: "Tier Updated", description: `User tier changed to ${variables.action === 'tier-management' ? variables.tier ?? newTier : ''}` });
         setSelectedUser(null);
         setActionType(null);
       } else {
