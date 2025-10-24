@@ -469,7 +469,7 @@ export class RedditNativeUploadService {
   }
 
   private static mergeWarnings(...sources: Array<ReadonlyArray<string> | undefined>): string[] | undefined {
-    const values = sources
+    const values = (sources || [])
       .flatMap(source => (source ?? []).filter(item => typeof item === 'string' && item.trim().length > 0));
 
     if (values.length === 0) {
