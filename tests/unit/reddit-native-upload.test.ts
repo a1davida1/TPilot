@@ -289,28 +289,27 @@ describe('RedditNativeUploadService', () => {
       0x00, 0x00, // Thumbnail dimensions
       0xFF, 0xD9, // EOI marker
     ]);
-    
+
     vi.mocked(MediaManager.getAsset).mockResolvedValue(mockAsset as any);
     vi.mocked(MediaManager.getAssetBuffer).mockResolvedValue(mockImageBuffer);
-    
-    // Mock Reddit upload failure
+
     mockRedditManager.submitImagePost.mockResolvedValue({
       success: false,
       error: 'Reddit rate limit exceeded',
     });
-    
-    // Perform upload
+
     const result = await RedditNativeUploadService.uploadAndPost({
       userId: mockUserId,
       assetId: mockAssetId,
       subreddit: mockSubreddit,
       title: mockTitle,
     });
-    
-    // Assertions
+
     expect(result.success).toBe(false);
     expect(result.error).toBe('Reddit rate limit exceeded');
     expect(result.postId).toBeUndefined();
+    expect(MediaManager.recordUsage).not.toHaveBeenCalled();
+    expect(mockRedditManager.submitPost).not.toHaveBeenCalled();
   });
 
   it.skip('should apply watermark when requested', async () => {

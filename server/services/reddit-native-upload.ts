@@ -190,9 +190,8 @@ export class RedditNativeUploadService {
       const logContext = {
         userId: options.userId,
         subreddit: options.subreddit,
-        postId: finalResult.postId,
+        postId: uploadResult.postId,
         duration: Date.now() - startTime,
-        fallbackUsed: finalResult.fallbackUsed ?? 'native',
       };
 
       const logMessage =
@@ -202,7 +201,7 @@ export class RedditNativeUploadService {
 
       logger.info(logMessage, logContext);
 
-      return finalResult;
+      return uploadResult;
 
     } catch (error) {
       logger.error('Reddit native upload failed', {
