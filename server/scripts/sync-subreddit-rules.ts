@@ -268,7 +268,7 @@ type ContentRulesDefaults = NonNullable<StructuredRuleSet['content']>;
 type PostingRulesDefaults = NonNullable<StructuredRuleSet['posting']>;
 
 function mapRuleSpecToCommunityRules(spec: RuleSpec): RedditCommunityRuleSet {
-  const defaults = createDefaultRules() as StructuredRuleSet;
+  const defaults = createDefaultRules() as StructuredRuleSet || {} as StructuredRuleSet;
 
   const eligibilityDefaults: EligibilityRulesDefaults = {
     minKarma: null,
