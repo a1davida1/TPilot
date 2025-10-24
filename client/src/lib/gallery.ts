@@ -138,7 +138,7 @@ export function normalizeBytes(value: unknown): number {
   return Math.round(value);
 }
 
-const mediaAssetResponseSchema = z
+export const mediaAssetResponseSchema = z
   .object({
     id: z.number().int(),
     filename: z.unknown(),
@@ -225,7 +225,7 @@ export function parseMediaAssetsResponse(input: unknown): MediaAssetResponse[] {
   if (!Array.isArray(input)) {
     return [];
   }
-  
+
   const results: MediaAssetResponse[] = [];
   for (const item of input) {
     try {
@@ -236,6 +236,14 @@ export function parseMediaAssetsResponse(input: unknown): MediaAssetResponse[] {
     }
   }
   return results;
+}
+
+export function parseSingleMediaAsset(input: unknown): MediaAssetResponse | null {
+  try {
+    return mediaAssetResponseSchema.parse(input);
+  } catch {
+    return null;
+  }
 }
 
 export function parseCatboxUploadsApiResponse(input: unknown): CatboxUploadsApiResponse {

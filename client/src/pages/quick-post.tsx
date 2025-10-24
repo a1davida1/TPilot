@@ -50,7 +50,7 @@ import {
 } from '@/components/ui/command';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { CatboxUploadPortal } from '@/components/CatboxUploadPortal';
+import { RedditNativeUploadPortal } from '@/components/RedditNativeUploadPortal';
 import { cn } from '@/lib/utils';
 import type { CaptionObject } from '@shared/types/caption';
 import type { SubredditCommunity } from '@/types/reddit';
@@ -617,7 +617,7 @@ export default function QuickPostPage() {
     }
   });
 
-  const handleImageUpload = (result: { imageUrl: string }) => {
+  const handleImageUpload = (result: { imageUrl: string; assetId?: number }) => {
     setImageUrl(result.imageUrl);
     setPosted(false);
     setCaptionOptions([]);
@@ -770,7 +770,7 @@ export default function QuickPostPage() {
                 </div>
 
                 {!imageUrl ? (
-                  <CatboxUploadPortal onComplete={handleImageUpload} />
+                  <RedditNativeUploadPortal onComplete={handleImageUpload} />
                 ) : (
                   <div className="flex items-center gap-4">
                     {sanitizeImageUrl(imageUrl) ? (
@@ -785,7 +785,7 @@ export default function QuickPostPage() {
                       </div>
                     )}
                     <div>
-                      <p className="text-sm text-muted-foreground mb-2">Image uploaded to Catbox</p>
+                        <p className="text-sm text-muted-foreground mb-2">Image stored for Reddit native posting</p>
                       <Button
                         variant="outline"
                         size="sm"

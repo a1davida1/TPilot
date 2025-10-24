@@ -23,7 +23,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest } from '@/lib/queryClient';
-import { CatboxUploadPortal } from '@/components/CatboxUploadPortal';
+import { RedditNativeUploadPortal } from '@/components/RedditNativeUploadPortal';
 import { cn } from '@/lib/utils';
 import { SchedulingCalendar } from '@/components/SchedulingCalendar';
 
@@ -270,12 +270,12 @@ export default function PostSchedulingPage() {
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-semibold mb-2">Upload Images</h2>
-                <p className="text-muted-foreground mb-4">
-                  Upload your images to Catbox. They'll be stored securely and never on our servers.
-                </p>
+                  <p className="text-muted-foreground mb-4">
+                    Upload your images to our protected media store so every scheduled post uses Reddit native hosting.
+                  </p>
               </div>
               
-              <CatboxUploadPortal onComplete={handleImageUpload} />
+              <RedditNativeUploadPortal onComplete={handleImageUpload} />
               
               {uploadedImages.length > 0 && (
                 <div>

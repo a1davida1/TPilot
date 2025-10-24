@@ -12,7 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 // Switch component not currently used in this component
 import { CaptionPreview } from "./CaptionPreview";
-import { CatboxUploadPortal } from "./CatboxUploadPortal";
+import { RedditNativeUploadPortal } from "./RedditNativeUploadPortal";
 import { Loader2, Sparkles, AlertCircle, Image as ImageIcon, Type, Edit3 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -512,8 +512,8 @@ export function GeminiCaptionGeneratorTabs() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Replace old upload UI with CatboxUploadPortal */}
-              <CatboxUploadPortal
+              {/* Replace old upload UI with RedditNativeUploadPortal */}
+              <RedditNativeUploadPortal
                 onComplete={(result) => {
                   setImageUrl(result.imageUrl);
                   setImagePreview(result.imageUrl);
