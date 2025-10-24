@@ -200,27 +200,31 @@ function sanitizeImageUrl(url: string): string | null {
   try {
     const parsed = new URL(url, window.location.origin);
 
-    // Allow only http(s) image URLs or whitelisted hosts
+    // Define explicit allowed hosts for images.
+    const allowedHosts = [
+      'catbox.moe',
+      'imgur.com',
+      'i.imgur.com',
+      'discord.com',
+      'cdn.discordapp.com',
+      'discordapp.com',
+      'reddit.com',
+      'www.reddit.com',
+      'redditmedia.com',
+      'i.redd.it'
+      // Add additional trusted hosts as needed
+    ];
+
+    // Only allow http(s) URLs and whitelisted hosts (exact or valid subdomain).
     if (
       (parsed.protocol === "https:" || parsed.protocol === "http:") &&
-      (
-        // Whitelist known hosts,
-        parsed.hostname.endsWith('catbox.moe') ||
-        parsed.hostname.endsWith('imgur.com') ||
-        parsed.hostname.endsWith('discord.com') ||
-        parsed.hostname.endsWith('discordapp.com') ||
-        parsed.hostname.endsWith('reddit.com') ||
-        parsed.hostname.endsWith('redditmedia.com') ||
-        parsed.hostname.endsWith('i.redd.it') ||
-        // Add additional trusted hosts as needed
-        true // remove this line if you want stricter domain filtering
-      )
+      allowedHosts.some(h => parsed.hostname === h)
     ) {
       // Optionally, block data: URIs
       if (parsed.protocol === "data:") return null;
       return url;
     }
-    // Reject any other protocol
+    // Reject any other protocol or host
     return null;
   } catch (e) {
     return null;
