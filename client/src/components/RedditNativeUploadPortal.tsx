@@ -69,10 +69,12 @@ function toAbsoluteUrl(url: string | null | undefined): string {
   }
 
   try {
-    return new URL(trimmed, window.location.origin).toString();
+    // Handle paths that start with a slash
+    return new URL(trimmed.startsWith('/') ? trimmed : `./${trimmed}`, window.location.origin).toString();
   } catch {
     return trimmed;
   }
+}
 }
 
 export function RedditNativeUploadPortal({
