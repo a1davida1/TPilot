@@ -642,7 +642,6 @@ export function registerRedditRoutes(app: Express) {
             imageUrl: url,
             nsfw: nsfw || false,
             spoiler: spoiler || false,
-            allowCatboxFallback: true,
           });
           break;
         }
@@ -866,7 +865,6 @@ export function registerRedditRoutes(app: Express) {
           imageUrl: normalizedImageUrl,
           nsfw: isNsfw,
           spoiler: isSpoiler,
-          allowCatboxFallback: true,
         });
 
         if (uploadResult.success && uploadResult.url) {
@@ -892,7 +890,6 @@ export function registerRedditRoutes(app: Express) {
             hasImage: true,
             url: uploadResult.url,
             redditImageUrl: uploadResult.redditImageUrl,
-            fallbackUsed: uploadResult.fallbackUsed ?? 'native',
           });
 
           return res.json({
@@ -902,8 +899,6 @@ export function registerRedditRoutes(app: Express) {
             redditImageUrl: uploadResult.redditImageUrl,
             message: `Post submitted successfully to r/${subreddit}`,
             warnings: uploadResult.warnings ?? uploadResult.decision?.warnings ?? [],
-            fallbackUsed: uploadResult.fallbackUsed,
-            fallbackUrl: uploadResult.fallbackUrl,
           });
         }
 
@@ -937,8 +932,6 @@ export function registerRedditRoutes(app: Express) {
           reasons: uploadResult.decision?.reasons || [],
           warnings: uploadResult.warnings ?? uploadResult.decision?.warnings ?? [],
           redditImageUrl: uploadResult.redditImageUrl,
-          fallbackUsed: uploadResult.fallbackUsed,
-          fallbackUrl: uploadResult.fallbackUrl,
           nextAllowedPost: uploadResult.decision?.nextAllowedPost,
           rateLimit: {
             postsInLast24h: uploadResult.decision?.postsInLast24h || 0,

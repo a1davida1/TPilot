@@ -100,7 +100,6 @@ export function createPostSchedulerWorker() {
             imageUrl: post.imageUrl,
             nsfw: post.nsfw ?? false,
             spoiler: post.spoiler ?? false,
-            allowCatboxFallback: true,
           });
         } else {
           // Link or text post
