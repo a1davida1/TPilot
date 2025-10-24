@@ -192,7 +192,7 @@
     "recharts": "^2.15.2",
     "rollup-plugin-visualizer": "^6.0.3",
     "sharp": "^0.34.3",
-    "snoowrap": "^1.15.2",
+    "snoowrap": "^1.23.0",
     "stripe": "^18.5.0",
     "supertest": "^7.1.4",
     "tailwind-merge": "^2.6.0",
