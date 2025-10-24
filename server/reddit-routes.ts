@@ -19,6 +19,7 @@ import { getUserRedditCommunityEligibility } from './lib/reddit.js';
 import { logger } from './bootstrap/logger.js';
 import { recordPostOutcome, summarizeRemovalReasons } from './compliance/ruleViolationTracker.js';
 import { redditIntelligenceService } from './services/reddit-intelligence.js';
+import { RedditNativeUploadService } from './services/reddit-native-upload.js';
 
 interface RedditProfile {
   username: string;
@@ -633,13 +634,15 @@ export function registerRedditRoutes(app: Express) {
             imageBuffer = Buffer.from(base64Data, 'base64');
           }
 
-          result = await reddit.submitImagePost({
+          result = await RedditNativeUploadService.uploadAndPost({
+            userId,
             subreddit,
             title,
             imageBuffer,
             imageUrl: url,
             nsfw: nsfw || false,
-            spoiler: spoiler || false
+            spoiler: spoiler || false,
+            allowCatboxFallback: true,
           });
           break;
         }
@@ -695,15 +698,6 @@ export function registerRedditRoutes(app: Express) {
       }
 
       if (result.success) {
-        try {
-          await recordPostOutcome(userId, subreddit, { status: 'posted' });
-        } catch (trackingError) {
-          logger.warn('Failed to persist successful Reddit outcome', {
-            userId,
-            subreddit,
-            error: trackingError instanceof Error ? trackingError.message : String(trackingError)
-          });
-        }
         logger.info('Reddit post successful', {
           userId,
           subreddit,
@@ -808,13 +802,12 @@ export function registerRedditRoutes(app: Express) {
 
   // Alias for Quick Post - transforms Quick Post format to submit format
   app.post('/api/reddit/post', authenticateToken(true), async (req: AuthRequest, res) => {
-    const { title, subreddit, imageUrl, text, nsfw, spoiler } = req.body;
+    const { title, subreddit, imageUrl, text, nsfw, spoiler } = req.body ?? {};
 
-    // Strip query parameters from image URL (e.g., ?protected=true)
-    let cleanImageUrl = imageUrl;
-    if (imageUrl) {
+    let cleanImageUrl: string | undefined = typeof imageUrl === 'string' ? imageUrl : undefined;
+    if (typeof cleanImageUrl === 'string' && cleanImageUrl.trim().length > 0) {
       try {
-        const urlObj = new URL(imageUrl);
+        const urlObj = new URL(cleanImageUrl);
         cleanImageUrl = `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}`;
         if (imageUrl !== cleanImageUrl) {
           logger.info('Stripped query parameters from image URL', {
@@ -825,6 +818,9 @@ export function registerRedditRoutes(app: Express) {
       } catch (_urlError) {
         logger.warn('Failed to parse image URL, using as-is', { imageUrl });
       }
+      cleanImageUrl = cleanImageUrl.trim();
+    } else if (typeof cleanImageUrl === 'string') {
+      cleanImageUrl = cleanImageUrl.trim();
     }
 
     logger.info('Quick Post request received', {
@@ -835,8 +831,19 @@ export function registerRedditRoutes(app: Express) {
       titleLength: title?.length
     });
 
-    // Call the submit endpoint logic directly
     const userId = req.user?.id;
+
+    const toBoolean = (value: unknown): boolean => {
+      if (typeof value === 'boolean') {
+        return value;
+      }
+      if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        if (normalized === 'true') return true;
+        if (normalized === 'false') return false;
+      }
+      return Boolean(value);
+    };
 
     try {
       if (!userId) {
@@ -847,7 +854,99 @@ export function registerRedditRoutes(app: Express) {
         return res.status(400).json({ error: 'Subreddit and title are required' });
       }
 
-      // Get Reddit manager
+      const normalizedImageUrl = cleanImageUrl && cleanImageUrl.length > 0 ? cleanImageUrl : undefined;
+      const isNsfw = toBoolean(nsfw);
+      const isSpoiler = toBoolean(spoiler);
+
+      if (normalizedImageUrl) {
+        const uploadResult = await RedditNativeUploadService.uploadAndPost({
+          userId,
+          subreddit,
+          title,
+          imageUrl: normalizedImageUrl,
+          nsfw: isNsfw,
+          spoiler: isSpoiler,
+          allowCatboxFallback: true,
+        });
+
+        if (uploadResult.success && uploadResult.url) {
+          try {
+            await SafetyManager.recordPost(userId.toString(), subreddit);
+            await SafetyManager.recordPostForDuplicateDetection(
+              userId.toString(),
+              subreddit,
+              title,
+              typeof text === 'string' && text.trim().length > 0 ? text : normalizedImageUrl
+            );
+          } catch (safetyError) {
+            logger.warn('Failed to record safety signals', {
+              userId,
+              subreddit,
+              error: safetyError instanceof Error ? safetyError.message : String(safetyError),
+            });
+          }
+
+          logger.info('Reddit post successful via Reddit native upload', {
+            userId,
+            subreddit,
+            hasImage: true,
+            url: uploadResult.url,
+            redditImageUrl: uploadResult.redditImageUrl,
+            fallbackUsed: uploadResult.fallbackUsed ?? 'native',
+          });
+
+          return res.json({
+            success: true,
+            postId: uploadResult.postId,
+            url: uploadResult.url,
+            redditImageUrl: uploadResult.redditImageUrl,
+            message: `Post submitted successfully to r/${subreddit}`,
+            warnings: uploadResult.warnings ?? uploadResult.decision?.warnings ?? [],
+            fallbackUsed: uploadResult.fallbackUsed,
+            fallbackUrl: uploadResult.fallbackUrl,
+          });
+        }
+
+        const decisionReasons = Array.isArray(uploadResult.decision?.reasons)
+          ? uploadResult.decision?.reasons.filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+          : [];
+        const removalReason = uploadResult.error
+          ?? (typeof uploadResult.decision?.reason === 'string' ? uploadResult.decision.reason : undefined)
+          ?? decisionReasons[0]
+          ?? 'Reddit posting failed';
+
+        try {
+          await recordPostOutcome(userId, subreddit, {
+            status: 'removed',
+            reason: removalReason,
+          });
+        } catch (trackingError) {
+          logger.warn('Failed to persist removal outcome', {
+            userId,
+            subreddit,
+            error: trackingError instanceof Error ? trackingError.message : String(trackingError),
+          });
+        }
+
+        const statusCode = uploadResult.error?.includes('No active Reddit account') ? 404 : 400;
+
+        return res.status(statusCode).json({
+          success: false,
+          error: uploadResult.error || 'Failed to submit post',
+          reason: uploadResult.decision?.reason,
+          reasons: uploadResult.decision?.reasons || [],
+          warnings: uploadResult.warnings ?? uploadResult.decision?.warnings ?? [],
+          redditImageUrl: uploadResult.redditImageUrl,
+          fallbackUsed: uploadResult.fallbackUsed,
+          fallbackUrl: uploadResult.fallbackUrl,
+          nextAllowedPost: uploadResult.decision?.nextAllowedPost,
+          rateLimit: {
+            postsInLast24h: uploadResult.decision?.postsInLast24h || 0,
+            maxPostsPer24h: uploadResult.decision?.maxPostsPer24h || 3,
+          },
+        });
+      }
+
       const reddit = await RedditManager.forUser(userId);
       if (!reddit) {
         return res.status(404).json({
@@ -855,33 +954,13 @@ export function registerRedditRoutes(app: Express) {
         });
       }
 
-      let result: RedditPostResult;
-
-      // Use link post for images instead of direct upload
-      // This is more reliable and avoids Reddit API upload issues
-      if (cleanImageUrl) {
-        logger.info('Submitting image as link post to avoid upload issues', {
-          subreddit,
-          url: cleanImageUrl.substring(0, 100)
-        });
-
-        result = await reddit.submitPost({
-          subreddit,
-          title,
-          url: cleanImageUrl,
-          nsfw: nsfw || false,
-          spoiler: spoiler || false
-        });
-      } else {
-        // Text post
-        result = await reddit.submitPost({
-          subreddit,
-          title,
-          body: text || '',
-          nsfw: nsfw || false,
-          spoiler: spoiler || false
-        });
-      }
+      const result = await reddit.submitPost({
+        subreddit,
+        title,
+        body: typeof text === 'string' ? text : '',
+        nsfw: isNsfw,
+        spoiler: isSpoiler,
+      });
 
       if (result.success) {
         try {
@@ -896,18 +975,17 @@ export function registerRedditRoutes(app: Express) {
         logger.info('Reddit post successful via /post endpoint', {
           userId,
           subreddit,
-          hasImage: !!imageUrl,
+          hasImage: false,
           url: result.url
         });
 
-        // Record post for rate limiting and duplicate detection
         try {
           await SafetyManager.recordPost(userId.toString(), subreddit);
           await SafetyManager.recordPostForDuplicateDetection(
             userId.toString(),
             subreddit,
             title,
-            text || imageUrl || ''
+            typeof text === 'string' ? text : ''
           );
         } catch (safetyError) {
           logger.warn('Failed to record safety signals', {
@@ -917,45 +995,48 @@ export function registerRedditRoutes(app: Express) {
           });
         }
 
-        res.json({
+        return res.json({
           success: true,
           postId: result.postId,
           url: result.url,
           message: `Post submitted successfully to r/${subreddit}`,
           warnings: result.decision?.warnings || []
         });
-      } else {
-        const decisionReasons = Array.isArray(result.decision?.reasons) ? result.decision?.reasons.filter((value): value is string => typeof value === 'string' && value.trim().length > 0) : [];
-        const removalReason = result.error
-          ?? (typeof result.decision?.reason === 'string' ? result.decision.reason : undefined)
-          ?? decisionReasons[0]
-          ?? 'Reddit posting failed';
+      }
 
-        try {
-          await recordPostOutcome(userId, subreddit, {
-            status: 'removed',
-            reason: removalReason,
-          });
-        } catch (trackingError) {
-          logger.warn('Failed to persist removal outcome', {
-            userId,
-            subreddit,
-            error: trackingError instanceof Error ? trackingError.message : String(trackingError)
-          });
-        }
-        res.status(400).json({
-          success: false,
-          error: result.error || 'Failed to submit post',
-          reason: result.decision?.reason,
-          reasons: result.decision?.reasons || [],
-          warnings: result.decision?.warnings || [],
-          nextAllowedPost: result.decision?.nextAllowedPost,
-          rateLimit: {
-            postsInLast24h: result.decision?.postsInLast24h || 0,
-            maxPostsPer24h: result.decision?.maxPostsPer24h || 3
-          }
+      const decisionReasons = Array.isArray(result.decision?.reasons)
+        ? result.decision?.reasons.filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+        : [];
+      const removalReason = result.error
+        ?? (typeof result.decision?.reason === 'string' ? result.decision.reason : undefined)
+        ?? decisionReasons[0]
+        ?? 'Reddit posting failed';
+
+      try {
+        await recordPostOutcome(userId, subreddit, {
+          status: 'removed',
+          reason: removalReason,
+        });
+      } catch (trackingError) {
+        logger.warn('Failed to persist removal outcome', {
+          userId,
+          subreddit,
+          error: trackingError instanceof Error ? trackingError.message : String(trackingError)
         });
       }
+      return res.status(400).json({
+        success: false,
+        error: result.error || 'Failed to submit post',
+        reason: result.decision?.reason,
+        reasons: result.decision?.reasons || [],
+        warnings: result.decision?.warnings || [],
+        nextAllowedPost: result.decision?.nextAllowedPost,
+        rateLimit: {
+          postsInLast24h: result.decision?.postsInLast24h || 0,
+          maxPostsPer24h: result.decision?.maxPostsPer24h || 3
+        }
+      });
+
     } catch (error: unknown) {
       const failureMessage = error instanceof Error
         ? error.message

@@ -87,7 +87,7 @@ Scheduling Page → Bulk Upload → Select Images → Generate Captions → Set 
 - Rate limiting protection
 
 ### **Content Pipeline**
-- **Image Storage**: Imgur-only (legal compliance, NO local storage)
+- **Image Storage**: Reddit native uploads (i.redd.it) are the primary path with Catbox fallback (requires user hash) and no local storage
 - **Catbox.moe Integration**: Optional secondary hosting with authenticated uploads
 - **AI Caption Generation**: OpenRouter ONLY (Grok-4-Fast primary model)
   - **SFW Voices**: flirty_playful, gamer_nerdy, luxury_minimal, arts_muse, gym_energy, cozy_girl

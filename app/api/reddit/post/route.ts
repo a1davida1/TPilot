@@ -5,6 +5,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { db } from '@server/db';
 import { captionVariants, scheduledPosts } from '@shared/schema';
 import { RedditManager } from '@server/lib/reddit';
+import { RedditNativeUploadService } from '@server/services/reddit-native-upload';
 import { auth, clearAuthRequestContext, setAuthRequestContext } from '../../_lib/auth';
 
 const variantRequestSchema = z.object({
@@ -183,11 +184,13 @@ export async function POST(request: Request) {
         continue;
       }
 
-      const postResult = await redditManager.submitImagePost({
+      const postResult = await RedditNativeUploadService.uploadAndPost({
+        userId,
         subreddit: row.subreddit,
         title: deriveTitle(row),
         imageUrl: row.imageUrl,
         nsfw: deriveNsfw(row, requestEntry.nsfw),
+        allowCatboxFallback: true,
       });
 
       if (postResult.success && postResult.url) {

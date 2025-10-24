@@ -9,6 +9,7 @@ import { db } from '../../db.js';
 import { scheduledPosts, redditPostOutcomes } from '@shared/schema';
 import { eq, and, lte } from 'drizzle-orm';
 import { RedditManager } from '../reddit.js';
+import { RedditNativeUploadService } from '../../services/reddit-native-upload.js';
 import Redis from 'ioredis';
 
 interface ScheduledPostJob {
@@ -92,12 +93,14 @@ export function createPostSchedulerWorker() {
         
         if (post.imageUrl) {
           // Image post
-          result = await redditManager.submitImagePost({
+          result = await RedditNativeUploadService.uploadAndPost({
+            userId,
             subreddit,
             title: post.title,
             imageUrl: post.imageUrl,
             nsfw: post.nsfw ?? false,
-            spoiler: post.spoiler ?? false
+            spoiler: post.spoiler ?? false,
+            allowCatboxFallback: true,
           });
         } else {
           // Link or text post
