@@ -195,6 +195,38 @@ function truncateTitle(text: string): string {
   return `${text.slice(0, 277)}...`;
 }
 
+// Restrict allowed image URLs to safe schemes and optionally safe hosts
+function sanitizeImageUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url, window.location.origin);
+
+    // Allow only http(s) image URLs or whitelisted hosts
+    if (
+      (parsed.protocol === "https:" || parsed.protocol === "http:") &&
+      (
+        // Whitelist known hosts,
+        parsed.hostname.endsWith('catbox.moe') ||
+        parsed.hostname.endsWith('imgur.com') ||
+        parsed.hostname.endsWith('discord.com') ||
+        parsed.hostname.endsWith('discordapp.com') ||
+        parsed.hostname.endsWith('reddit.com') ||
+        parsed.hostname.endsWith('redditmedia.com') ||
+        parsed.hostname.endsWith('i.redd.it') ||
+        // Add additional trusted hosts as needed
+        true // remove this line if you want stricter domain filtering
+      )
+    ) {
+      // Optionally, block data: URIs
+      if (parsed.protocol === "data:") return null;
+      return url;
+    }
+    // Reject any other protocol
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
 export default function QuickPostPage() {
   const { toast } = useToast();
 
@@ -737,11 +769,17 @@ export default function QuickPostPage() {
                   <CatboxUploadPortal onComplete={handleImageUpload} />
                 ) : (
                   <div className="flex items-center gap-4">
-                    <img
-                      src={imageUrl}
-                      alt="Uploaded"
-                      className="w-32 h-32 object-cover rounded-lg"
-                    />
+                    {sanitizeImageUrl(imageUrl) ? (
+                      <img
+                        src={sanitizeImageUrl(imageUrl) ?? ''}
+                        alt="Uploaded"
+                        className="w-32 h-32 object-cover rounded-lg"
+                      />
+                    ) : (
+                      <div className="w-32 h-32 bg-gray-100 flex items-center justify-center rounded-lg text-sm text-muted-foreground">
+                        Invalid image URL
+                      </div>
+                    )}
                     <div>
                       <p className="text-sm text-muted-foreground mb-2">Image uploaded to Catbox</p>
                       <Button
