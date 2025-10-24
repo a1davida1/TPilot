@@ -4,7 +4,7 @@
  */
 
 interface UploadMetrics {
-  provider: 'catbox' | 'imgbox' | 'proxy' | 'external';
+  provider: 'catbox' | 'imgbox' | 'proxy' | 'external' | 'reddit-native';
   success: boolean;
   duration?: number;
   fileSize?: number;
