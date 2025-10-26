@@ -3,6 +3,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import { uploadLimiter, logger } from '../middleware/security.js';
 import { MediaManager } from '../lib/media.js';
 import { ImgboxService } from '../lib/imgbox-service.js';
+import { PostImagesService } from '../lib/postimages-service.js';
 import multer from 'multer';
 
 const router = express.Router();
@@ -76,33 +77,60 @@ router.post('/upload', uploadLimiter, authenticateToken(true), upload.single('fi
     const fs = await import('fs/promises');
     const buffer = await fs.readFile(req.file.path);
 
-    // Try Imgbox upload first, fall back to base64 if it fails
+    // Try external upload services in order
     let imageUrl: string;
     let thumbnailUrl: string | undefined;
+    let provider: string = 'unknown';
     
+    // Try Imgbox first
     try {
       const imgboxResult = await ImgboxService.upload({
         buffer,
         filename: req.file.originalname,
         contentType: req.file.mimetype,
-        nsfw: true, // Mark as mature content
+        nsfw: true,
       });
       
-      if (!imgboxResult.success || !imgboxResult.url) {
+      if (imgboxResult.success && imgboxResult.url) {
+        imageUrl = imgboxResult.url;
+        thumbnailUrl = imgboxResult.thumbnailUrl;
+        provider = 'imgbox';
+        logger.info(`Media uploaded to Imgbox successfully: ${req.file.originalname}`);
+      } else {
         throw new Error(imgboxResult.error || 'Imgbox upload failed');
       }
-      
-      imageUrl = imgboxResult.url;
-      thumbnailUrl = imgboxResult.thumbnailUrl;
-      logger.info(`Media uploaded to Imgbox successfully: ${req.file.originalname}`);
     } catch (imgboxError) {
-      // Fallback: Convert to base64 data URL (temporary storage)
-      logger.warn('Imgbox upload failed, using base64 fallback:', imgboxError);
-      const base64 = buffer.toString('base64');
-      const mimeType = req.file.mimetype || 'image/jpeg';
-      imageUrl = `data:${mimeType};base64,${base64}`;
-      thumbnailUrl = imageUrl; // Same as main URL for base64
-      logger.info(`Media stored as base64 data URL: ${req.file.originalname} (${base64.length} chars)`);
+      logger.warn('Imgbox upload failed, trying PostImages:', imgboxError);
+      
+      // Fallback to PostImages
+      try {
+        const postimagesResult = await PostImagesService.upload({
+          buffer,
+          filename: req.file.originalname,
+          contentType: req.file.mimetype,
+          adult: true, // Mark as adult content for safety
+        });
+        
+        if (postimagesResult.success && postimagesResult.url) {
+          imageUrl = postimagesResult.url;
+          thumbnailUrl = postimagesResult.thumbnailUrl;
+          provider = 'postimages';
+          logger.info(`Media uploaded to PostImages successfully: ${req.file.originalname}`);
+        } else {
+          throw new Error(postimagesResult.error || 'PostImages upload failed');
+        }
+      } catch (postimagesError) {
+        logger.error('All external upload services failed:', postimagesError);
+        
+        // Last resort: Convert to base64 data URL (NOT compliant for production!)
+        logger.warn('WARNING: Using base64 fallback - this is NOT legally compliant for storage!');
+        const base64 = buffer.toString('base64');
+        const mimeType = req.file.mimetype || 'image/jpeg';
+        imageUrl = `data:${mimeType};base64,${base64}`;
+        thumbnailUrl = imageUrl;
+        provider = 'base64-emergency';
+        logger.info(`Media stored as base64 data URL: ${req.file.originalname} (${base64.length} chars)`);
+      }
     }
     
     // Clean up temp file immediately
@@ -120,7 +148,7 @@ router.post('/upload', uploadLimiter, authenticateToken(true), upload.single('fi
         signedUrl: imageUrl,
         downloadUrl: imageUrl,
         thumbnailUrl: thumbnailUrl,
-        provider: imageUrl.startsWith('data:') ? 'base64' : 'imgbox',
+        provider: provider,
         createdAt: new Date(),
       }
     });

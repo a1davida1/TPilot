@@ -40,8 +40,8 @@ interface ImgboxApiResponse {
 }
 
 const IMGBOX_BASE_URL = 'https://imgbox.com';
-const IMGBOX_UPLOAD_URL = `${IMGBOX_BASE_URL}/upload/api.php`;
-const IMGBOX_USER_AGENT = 'Mozilla/5.0 (compatible; ThottoPilotBot/1.0; +https://thottopilot.com)';
+const IMGBOX_UPLOAD_URL = 'https://imgbox.com/upload/process';  // Updated endpoint
+const IMGBOX_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
 const IMGBOX_ACCEPT = 'application/json, text/javascript, */*;q=0.01';
 const TOKEN_TTL_MS = 5 * 60 * 1000; // Cache token for 5 minutes
 const MAX_RETRIES = 3;
@@ -102,13 +102,16 @@ export class ImgboxService {
 
     const html = await response.text();
     
-    // Try multiple token patterns (Imgbox might have changed their HTML)
+    // Try multiple token patterns (Imgbox changed to use meta tag)
     const tokenPatterns = [
+      // Current pattern (October 2025) - meta tag
+      /<meta\s+content="([^"]+)"\s+name="csrf-token"/u,
+      /<meta\s+name="csrf-token"\s+content="([^"]+)"/u,
+      
+      // Legacy patterns (keeping for fallback)
       /var\s+token\s*=\s*'([^']+)'/u,
       /var\s+token\s*=\s*"([^"]+)"/u,
-      /data-token\s*=\s*['"]([^'"]+)['"]/u,
-      /token['"]?\s*:\s*['"]([^'"]+)['"]/u,
-      /"token"\s*:\s*"([^"]+)"/u,
+      /authenticity_token['"]\s+type="hidden"\s+value="([^"]+)"/u,
     ];
     
     let tokenMatch = null;
@@ -284,15 +287,16 @@ export class ImgboxService {
     try {
       const token = await this.fetchToken();
       const form = new FormData();
-      form.append('token', token.token);
-      form.append('comments_enabled', '0');
-      form.append('privacy', '0');
-      form.append('expiration', options.expirationDays ? String(options.expirationDays) : '0');
-      form.append('nsfw', options.nsfw ? 'true' : 'false');
+      
+      // Imgbox Rails form fields (as of October 2025)
+      form.append('utf8', '✓'); // Required by Rails
+      form.append('authenticity_token', token.token);
       form.append('files[]', options.buffer, {
         filename,
         contentType: options.contentType ?? 'image/jpeg',
       });
+      // Optional: Add gallery title if needed
+      // form.append('gallery-title', '');
 
       const { body, headers } = this.prepareRequest(form);
       const response = await this.postWithRetry(IMGBOX_UPLOAD_URL, body, headers, token.cookies);
