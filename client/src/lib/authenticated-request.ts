@@ -6,6 +6,19 @@ export async function authenticatedRequest<T>(
   let body: FormData | string | undefined;
   const headers: Record<string, string> = {};
 
+  // Include CSRF token for state-changing requests
+  if (typeof window !== 'undefined' && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method.toUpperCase())) {
+    try {
+      const { getCsrfToken } = await import('@/lib/queryClient');
+      const token = await getCsrfToken();
+      if (token) {
+        headers['x-csrf-token'] = token;
+      }
+    } catch (error) {
+      console.warn('Failed to get CSRF token:', error);
+    }
+  }
+
   if (data instanceof FormData) {
     body = data;
     // Don't set Content-Type for FormData, browser sets it with boundary

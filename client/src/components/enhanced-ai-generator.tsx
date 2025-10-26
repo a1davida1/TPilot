@@ -99,58 +99,8 @@ export function EnhancedAIGenerator({
   const [tone, setTone] = useState<string>("confident");
   const [customPrompt, setCustomPrompt] = useState<string>("");
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
-  // Copy feedback state with timeout tracking
-  const photoInstructionValues: Partial<PhotoInstructions> = generatedContent
-    ? normalizePhotoInstructions(generatedContent.photoInstructions)
-    : {};
-  const [copiedItem, setCopiedItem] = useState<string | null>(null);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authModalMode, setAuthModalMode] = useState<"login" | "signup">("signup");
-
-  const isGuestMode = !isAuthenticated || userTier === "guest";
-
-  // Tier-based configuration map with quotas and styling
-  type TierKey = "guest" | "free" | "pro" | "premium";
   
-  const tierConfig: Record<TierKey, {
-    dailyLimit: number;
-    color: string;
-    ctaMessage: string;
-  }> = {
-    guest: {
-      dailyLimit: 3,
-      color: 'bg-gradient-to-br from-gray-50 to-slate-100 hover:from-gray-100 hover:to-slate-200 text-gray-900 border-2 border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md',
-      ctaMessage: 'Sign up for 10 daily generations'
-    },
-    free: {
-      dailyLimit: 10,
-      color: 'bg-gradient-to-br from-orange-50 to-amber-100 hover:from-orange-100 hover:to-amber-200 text-orange-900 border-2 border-orange-200 hover:border-orange-300 shadow-sm hover:shadow-md',
-      ctaMessage: 'Upgrade to Pro for unlimited generations'
-    },
-    pro: {
-      dailyLimit: 100,
-      color: 'bg-gradient-to-br from-purple-50 to-indigo-100 hover:from-purple-100 hover:to-indigo-200 text-purple-900 border-2 border-purple-200 hover:border-purple-300 shadow-sm hover:shadow-md',
-      ctaMessage: 'Pro: 100 generations per day'
-    },
-    premium: {
-      dailyLimit: 1000,
-      color: 'bg-gradient-to-br from-yellow-50 to-amber-100 hover:from-yellow-100 hover:to-amber-200 text-yellow-900 border-2 border-yellow-200 hover:border-yellow-300 shadow-sm hover:shadow-md',
-      ctaMessage: 'Premium: Unlimited generations'
-    }
-  };
-
-  const currentTierConfig = tierConfig[userTier as TierKey] || tierConfig.guest;
-
-  // Fetch user's daily generation count for quota enforcement
-  const { data: dailyUsage } = useQuery<{ count: number }>({
-    queryKey: ["/api/stats/daily-usage"],
-    enabled: isAuthenticated,
-    retry: false
-  });
-
-  const generationsUsed = dailyUsage?.count ?? 0;
-  const quotaExhausted = generationsUsed >= currentTierConfig.dailyLimit;
-
+  // Base photo instructions for normalization
   const basePhotoInstructions: ContentGeneration["photoInstructions"] = {
     lighting: "Soft natural lighting",
     cameraAngle: "Eye-level framing",
@@ -204,6 +154,58 @@ export function EnhancedAIGenerator({
 
     return basePhotoInstructions;
   };
+  
+  // Copy feedback state with timeout tracking
+  const photoInstructionValues: Partial<PhotoInstructions> = generatedContent
+    ? normalizePhotoInstructions(generatedContent.photoInstructions)
+    : {};
+  const [copiedItem, setCopiedItem] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<"login" | "signup">("signup");
+
+  const isGuestMode = !isAuthenticated || userTier === "guest";
+
+  // Tier-based configuration map with quotas and styling
+  type TierKey = "guest" | "free" | "pro" | "premium";
+  
+  const tierConfig: Record<TierKey, {
+    dailyLimit: number;
+    color: string;
+    ctaMessage: string;
+  }> = {
+    guest: {
+      dailyLimit: 3,
+      color: 'bg-gradient-to-br from-gray-50 to-slate-100 hover:from-gray-100 hover:to-slate-200 text-gray-900 border-2 border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md',
+      ctaMessage: 'Sign up for 10 daily generations'
+    },
+    free: {
+      dailyLimit: 10,
+      color: 'bg-gradient-to-br from-orange-50 to-amber-100 hover:from-orange-100 hover:to-amber-200 text-orange-900 border-2 border-orange-200 hover:border-orange-300 shadow-sm hover:shadow-md',
+      ctaMessage: 'Upgrade to Pro for unlimited generations'
+    },
+    pro: {
+      dailyLimit: 100,
+      color: 'bg-gradient-to-br from-purple-50 to-indigo-100 hover:from-purple-100 hover:to-indigo-200 text-purple-900 border-2 border-purple-200 hover:border-purple-300 shadow-sm hover:shadow-md',
+      ctaMessage: 'Pro: 100 generations per day'
+    },
+    premium: {
+      dailyLimit: 1000,
+      color: 'bg-gradient-to-br from-yellow-50 to-amber-100 hover:from-yellow-100 hover:to-amber-200 text-yellow-900 border-2 border-yellow-200 hover:border-yellow-300 shadow-sm hover:shadow-md',
+      ctaMessage: 'Premium: Unlimited generations'
+    }
+  };
+
+  const currentTierConfig = tierConfig[userTier as TierKey] || tierConfig.guest;
+
+  // Fetch user's daily generation count for quota enforcement
+  const { data: dailyUsage } = useQuery<{ count: number }>({
+    queryKey: ["/api/stats/daily-usage"],
+    enabled: isAuthenticated,
+    retry: false
+  });
+
+  const generationsUsed = dailyUsage?.count ?? 0;
+  const quotaExhausted = generationsUsed >= currentTierConfig.dailyLimit;
 
   const normalizeTitles = (titles: unknown): string[] => {
     if (Array.isArray(titles)) {

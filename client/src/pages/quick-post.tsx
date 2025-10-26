@@ -220,10 +220,10 @@ function sanitizeImageUrl(url: string): string | null {
       (parsed.protocol === "https:" || parsed.protocol === "http:") &&
       allowedHosts.some(h => parsed.hostname === h)
     ) {
-      // Optionally, block data: URIs
-      if (parsed.protocol === "data:") return null;
       return url;
     }
+    // Block data: URIs
+    if (parsed.protocol === "data:") return null;
     // Reject any other protocol or host
     return null;
   } catch (e) {

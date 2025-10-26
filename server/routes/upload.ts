@@ -11,12 +11,31 @@ import { uploadLimiter, logger } from '../middleware/security.js';
 import { imageProtectionLimiter as tierProtectionLimiter } from '../middleware/tiered-rate-limit.js';
 import { uploadRequestSchema, type UploadRequest as UploadRequestBody } from '@shared/schema';
 import { ZodError } from 'zod';
-import { imageStreamingUpload, cleanupUploadedFiles } from '../middleware/streaming-upload.js';
+import { imageStreamingUpload, cleanupUploadedFiles, type UploadedFile, type UploadProgress } from '../middleware/streaming-upload.js';
 import { embedSignature } from '../lib/steganography.js';
 import { buildUploadUrl } from '../lib/uploads.js';
 
+// Extended AuthRequest with upload-specific properties
+interface UploadAuthRequest extends AuthRequest {
+  file?: Express.Multer.File;
+  streamingFiles?: UploadedFile[];
+  uploadProgress?: UploadProgress;
+}
 
 const router = express.Router();
+
+// Security helper: Check if a path is within the uploads directory
+function isPathWithin(filePath: string): boolean {
+  try {
+    const uploadDir = path.join(process.cwd(), 'uploads');
+    const resolvedUploadDir = realpathSync(uploadDir);
+    const resolvedFilePath = realpathSync(filePath);
+    return resolvedFilePath.startsWith(resolvedUploadDir);
+  } catch {
+    // If path doesn't exist or can't be resolved, treat as unsafe
+    return false;
+  }
+}
 
 // Configure secure multer for file uploads
 const secureStorage = multer.diskStorage({

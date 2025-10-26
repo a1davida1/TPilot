@@ -340,7 +340,7 @@ export function RedditNativeUploadPortal({
             <Button type="button" onClick={handleExternalSubmit} disabled={!externalUrl || isUploading}>
               <ExternalLink className="mr-2 h-4 w-4" /> Use URL
             </Button>
-            <Alert variant="secondary">
+            <Alert variant="default">
               <AlertTitle>Already have a hosted image?</AlertTitle>
               <AlertDescription>
                 Paste any direct image URL (Reddit CDN, Imgbox, etc.) and we&apos;ll pull it when generating captions or posting.

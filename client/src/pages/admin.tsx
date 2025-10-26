@@ -163,6 +163,14 @@ export function AdminDashboard() {
   });
 
   // Fetch provider costs
+  type Provider = {
+    name: string;
+    available?: boolean;
+    inputCost?: string;
+    outputCost?: string;
+    savings?: string;
+  };
+  
   const { data: providers } = useQuery<Provider[]>({
     queryKey: ['/api/providers'],
     queryFn: () => authenticatedFetch('/api/providers')
