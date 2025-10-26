@@ -1,9 +1,12 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
-import { uploadLimiter, logger } from '../middleware/security.js';
+import { uploadLimiter } from '../middleware/security.js';
 import { MediaManager } from '../lib/media.js';
 import { ImgboxService } from '../lib/imgbox-service.js';
 import { PostImagesService } from '../lib/postimages-service.js';
+import { SimpleImageUpload } from '../lib/simple-image-upload.js';
+import { logger } from '../bootstrap/logger.js';
+import rateLimit from 'express-rate-limit';
 import multer from 'multer';
 
 const router = express.Router();
@@ -156,16 +159,39 @@ router.post('/upload', uploadLimiter, authenticateToken(true), upload.single('fi
           throw new Error(postimagesResult.error || 'PostImages upload failed');
         }
       } catch (postimagesError) {
-        logger.error('All external upload services failed:', postimagesError);
+        logger.error('PostImages failed, trying SimpleImageUpload:', postimagesError);
         
-        // Last resort: Convert to base64 data URL (NOT compliant for production!)
-        logger.warn('WARNING: Using base64 fallback - this is NOT legally compliant for storage!');
-        const base64 = buffer.toString('base64');
-        const mimeType = req.file.mimetype || 'image/jpeg';
-        imageUrl = `data:${mimeType};base64,${base64}`;
-        thumbnailUrl = imageUrl;
-        provider = 'base64-emergency';
-        logger.info(`Media stored as base64 data URL: ${req.file.originalname} (${base64.length} chars)`);
+        // Try SimpleImageUpload services (FreeImage, ImgBB)
+        try {
+          const simpleResult = await SimpleImageUpload.upload({
+            buffer,
+            filename: req.file.originalname,
+            contentType: req.file.mimetype,
+          });
+          
+          if (simpleResult.success && simpleResult.url) {
+            imageUrl = simpleResult.url;
+            thumbnailUrl = simpleResult.thumbnailUrl;
+            provider = simpleResult.service || 'simple-upload';
+            logger.info(`Media uploaded via ${provider}: ${req.file.originalname}`, {
+              url: imageUrl,
+              thumbnailUrl,
+            });
+          } else {
+            throw new Error(simpleResult.error || 'Simple upload failed');
+          }
+        } catch (simpleError) {
+          logger.error('All upload services failed:', simpleError);
+          
+          // Last resort: Convert to base64 data URL (NOT compliant for production!)
+          logger.warn('WARNING: Using base64 fallback - this is NOT legally compliant for storage!');
+          const base64 = buffer.toString('base64');
+          const mimeType = req.file.mimetype || 'image/jpeg';
+          imageUrl = `data:${mimeType};base64,${base64}`;
+          thumbnailUrl = imageUrl;
+          provider = 'base64-emergency';
+          logger.info(`Media stored as base64 data URL: ${req.file.originalname} (${base64.length} chars)`);
+        }
       }
     }
     

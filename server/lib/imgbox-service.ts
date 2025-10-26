@@ -298,7 +298,15 @@ export class ImgboxService {
       };
     }
 
-    if (!parsed.success || !parsed.files || parsed.files.length === 0) {
+    // Imgbox doesn't always return a 'success' field - if we have files, it worked!
+    if (parsed.files && parsed.files.length > 0) {
+      // SUCCESS! We have files
+      logger.debug('Imgbox has files in response', {
+        filesCount: parsed.files.length,
+        firstFile: parsed.files[0],
+      });
+    } else if (!parsed.success) {
+      // No files and no success flag = failure
       logger.warn('Imgbox response missing expected data', {
         hasSuccess: 'success' in parsed,
         successValue: parsed.success,
@@ -313,6 +321,15 @@ export class ImgboxService {
       };
     }
 
+    // Handle the case where there's no files array (shouldn't happen but be safe)
+    if (!parsed.files || parsed.files.length === 0) {
+      return {
+        success: false,
+        error: 'No files in Imgbox response',
+        status: response.status,
+      };
+    }
+    
     const file = parsed.files[0];
     return {
       success: true,
