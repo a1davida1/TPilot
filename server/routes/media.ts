@@ -5,6 +5,7 @@ import { MediaManager } from '../lib/media.js';
 import { ImgboxService } from '../lib/imgbox-service.js';
 import { PostImagesService } from '../lib/postimages-service.js';
 import { SimpleImageUpload } from '../lib/simple-image-upload.js';
+import { DirectUpload } from '../lib/direct-upload.js';
 import { logger } from '../bootstrap/logger.js';
 import rateLimit from 'express-rate-limit';
 import multer from 'multer';
@@ -181,16 +182,35 @@ router.post('/upload', uploadLimiter, authenticateToken(true), upload.single('fi
             throw new Error(simpleResult.error || 'Simple upload failed');
           }
         } catch (simpleError) {
-          logger.error('All upload services failed:', simpleError);
+          logger.error('SimpleImageUpload failed, trying DirectUpload:', simpleError);
           
-          // Last resort: Convert to base64 data URL (NOT compliant for production!)
-          logger.warn('WARNING: Using base64 fallback - this is NOT legally compliant for storage!');
-          const base64 = buffer.toString('base64');
-          const mimeType = req.file.mimetype || 'image/jpeg';
-          imageUrl = `data:${mimeType};base64,${base64}`;
-          thumbnailUrl = imageUrl;
-          provider = 'base64-emergency';
-          logger.info(`Media stored as base64 data URL: ${req.file.originalname} (${base64.length} chars)`);
+          // Try DirectUpload (Imgur, Cloudinary)
+          try {
+            const directResult = await DirectUpload.upload(buffer, req.file.originalname);
+            
+            if (directResult.success && directResult.url) {
+              imageUrl = directResult.url;
+              thumbnailUrl = directResult.thumbnailUrl;
+              provider = directResult.service || 'direct-upload';
+              logger.info(`Media uploaded via ${provider}: ${req.file.originalname}`, {
+                url: imageUrl,
+                thumbnailUrl,
+              });
+            } else {
+              throw new Error(directResult.error || 'Direct upload failed');
+            }
+          } catch (directError) {
+            logger.error('ALL upload services failed:', directError);
+            
+            // Last resort: Convert to base64 data URL (NOT compliant for production!)
+            logger.warn('WARNING: Using base64 fallback - this is NOT legally compliant for storage!');
+            const base64 = buffer.toString('base64');
+            const mimeType = req.file.mimetype || 'image/jpeg';
+            imageUrl = `data:${mimeType};base64,${base64}`;
+            thumbnailUrl = imageUrl;
+            provider = 'base64-emergency';
+            logger.info(`Media stored as base64 data URL: ${req.file.originalname} (${base64.length} chars)`);
+          }
         }
       }
     }

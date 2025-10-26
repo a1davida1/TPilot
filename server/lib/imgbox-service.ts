@@ -331,10 +331,37 @@ export class ImgboxService {
     }
     
     const file = parsed.files[0];
+    
+    // Check if URLs are actually present and not empty
+    if (!file.original_url || file.original_url === '') {
+      logger.error('Imgbox file object missing URLs', {
+        file: JSON.stringify(file),
+        fileKeys: Object.keys(file),
+      });
+      
+      // Try different possible field names (use 'as any' to check dynamic properties)
+      const fileAny = file as any;
+      const possibleUrl = fileAny.url || fileAny.image_url || fileAny.link || fileAny.direct_url;
+      if (possibleUrl) {
+        logger.info('Found URL in alternate field', { field: possibleUrl });
+        return {
+          success: true,
+          url: possibleUrl,
+          thumbnailUrl: fileAny.thumb_url || fileAny.thumbnail || possibleUrl,
+        };
+      }
+      
+      return {
+        success: false,
+        error: 'Imgbox returned file without URLs',
+        status: response.status,
+      };
+    }
+    
     return {
       success: true,
       url: file.original_url,
-      thumbnailUrl: file.thumbnail_url,
+      thumbnailUrl: file.thumbnail_url || file.original_url,
       deleteUrl: file.delete_url,
       id: file.id,
     };

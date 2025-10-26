@@ -59,8 +59,8 @@ export class PostImagesService {
       // Create form data
       const form = new FormData();
       
-      // Add the image file - PostImages expects 'file' not 'upload'
-      form.append('file', options.buffer, {
+      // PostImages expects the file as a Buffer with proper headers
+      form.append('upload[]', options.buffer, {
         filename,
         contentType: options.contentType ?? 'image/jpeg',
       });
