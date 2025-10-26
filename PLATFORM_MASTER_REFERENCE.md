@@ -52,18 +52,24 @@ Adult content creator management platform focused on Reddit automation, AI capti
 
 ## 🚨 Critical Architecture Decisions
 
-### 1. **NO Image Storage OR API-Linked Hosting**
-**Why:** Legal compliance - avoid ALL liability for adult content
-- Zero local file system storage
-- NO Imgur (API Client ID links platform to content = liability)
-- NO API-based uploads that connect platform to hosted images
-- Users provide URLs from wherever they host (Catbox, Discord, Reddit, etc.)
-- Database stores URLs ONLY, never files or upload connections
+### 1. **Reddit Native Upload with Imgbox Fallback**
+**Why:** Direct Reddit uploads provide best performance and legal compliance
+- Zero local file system storage (legal requirement)
+- Primary: Direct upload to Reddit CDN (i.redd.it) via `submitImage()` API
+- Fallback: Imgbox rehosting when Reddit CDN rejects upload
+- Database stores URLs ONLY, never files
 
 **Implementation:**
-- Users paste image URLs from external sources
-- `/client/src/components/CatboxUploadPortal.tsx` - URL input component (reused)
-- No environment variables for image hosting services
+- `/server/services/reddit-native-upload.ts` - Main upload service
+- `/server/lib/reddit.ts` - `submitImagePost()` method for direct Reddit uploads
+- `/server/lib/imgbox-service.ts` - Automatic fallback when Reddit fails
+- Allowed image hosts for security: i.redd.it, images.imgbox.com, thumbs.imgbox.com, i.imgbox.com, files.catbox.moe, imgur.com, etc.
+
+**Upload Flow:**
+1. Image optimized for Reddit (max 20MB, 10000px dimensions)
+2. Direct upload to Reddit CDN → i.redd.it URL (primary path)
+3. If Reddit rejects: Imgbox upload → images.imgbox.com URL → Reddit link post (fallback)
+4. Success with optional warning if fallback was used
 
 ### 2. **OpenRouter AI with Grok-4-Fast (NOT Gemini)**
 **Why:** Gemini censors adult content, Grok is uncensored and faster

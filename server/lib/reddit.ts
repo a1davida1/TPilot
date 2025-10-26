@@ -186,7 +186,10 @@ async function secureFetchImage(imageUrl: string): Promise<Buffer> {
     'media.discordapp.net',
     'files.catbox.moe',
     'catbox.moe',
-    'imgbox.com'
+    'imgbox.com',
+    'images.imgbox.com',
+    'thumbs.imgbox.com',
+    'i.imgbox.com'
   ];
 
   const hostname = url.hostname.toLowerCase();
@@ -771,7 +774,7 @@ export class RedditManager {
   async submitPost(options: RedditPostOptions): Promise<RedditPostResult> {
     let permission: PostingPermission | undefined;
     try {
-      logger.error(`Submitting post to r/${options.subreddit}: "${options.title}"`);
+      logger.info(`Submitting post to r/${options.subreddit}: "${options.title}"`);
 
       // Check if we can post to this subreddit
       permission = await RedditManager.canPostToSubreddit(this.userId, options.subreddit, {
@@ -837,7 +840,7 @@ export class RedditManager {
       const duplicateBody = combineContentSegments(options.body, options.url);
       await this.recordSafetySignals(options.subreddit, options.title, duplicateBody);
 
-      logger.error('Reddit submission succeeded:', {
+      logger.info('Reddit submission succeeded:', {
         userId: this.userId,
         subreddit: options.subreddit,
         postId: submission.id,
@@ -946,7 +949,7 @@ export class RedditManager {
 
       // Direct image upload to Reddit
       if (options.imageBuffer || options.imagePath) {
-        logger.error('Uploading image directly to Reddit (i.redd.it)...', {
+        logger.info('Uploading image directly to Reddit (i.redd.it)...', {
           subreddit: options.subreddit,
           title: options.title.substring(0, 50),
           hasBuffer: !!options.imageBuffer,
@@ -1169,7 +1172,7 @@ export class RedditManager {
       // Not all subreddits support galleries
       const errorObj = error as { message?: string };
       if (errorObj.message?.includes('INVALID_OPTION') || errorObj.message?.includes('gallery')) {
-        logger.error('Gallery not supported, falling back to single image');
+        logger.warn('Gallery not supported, falling back to single image');
         return this.submitImagePost({
           subreddit: options.subreddit,
           title: options.title,
@@ -1608,7 +1611,7 @@ export class RedditManager {
         body
       );
 
-      logger.error(`Recorded safety signals for user ${this.userId} in r/${subreddit}`);
+      logger.debug(`Recorded safety signals for user ${this.userId} in r/${subreddit}`);
     } catch (error) {
       logger.error('Failed to record safety signals:', error);
     }
@@ -1992,7 +1995,7 @@ export function getRedditAuthUrl(state: string): string {
     redirectUri = `${protocol}://${domain}/api/reddit/callback`;
   }
 
-  logger.error('Reddit OAuth redirect URI (auth):', redirectUri);
+  logger.debug('Reddit OAuth redirect URI (auth):', redirectUri);
 
   const baseUrl = 'https://www.reddit.com/api/v1/authorize';
   const params = new URLSearchParams({
@@ -2025,7 +2028,7 @@ export async function exchangeRedditCode(code: string): Promise<{
     redirectUri = `${protocol}://${domain}/api/reddit/callback`;
   }
 
-  logger.error('Reddit OAuth redirect URI (exchange):', redirectUri);
+  logger.debug('Reddit OAuth redirect URI (exchange):', redirectUri);
 
   try {
     const response = await fetch('https://www.reddit.com/api/v1/access_token', {
