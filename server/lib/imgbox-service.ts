@@ -145,25 +145,19 @@ export class ImgboxService {
   }
 
   private static prepareRequest(form: FormData): { body: Buffer; headers: Record<string, string> } {
-    const body = form.getBuffer();
-    const headers = form.getHeaders() as Record<string, string | number>;
-
-    const normalizedHeaders: Record<string, string> = {};
-    for (const [key, value] of Object.entries(headers)) {
-      normalizedHeaders[key] = String(value);
-    }
-
-    normalizedHeaders['User-Agent'] = IMGBOX_USER_AGENT;
-    normalizedHeaders.Accept = IMGBOX_ACCEPT;
-    normalizedHeaders.Origin = IMGBOX_BASE_URL;
-    normalizedHeaders.Referer = `${IMGBOX_BASE_URL}/`;
-    normalizedHeaders['X-Requested-With'] = 'XMLHttpRequest';
-
-    if (!normalizedHeaders['Content-Length']) {
-      normalizedHeaders['Content-Length'] = body.length.toString();
-    }
-
-    return { body, headers: normalizedHeaders };
+    const boundary = form.getBoundary();
+    const buffer = form.getBuffer();
+    return {
+      body: buffer,
+      headers: {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'Content-Length': String(buffer.length),
+        'Accept': 'application/json, text/html',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Origin': IMGBOX_BASE_URL,
+        'Referer': `${IMGBOX_BASE_URL}/`,
+      },
+    };
   }
 
   private static calculateRetryDelay(attempt: number): number {
@@ -235,12 +229,39 @@ export class ImgboxService {
       };
     }
 
+    // First check if it's HTML (common when form submission fails)
+    if (payload.includes('<!DOCTYPE') || payload.includes('<html')) {
+      logger.error('Imgbox returned HTML instead of JSON', {
+        htmlPreview: payload.substring(0, 500),
+      });
+      
+      // Try to extract image URL from HTML if upload succeeded
+      const urlMatch = payload.match(/https:\/\/images\.imgbox\.com\/[^'"<>\s]+/);
+      const thumbMatch = payload.match(/https:\/\/thumbs\.imgbox\.com\/[^'"<>\s]+/);
+      
+      if (urlMatch) {
+        logger.info('Found Imgbox URL in HTML response', { url: urlMatch[0] });
+        return {
+          success: true,
+          url: urlMatch[0],
+          thumbnailUrl: thumbMatch ? thumbMatch[0] : urlMatch[0],
+        };
+      }
+      
+      return {
+        success: false,
+        error: 'Imgbox returned HTML without image URLs',
+        status: response.status,
+      };
+    }
+
     let parsed: ImgboxApiResponse;
     try {
       parsed = JSON.parse(payload) as ImgboxApiResponse;
     } catch (error) {
       logger.error('Imgbox upload returned invalid JSON', {
         error: error instanceof Error ? error.message : String(error),
+        payloadPreview: payload.substring(0, 200),
       });
       return {
         success: false,
@@ -250,6 +271,13 @@ export class ImgboxService {
     }
 
     if (!parsed.success || !parsed.files || parsed.files.length === 0) {
+      logger.warn('Imgbox response missing expected data', {
+        hasSuccess: 'success' in parsed,
+        successValue: parsed.success,
+        hasFiles: 'files' in parsed,
+        filesLength: parsed.files?.length,
+        responseKeys: Object.keys(parsed),
+      });
       return {
         success: false,
         error: parsed.error || 'Imgbox upload failed without file data',

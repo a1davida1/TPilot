@@ -59,8 +59,8 @@ export class PostImagesService {
       // Create form data
       const form = new FormData();
       
-      // Add the image file
-      form.append('upload', options.buffer, {
+      // Add the image file - PostImages expects 'file' not 'upload'
+      form.append('file', options.buffer, {
         filename,
         contentType: options.contentType ?? 'image/jpeg',
       });
@@ -69,16 +69,13 @@ export class PostImagesService {
       form.append('numfiles', '1');
       form.append('optsize', '0'); // 0 = don't resize
       form.append('expire', '0'); // 0 = never expire
+      form.append('upload_session', Date.now().toString());
+      form.append('gallery', '');
       
       // Adult content flag
       if (options.adult) {
         form.append('adult', '1');
       }
-      
-      // Gallery options
-      form.append('gallery', '');
-      form.append('ui', '');
-      form.append('session', '');
 
       // Make the request
       const response = await fetch(POSTIMAGES_UPLOAD_URL, {
@@ -98,12 +95,40 @@ export class PostImagesService {
       }
 
       const text = await response.text();
-      logger.debug('PostImages response:', { text: text.substring(0, 500) });
+      logger.debug('PostImages response:', { 
+        preview: text.substring(0, 500),
+        contentType: response.headers.get('content-type'),
+        status: response.status,
+      });
 
       // PostImages returns JSONP, we need to extract the JSON
       // Format: rr({ ... json ... })
       const jsonMatch = text.match(/rr\((.*)\)/s);
       if (!jsonMatch) {
+        // Try to parse as plain JSON
+        try {
+          const data = JSON.parse(text);
+          logger.debug('PostImages returned plain JSON:', data);
+          
+          if (data.error) {
+            throw new Error(data.error);
+          }
+          
+          // Handle plain JSON response
+          if (data.url || data.direct_link) {
+            return {
+              success: true,
+              url: data.url || data.direct_link,
+              thumbnailUrl: data.thumb_url || data.thumbnail || data.url || data.direct_link,
+              deleteUrl: data.delete_url,
+            };
+          }
+        } catch (e) {
+          logger.error('PostImages response not JSONP or JSON:', {
+            responsePreview: text.substring(0, 200),
+          });
+        }
+        
         throw new Error('Invalid response format from PostImages');
       }
 
