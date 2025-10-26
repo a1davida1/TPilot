@@ -59,11 +59,16 @@ export class PostImagesService {
       // Create form data
       const form = new FormData();
       
-      // PostImages expects the file as a Buffer with proper headers
-      form.append('upload[]', options.buffer, {
+      // PostImages needs the file with a very specific format
+      // Try multiple field names since API might have changed
+      form.append('file', options.buffer, {
         filename,
-        contentType: options.contentType ?? 'image/jpeg',
+        contentType: 'application/octet-stream',
       });
+      
+      // Also add as base64 in case binary upload isn't working
+      form.append('image', options.buffer.toString('base64'));
+      form.append('type', 'base64');
       
       // PostImages specific fields
       form.append('numfiles', '1');

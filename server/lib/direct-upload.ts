@@ -30,9 +30,25 @@ export class DirectUpload {
         body: form as any,
         headers: {
           ...form.getHeaders(),
-          'Authorization': 'Client-ID 8e085143f4c5223', // Public client ID for anonymous uploads
+          'Authorization': 'Client-ID 546c25a59c58ad7', // Public Imgur client ID for anonymous uploads
         },
       });
+
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('json')) {
+        const text = await response.text();
+        logger.error('Imgur returned non-JSON:', { 
+          status: response.status,
+          contentType, 
+          preview: text.substring(0, 200) 
+        });
+        return {
+          success: false,
+          error: `Imgur returned ${contentType}: ${text.substring(0, 100)}`,
+          service: 'imgur',
+        };
+      }
 
       const data = await response.json() as any;
       

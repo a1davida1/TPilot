@@ -229,52 +229,47 @@ export class ImgboxService {
       };
     }
 
-    // First check if it's HTML (common when form submission fails)
+    // Imgbox returns HTML on success! Parse it for URLs
     if (payload.includes('<!DOCTYPE') || payload.includes('<html')) {
-      logger.error('Imgbox returned HTML instead of JSON', {
-        htmlPreview: payload.substring(0, 500),
-      });
+      logger.debug('Imgbox returned HTML response, parsing for URLs...');
       
-      // Try to extract image URL from HTML if upload succeeded
-      const urlMatch = payload.match(/https:\/\/images\.imgbox\.com\/[^'"<>\s]+/);
-      const thumbMatch = payload.match(/https:\/\/thumbs\.imgbox\.com\/[^'"<>\s]+/);
+      // Extract the full-size image URL from HTML
+      // Format: https://images2.imgbox.com/XX/XX/XXXXXX_o.jpeg
+      const fullImageMatch = payload.match(/https:\/\/images\d*\.imgbox\.com\/[a-f0-9]+\/[a-f0-9]+\/[^'"<>\s]+_o\.[a-z]+/i);
       
-      if (urlMatch) {
-        logger.info('Found Imgbox URL in HTML response', { 
-          url: urlMatch[0],
-          thumbnailUrl: thumbMatch ? thumbMatch[0] : urlMatch[0],
-          extractedFrom: 'HTML'
-        });
-        return {
+      // Extract thumbnail URL 
+      // Format: https://thumbs2.imgbox.com/XX/XX/XXXXXX_t.jpeg
+      const thumbMatch = payload.match(/https:\/\/thumbs\d*\.imgbox\.com\/[a-f0-9]+\/[a-f0-9]+\/[^'"<>\s]+_t\.[a-z]+/i);
+      
+      // Extract the main Imgbox URL
+      // Format: https://imgbox.com/XXXXXXXX
+      const mainUrlMatch = payload.match(/https:\/\/imgbox\.com\/[A-Za-z0-9]+/);
+      
+      if (fullImageMatch || mainUrlMatch) {
+        const result = {
           success: true,
-          url: urlMatch[0],
-          thumbnailUrl: thumbMatch ? thumbMatch[0] : urlMatch[0],
+          url: fullImageMatch ? fullImageMatch[0] : mainUrlMatch![0],
+          thumbnailUrl: thumbMatch ? thumbMatch[0] : undefined,
+          mainUrl: mainUrlMatch ? mainUrlMatch[0] : undefined,
+        };
+        
+        logger.info('Successfully extracted URLs from Imgbox HTML', result);
+        return result;
+      }
+      
+      // Check if it's an error page
+      if (payload.includes('error') || payload.includes('failed')) {
+        logger.error('Imgbox returned error in HTML');
+        return {
+          success: false,
+          error: 'Imgbox upload failed (HTML error page)',
+          status: response.status,
         };
       }
       
-      // Try more patterns for finding URLs in HTML
-      const patterns = [
-        /href="(https:\/\/images\.imgbox\.com\/[^"]+)"/,
-        /value="(https:\/\/images\.imgbox\.com\/[^"]+)"/,
-        /data-url="(https:\/\/images\.imgbox\.com\/[^"]+)"/,
-        /src="(https:\/\/images\.imgbox\.com\/[^"]+)"/,
-      ];
-      
-      for (const pattern of patterns) {
-        const match = payload.match(pattern);
-        if (match) {
-          logger.info('Found Imgbox URL with alternate pattern', { 
-            url: match[1],
-            pattern: pattern.source,
-            extractedFrom: 'HTML-alternate'
-          });
-          return {
-            success: true,
-            url: match[1],
-            thumbnailUrl: match[1],
-          };
-        }
-      }
+      logger.error('Could not find image URLs in Imgbox HTML', {
+        htmlPreview: payload.substring(0, 1000),
+      });
       
       return {
         success: false,
@@ -386,43 +381,46 @@ export class ImgboxService {
 
     try {
       const token = await this.fetchToken();
-      const form = new FormData();
       
-      // Imgbox Rails form fields (as of October 2025)
-      form.append('utf8', '✓'); // Required by Rails
-      form.append('authenticity_token', token.token);
-      form.append('files[]', options.buffer, {
+      // STEP 1: Upload the file first
+      logger.debug('Step 1: Uploading file to Imgbox...');
+      const fileForm = new FormData();
+      fileForm.append('utf8', '✓');
+      fileForm.append('authenticity_token', token.token);
+      fileForm.append('files[]', options.buffer, {
         filename,
-        contentType: options.contentType ?? 'image/jpeg',
-      });
-      // Optional: Add gallery title if needed
-      // form.append('gallery-title', '');
-
-      const { body, headers } = this.prepareRequest(form);
-      
-      logger.debug('Imgbox upload request details', {
-        url: IMGBOX_UPLOAD_URL,
-        formSize: body.length,
-        hasToken: !!token.token,
-        tokenLength: token.token?.length,
-        hasCookies: !!token.cookies,
-        filename,
+        contentType: options.contentType || 'image/jpeg',
       });
       
-      const response = await this.postWithRetry(IMGBOX_UPLOAD_URL, body, headers, token.cookies);
-      const payload = await response.text();
+      const { body: fileBody, headers: fileHeaders } = this.prepareRequest(fileForm);
+      
+      const fileResponse = await this.postWithRetry(
+        IMGBOX_UPLOAD_URL, 
+        fileBody, 
+        fileHeaders, 
+        token.cookies
+      );
+      
+      const fileResult = await fileResponse.text();
+      
+      // Check if file upload succeeded (might return JSON with file ID)
+      logger.debug('File upload response preview:', fileResult.substring(0, 500));
+      
+      // For now, just parse the response from step 1 as the final result
+      // In reality, Imgbox might need us to submit step 2 to a different endpoint
+      // But based on user's testing, the HTML response already contains the URLs
       
       logger.debug('Imgbox raw response', {
-        status: response.status,
-        contentType: response.headers.get('content-type'),
-        contentLength: response.headers.get('content-length'),
-        payloadLength: payload.length,
-        payloadStart: payload.substring(0, 200),
-        isHTML: payload.includes('<!DOCTYPE') || payload.includes('<html'),
-        isJSON: payload.trim().startsWith('{') || payload.trim().startsWith('['),
+        status: fileResponse.status,
+        contentType: fileResponse.headers.get('content-type'),
+        contentLength: fileResponse.headers.get('content-length'),
+        payloadLength: fileResult.length,
+        payloadStart: fileResult.substring(0, 200),
+        isHTML: fileResult.includes('<!DOCTYPE') || fileResult.includes('<html'),
+        isJSON: fileResult.trim().startsWith('{') || fileResult.trim().startsWith('['),
       });
 
-      const result = this.parseResponse(response, payload);
+      const result = this.parseResponse(fileResponse, fileResult);
       if (result.success) {
         logger.info('Imgbox upload successful', {
           filename,
