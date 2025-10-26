@@ -101,9 +101,32 @@ export class ImgboxService {
     }
 
     const html = await response.text();
-    const tokenMatch = html.match(/var\s+token\s*=\s*'([^']+)'/u);
+    
+    // Try multiple token patterns (Imgbox might have changed their HTML)
+    const tokenPatterns = [
+      /var\s+token\s*=\s*'([^']+)'/u,
+      /var\s+token\s*=\s*"([^"]+)"/u,
+      /data-token\s*=\s*['"]([^'"]+)['"]/u,
+      /token['"]?\s*:\s*['"]([^'"]+)['"]/u,
+      /"token"\s*:\s*"([^"]+)"/u,
+    ];
+    
+    let tokenMatch = null;
+    for (const pattern of tokenPatterns) {
+      tokenMatch = html.match(pattern);
+      if (tokenMatch) {
+        logger.debug(`Found Imgbox token with pattern: ${pattern.source}`);
+        break;
+      }
+    }
+    
     if (!tokenMatch) {
-      throw new Error('Imgbox token not found in response');
+      // Log first 500 chars of HTML for debugging
+      logger.error('Imgbox token not found. HTML preview:', {
+        htmlPreview: html.substring(0, 500),
+        htmlLength: html.length,
+      });
+      throw new Error('Imgbox token not found in response - HTML structure may have changed');
     }
 
     const token = tokenMatch[1];
@@ -154,7 +177,7 @@ export class ImgboxService {
     try {
       const response = await fetch(url, {
         method: 'POST',
-        body,
+        body: body as any, // FormData type issue with node-fetch
         headers: {
           ...headers,
           Cookie: cookies,
@@ -256,16 +279,12 @@ export class ImgboxService {
       };
     }
 
+    const filename = options.filename ?? 'image.jpg';
+
     try {
       const token = await this.fetchToken();
-      const filename = sanitizeFilename(options.filename);
       const form = new FormData();
-
       form.append('token', token.token);
-      form.append('gallery_id', 'null');
-      form.append('content_type', '1');
-      form.append('action', 'upload');
-      form.append('thumb_size', '350c');
       form.append('comments_enabled', '0');
       form.append('privacy', '0');
       form.append('expiration', options.expirationDays ? String(options.expirationDays) : '0');

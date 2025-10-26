@@ -76,25 +76,37 @@ router.post('/upload', uploadLimiter, authenticateToken(true), upload.single('fi
     const fs = await import('fs/promises');
     const buffer = await fs.readFile(req.file.path);
 
-    // Upload to Imgbox (external storage - legal compliance)
-    const imgboxResult = await ImgboxService.upload({
-      buffer,
-      filename: req.file.originalname,
-      contentType: req.file.mimetype,
-      nsfw: true, // Mark as mature content
-    });
-
+    // Try Imgbox upload first, fall back to base64 if it fails
+    let imageUrl: string;
+    let thumbnailUrl: string | undefined;
+    
+    try {
+      const imgboxResult = await ImgboxService.upload({
+        buffer,
+        filename: req.file.originalname,
+        contentType: req.file.mimetype,
+        nsfw: true, // Mark as mature content
+      });
+      
+      if (!imgboxResult.success || !imgboxResult.url) {
+        throw new Error(imgboxResult.error || 'Imgbox upload failed');
+      }
+      
+      imageUrl = imgboxResult.url;
+      thumbnailUrl = imgboxResult.thumbnailUrl;
+      logger.info(`Media uploaded to Imgbox successfully: ${req.file.originalname}`);
+    } catch (imgboxError) {
+      // Fallback: Convert to base64 data URL (temporary storage)
+      logger.warn('Imgbox upload failed, using base64 fallback:', imgboxError);
+      const base64 = buffer.toString('base64');
+      const mimeType = req.file.mimetype || 'image/jpeg';
+      imageUrl = `data:${mimeType};base64,${base64}`;
+      thumbnailUrl = imageUrl; // Same as main URL for base64
+      logger.info(`Media stored as base64 data URL: ${req.file.originalname} (${base64.length} chars)`);
+    }
+    
     // Clean up temp file immediately
     await fs.unlink(req.file.path).catch(() => {});
-
-    if (!imgboxResult.success || !imgboxResult.url) {
-      throw new Error(imgboxResult.error || 'Imgbox upload failed');
-    }
-
-    logger.info(`Media uploaded to Imgbox successfully: ${req.file.originalname} for user ${req.user.id}`, {
-      url: imgboxResult.url,
-      size: buffer.length,
-    });
 
     // Return response in format compatible with existing frontend
     res.json({
@@ -105,10 +117,10 @@ router.post('/upload', uploadLimiter, authenticateToken(true), upload.single('fi
         filename: req.file.originalname,
         bytes: buffer.length,
         mime: req.file.mimetype,
-        signedUrl: imgboxResult.url,
-        downloadUrl: imgboxResult.url,
-        thumbnailUrl: imgboxResult.thumbnailUrl,
-        provider: 'imgbox',
+        signedUrl: imageUrl,
+        downloadUrl: imageUrl,
+        thumbnailUrl: thumbnailUrl,
+        provider: imageUrl.startsWith('data:') ? 'base64' : 'imgbox',
         createdAt: new Date(),
       }
     });

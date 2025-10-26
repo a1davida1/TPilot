@@ -22,7 +22,7 @@ const ACCEPTED_MIME_TYPES = new Set([
   'image/gif',
 ]);
 
-const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20MB aligns with Reddit native limit
+const MAX_FILE_SIZE_BYTES = 32 * 1024 * 1024; // 32MB Imgbox limit
 
 const uploadResponseSchema = z.object({
   message: z.string().optional(),
@@ -76,7 +76,12 @@ function toAbsoluteUrl(url: string | null | undefined): string {
   }
 }
 
-export function RedditNativeUploadPortal({
+/**
+ * ImgboxUploadPortal - Uploads images to Imgbox for external storage
+ * Used for both quick posts and scheduled posts to ensure legal compliance.
+ * Images are stored on Imgbox, then re-uploaded to Reddit CDN when posting.
+ */
+export function ImgboxUploadPortal({
   onComplete,
   showPreview = true,
   acceptedFormats = Array.from(ACCEPTED_MIME_TYPES),
@@ -104,18 +109,18 @@ export function RedditNativeUploadPortal({
         imageUrl,
         assetId: asset.id,
         filename: asset.filename,
-        provider: 'reddit-native',
+        provider: 'imgbox',
       });
 
       trackUpload({
-        provider: 'reddit-native',
+        provider: 'imgbox',
         success: true,
         fileSize: asset.bytes,
       });
 
       toast({
-        title: 'Upload ready for Reddit',
-        description: 'Image optimized and stored for native Reddit posting.',
+        title: 'Upload successful',
+        description: 'Image uploaded to Imgbox for external storage.',
       });
 
       queryClient.invalidateQueries({ queryKey: ['/api/media'] });
@@ -141,7 +146,7 @@ export function RedditNativeUploadPortal({
       if (file.size > MAX_FILE_SIZE_BYTES) {
         toast({
           title: 'File too large',
-          description: 'Reddit native uploads are limited to 20MB.',
+          description: 'Imgbox uploads are limited to 32MB.',
           variant: 'destructive',
         });
         return;
@@ -176,14 +181,14 @@ export function RedditNativeUploadPortal({
 
         const duration = Date.now() - startTime;
         trackUpload({
-          provider: 'reddit-native',
+          provider: 'imgbox',
           success: true,
           duration,
           fileSize: file.size,
         });
       } catch (error) {
         trackUpload({
-          provider: 'reddit-native',
+          provider: 'imgbox',
           success: false,
           errorType: 'server',
         });
@@ -256,15 +261,13 @@ export function RedditNativeUploadPortal({
   );
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <UploadCloud className="h-5 w-5" />
-          Reddit Native Upload
+          <Shield className="h-5 w-5" />
+          External Image Upload
         </CardTitle>
-        <CardDescription>
-          Upload directly to our protected media store for instant Reddit native posting. No Catbox required.
-        </CardDescription>
+        <CardDescription>Upload to Imgbox for secure external storage (legal compliance)</CardDescription>
       </CardHeader>
 
       <CardContent>
@@ -356,7 +359,7 @@ export function RedditNativeUploadPortal({
               <img src={previewUrl} alt="Upload preview" className="h-full w-full object-contain" />
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <CheckCircle className="h-4 w-4 text-emerald-500" /> Ready for Reddit native posting
+              <CheckCircle className="h-4 w-4 text-emerald-500" /> Image stored on Imgbox, ready for posting
             </div>
           </div>
         ) : null}
@@ -365,4 +368,6 @@ export function RedditNativeUploadPortal({
   );
 }
 
-export default RedditNativeUploadPortal;
+// Legacy export names for backwards compatibility
+export const RedditNativeUploadPortal = ImgboxUploadPortal;
+export default ImgboxUploadPortal;
