@@ -98,8 +98,8 @@ export class DashboardService {
       // Try to get engagement from social metrics first - join with contentGenerations to get user data
       const socialMetricsResult = await db
         .select({ 
-          totalEngagement: sql<number>`sum(${socialMetrics.likes} + ${socialMetrics.comments} + ${socialMetrics.shares})`,
-          totalViews: sql<number>`sum(${socialMetrics.views})`
+          totalEngagement: sql<number>`COALESCE(sum(${socialMetrics.likes} + ${socialMetrics.comments} + ${socialMetrics.shares}), 0)`,
+          totalViews: sql<number>`COALESCE(sum(${socialMetrics.views}), 0)`
         })
         .from(socialMetrics)
         .leftJoin(contentGenerations, eq(socialMetrics.contentId, contentGenerations.id))
@@ -184,7 +184,7 @@ export class DashboardService {
       
       const result = await db
         .select({ 
-          totalDeductions: sql<number>`sum(${expenses.amount} * ${expenses.deductionPercentage} / 100.0)` 
+          totalDeductions: sql<number>`COALESCE(sum(${expenses.amount} * ${expenses.deductionPercentage} / 100.0), 0)` 
         })
         .from(expenses)
         .where(
@@ -349,8 +349,8 @@ export class DashboardService {
       // Average engagement rate across all users
       const engagementResult = await db
         .select({ 
-          totalEngagement: sql<number>`sum(${socialMetrics.likes} + ${socialMetrics.comments} + ${socialMetrics.shares})`,
-          totalViews: sql<number>`sum(${socialMetrics.views})`
+          totalEngagement: sql<number>`COALESCE(sum(${socialMetrics.likes} + ${socialMetrics.comments} + ${socialMetrics.shares}), 0)`,
+          totalViews: sql<number>`COALESCE(sum(${socialMetrics.views}), 0)`
         })
         .from(socialMetrics);
 
@@ -362,7 +362,7 @@ export class DashboardService {
       // Total platform tax savings
       const taxSavingsResult = await db
         .select({ 
-          totalDeductions: sql<number>`sum(${expenses.amount} * ${expenses.deductionPercentage} / 100.0)` 
+          totalDeductions: sql<number>`COALESCE(sum(${expenses.amount} * ${expenses.deductionPercentage} / 100.0), 0)` 
         })
         .from(expenses)
         .where(eq(expenses.taxYear, new Date().getFullYear()));

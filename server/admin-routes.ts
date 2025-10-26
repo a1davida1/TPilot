@@ -1,12 +1,14 @@
-import { Express } from 'express';
+import type { Express } from 'express';
 import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { storage } from './storage';
-import { emailService } from './services/email-service';
-import { type User, systemHealthSchema, analyticsSchema, completenessSchema } from '../shared/schema.js';
+import { storage } from './storage.js';
+import { emailService } from './services/email-service.js';
+import { type User, systemHealthSchema, analyticsSchema, completenessSchema, contentGenerations } from '../shared/schema.js';
 import { logger } from './bootstrap/logger.js';
+import { db } from './db.js';
+import { eq, sql } from 'drizzle-orm';
 
 // Admin route interfaces
 interface UserSession {
@@ -238,13 +240,37 @@ export function setupAdminRoutes(app: Express) {
     try {
       const users = await storage.getAllUsers();
       
-      // Remove passwords from response
-      const sanitizedUsers = users.map(u => ({
-        ...u,
-        password: undefined
-      }));
+      // Enhance with content count for each user
+      const enhancedUsers = await Promise.all(
+        users.map(async (u) => {
+          try {
+            // Get content generation count for this user
+            const contentResult = await db
+              .select({ count: sql<number>`count(*)` })
+              .from(contentGenerations)
+              .where(eq(contentGenerations.userId, u.id));
+            
+            const contentCount = Number(contentResult[0]?.count ?? 0);
+            
+            return {
+              ...u,
+              password: undefined,
+              passwordHash: undefined,
+              contentCount, // Add content count
+            };
+          } catch (error) {
+            logger.error(`Error fetching content count for user ${u.id}:`, error);
+            return {
+              ...u,
+              password: undefined,
+              passwordHash: undefined,
+              contentCount: 0,
+            };
+          }
+        })
+      );
       
-      res.json(sanitizedUsers);
+      res.json(enhancedUsers);
     } catch (error) {
       logger.error('Error fetching users:', error);
       res.status(500).json({ message: 'Error fetching users' });

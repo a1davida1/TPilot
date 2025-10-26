@@ -87,8 +87,12 @@ Scheduling Page → Bulk Upload → Select Images → Generate Captions → Set 
 - Rate limiting protection
 
 ### **Content Pipeline**
-- **Image Storage**: Reddit native uploads (i.redd.it) are the primary path with Imgbox fallback when Reddit rejects media
-- **Catbox.moe Integration**: Optional secondary hosting with authenticated uploads
+- **Image Storage**: 
+  - **PRIMARY**: Reddit native uploads (i.redd.it) - ALL images uploaded directly to Reddit CDN
+  - **FALLBACK ONLY**: Imgbox - ONLY used when Reddit CDN rejects the upload
+  - **NO LOCAL STORAGE**: Zero files saved to server (legal compliance requirement)
+  - **NO S3/Database storage**: All media goes through Reddit → Imgbox fallback flow
+- **Legacy/Deprecated**: Catbox.moe, Imgur (old implementations, not used in current flow)
 - **AI Caption Generation**: OpenRouter ONLY (Grok-4-Fast primary model)
   - **SFW Voices**: flirty_playful, gamer_nerdy, luxury_minimal, arts_muse, gym_energy, cozy_girl
   - **NSFW Voices**: seductive_goddess, intimate_girlfriend, bratty_tease, submissive_kitten
@@ -142,11 +146,12 @@ Scheduling Page → Bulk Upload → Select Images → Generate Captions → Set 
 ## ⚠️ Legal Compliance
 
 ### **Critical Requirements**
-1. **Zero Local Storage** - All images on Imgur
-2. **2257 Compliance** - Age verification
-3. **DMCA Protection** - Content tracking
-4. **Subreddit Compliance** - Auto rule checking
-5. **Content Filtering** - Prohibited content blocking
+1. **Zero Local Storage** - NO files saved to server filesystem (Reddit CDN + Imgbox fallback ONLY)
+2. **Reddit Native Uploads** - All images uploaded directly to Reddit's i.redd.it CDN
+3. **2257 Compliance** - Age verification
+4. **DMCA Protection** - Content tracking
+5. **Subreddit Compliance** - Auto rule checking
+6. **Content Filtering** - Prohibited content blocking
 
 ### **Moderation Tracking**
 - Post removals
@@ -172,10 +177,11 @@ Scheduling Page → Bulk Upload → Select Images → Generate Captions → Set 
 - JWT authentication
 
 ### **External Services**
-- **Imgur API** (primary image hosting, legal compliance)
-- **Imgbox API** (automatic fallback hosting when Reddit CDN rejects uploads)
-- **Catbox.moe API** (legacy optional hosting with authenticated uploads)
-- **Reddit API** (OAuth, posting, monitoring, subreddit discovery)
+- **Reddit API** (OAuth, posting, monitoring, subreddit discovery, i.redd.it CDN uploads)
+- **Imgbox API** (FALLBACK ONLY - used when Reddit CDN rejects uploads)
+- **NO IMGUR** (not used in current implementation)
+- **NO CATBOX** (legacy code, not used in current flow)
+- **NO LOCAL STORAGE** (legal compliance - zero files on server)
 - **OpenRouter API** (AI caption generation via Grok-4-Fast)
   - Model: `x-ai/grok-4-fast`
   - Temp: 1.4, Freq Penalty: 0.7, Presence Penalty: 1.5
@@ -203,9 +209,9 @@ Scheduling Page → Bulk Upload → Select Images → Generate Captions → Set 
 ### **Working** ✅
 - Authentication system (email/password, Reddit OAuth)
 - Reddit integration (multi-account, posting, monitoring)
-- Imgur uploads (primary hosting)
-- Imgbox fallback uploads (automatic when Reddit CDN fails)
-- Catbox.moe uploads (legacy/optional hosting)
+- Reddit native uploads (i.redd.it CDN - primary image hosting)
+- Imgbox fallback uploads (automatic ONLY when Reddit CDN rejects)
+- **NO local file storage** (legal compliance enforced)
 - OpenRouter caption generation (3 modes: Image, Text, Rewrite)
 - NSFW voice system (4 explicit voices with first-person prompts)
 - Scheduled posting (cron-based processing)
@@ -250,10 +256,13 @@ Scheduling Page → Bulk Upload → Select Images → Generate Captions → Set 
 - Voice definitions in `prompts/voices.json` define personality profiles
 - First-person NSFW captions use "I/me/my" perspective
 
-### **Image Storage**
-- NO local file storage (legal compliance)
-- Imgur is primary (all posts)
-- Catbox.moe is optional secondary (authenticated uploads)
+### **Image Storage (CRITICAL - Legal Compliance)**
+- **NO local file storage** - ZERO files saved to server filesystem
+- **NO database storage** - URLs only, never binary data
+- **Reddit native uploads (i.redd.it)** - PRIMARY method for ALL posts
+- **Imgbox fallback** - ONLY used when Reddit CDN rejects upload
+- **Flow**: User uploads → Temp processing → Reddit CDN → Delete temp → Done
+- **Fallback Flow**: Reddit rejects → Imgbox upload → Delete temp → Done
 
 ### **Scheduling**
 - Cron manager processes scheduled posts every minute

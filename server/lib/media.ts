@@ -249,9 +249,9 @@ export class MediaManager {
         },
       }));
     } else {
-      // Fallback to local filesystem
-      const localPath = this.getLocalAssetPath(key);
-      await fs.writeFile(localPath, finalBuffer);
+      // LEGAL COMPLIANCE ERROR: Local storage not allowed
+      // All media must go through Reddit native upload (i.redd.it) or Imgbox fallback
+      throw new Error('Local file storage is disabled for legal compliance. Use Reddit native upload or Imgbox fallback.');
     }
     
     // Save to database
