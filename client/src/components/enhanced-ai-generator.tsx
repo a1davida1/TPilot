@@ -44,7 +44,7 @@ const photoInstructionFields: Array<{ key: keyof ContentGeneration["photoInstruc
   { key: "technicalSettings", label: "Technical Settings" }
 ];
 
-const normalizePhotoInstructions = (instructions: GeneratedContent['photoInstructions']): Partial<PhotoInstructions> => {
+const _normalizePhotoInstructions = (instructions: GeneratedContent['photoInstructions']): Partial<PhotoInstructions> => {
   if (!instructions || typeof instructions === 'string') {
     return {};
   }

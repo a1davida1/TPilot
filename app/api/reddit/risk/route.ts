@@ -48,7 +48,7 @@ async function consumeRateLimit(userId: number, tier: string | null | undefined)
   }
   const withinWindow = existing && now < existing.resetAt;
   const nextCount = withinWindow ? (existing?.count ?? 0) + 1 : 1;
-  const resetAt = withinWindow ? existing!.resetAt : now + policy.windowSeconds * 1000;
+  const resetAt = withinWindow && existing ? existing.resetAt : now + policy.windowSeconds * 1000;
   const ttlSeconds = Math.max(Math.ceil((resetAt - now) / 1000), 1);
   const state: RateLimitState = { count: nextCount, resetAt, limit: policy.limit };
   await stateStore.set(key, state, ttlSeconds);

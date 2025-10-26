@@ -877,7 +877,7 @@ export function registerRedditRoutes(app: Express) {
               userId.toString(),
               subreddit,
               title,
-              typeof text === 'string' && text.trim().length > 0 ? text : normalizedImageUrl
+              typeof text === 'string' && text.trim().length > 0 ? text : (normalizedImageUrl || '')
             );
           } catch (safetyError) {
             logger.warn('Failed to record safety signals', {

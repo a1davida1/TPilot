@@ -231,7 +231,7 @@ function sanitizeImageUrl(url: string): string | null {
     if (parsed.protocol === "data:") return null;
     // Reject any other protocol or host
     return null;
-  } catch (e) {
+  } catch (_e) {
     return null;
   }
 }

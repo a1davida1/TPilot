@@ -1,6 +1,6 @@
 import { useLocation } from 'wouter';
 import { PasswordChangeForm } from '@/components/PasswordChangeForm';
-import { useAuth, type AuthUser } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { useEffect } from 'react';
 
 export default function ChangePasswordPage() {
