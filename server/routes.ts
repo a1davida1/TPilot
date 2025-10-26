@@ -27,7 +27,7 @@ import { referralRouter } from "./routes/referrals.js";
 import { registerExpenseRoutes } from "./expense-routes.js";
 import { adminCommunitiesRouter } from "./routes/admin-communities.js";
 import { createCancelSubscriptionHandler } from "./routes/subscription-management.js";
-// import { createLocalDownloadRouter } from "./routes/downloads.js"; // REMOVED - No local files
+import { createLocalDownloadRouter } from "./routes/downloads.js";
 import imgurUploadRouter from "./routes/imgur-uploads.js";
 import { feedbackRouter } from "./routes/feedback.js";
 
@@ -1010,8 +1010,8 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // Admin communities routes are exposed under a dedicated admin namespace
   app.use('/api/admin/communities', authenticateToken(true), adminCommunitiesRouter);
 
-  // REMOVED: Local file serving is illegal - all images must be on Imgur
-  // app.use('/uploads', createLocalDownloadRouter());
+  // Local file serving for media uploads (tokenized downloads)
+  app.use('/uploads', createLocalDownloadRouter());
 
   // OpenAPI specification endpoint
   // app.use(getOpenApiRouter(apiPrefix)); // Commented out - file missing

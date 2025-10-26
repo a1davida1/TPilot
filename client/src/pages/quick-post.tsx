@@ -200,6 +200,11 @@ function sanitizeImageUrl(url: string): string | null {
   try {
     const parsed = new URL(url, window.location.origin);
 
+    // Allow same-origin URLs (for local uploads like /uploads/token)
+    if (parsed.origin === window.location.origin) {
+      return parsed.toString();
+    }
+
     // Define explicit allowed hosts for images.
     const allowedHosts = [
       'catbox.moe',
@@ -235,6 +240,7 @@ export default function QuickPostPage() {
   const { toast } = useToast();
 
   const [imageUrl, setImageUrl] = useState<string>('');
+  const [assetId, setAssetId] = useState<number | undefined>(undefined);
   const [protectedImageUrl, setProtectedImageUrl] = useState<string>('');
   const [captionOptions, setCaptionOptions] = useState<CaptionOption[]>([]);
   const [selectedCaption, setSelectedCaption] = useState<'A' | 'B' | ''>('');
@@ -541,6 +547,7 @@ export default function QuickPostPage() {
         const response = await apiRequest('POST', '/api/reddit/post', {
           title: truncateTitle(captionText),
           subreddit: normalizedSubreddit,
+          assetId: assetId,
           imageUrl: protectedImageUrl || imageUrl,
           text: captionText,
           nsfw,
@@ -619,6 +626,7 @@ export default function QuickPostPage() {
 
   const handleImageUpload = (result: { imageUrl: string; assetId?: number }) => {
     setImageUrl(result.imageUrl);
+    setAssetId(result.assetId);
     setPosted(false);
     setCaptionOptions([]);
     setSelectedCaption('');
@@ -715,11 +723,13 @@ export default function QuickPostPage() {
 
   const startNewPost = () => {
     setImageUrl('');
+    setAssetId(undefined);
     setProtectedImageUrl('');
     setCaptionOptions([]);
     setSelectedCaption('');
     setConfirmedCaptionId(null);
     setPosted(false);
+    setSubreddit('');
     setCaptionPairId('');
     setCaptionShownAt(null);
     setValidationStatus('idle');

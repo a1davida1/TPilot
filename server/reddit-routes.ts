@@ -802,7 +802,7 @@ export function registerRedditRoutes(app: Express) {
 
   // Alias for Quick Post - transforms Quick Post format to submit format
   app.post('/api/reddit/post', authenticateToken(true), async (req: AuthRequest, res) => {
-    const { title, subreddit, imageUrl, text, nsfw, spoiler } = req.body ?? {};
+    const { title, subreddit, imageUrl, assetId, text, nsfw, spoiler } = req.body ?? {};
 
     let cleanImageUrl: string | undefined = typeof imageUrl === 'string' ? imageUrl : undefined;
     if (typeof cleanImageUrl === 'string' && cleanImageUrl.trim().length > 0) {
@@ -858,11 +858,12 @@ export function registerRedditRoutes(app: Express) {
       const isNsfw = toBoolean(nsfw);
       const isSpoiler = toBoolean(spoiler);
 
-      if (normalizedImageUrl) {
+      if (normalizedImageUrl || assetId) {
         const uploadResult = await RedditNativeUploadService.uploadAndPost({
           userId,
           subreddit,
           title,
+          assetId: typeof assetId === 'number' ? assetId : undefined,
           imageUrl: normalizedImageUrl,
           nsfw: isNsfw,
           spoiler: isSpoiler,

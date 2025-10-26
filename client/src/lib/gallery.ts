@@ -19,8 +19,19 @@ function sanitizeUrl(value: unknown): string | undefined {
     return undefined;
   }
 
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  // Allow relative paths (e.g., /uploads/token) for local storage
+  if (trimmed.startsWith('/')) {
+    return trimmed;
+  }
+
+  // For absolute URLs, validate protocol
   try {
-    const normalized = new URL(value.trim());
+    const normalized = new URL(trimmed);
     if (!['https:', 'http:'].includes(normalized.protocol)) {
       return undefined;
     }
