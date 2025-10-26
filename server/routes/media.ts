@@ -2,6 +2,7 @@ import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { uploadLimiter, logger } from '../middleware/security.js';
 import { MediaManager } from '../lib/media.js';
+import { ImgboxService } from '../lib/imgbox-service.js';
 import multer from 'multer';
 
 const router = express.Router();
@@ -22,9 +23,9 @@ const upload = multer({
 // Auth request type
 type AuthRequest = express.Request & { user?: { id: number; tier?: string } };
 
-function parseWatermarkOverride(value: unknown): boolean | null {
+function _parseWatermarkOverride(value: unknown): boolean | null {
   if (Array.isArray(value)) {
-    return parseWatermarkOverride(value[0]);
+    return _parseWatermarkOverride(value[0]);
   }
   if (typeof value === 'string') {
     const normalized = value.trim().toLowerCase();
@@ -60,7 +61,7 @@ router.get('/', authenticateToken(true), async (req: AuthRequest, res) => {
   }
 });
 
-// POST /api/media/upload - Upload new media file
+// POST /api/media/upload - Upload new media file to Imgbox
 router.post('/upload', uploadLimiter, authenticateToken(true), upload.single('file'), async (req: AuthRequest, res) => {
   try {
     if (!req.user?.id) {
@@ -75,30 +76,41 @@ router.post('/upload', uploadLimiter, authenticateToken(true), upload.single('fi
     const fs = await import('fs/promises');
     const buffer = await fs.readFile(req.file.path);
 
-    const requestBody = req.body as unknown;
-    const watermarkValue = typeof requestBody === 'object' && requestBody !== null
-      ? (requestBody as { watermark?: unknown }).watermark
-      : null;
-    const watermarkOverride = parseWatermarkOverride(watermarkValue);
-    const userTier = req.user.tier ?? 'free';
-    const defaultWatermark = ['free', 'guest'].includes(userTier);
-    const applyWatermark = watermarkOverride ?? defaultWatermark;
-
-    // Upload file using MediaManager
-    const asset = await MediaManager.uploadFile(buffer, {
-      userId: req.user.id,
+    // Upload to Imgbox (external storage - legal compliance)
+    const imgboxResult = await ImgboxService.upload({
+      buffer,
       filename: req.file.originalname,
-      visibility: 'private',
-      applyWatermark
+      contentType: req.file.mimetype,
+      nsfw: true, // Mark as mature content
     });
 
-    // Clean up temp file
+    // Clean up temp file immediately
     await fs.unlink(req.file.path).catch(() => {});
 
-    logger.info(`Media uploaded successfully: ${asset.filename} for user ${req.user.id}`);
+    if (!imgboxResult.success || !imgboxResult.url) {
+      throw new Error(imgboxResult.error || 'Imgbox upload failed');
+    }
+
+    logger.info(`Media uploaded to Imgbox successfully: ${req.file.originalname} for user ${req.user.id}`, {
+      url: imgboxResult.url,
+      size: buffer.length,
+    });
+
+    // Return response in format compatible with existing frontend
     res.json({
       message: 'File uploaded successfully',
-      asset
+      asset: {
+        id: Date.now(), // Temporary ID for frontend compatibility
+        userId: req.user.id,
+        filename: req.file.originalname,
+        bytes: buffer.length,
+        mime: req.file.mimetype,
+        signedUrl: imgboxResult.url,
+        downloadUrl: imgboxResult.url,
+        thumbnailUrl: imgboxResult.thumbnailUrl,
+        provider: 'imgbox',
+        createdAt: new Date(),
+      }
     });
   } catch (error) {
     logger.error('Media upload failed:', error);

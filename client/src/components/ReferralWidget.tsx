@@ -90,7 +90,8 @@ export function ReferralWidget() {
     free: { referrer: '$5 credit', referee: '14-day Pro trial' },
     starter: { referrer: '1 month free', referee: '20% off first month' },
     pro: { referrer: '2 months free', referee: '30% off first month' },
-    premium: { referrer: '3 months free', referee: '50% off first month' }
+    premium: { referrer: '3 months free', referee: '50% off first month' },
+    admin: { referrer: 'Unlimited rewards', referee: 'VIP access' }
   };
 
   return (
