@@ -77,6 +77,22 @@ export class PostImagesService {
         form.append('adult', '1');
       }
 
+      // Log request details
+      logger.debug('PostImages upload request', {
+        url: POSTIMAGES_UPLOAD_URL,
+        filename,
+        fileSize: options.buffer.length,
+        contentType: options.contentType,
+        adult: options.adult,
+        formFields: {
+          file: 'binary data',
+          numfiles: '1',
+          optsize: '0',
+          expire: '0',
+          adult: options.adult ? '1' : undefined,
+        }
+      });
+
       // Make the request
       const response = await fetch(POSTIMAGES_UPLOAD_URL, {
         method: 'POST',
@@ -91,14 +107,25 @@ export class PostImagesService {
       });
 
       if (!response.ok) {
-        throw new Error(`PostImages upload failed with status ${response.status}`);
+        const errorText = await response.text();
+        logger.error('PostImages error response', {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+          body: errorText.substring(0, 500),
+        });
+        throw new Error(`PostImages upload failed with status ${response.status}: ${errorText.substring(0, 200)}`);
       }
 
       const text = await response.text();
-      logger.debug('PostImages response:', { 
-        preview: text.substring(0, 500),
+      logger.debug('PostImages raw response', { 
+        fullText: text.substring(0, 1000),
         contentType: response.headers.get('content-type'),
         status: response.status,
+        length: text.length,
+        isJSONP: text.includes('rr('),
+        isJSON: text.trim().startsWith('{'),
+        isHTML: text.includes('<!DOCTYPE') || text.includes('<html'),
       });
 
       // PostImages returns JSONP, we need to extract the JSON
@@ -134,18 +161,29 @@ export class PostImagesService {
 
       const data = JSON.parse(jsonMatch[1]);
       
-      // Check for success
-      if (data.status === 'OK' && data.url) {
+      // Log parsed data
+      logger.debug('PostImages parsed data', {
+        status: data.status,
+        hasUrl: !!data.url,
+        hasError: !!data.error,
+        dataKeys: Object.keys(data),
+        data: JSON.stringify(data).substring(0, 500),
+      });
+      
+      // Check for success - be more flexible with response format
+      if ((data.status === 'OK' || data.success) && (data.url || data.direct_link || data.image_url)) {
+        const finalUrl = data.url || data.direct_link || data.image_url;
         logger.info('PostImages upload successful', {
           filename,
           size: options.buffer.length,
-          url: data.url,
+          url: finalUrl,
+          extractedFrom: data.url ? 'url' : data.direct_link ? 'direct_link' : 'image_url',
         });
 
         return {
           success: true,
-          url: data.url,
-          thumbnailUrl: data.thumb_url || data.url,
+          url: finalUrl,
+          thumbnailUrl: data.thumb_url || data.thumbnail || finalUrl,
           deleteUrl: data.delete_url,
         };
       }

@@ -240,12 +240,40 @@ export class ImgboxService {
       const thumbMatch = payload.match(/https:\/\/thumbs\.imgbox\.com\/[^'"<>\s]+/);
       
       if (urlMatch) {
-        logger.info('Found Imgbox URL in HTML response', { url: urlMatch[0] });
+        logger.info('Found Imgbox URL in HTML response', { 
+          url: urlMatch[0],
+          thumbnailUrl: thumbMatch ? thumbMatch[0] : urlMatch[0],
+          extractedFrom: 'HTML'
+        });
         return {
           success: true,
           url: urlMatch[0],
           thumbnailUrl: thumbMatch ? thumbMatch[0] : urlMatch[0],
         };
+      }
+      
+      // Try more patterns for finding URLs in HTML
+      const patterns = [
+        /href="(https:\/\/images\.imgbox\.com\/[^"]+)"/,
+        /value="(https:\/\/images\.imgbox\.com\/[^"]+)"/,
+        /data-url="(https:\/\/images\.imgbox\.com\/[^"]+)"/,
+        /src="(https:\/\/images\.imgbox\.com\/[^"]+)"/,
+      ];
+      
+      for (const pattern of patterns) {
+        const match = payload.match(pattern);
+        if (match) {
+          logger.info('Found Imgbox URL with alternate pattern', { 
+            url: match[1],
+            pattern: pattern.source,
+            extractedFrom: 'HTML-alternate'
+          });
+          return {
+            success: true,
+            url: match[1],
+            thumbnailUrl: match[1],
+          };
+        }
       }
       
       return {
@@ -327,8 +355,28 @@ export class ImgboxService {
       // form.append('gallery-title', '');
 
       const { body, headers } = this.prepareRequest(form);
+      
+      logger.debug('Imgbox upload request details', {
+        url: IMGBOX_UPLOAD_URL,
+        formSize: body.length,
+        hasToken: !!token.token,
+        tokenLength: token.token?.length,
+        hasCookies: !!token.cookies,
+        filename,
+      });
+      
       const response = await this.postWithRetry(IMGBOX_UPLOAD_URL, body, headers, token.cookies);
       const payload = await response.text();
+      
+      logger.debug('Imgbox raw response', {
+        status: response.status,
+        contentType: response.headers.get('content-type'),
+        contentLength: response.headers.get('content-length'),
+        payloadLength: payload.length,
+        payloadStart: payload.substring(0, 200),
+        isHTML: payload.includes('<!DOCTYPE') || payload.includes('<html'),
+        isJSON: payload.trim().startsWith('{') || payload.trim().startsWith('['),
+      });
 
       const result = this.parseResponse(response, payload);
       if (result.success) {

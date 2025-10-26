@@ -91,11 +91,29 @@ router.post('/upload', uploadLimiter, authenticateToken(true), upload.single('fi
         nsfw: true,
       });
       
+      logger.debug('Imgbox result:', {
+        success: imgboxResult.success,
+        hasUrl: !!imgboxResult.url,
+        url: imgboxResult.url,
+        thumbnailUrl: imgboxResult.thumbnailUrl,
+        error: imgboxResult.error,
+      });
+      
       if (imgboxResult.success && imgboxResult.url) {
         imageUrl = imgboxResult.url;
         thumbnailUrl = imgboxResult.thumbnailUrl;
         provider = 'imgbox';
-        logger.info(`Media uploaded to Imgbox successfully: ${req.file.originalname}`);
+        logger.info(`Media uploaded to Imgbox successfully: ${req.file.originalname}`, {
+          url: imageUrl,
+          thumbnailUrl,
+        });
+      } else if (imgboxResult.success && !imgboxResult.url) {
+        // This is the "upload succeeded but no url provided" case
+        logger.error('CRITICAL: Imgbox reported success but no URL provided', {
+          result: imgboxResult,
+          resultKeys: Object.keys(imgboxResult),
+        });
+        throw new Error('Imgbox upload succeeded but no URL provided');
       } else {
         throw new Error(imgboxResult.error || 'Imgbox upload failed');
       }
@@ -111,11 +129,29 @@ router.post('/upload', uploadLimiter, authenticateToken(true), upload.single('fi
           adult: true, // Mark as adult content for safety
         });
         
+        logger.debug('PostImages result:', {
+          success: postimagesResult.success,
+          hasUrl: !!postimagesResult.url,
+          url: postimagesResult.url,
+          thumbnailUrl: postimagesResult.thumbnailUrl,
+          error: postimagesResult.error,
+        });
+        
         if (postimagesResult.success && postimagesResult.url) {
           imageUrl = postimagesResult.url;
           thumbnailUrl = postimagesResult.thumbnailUrl;
           provider = 'postimages';
-          logger.info(`Media uploaded to PostImages successfully: ${req.file.originalname}`);
+          logger.info(`Media uploaded to PostImages successfully: ${req.file.originalname}`, {
+            url: imageUrl,
+            thumbnailUrl,
+          });
+        } else if (postimagesResult.success && !postimagesResult.url) {
+          // This is the "upload succeeded but no url provided" case
+          logger.error('CRITICAL: PostImages reported success but no URL provided', {
+            result: postimagesResult,
+            resultKeys: Object.keys(postimagesResult),
+          });
+          throw new Error('PostImages upload succeeded but no URL provided');
         } else {
           throw new Error(postimagesResult.error || 'PostImages upload failed');
         }
