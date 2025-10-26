@@ -24,10 +24,15 @@ export interface PostJobData {
   userId: number;
   // Existing Reddit-specific fields
   postJobId?: number;
+  scheduleId?: number; // For scheduled posts
   subreddit?: string;
   titleFinal?: string;
   bodyFinal?: string;
   mediaKey?: string;
+  nsfw?: boolean;
+  spoiler?: boolean;
+  flairId?: string;
+  flairText?: string;
   // New social media fields
   platforms?: Platform[];
   content?: PostContent;

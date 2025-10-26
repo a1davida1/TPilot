@@ -1275,7 +1275,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
           return res.status(400).json({ error: 'Invalid image format. Please use JPG, PNG, or WebP.' });
         }
         imageBase64 = imageToBase64(req.file.path);
-        await fs.unlink(req.file.path).catch(console.error);
+        await fs.unlink(req.file.path).catch((err) => logger.error('Failed to delete temp file', { error: err }));
       }
 
       const result = await unifiedBreaker.call({

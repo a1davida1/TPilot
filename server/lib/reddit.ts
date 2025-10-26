@@ -563,6 +563,8 @@ export interface RedditPostOptions {
   url?: string;
   nsfw?: boolean;
   spoiler?: boolean;
+  flairId?: string;
+  flairText?: string;
 }
 
 export interface RedditPostResult {

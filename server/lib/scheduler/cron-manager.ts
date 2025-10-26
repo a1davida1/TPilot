@@ -204,11 +204,16 @@ class CronManager {
           // Queue the post for processing via Bull/PG-Boss
           await addJob(QUEUE_NAMES.POST, {
             userId: post.userId,
-            scheduleId: post.id,
+            postJobId: post.id, // Match field name expected by post-worker
+            scheduleId: post.id, // Keep for reference
             subreddit: post.subreddit,
             titleFinal: post.title,
             bodyFinal: post.content || '',
-            mediaKey: post.imageUrl
+            mediaKey: post.imageUrl,
+            nsfw: post.nsfw ?? false,
+            spoiler: post.spoiler ?? false,
+            flairId: post.flairId || undefined,
+            flairText: post.flairText || undefined
           });
 
           logger.info(`✅ Queued scheduled post ${post.id} for user ${post.userId}`);

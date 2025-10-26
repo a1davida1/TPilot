@@ -26,6 +26,7 @@ export interface RedditUploadOptions {
   title: string;
   nsfw?: boolean;
   spoiler?: boolean;
+  flairId?: string;
   flairText?: string;
   applyWatermark?: boolean;
   allowImgboxFallback?: boolean;

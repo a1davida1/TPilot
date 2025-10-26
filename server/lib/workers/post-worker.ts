@@ -1,12 +1,13 @@
 import { registerProcessor } from "../queue-factory.js";
 import { QUEUE_NAMES, type PostJobData } from "../queue/index.js";
 import { db } from "../../db.js";
-import { postJobs, eventLogs } from "@shared/schema";
+import { postJobs, eventLogs, scheduledPosts } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { RedditManager } from "../reddit.js";
 import { MediaManager } from "../media.js";
 import { storage } from "../../storage.js";
 import { socialMediaManager, type Platform, type PostContent } from "../../social-media/social-media-manager.js";
+import { RedditNativeUploadService } from "../../services/reddit-native-upload.js";
 // Removed account-metadata imports - module not found
 import { logger } from "../logger.js";
 import { recordPostOutcome, type PostOutcomeInput } from "../../compliance/ruleViolationTracker.js";
@@ -37,16 +38,15 @@ export class PostWorker {
       await this.processSocialMediaJob(data, jobId);
       return;
     }
-    const { userId, postJobId, subreddit, titleFinal, bodyFinal, mediaKey } = data;
+    const { userId, postJobId, scheduleId, subreddit, titleFinal, bodyFinal, mediaKey, nsfw, spoiler, flairId, flairText } = data;
 
     try {
-      logger.info(`Processing post job ${postJobId} for user ${userId}`);
-
-      // Get Reddit manager for user
-      const reddit = await RedditManager.forUser(userId);
-      if (!reddit) {
-        throw new Error('No active Reddit account found for user');
-      }
+      logger.info(`Processing post job ${postJobId} for user ${userId}`, { 
+        scheduleId, 
+        hasMedia: !!mediaKey,
+        nsfw,
+        spoiler
+      });
 
       // Check if we can post to this subreddit
       if (!subreddit) {
@@ -58,78 +58,107 @@ export class PostWorker {
           status: 'removed',
           reason: canPost.reason ?? 'Posting not permitted'
         });
+        if (scheduleId) {
+          await this.updateScheduledPostStatus(scheduleId, 'failed', canPost.reason);
+        }
         throw new Error(`Cannot post: ${canPost.reason}`);
       }
 
-      // Prepare post options
-      interface RedditPostOptions {
-        subreddit: string;
-        title: string;
-        body: string;
-        nsfw: boolean;
-        url?: string;
-      }
-      
-      const postOptions: RedditPostOptions = {
-        subreddit,
-        title: titleFinal || '',
-        body: bodyFinal || '',
-        nsfw: true, // Assume NSFW for adult content
-      };
+      let result;
 
-      // Add media if provided
+      // Use appropriate posting method based on content type
       if (mediaKey) {
-        try {
-          // In production, this would get the signed URL or public URL
-          const mediaAsset = await this.getMediaAsset(mediaKey, userId);
-          if (mediaAsset) {
-            postOptions.url = mediaAsset.downloadUrl || mediaAsset.signedUrl;
-          }
-        } catch (error: unknown) {
-          logger.warn('Failed to attach media, posting as text:', {
-            error: error instanceof Error ? error.message : 'Unknown error'
-          });
+        // Image post - use Reddit native upload service
+        logger.info(`Posting image to r/${subreddit} using native upload`, { mediaKey });
+        result = await RedditNativeUploadService.uploadAndPost({
+          userId,
+          subreddit,
+          title: titleFinal || '',
+          imageUrl: mediaKey, // mediaKey is the image URL
+          nsfw: nsfw ?? false,
+          spoiler: spoiler ?? false,
+          flairId: flairId || undefined,
+          flairText: flairText || undefined,
+          allowImgboxFallback: true,
+        });
+      } else {
+        // Text/link post - use standard Reddit manager
+        logger.info(`Posting text to r/${subreddit}`);
+        const reddit = await RedditManager.forUser(userId);
+        if (!reddit) {
+          throw new Error('No active Reddit account found for user');
         }
+
+        result = await reddit.submitPost({
+          subreddit,
+          title: titleFinal || '',
+          body: bodyFinal || '',
+          nsfw: nsfw ?? false,
+          spoiler: spoiler ?? false,
+          flairId: flairId || undefined,
+          flairText: flairText || undefined,
+        });
       }
 
-      // Submit to Reddit
-      const result = await reddit.submitPost(postOptions);
-
-      // Update job status in database
+      // Update status based on result
       if (result.success) {
         await this.trackOutcome(userId, subreddit, { status: 'posted' });
-        if (!postJobId) {
-          throw new Error('postJobId is required');
+        
+        // Update scheduled post if this came from scheduler
+        if (scheduleId) {
+          await this.updateScheduledPostStatus(scheduleId, 'completed', undefined, {
+            redditPostId: result.postId,
+            redditPostUrl: result.url,
+            executedAt: new Date(),
+          });
         }
-        await this.updateJobStatus(postJobId, 'sent', {
-          redditPostId: result.postId,
-          url: result.url,
-          completedAt: new Date().toISOString(),
-        });
+
+        // Update job record if exists
+        if (postJobId) {
+          await this.updateJobStatus(postJobId, 'sent', {
+            redditPostId: result.postId,
+            url: result.url,
+            completedAt: new Date().toISOString(),
+          });
+        }
 
         // Log success event
         await this.logEvent(userId, 'job.completed', {
           postJobId,
+          scheduleId,
           subreddit,
           result,
         });
 
-        logger.info(`Post job ${postJobId} completed successfully`, { result });
+        logger.info(`Post job completed successfully`, { 
+          postJobId, 
+          scheduleId,
+          redditPostId: result.postId 
+        });
       } else {
         await this.trackOutcome(userId, subreddit, {
           status: 'removed',
           reason: result.error ?? 'Reddit posting failed'
         });
+        if (scheduleId) {
+          await this.updateScheduledPostStatus(scheduleId, 'failed', result.error);
+        }
         throw new Error(result.error || 'Reddit posting failed');
       }
 
     } catch (error: unknown) {
-      logger.error(`Post job ${postJobId} failed:`, { error });
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      logger.error(`Post job ${postJobId} failed:`, { error: errorMsg });
+
+      // Update scheduled post if exists
+      if (scheduleId) {
+        await this.updateScheduledPostStatus(scheduleId, 'failed', errorMsg);
+      }
 
       // Update job status to failed
       if (postJobId) {
         await this.updateJobStatus(postJobId, 'failed', {
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: errorMsg,
           failedAt: new Date().toISOString(),
         });
       }
@@ -137,8 +166,9 @@ export class PostWorker {
       // Log failure event
       await this.logEvent(userId, 'job.failed', {
         postJobId,
+        scheduleId,
         subreddit,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: errorMsg,
       });
 
       throw error; // Re-throw to mark job as failed
@@ -267,6 +297,29 @@ export class PostWorker {
         .where(eq(postJobs.id, postJobId));
     } catch (error) {
       logger.error('Failed to update job status:', { error });
+    }
+  }
+
+  private async updateScheduledPostStatus(
+    scheduleId: number, 
+    status: 'completed' | 'failed' | 'processing', 
+    errorMessage?: string,
+    resultData?: { redditPostId?: string; redditPostUrl?: string; executedAt?: Date }
+  ) {
+    try {
+      await db
+        .update(scheduledPosts)
+        .set({
+          status,
+          errorMessage: errorMessage || null,
+          redditPostId: resultData?.redditPostId || undefined,
+          redditPostUrl: resultData?.redditPostUrl || undefined,
+          executedAt: resultData?.executedAt || undefined,
+          updatedAt: new Date(),
+        })
+        .where(eq(scheduledPosts.id, scheduleId));
+    } catch (error) {
+      logger.error('Failed to update scheduled post status:', { error, scheduleId });
     }
   }
 
