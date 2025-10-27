@@ -44,19 +44,21 @@ const photoInstructionFields: Array<{ key: keyof ContentGeneration["photoInstruc
   { key: "technicalSettings", label: "Technical Settings" }
 ];
 
-const normalizePhotoInstructions = (instructions: GeneratedContent['photoInstructions']): Partial<PhotoInstructions> => {
-  if (!instructions || typeof instructions === 'string') {
+const extractPhotoInstructionValues = (
+  instructions: GeneratedContent["photoInstructions"]
+): Partial<PhotoInstructions> => {
+  if (!instructions || typeof instructions === "string") {
     return {};
   }
 
-  if (typeof instructions !== 'object' || Array.isArray(instructions)) {
+  if (typeof instructions !== "object" || Array.isArray(instructions)) {
     return {};
   }
 
   const result: Partial<PhotoInstructions> = {};
   for (const field of photoInstructionFields) {
     const value = (instructions as Record<string, unknown>)[field.key];
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
       result[field.key] = value;
     }
   }
@@ -101,7 +103,7 @@ export function EnhancedAIGenerator({
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   // Copy feedback state with timeout tracking
   const photoInstructionValues: Partial<PhotoInstructions> = generatedContent
-    ? normalizePhotoInstructions(generatedContent.photoInstructions)
+    ? extractPhotoInstructionValues(generatedContent.photoInstructions)
     : {};
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
