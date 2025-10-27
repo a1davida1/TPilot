@@ -5,7 +5,7 @@
  * - Render the dashboard UI (cards, actions, activity, etc.)
  * - Receive minimal typed props from the page container (`pages/dashboard.tsx`)
  */
-import React, { useState, useEffect, useCallback, useTransition } from "react";
+import React, { useState, useEffect, useCallback, useTransition, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
@@ -236,6 +236,8 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
   const [onboardingProgress, setOnboardingProgress] = useState<OnboardingProgress>(() => readStoredProgress());
   const [quickStartOpen, setQuickStartOpen] = useState(false);
   const [quickStartStep, setQuickStartStep] = useState<'connect' | 'subreddit' | 'copy' | 'confirm'>('connect');
+  const chartContainerRef = useRef<HTMLDivElement | null>(null);
+  const [shouldRenderCharts, setShouldRenderCharts] = useState(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { user: authUser } = useAuth();
@@ -276,6 +278,34 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     queryKey: ['/api/catbox/stats'],
     enabled: Boolean(resolvedUser?.id),
   });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (shouldRenderCharts) {
+      return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setShouldRenderCharts(true);
+          observer.disconnect();
+        }
+      });
+    }, { rootMargin: '200px 0px 200px 0px' });
+
+    const target = chartContainerRef.current;
+    if (target) {
+      observer.observe(target);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [shouldRenderCharts]);
 
   // Sync onboarding progress with props and API data
   useEffect(() => {
@@ -523,6 +553,12 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
   const growthCards = visibleCards.filter(card => card.group === 'growth');
   const secondaryCards = visibleCards.filter(card => card.group === 'secondary');
 
+  const workflowBuckets = useMemo(() => ([
+    { id: 'core', label: 'Getting Started', navLabel: 'Getting started workflows', cards: coreCards },
+    { id: 'growth', label: 'Content Creation', navLabel: 'Content creation workflows', cards: growthCards },
+    { id: 'secondary', label: 'Advanced Tools', navLabel: 'Advanced tools workflows', cards: secondaryCards },
+  ] as Array<{ id: 'core' | 'growth' | 'secondary'; label: string; navLabel: string; cards: ActionCardConfig[] }>).filter((bucket) => bucket.cards.length > 0), [coreCards, growthCards, secondaryCards]);
+
   const handleCardClick = (card: ActionCardConfig) => {
     // Complete milestone if applicable
     if (card.completeMilestone && !onboardingProgress[card.completeMilestone]) {
@@ -551,6 +587,8 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
         description: "Upgrade to Pro to access this feature.",
       });
     }
+
+    setSidebarOpen(false);
   };
 
   const handleQuickAction = () => {
@@ -784,13 +822,18 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
       {/* Sidebar Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40"
+          className="fixed inset-0 z-40 bg-black/50"
           onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+          role="presentation"
         />
       )}
 
       {/* Sidebar */}
       <aside
+        id="dashboard-primary-navigation"
+        aria-label="Dashboard navigation"
+        aria-hidden={!sidebarOpen}
         className={cn(
           "fixed left-0 top-0 h-full w-[280px] border-r border-slate-800/60 bg-slate-950/90 backdrop-blur-xl z-50 transform transition-transform duration-300",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -821,7 +864,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
           </div>
 
           {/* Navigation Items */}
-          <nav className="space-y-2">
+          <nav aria-label="Primary navigation" className="space-y-2">
             <button 
               onClick={() => setLocation('/dashboard')}
               className={sidebarLinkClasses}
@@ -887,11 +930,48 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
               <span>Settings</span>
             </button>
           </nav>
+
+          {workflowBuckets.length > 0 && (
+            <div className="mt-10 space-y-4" data-testid="workflow-buckets-container">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Workflow buckets</p>
+              <nav
+                aria-label="Workflow buckets"
+                data-testid="workflow-buckets-nav"
+                className="space-y-3"
+              >
+                {workflowBuckets.map((bucket) => (
+                  <div key={bucket.id} data-testid={`workflow-bucket-${bucket.id}`} className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-300">{bucket.label}</p>
+                    <ul className="space-y-1">
+                      {bucket.cards.map((card) => (
+                        <li key={card.id}>
+                          <button
+                            type="button"
+                            onClick={() => handleCardClick(card)}
+                            className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-200 transition-colors hover:bg-slate-800/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                            data-testid={`workflow-link-${card.id}`}
+                          >
+                            <span className="flex items-center justify-between gap-2">
+                              <span>{card.title}</span>
+                              <span className="text-xs font-medium text-slate-400">
+                                {card.comingSoon ? 'Soon' : card.premium && !isPremium ? 'Pro' : ''}
+                              </span>
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </nav>
+            </div>
+          )}
+
         </div>
       </aside>
 
       {/* Main Content */}
-      <div className="relative z-10 p-6 md:p-8">
+      <main aria-labelledby="dashboard-heading" className="relative z-10 p-6 md:p-8">
         {/* Header with Action Buttons */}
         <div className="mb-8">
           <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
@@ -905,6 +985,9 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
               </Button>
               <Button
                 onClick={handleCommandCenter}
+                aria-expanded={sidebarOpen}
+                aria-controls="dashboard-primary-navigation"
+                data-testid="button-command-center"
                 className="border border-white/70 bg-white/90 text-slate-900 transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 dark:border-slate-700/70 dark:bg-slate-900/80 dark:text-slate-100 dark:hover:bg-slate-900"
               >
                 <Command className="h-4 w-4 mr-2" />
@@ -932,7 +1015,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
 
         {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
+          <h1 id="dashboard-heading" className="text-4xl md:text-5xl font-bold text-white mb-2">
             {getGreeting()}, {displayName}! 👋
           </h1>
           <p className="text-xl text-slate-200">
@@ -968,9 +1051,15 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
               <div className="h-48 w-full animate-pulse rounded-lg bg-slate-900/70" />
             ) : catboxStats && catboxStats.totalUploads > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={catboxChartData}>
+                <div
+                  className="lg:col-span-2 h-72"
+                  ref={chartContainerRef}
+                  data-testid="catbox-chart-container"
+                  aria-live="polite"
+                >
+                  {shouldRenderCharts ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={catboxChartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                       <XAxis dataKey="dateLabel" stroke="#9CA3AF" />
                       <YAxis stroke="#9CA3AF" allowDecimals={false} />
@@ -1020,6 +1109,11 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                       />
                     </AreaChart>
                   </ResponsiveContainer>
+                  ) : (
+                    <div className="flex h-full items-center justify-center rounded-lg border border-slate-800/60 bg-slate-900/70 text-sm text-slate-400">
+                      Chart loads when in view
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -1120,87 +1214,91 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
 
         {/* Core Action Cards */}
         {coreCards.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-white mb-4">Getting Started</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {coreCards.map((card) => (
-                <Card
-                  key={card.id}
-                  className={cn(
-                    "bg-slate-950/60 border-slate-800/60 backdrop-blur cursor-pointer transition-all hover:scale-105",
-                    selectedCard === card.id && "ring-2 ring-purple-500"
-                  )}
-                  onClick={() => handleCardClick(card)}
-                  onMouseEnter={() => setSelectedCard(card.id)}
-                  onMouseLeave={() => setSelectedCard(null)}
-                  data-testid={`card-${card.id}`}
-                >
-                  <CardContent className="p-6">
-                    <div className={cn(
-                      "w-12 h-12 rounded-lg bg-gradient-to-br flex items-center justify-center mb-4",
-                      card.color
-                    )}>
-                      {card.icon}
-                    </div>
-                    <h3 className="text-white font-semibold mb-1">{card.title}</h3>
-                    <p className="text-slate-300 text-sm">{card.description}</p>
-                    {card.comingSoon && (
-                      <Badge className="mt-2" variant="outline">Coming Soon</Badge>
+          <section aria-labelledby="workflow-core-heading" className="mb-8">
+            <h2 id="workflow-core-heading" className="text-xl font-semibold text-white mb-4">Getting Started</h2>
+            <nav aria-labelledby="workflow-core-heading" data-testid="workflow-nav-core">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {coreCards.map((card) => (
+                  <Card
+                    key={card.id}
+                    className={cn(
+                      "bg-slate-950/60 border-slate-800/60 backdrop-blur cursor-pointer transition-all hover:scale-105",
+                      selectedCard === card.id && "ring-2 ring-purple-500"
                     )}
-                    {card.premium && !isPremium && (
-                      <Badge className="mt-2" variant="outline">Pro</Badge>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
+                    onClick={() => handleCardClick(card)}
+                    onMouseEnter={() => setSelectedCard(card.id)}
+                    onMouseLeave={() => setSelectedCard(null)}
+                    data-testid={`card-${card.id}`}
+                  >
+                    <CardContent className="p-6">
+                      <div className={cn(
+                        "w-12 h-12 rounded-lg bg-gradient-to-br flex items-center justify-center mb-4",
+                        card.color
+                      )}>
+                        {card.icon}
+                      </div>
+                      <h3 className="text-white font-semibold mb-1">{card.title}</h3>
+                      <p className="text-slate-300 text-sm">{card.description}</p>
+                      {card.comingSoon && (
+                        <Badge className="mt-2" variant="outline">Coming Soon</Badge>
+                      )}
+                      {card.premium && !isPremium && (
+                        <Badge className="mt-2" variant="outline">Pro</Badge>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </nav>
+          </section>
         )}
 
         {/* Growth Action Cards */}
         {growthCards.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-white mb-4">Content Creation</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {growthCards.map((card) => (
-                <Card
-                  key={card.id}
-                  className={cn(
-                    "bg-slate-950/60 border-slate-800/60 backdrop-blur cursor-pointer transition-all hover:scale-105",
-                    selectedCard === card.id && "ring-2 ring-purple-500"
-                  )}
-                  onClick={() => handleCardClick(card)}
-                  onMouseEnter={() => setSelectedCard(card.id)}
-                  onMouseLeave={() => setSelectedCard(null)}
-                  data-testid={`card-${card.id}`}
-                >
-                  <CardContent className="p-6">
-                    <div className={cn(
-                      "w-12 h-12 rounded-lg bg-gradient-to-br flex items-center justify-center mb-4",
-                      card.color
-                    )}>
-                      {card.icon}
-                    </div>
-                    <h3 className="text-white font-semibold mb-1">{card.title}</h3>
-                    <p className="text-slate-300 text-sm">{card.description}</p>
-                    {card.comingSoon && (
-                      <Badge className="mt-2" variant="outline">Coming Soon</Badge>
+          <section aria-labelledby="workflow-growth-heading" className="mb-8">
+            <h2 id="workflow-growth-heading" className="text-xl font-semibold text-white mb-4">Content Creation</h2>
+            <nav aria-labelledby="workflow-growth-heading" data-testid="workflow-nav-growth">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {growthCards.map((card) => (
+                  <Card
+                    key={card.id}
+                    className={cn(
+                      "bg-slate-950/60 border-slate-800/60 backdrop-blur cursor-pointer transition-all hover:scale-105",
+                      selectedCard === card.id && "ring-2 ring-purple-500"
                     )}
-                    {card.premium && !isPremium && (
-                      <Badge className="mt-2" variant="outline">Pro</Badge>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
+                    onClick={() => handleCardClick(card)}
+                    onMouseEnter={() => setSelectedCard(card.id)}
+                    onMouseLeave={() => setSelectedCard(null)}
+                    data-testid={`card-${card.id}`}
+                  >
+                    <CardContent className="p-6">
+                      <div className={cn(
+                        "w-12 h-12 rounded-lg bg-gradient-to-br flex items-center justify-center mb-4",
+                        card.color
+                      )}>
+                        {card.icon}
+                      </div>
+                      <h3 className="text-white font-semibold mb-1">{card.title}</h3>
+                      <p className="text-slate-300 text-sm">{card.description}</p>
+                      {card.comingSoon && (
+                        <Badge className="mt-2" variant="outline">Coming Soon</Badge>
+                      )}
+                      {card.premium && !isPremium && (
+                        <Badge className="mt-2" variant="outline">Pro</Badge>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </nav>
+          </section>
         )}
 
         {/* Advanced Tools Expander */}
         {(secondaryCards.length > 0 || currentStage === 'advanced') && (
-          <div className="mb-8">
+          <section aria-labelledby="workflow-secondary-heading" className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-white">Advanced Tools</h2>
+              <h2 id="workflow-secondary-heading" className="text-xl font-semibold text-white">Advanced Tools</h2>
               <Button
                 variant="ghost"
                 onClick={() => setShowMoreTools(!showMoreTools)}
@@ -1214,38 +1312,40 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
             {showMoreTools && (
               <div>
                 {hasTierAccess(resolvedTier, 'starter', isAdminUser) ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {secondaryCards.map((card) => (
-                      <Card
-                        key={card.id}
-                        className={cn(
-                          "bg-slate-950/60 border-slate-800/60 backdrop-blur cursor-pointer transition-all hover:scale-105",
-                          selectedCard === card.id && "ring-2 ring-purple-500"
-                        )}
-                        onClick={() => handleCardClick(card)}
-                        onMouseEnter={() => setSelectedCard(card.id)}
-                        onMouseLeave={() => setSelectedCard(null)}
-                        data-testid={`card-${card.id}`}
-                      >
-                        <CardContent className="p-6">
-                          <div className={cn(
-                            "w-12 h-12 rounded-lg bg-gradient-to-br flex items-center justify-center mb-4",
-                            card.color
-                          )}>
-                            {card.icon}
-                          </div>
-                          <h3 className="text-white font-semibold mb-1">{card.title}</h3>
-                          <p className="text-slate-300 text-sm">{card.description}</p>
-                          {card.comingSoon && (
-                            <Badge className="mt-2" variant="outline">Coming Soon</Badge>
+                  <nav aria-labelledby="workflow-secondary-heading" data-testid="workflow-nav-secondary">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {secondaryCards.map((card) => (
+                        <Card
+                          key={card.id}
+                          className={cn(
+                            "bg-slate-950/60 border-slate-800/60 backdrop-blur cursor-pointer transition-all hover:scale-105",
+                            selectedCard === card.id && "ring-2 ring-purple-500"
                           )}
-                          {card.premium && !isPremium && (
-                            <Badge className="mt-2" variant="outline">Pro</Badge>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                          onClick={() => handleCardClick(card)}
+                          onMouseEnter={() => setSelectedCard(card.id)}
+                          onMouseLeave={() => setSelectedCard(null)}
+                          data-testid={`card-${card.id}`}
+                        >
+                          <CardContent className="p-6">
+                            <div className={cn(
+                              "w-12 h-12 rounded-lg bg-gradient-to-br flex items-center justify-center mb-4",
+                              card.color
+                            )}>
+                              {card.icon}
+                            </div>
+                            <h3 className="text-white font-semibold mb-1">{card.title}</h3>
+                            <p className="text-slate-300 text-sm">{card.description}</p>
+                            {card.comingSoon && (
+                              <Badge className="mt-2" variant="outline">Coming Soon</Badge>
+                            )}
+                            {card.premium && !isPremium && (
+                              <Badge className="mt-2" variant="outline">Pro</Badge>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </nav>
                 ) : (
                   <Card className="bg-slate-950/60 border-slate-800/60 backdrop-blur">
                     <CardContent className="p-6 text-center">
@@ -1272,7 +1372,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                 )}
               </div>
             )}
-          </div>
+          </section>
         )}
 
         {/* Progress Pills */}
@@ -1431,7 +1531,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
             </CardContent>
           </Card>
         </div>
-      </div>
+      </main>
 
       {/* Quick Start Modal */}
       <QuickStartModal
