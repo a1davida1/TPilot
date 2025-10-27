@@ -79,6 +79,7 @@ export interface RedditIntelligenceDataset {
 
 interface IntelligenceOptions {
   userId?: number;
+  _optInPersonalized?: boolean;
 }
 
 const CACHE_NAMESPACE = 'reddit:intelligence:v1';
@@ -241,7 +242,7 @@ export class RedditIntelligenceService {
 
   async getIntelligence(options?: IntelligenceOptions): Promise<RedditIntelligenceDataset> {
     const cacheKey = this.buildCacheKey(options?.userId);
-    const _optInPersonalized = options?.userId !== undefined;
+    const _optInPersonalized = options?._optInPersonalized ?? (options?.userId !== undefined);
     
     try {
       const cached = await this.cacheStore.get(cacheKey);
@@ -252,7 +253,7 @@ export class RedditIntelligenceService {
       logger.warn('Failed to read cached Reddit intelligence snapshot', { error });
     }
 
-    const dataset = await this.buildDataset(options);
+    const dataset = await this.buildDataset({ ...(options ?? {}), _optInPersonalized });
 
     try {
       await this.cacheStore.set(cacheKey, dataset, this.ttlSeconds);
@@ -286,16 +287,18 @@ export class RedditIntelligenceService {
       communityMap.set(normalizedName, community);
     });
 
+    const optInPersonalized = options?._optInPersonalized === true;
+
     // Fetch user's linked Reddit account and preferences
     let userCommunities: string[] = [];
-    if (options?.userId) {
+    if (optInPersonalized && options?.userId) {
       userCommunities = await this.getUserCommunities(options.userId);
     }
 
     const client = await this.getClient();
-    const trendingTopics = await this.fetchTrendingTopics(client, communityMap, userCommunities);
-    const subredditHealth = await this.computeSubredditHealth(communities, trendingTopics, userCommunities);
-    const forecastingSignals = this.buildForecastingSignals(trendingTopics, communityMap, userCommunities);
+    const trendingTopics = await this.fetchTrendingTopics(client, communityMap, userCommunities, optInPersonalized);
+    const subredditHealth = await this.computeSubredditHealth(communities, trendingTopics, userCommunities, optInPersonalized);
+    const forecastingSignals = this.buildForecastingSignals(trendingTopics, communityMap, userCommunities, optInPersonalized);
 
     return {
       fetchedAt: new Date().toISOString(),
@@ -325,9 +328,10 @@ export class RedditIntelligenceService {
   }
 
   private async fetchTrendingTopics(
-    client: SnoowrapClient | null, 
+    client: SnoowrapClient | null,
     communityMap: Map<string, NormalizedRedditCommunity>,
-    userCommunities: string[] = []
+    userCommunities: string[] = [],
+    optInPersonalized = false
   ): Promise<RedditTrendingTopic[]> {
     if (!client) {
       logger.warn('Reddit service client unavailable; falling back to cached community insights only');
@@ -335,6 +339,7 @@ export class RedditIntelligenceService {
     }
 
     const listings: SnoowrapSubmissionLike[] = [];
+    const personalized = optInPersonalized && userCommunities.length > 0;
 
     // Broaden collection sources: hot, rising, and time-bound top listings
     const fetchers: Array<Promise<void>> = [
@@ -346,7 +351,7 @@ export class RedditIntelligenceService {
     ];
 
     // Add user-specific communities if personalized
-    if (userCommunities.length > 0) {
+    if (personalized) {
       for (const community of userCommunities.slice(0, 5)) {
         fetchers.push(this.collectListings(client, community, 'hot', 5, listings));
       }
@@ -355,10 +360,10 @@ export class RedditIntelligenceService {
     await Promise.all(fetchers);
 
     const seenTopics = new Set<string>();
+    const userCommunitiesSet = personalized
+      ? new Set(userCommunities.map(c => normalizeSubredditName(c)))
+      : null;
 
-    // Bias results toward user communities if personalized
-    const userCommunitiesSet = new Set(userCommunities.map(c => normalizeSubredditName(c)));
-    
     return listings
       .map(entry => this.transformTrendingEntry(entry, communityMap))
       .filter((trend): trend is RedditTrendingTopic => {
@@ -371,8 +376,19 @@ export class RedditIntelligenceService {
         seenTopics.add(trend.topic.toLowerCase());
         return true;
       })
+      .map(trend => {
+        if (userCommunitiesSet && userCommunitiesSet.has(normalizeSubredditName(trend.subreddit))) {
+          return {
+            ...trend,
+            score: trend.score + 12,
+          };
+        }
+        return trend;
+      })
       .sort((a, b) => {
-        // Prioritize user communities if personalized
+        if (!userCommunitiesSet) {
+          return b.score - a.score;
+        }
         const aInUser = userCommunitiesSet.has(normalizeSubredditName(a.subreddit));
         const bInUser = userCommunitiesSet.has(normalizeSubredditName(b.subreddit));
         if (aInUser && !bInUser) return -1;
@@ -548,7 +564,8 @@ export class RedditIntelligenceService {
   private async computeSubredditHealth(
     communities: NormalizedRedditCommunity[],
     trendingTopics: RedditTrendingTopic[],
-    _userCommunities: string[] = []
+    userCommunities: string[] = [],
+    optInPersonalized = false
   ): Promise<SubredditHealthMetric[]> {
     const trendingSet = new Set<string>(
       trendingTopics.map(topic => normalizeSubredditName(topic.subreddit)),
@@ -556,10 +573,38 @@ export class RedditIntelligenceService {
 
     // Fetch post outcomes to adjust health scoring
     const outcomeMetrics = await this.getOutcomeMetrics();
+    const userCommunitySet = optInPersonalized && userCommunities.length > 0
+      ? new Set(userCommunities.map(community => normalizeSubredditName(community)))
+      : null;
 
-    return communities
+    const prioritized: NormalizedRedditCommunity[] = [];
+    const seenCommunities = new Set<string>();
+
+    const pushCommunity = (community: NormalizedRedditCommunity) => {
+      const normalized = normalizeSubredditName(community.name);
+      if (seenCommunities.has(normalized)) {
+        return;
+      }
+      seenCommunities.add(normalized);
+      prioritized.push(community);
+    };
+
+    if (userCommunitySet) {
+      for (const communityName of userCommunitySet) {
+        const match = communities.find(candidate => normalizeSubredditName(candidate.name) === communityName);
+        if (match) {
+          pushCommunity(match);
+        }
+      }
+    }
+
+    for (const community of communities) {
+      pushCommunity(community);
+    }
+
+    return prioritized
       .slice(0, MAX_HEALTH_COMMUNITIES)
-      .map(community => this.evaluateCommunityHealth(community, trendingSet, outcomeMetrics))
+      .map(community => this.evaluateCommunityHealth(community, trendingSet, outcomeMetrics, userCommunitySet))
       .filter((metric): metric is SubredditHealthMetric => metric !== null);
   }
 
@@ -613,6 +658,7 @@ export class RedditIntelligenceService {
     community: NormalizedRedditCommunity,
     trendingSet: Set<string>,
     outcomeMetrics: Map<string, { successCount: number; totalPosts: number }>,
+    userCommunitySet: Set<string> | null = null,
   ): SubredditHealthMetric | null {
     const normalizedName = normalizeSubredditName(community.name);
     if (!normalizedName) {
@@ -621,6 +667,7 @@ export class RedditIntelligenceService {
 
     let engagementRate = community.engagementRate ?? 0;
     const successProbability = community.successProbability ?? 60;
+    const isUserCommunity = userCommunitySet?.has(normalizedName) ?? false;
 
     // Adjust engagement based on post outcomes
     const outcomeData = outcomeMetrics.get(normalizedName);
@@ -628,6 +675,11 @@ export class RedditIntelligenceService {
       const successRate = outcomeData.successCount / outcomeData.totalPosts;
       engagementRate = engagementRate * (0.6 + successRate * 0.4); // Weight success rate at 40%
     }
+
+    if (isUserCommunity) {
+      engagementRate = Math.min(100, (engagementRate * 1.1) + 5);
+    }
+
     const averageUpvotes = community.averageUpvotes ?? 0;
     const growthTrend = community.growthTrend ?? null;
     const modActivity = community.modActivity ?? null;
@@ -635,10 +687,12 @@ export class RedditIntelligenceService {
     const growthBoost = growthTrend === 'up' ? 15 : growthTrend === 'down' ? -10 : 0;
     const modBoost = modActivity === 'high' ? 10 : modActivity === 'low' ? -10 : 0;
     const competitionPenalty = community.competitionLevel === 'high' ? -10 : 0;
+    const personalizationBoost = isUserCommunity ? 12 : 0;
 
     const healthScore = Math.round(
-      (successProbability * 0.4) + (engagementRate * 0.3) + (averageUpvotes * 0.1) + trendBoost + growthBoost + modBoost + competitionPenalty,
+      (successProbability * 0.4) + (engagementRate * 0.3) + (averageUpvotes * 0.1) + trendBoost + growthBoost + modBoost + competitionPenalty + personalizationBoost,
     );
+    const adjustedHealthScore = Math.max(0, healthScore);
 
     const warnings: string[] = [];
     if (community.verificationRequired) {
@@ -663,8 +717,8 @@ export class RedditIntelligenceService {
       engagementRate,
       growthTrend,
       modActivity,
-      healthScore: Math.max(0, healthScore),
-      status: determineStatus(Math.max(0, healthScore)),
+      healthScore: adjustedHealthScore,
+      status: determineStatus(adjustedHealthScore),
       warnings,
       sellingPolicy: deriveSellingPolicy(community),
       competitionLevel: community.competitionLevel ?? null,
@@ -674,9 +728,13 @@ export class RedditIntelligenceService {
   private buildForecastingSignals(
     trendingTopics: RedditTrendingTopic[],
     communityMap: Map<string, NormalizedRedditCommunity>,
-    _userCommunities: string[] = []
+    userCommunities: string[] = [],
+    optInPersonalized = false
   ): RedditForecastingSignal[] {
     const signals: RedditForecastingSignal[] = [];
+    const userCommunitySet = optInPersonalized && userCommunities.length > 0
+      ? new Set(userCommunities.map(community => normalizeSubredditName(community)))
+      : null;
 
     for (const trend of trendingTopics.slice(0, MAX_FORECAST_SIGNALS)) {
       const normalized = normalizeSubredditName(trend.subreddit);
@@ -687,14 +745,28 @@ export class RedditIntelligenceService {
       const signal = calculateSignal(trend.score, community.growthTrend);
       const baseConfidence = community.successProbability ?? 60;
       const engagementRate = community.engagementRate ?? 0;
-      const confidence = Math.max(40, Math.min(95, Math.round((baseConfidence * 0.5) + (engagementRate * 0.3) + (trend.score * 0.2))));
-      const projectedEngagement = Math.max(0, Math.round((engagementRate || 40) * (1 + trend.score / 150)));
+      const isUserCommunity = userCommunitySet?.has(normalized) ?? false;
+      let confidence = Math.max(40, Math.min(95, Math.round((baseConfidence * 0.5) + (engagementRate * 0.3) + (trend.score * 0.2))));
+      if (isUserCommunity) {
+        confidence = Math.min(99, confidence + 8);
+      }
+
+let projectedEngagement = Math.max(0, Math.round((engagementRate || 40) * (1 + trend.score / 150)));
+if (isUserCommunity) {
+  // Apply a boost of 10% plus a flat 5 points for user communities
+  projectedEngagement = Math.round(projectedEngagement * 1.1 + 5);
+}
+
+      let rationale = buildRationale(community, trend, signal);
+      if (isUserCommunity) {
+        rationale = `${rationale} • Personalized: aligned with your proven communities`;
+      }
 
       signals.push({
         subreddit: community.displayName,
         signal,
         confidence,
-        rationale: buildRationale(community, trend, signal),
+        rationale,
         projectedEngagement,
       });
     }

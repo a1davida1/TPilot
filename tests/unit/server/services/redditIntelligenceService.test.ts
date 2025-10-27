@@ -101,6 +101,7 @@ describe('RedditIntelligenceService', () => {
     ]);
   });
 
+
   it('builds intelligence dataset and caches subsequent calls', async () => {
     const service = new RedditIntelligenceService({ store: cache as unknown as typeof stateStore, cacheTtlSeconds: 60 });
     const dataset = await service.getIntelligence({ userId: 42 });
@@ -125,5 +126,126 @@ describe('RedditIntelligenceService', () => {
     const trending = await service.getTrendingTopics();
 
     expect(trending.length).toBeGreaterThan(0);
+  });
+
+  it('boosts health scores for personalized communities when opted in', async () => {
+    const service = new RedditIntelligenceService({ store: cache as unknown as typeof stateStore, cacheTtlSeconds: 60 });
+    const outcomeSpy = vi.spyOn(service as unknown as { getOutcomeMetrics: () => Promise<Map<string, { successCount: number; totalPosts: number }>> }, 'getOutcomeMetrics');
+    outcomeSpy.mockResolvedValue(new Map());
+
+    const personalizedCommunity: NormalizedRedditCommunity = {
+      ...community,
+      name: 'usersub',
+      displayName: 'r/usersub',
+      category: 'wellness',
+      members: 98000,
+    };
+
+    const secondaryCommunity: NormalizedRedditCommunity = {
+      ...community,
+      name: 'othersub',
+      displayName: 'r/othersub',
+      category: 'general',
+      members: 150000,
+    };
+
+    const trending = [
+      {
+        topic: 'Wellness routines',
+        subreddit: 'r/usersub',
+        score: 65,
+        comments: 32,
+        category: 'wellness',
+        url: 'https://www.reddit.com/r/usersub',
+        nsfw: false,
+        postedAt: new Date().toISOString(),
+      },
+      {
+        topic: 'General updates',
+        subreddit: 'r/othersub',
+        score: 60,
+        comments: 20,
+        category: 'general',
+        url: 'https://www.reddit.com/r/othersub',
+        nsfw: false,
+        postedAt: new Date().toISOString(),
+      },
+    ];
+
+    const globalHealth = await (service as unknown as { computeSubredditHealth: typeof service['computeSubredditHealth'] }).computeSubredditHealth(
+      [personalizedCommunity, secondaryCommunity],
+      trending,
+      ['usersub'],
+      false,
+    );
+
+    const personalizedHealth = await (service as unknown as { computeSubredditHealth: typeof service['computeSubredditHealth'] }).computeSubredditHealth(
+      [personalizedCommunity, secondaryCommunity],
+      trending,
+      ['usersub'],
+      true,
+    );
+
+    outcomeSpy.mockRestore();
+
+    const globalMetric = globalHealth.find(metric => metric.subreddit === 'r/usersub');
+    const personalizedMetric = personalizedHealth.find(metric => metric.subreddit === 'r/usersub');
+
+    expect(globalMetric).toBeDefined();
+    expect(personalizedMetric).toBeDefined();
+    expect(personalizedMetric?.healthScore).toBeGreaterThan(globalMetric?.healthScore ?? 0);
+    expect(personalizedHealth[0]?.subreddit).toBe('r/usersub');
+  });
+
+  it('elevates forecasting signals for opted-in communities', () => {
+    const service = new RedditIntelligenceService({ store: cache as unknown as typeof stateStore, cacheTtlSeconds: 60 });
+
+    const personalizedCommunity: NormalizedRedditCommunity = {
+      ...community,
+      name: 'usersub',
+      displayName: 'r/usersub',
+      category: 'wellness',
+      members: 98000,
+    };
+
+    const trending = [
+      {
+        topic: 'Wellness routines',
+        subreddit: 'r/usersub',
+        score: 72,
+        comments: 41,
+        category: 'wellness',
+        url: 'https://www.reddit.com/r/usersub',
+        nsfw: false,
+        postedAt: new Date().toISOString(),
+      },
+    ];
+
+    const communityMap = new Map<string, NormalizedRedditCommunity>([
+      [
+        'usersub',
+        personalizedCommunity,
+      ],
+    ]);
+
+    const baselineSignals = (service as unknown as { buildForecastingSignals: typeof service['buildForecastingSignals'] }).buildForecastingSignals(
+      trending,
+      communityMap,
+      ['usersub'],
+      false,
+    );
+
+    const personalizedSignals = (service as unknown as { buildForecastingSignals: typeof service['buildForecastingSignals'] }).buildForecastingSignals(
+      trending,
+      communityMap,
+      ['usersub'],
+      true,
+    );
+
+    expect(baselineSignals[0]).toBeDefined();
+    expect(personalizedSignals[0]).toBeDefined();
+    expect(personalizedSignals[0]?.confidence).toBeGreaterThan(baselineSignals[0]?.confidence ?? 0);
+    expect(personalizedSignals[0]?.projectedEngagement).toBeGreaterThan(baselineSignals[0]?.projectedEngagement ?? 0);
+    expect(personalizedSignals[0]?.rationale).toContain('Personalized');
   });
 });
