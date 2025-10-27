@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { StickyRail } from '@/components/ui/sticky-rail';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { downloadProtectedImage } from '@/lib/image-protection';
-import { Upload, Shield, Download, Trash2, Tag, Share2 } from 'lucide-react';
+import { Upload, Shield, Download, Trash2, Tag, Share2, AlertTriangle, Clock3, CheckCircle2 } from 'lucide-react';
 import { useGalleryAssets } from '@/hooks/useGalleryAssets';
 import { authenticatedRequest } from '@/lib/authenticated-request';
 import {
@@ -20,6 +22,30 @@ import {
 } from '@/lib/gallery';
 
 type ProtectionLevel = 'light' | 'standard' | 'heavy';
+type ProviderFilter = 'all' | 'library' | 'catbox';
+
+const PROVIDER_FILTERS: ReadonlyArray<{ id: ProviderFilter; label: string }> = [
+  { id: 'all', label: 'All sources' },
+  { id: 'library', label: 'Media library' },
+  { id: 'catbox', label: 'Catbox uploads' }
+];
+
+const COOLDOWN_WINDOW_HOURS = 72;
+
+function getCooldownHoursRemaining(lastRepostedAt?: string): number {
+  if (!lastRepostedAt) {
+    return 0;
+  }
+
+  const lastTimestamp = new Date(lastRepostedAt).getTime();
+  if (Number.isNaN(lastTimestamp)) {
+    return 0;
+  }
+
+  const elapsedHours = (Date.now() - lastTimestamp) / (1000 * 60 * 60);
+  const remaining = COOLDOWN_WINDOW_HOURS - elapsedHours;
+  return remaining > 0 ? remaining : 0;
+}
 
 interface ProtectImageResponse {
   success?: boolean;
@@ -182,7 +208,9 @@ function ImageDetailModal({
 }
 
 export function ImageGallery() {
-  const [selectedTags, setSelectedTags] = useState<string>('');
+  const [uploadTags, setUploadTags] = useState<string>('');
+  const [filterQuery, setFilterQuery] = useState<string>('');
+  const [providerFilter, setProviderFilter] = useState<ProviderFilter>('all');
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -194,6 +222,50 @@ export function ImageGallery() {
     mediaError,
     catboxError
   } = useGalleryAssets();
+
+  const totalImages = galleryImages.length;
+  const libraryCount = useMemo(() => galleryImages.filter(isLibraryImage).length, [galleryImages]);
+  const catboxCount = totalImages - libraryCount;
+  const protectedCount = useMemo(
+    () =>
+      galleryImages.filter((image) =>
+        isLibraryImage(image) && (image.isProtected || Boolean(image.protectionLevel))
+      ).length,
+    [galleryImages]
+  );
+  const cooldownSummary = useMemo(() => {
+    let locked = 0;
+    let ready = 0;
+    let soonest = Number.POSITIVE_INFINITY;
+
+    for (const image of galleryImages) {
+      if (!isLibraryImage(image)) {
+        continue;
+      }
+      const remaining = getCooldownHoursRemaining(image.lastRepostedAt);
+      if (remaining > 0) {
+        locked += 1;
+        if (remaining < soonest) {
+          soonest = remaining;
+        }
+      } else {
+        ready += 1;
+      }
+    }
+
+    return {
+      locked,
+      ready,
+      nextAvailableHours: locked > 0 && Number.isFinite(soonest) ? Math.ceil(soonest) : 0
+    };
+  }, [galleryImages]);
+  const unprotectedCount = Math.max(libraryCount - protectedCount, 0);
+  const watermarkCoverage = libraryCount > 0 ? Math.round((protectedCount / libraryCount) * 100) : 0;
+
+  const handleResetFilters = useCallback(() => {
+    setFilterQuery('');
+    setProviderFilter('all');
+  }, []);
 
   const selectedImage = useMemo(() => {
     if (!selectedImageId) {
@@ -342,7 +414,7 @@ export function ImageGallery() {
         // Upload to server if authenticated
         const formData = new FormData();
         formData.append('file', file);
-        if (selectedTags) {
+        if (uploadTags) {
           formData.append('tags', selectedTags);
         }
         uploadMutation.mutate(formData);
@@ -352,7 +424,7 @@ export function ImageGallery() {
     
     // Reset input
     event.target.value = '';
-    setSelectedTags('');
+    setUploadTags('');
   };
 
   const handleProtectImage = (image: GalleryImage, level: ProtectionLevel) => {
@@ -449,14 +521,22 @@ export function ImageGallery() {
     return null;
   }, [mediaError, catboxError]);
 
-  const normalizedFilter = selectedTags.trim().toLowerCase();
+  const normalizedFilter = filterQuery.trim().toLowerCase();
 
   const filteredImages = useMemo(() => {
-    if (!normalizedFilter) {
-      return galleryImages;
+    let images = galleryImages;
+
+    if (providerFilter === 'library') {
+      images = images.filter(isLibraryImage);
+    } else if (providerFilter === 'catbox') {
+      images = images.filter((image) => !isLibraryImage(image));
     }
 
-    return galleryImages.filter((image) => {
+    if (!normalizedFilter) {
+      return images;
+    }
+
+    return images.filter((image) => {
       const providerLabel = isLibraryImage(image)
         ? 'media library'
         : (image.provider ?? 'catbox');
@@ -465,7 +545,9 @@ export function ImageGallery() {
         providerLabel.toLowerCase().includes(normalizedFilter)
       );
     });
-  }, [galleryImages, normalizedFilter]);
+  }, [galleryImages, normalizedFilter, providerFilter]);
+
+  const filtersActive = providerFilter !== 'all' || normalizedFilter.length > 0;
 
   const handleImageSelection = (imageId: string) => {
     setSelectedImageId(imageId);
@@ -479,117 +561,236 @@ export function ImageGallery() {
 
   const isModalOpen = selectedImageId !== null && selectedImage !== null;
 
-  return (
-    <div className="space-y-6">
-      {/* Upload Section */}
+
+
+  const railContent = (
+    <>
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Upload Images
-          </CardTitle>
-          <CardDescription>
-            Upload and organize your photos. Images are automatically saved and can be protected.
-          </CardDescription>
+          <CardTitle className="text-base">Gallery KPIs</CardTitle>
+          <CardDescription>Stay on top of repost guardrails.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <dl className="space-y-3 text-sm">
+            <div className="flex items-center justify-between">
+              <dt className="text-muted-foreground">Total uploads</dt>
+              <dd className="font-semibold">{totalImages}</dd>
+            </div>
+            <div className="flex items-center justify-between">
+              <dt className="text-muted-foreground">Media library</dt>
+              <dd className="font-semibold">{libraryCount}</dd>
+            </div>
+            <div className="flex items-center justify-between">
+              <dt className="text-muted-foreground">Catbox uploads</dt>
+              <dd className="font-semibold">{catboxCount}</dd>
+            </div>
+            <div className="flex items-center justify-between">
+              <dt className="text-muted-foreground">Watermark coverage</dt>
+              <dd className="font-semibold">{watermarkCoverage}%</dd>
+            </div>
+            <div className="flex items-center justify-between">
+              <dt className="text-muted-foreground">Cooldown ready</dt>
+              <dd className="font-semibold">{cooldownSummary.ready} / {libraryCount}</dd>
+            </div>
+          </dl>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Filters</CardTitle>
+          <CardDescription>Keep filters visible while you scroll.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Tags (optional)</label>
-            <Input
-              value={selectedTags}
-              onChange={(e) => setSelectedTags(e.target.value)}
-              data-testid="input-tags"
-            />
+          <div className="flex flex-wrap gap-2">
+            {PROVIDER_FILTERS.map((option) => (
+              <Button
+                key={option.id}
+                type="button"
+                size="sm"
+                variant={providerFilter === option.id ? 'default' : 'outline'}
+                onClick={() => setProviderFilter(option.id)}
+              >
+                {option.label}
+              </Button>
+            ))}
           </div>
-          
-          <div className="border-2 border-dashed border-border rounded-lg p-6">
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleFileUpload}
-              className="hidden"
-              id="bulk-upload"
-              data-testid="input-file-upload"
+          <div className="space-y-2">
+            <Input
+              value={filterQuery}
+              onChange={(event) => setFilterQuery(event.target.value)}
+              placeholder="Search by filename or provider"
+              type="search"
             />
-            <label htmlFor="bulk-upload" className="cursor-pointer">
-              <div className="text-center">
-                <Upload className="mx-auto h-8 w-8 text-muted-foreground/70" />
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Click to upload images or drag and drop
-                </p>
-                <p className="text-xs text-muted-foreground/80">
-                  Supports multiple files
-                </p>
-              </div>
-            </label>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Showing {filteredImages.length} of {totalImages} assets</span>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={handleResetFilters}
+                disabled={!filtersActive}
+              >
+                Clear
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Gallery */}
       <Card>
         <CardHeader>
-          <CardTitle>Your Image Gallery ({galleryImages.length} images)</CardTitle>
-          <CardDescription>
-            Manage your uploaded images, apply protection, and generate content.
-          </CardDescription>
+          <CardTitle className="text-base">Cooldown & repost safety</CardTitle>
+          <CardDescription>Prevent accidental subreddit violations.</CardDescription>
         </CardHeader>
-        <CardContent>
-          {galleryErrorMessage ? (
-            <div className="mb-4 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {galleryErrorMessage}
-            </div>
-          ) : null}
-
-          {galleryLoading ? (
-            <div className="text-center py-8 text-muted-foreground/80">
-              <Upload className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-              <p>Loading...</p>
-            </div>
-          ) : filteredImages.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground/80">
-              <Upload className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-              <p>No images yet. Upload some photos to get started!</p>
-            </div>
+        <CardContent className="space-y-4">
+          <ul className="space-y-3 text-sm text-muted-foreground">
+            <li className="flex items-start gap-2">
+              {cooldownSummary.locked > 0 ? (
+                <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-500" />
+              ) : (
+                <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-500" />
+              )}
+              <span>72-hour subreddit cooldown {cooldownSummary.locked > 0 ? `active on ${cooldownSummary.locked} assets.` : 'cleared for every protected upload.'}</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Shield className="mt-0.5 h-4 w-4 text-purple-500" />
+              <span>{unprotectedCount > 0 ? `${unprotectedCount} media library uploads still need ImageShield.` : 'All media library uploads have ImageShield coverage.'}</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Clock3 className="mt-0.5 h-4 w-4 text-sky-500" />
+              <span>Quick repost skips Catbox uploads to prevent duplicate hashes. Import to the library before reposting.</span>
+            </li>
+          </ul>
+          {cooldownSummary.locked > 0 ? (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>Next asset clears cooldown in approximately {cooldownSummary.nextAvailableHours}h.</AlertDescription>
+            </Alert>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filteredImages.map((image) => {
-                const isLibrary = isLibraryImage(image);
-                const cardTestId = isLibrary ? `image-card-${image.libraryId}` : `image-card-catbox-${image.catboxId}`;
-                return (
-                  <button
-                    key={image.id}
-                    type="button"
-                    className="group relative aspect-square overflow-hidden rounded-lg border cursor-pointer hover:shadow-lg transition-shadow"
-                    onClick={() => handleImageSelection(image.id)}
-                    data-testid={cardTestId}
-                >
-                  <img
-                    src={getGalleryImageUrl(image)}
-                    alt={image.filename}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-foreground bg-opacity-0 group-hover:bg-opacity-20 transition-all">
-                    <div className="absolute top-2 left-2 flex gap-1">
-                      <Badge variant="secondary" className="text-xs">
-                        {isLibraryImage(image) ? 'Media Library' : image.provider || 'Catbox'}
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs">
-                        {formatMimeLabel(image.mime)}
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs">
-                        {Math.round(image.bytes / 1024)}KB
-                      </Badge>
-                    </div>
-                  </div>
-                </button>
-                );
-              })}
-            </div>
+            <Alert className="border-emerald-200 bg-emerald-50 text-emerald-700">
+              <CheckCircle2 className="h-4 w-4" />
+              <AlertDescription>Everything is eligible for immediate reposting.</AlertDescription>
+            </Alert>
           )}
         </CardContent>
       </Card>
+    </>
+  );
+
+  return (
+    <>
+      <StickyRail railPosition="end" rail={railContent} mainClassName="space-y-6">
+        {/* Upload Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" />
+              Upload Images
+            </CardTitle>
+            <CardDescription>
+              Upload and organize your photos. Images are automatically saved and can be protected.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Tags (optional)</label>
+              <Input
+                value={uploadTags}
+                onChange={(event) => setUploadTags(event.target.value)}
+                data-testid="input-tags"
+              />
+            </div>
+
+            <div className="border-2 border-dashed border-border rounded-lg p-6">
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFileUpload}
+                className="hidden"
+                id="bulk-upload"
+                data-testid="input-file-upload"
+              />
+              <label htmlFor="bulk-upload" className="cursor-pointer">
+                <div className="text-center">
+                  <Upload className="mx-auto h-8 w-8 text-muted-foreground/70" />
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Click to upload images or drag and drop
+                  </p>
+                  <p className="text-xs text-muted-foreground/80">
+                    Supports multiple files
+                  </p>
+                </div>
+              </label>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Gallery */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Your Image Gallery ({galleryImages.length} images)</CardTitle>
+            <CardDescription>
+              Manage your uploaded images, apply protection, and generate content.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {galleryErrorMessage ? (
+              <div className="mb-4 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {galleryErrorMessage}
+              </div>
+            ) : null}
+
+            {galleryLoading ? (
+              <div className="text-center py-8 text-muted-foreground/80">
+                <Upload className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+                <p>Loading...</p>
+              </div>
+            ) : filteredImages.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground/80">
+                <Upload className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+                <p>No images yet. Upload some photos to get started!</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {filteredImages.map((image) => {
+                  const isLibrary = isLibraryImage(image);
+                  const cardTestId = isLibrary ? `image-card-${image.libraryId}` : `image-card-catbox-${image.catboxId}`;
+                  return (
+                    <button
+                      key={image.id}
+                      type="button"
+                      className="group relative aspect-square overflow-hidden rounded-lg border cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={() => handleImageSelection(image.id)}
+                      data-testid={cardTestId}
+                    >
+                      <img
+                        src={getGalleryImageUrl(image)}
+                        alt={image.filename}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-foreground bg-opacity-0 group-hover:bg-opacity-20 transition-all">
+                        <div className="absolute top-2 left-2 flex gap-1">
+                          <Badge variant="secondary" className="text-xs">
+                            {isLibraryImage(image) ? 'Media Library' : image.provider || 'Catbox'}
+                          </Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            {formatMimeLabel(image.mime)}
+                          </Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            {Math.round(image.bytes / 1024)}KB
+                          </Badge>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </StickyRail>
 
       <ImageDetailModal
         image={selectedImage}
@@ -603,6 +804,6 @@ export function ImageGallery() {
         isReposting={quickRepostMutation.isPending}
         isDeleting={deleteMutation.isPending}
       />
-    </div>
+    </>
   );
 }

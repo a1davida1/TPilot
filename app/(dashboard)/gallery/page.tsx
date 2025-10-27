@@ -26,5 +26,5 @@ export const dynamic = 'force-dynamic';
 
 export default async function GalleryPage() {
   const initialData = await fetchInitialGallery();
-  return <GalleryClient initialData={initialData} />;
+  return <GalleryClient initialData={initialData} stickyOffset={112} />;
 }
