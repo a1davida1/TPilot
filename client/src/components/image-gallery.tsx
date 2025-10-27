@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useMobileOptimization } from '@/components/mobile-optimization';
+import { cn } from '@/lib/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -63,6 +65,9 @@ function ImageDetailModal({
   isReposting,
   isDeleting
 }: ImageDetailModalProps) {
+  const { isMobile, recommendedButtonSize } = useMobileOptimization();
+  const badgePaddingClass = isMobile ? 'px-3 py-1 text-sm' : 'px-2.5 py-0.5 text-xs';
+  const detailStackSpacing = isMobile ? 'space-y-5' : 'space-y-4';
   const isLibrary = image ? isLibraryImage(image) : false;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -73,25 +78,25 @@ function ImageDetailModal({
             <DialogDescription>{image.filename}</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className={detailStackSpacing}>
             <img
               src={image.signedUrl || image.downloadUrl || ''}
               alt={image.filename}
               className="w-full max-h-96 object-contain rounded-lg"
             />
 
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="outline">
+            <div className={cn('flex flex-wrap gap-2', isMobile ? 'gap-3' : '')}>
+              <Badge variant="outline" className={badgePaddingClass}>
                 <Tag className="h-3 w-3 mr-1" />
                 {formatMimeLabel(image.mime)}
               </Badge>
-              <Badge variant="outline">{Math.round(image.bytes / 1024)}KB</Badge>
-              <Badge variant="outline">{new Date(image.createdAt).toLocaleDateString()}</Badge>
-              <Badge variant="outline">{isLibrary ? 'Media Library' : 'Catbox Upload'}
+              <Badge variant="outline" className={badgePaddingClass}>{Math.round(image.bytes / 1024)}KB</Badge>
+              <Badge variant="outline" className={badgePaddingClass}>{new Date(image.createdAt).toLocaleDateString()}</Badge>
+              <Badge variant="outline" className={badgePaddingClass}>{isLibrary ? 'Media Library' : 'Catbox Upload'}
               </Badge>
               {image.protectionLevel ? (
                 <Badge
-                  variant="secondary"
+                  variant="secondary" className={badgePaddingClass}
                   data-testid="protection-status"
                   data-protection-level={image.protectionLevel}
                 >
@@ -101,7 +106,7 @@ function ImageDetailModal({
               ) : null}
               {image.lastRepostedAt ? (
                 <Badge
-                  variant="secondary"
+                  variant="secondary" className={badgePaddingClass}
                   data-testid="repost-status"
                   data-reposted-at={image.lastRepostedAt}
                 >
@@ -111,9 +116,9 @@ function ImageDetailModal({
               ) : null}
             </div>
 
-            <div className="flex gap-2 flex-wrap">
+            <div className={cn('flex flex-wrap gap-2', isMobile ? 'gap-3' : '')}>
               <Button
-                size="sm"
+                size={isMobile ? recommendedButtonSize : 'sm'}
                 onClick={() => onQuickRepost(image)}
                 disabled={!isLibrary || isReposting}
                 data-testid="quick-repost-button"
@@ -123,7 +128,7 @@ function ImageDetailModal({
                 {isReposting ? 'Reposting...' : 'Quick Repost'}
               </Button>
               <Button
-                size="sm"
+                size={isMobile ? recommendedButtonSize : 'sm'}
                 variant="secondary"
                 onClick={() => onProtect(image, 'standard')}
                 disabled={!isLibrary || isProtecting}
@@ -134,7 +139,7 @@ function ImageDetailModal({
                 {isProtecting ? 'Protecting...' : 'Quick Protect'}
               </Button>
               <Button
-                size="sm"
+                size={isMobile ? recommendedButtonSize : 'sm'}
                 variant="outline"
                 onClick={() => onProtect(image, 'light')}
                 disabled={!isLibrary || isProtecting}
@@ -144,7 +149,7 @@ function ImageDetailModal({
                 Light Shield
               </Button>
               <Button
-                size="sm"
+                size={isMobile ? recommendedButtonSize : 'sm'}
                 variant="outline"
                 onClick={() => onProtect(image, 'heavy')}
                 disabled={!isLibrary || isProtecting}
@@ -154,7 +159,7 @@ function ImageDetailModal({
                 Heavy Shield
               </Button>
               <Button
-                size="sm"
+                size={isMobile ? recommendedButtonSize : 'sm'}
                 variant="outline"
                 onClick={() => onDownload(image)}
                 data-testid="dialog-close-button"
@@ -163,7 +168,7 @@ function ImageDetailModal({
                 Download
               </Button>
               <Button
-                size="sm"
+                size={isMobile ? recommendedButtonSize : 'sm'}
                 variant="destructive"
                 onClick={() => onDelete(image)}
                 disabled={!isLibrary || isDeleting}
@@ -187,6 +192,8 @@ export function ImageGallery() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuth();
+  const { isMobile, recommendedButtonSize, recommendedSpacing } = useMobileOptimization();
+  const galleryBadgeClass = isMobile ? 'px-3 py-1 text-sm' : 'px-2 py-0.5 text-xs';
 
   const {
     galleryImages,
@@ -480,7 +487,7 @@ export function ImageGallery() {
   const isModalOpen = selectedImageId !== null && selectedImage !== null;
 
   return (
-    <div className="space-y-6">
+    <div className={cn(isMobile ? recommendedSpacing : 'space-y-6', 'md:space-y-6')}>
       {/* Upload Section */}
       <Card>
         <CardHeader>
@@ -553,7 +560,13 @@ export function ImageGallery() {
               <p>No images yet. Upload some photos to get started!</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div
+              className={cn(
+                'gap-4',
+                'md:grid md:grid-cols-3 lg:grid-cols-4',
+                isMobile ? 'flex snap-x snap-mandatory overflow-x-auto pb-4 -mx-2 px-2' : 'grid grid-cols-2'
+              )}
+            >
               {filteredImages.map((image) => {
                 const isLibrary = isLibraryImage(image);
                 const cardTestId = isLibrary ? `image-card-${image.libraryId}` : `image-card-catbox-${image.catboxId}`;
@@ -561,7 +574,10 @@ export function ImageGallery() {
                   <button
                     key={image.id}
                     type="button"
-                    className="group relative aspect-square overflow-hidden rounded-lg border cursor-pointer hover:shadow-lg transition-shadow"
+                    className={cn(
+                      'group relative aspect-square overflow-hidden rounded-lg border cursor-pointer hover:shadow-lg transition-shadow',
+                      isMobile ? 'min-w-[180px] snap-start' : ''
+                    )}
                     onClick={() => handleImageSelection(image.id)}
                     data-testid={cardTestId}
                 >
@@ -571,14 +587,14 @@ export function ImageGallery() {
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-foreground bg-opacity-0 group-hover:bg-opacity-20 transition-all">
-                    <div className="absolute top-2 left-2 flex gap-1">
-                      <Badge variant="secondary" className="text-xs">
+                    <div className={cn('absolute top-2 left-2 flex gap-1', isMobile ? 'gap-2' : '')}>
+                      <Badge variant="secondary" className={cn(galleryBadgeClass)}>
                         {isLibraryImage(image) ? 'Media Library' : image.provider || 'Catbox'}
                       </Badge>
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge variant="secondary" className={cn(galleryBadgeClass)}>
                         {formatMimeLabel(image.mime)}
                       </Badge>
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge variant="secondary" className={cn(galleryBadgeClass)}>
                         {Math.round(image.bytes / 1024)}KB
                       </Badge>
                     </div>

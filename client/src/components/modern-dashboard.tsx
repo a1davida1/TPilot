@@ -9,6 +9,7 @@ import React, { useState, useEffect, useCallback, useTransition } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import { useMobileOptimization } from "@/components/mobile-optimization";
 import {
   CheckCircle2,
   Shield,
@@ -254,6 +255,8 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     data: statsData,
     isLoading: statsLoading,
     error: statsError,
+    refetch: refetchStats,
+    isRefetching: statsRefetching,
   } = useQuery<DashboardStatsResponse>({
     queryKey: ['/api/dashboard/stats'],
     enabled: Boolean(resolvedUser?.id),
@@ -263,6 +266,8 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     data: activityData,
     isLoading: activityLoading,
     error: activityError,
+    refetch: refetchActivity,
+    isRefetching: activityRefetching,
   } = useQuery<DashboardActivityResponse>({
     queryKey: ['/api/dashboard/activity'],
     enabled: Boolean(resolvedUser?.id),
@@ -272,6 +277,8 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     data: catboxStats,
     isLoading: catboxStatsLoading,
     error: catboxStatsError,
+    refetch: refetchCatboxStats,
+    isRefetching: catboxStatsRefetching,
   } = useQuery<CatboxUploadStatsResponse>({
     queryKey: ['/api/catbox/stats'],
     enabled: Boolean(resolvedUser?.id),
@@ -358,6 +365,13 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     dateLabel: formatChartDateLabel(point.date),
   }));
   const catboxRecentUploads = catboxStats?.recentUploads ?? [];
+
+  const statsErrorMessage =
+    statsError instanceof Error ? statsError.message : statsError ? 'Unable to load dashboard stats.' : '';
+  const activityErrorMessage =
+    activityError instanceof Error ? activityError.message : activityError ? 'Unable to load media activity.' : '';
+  const catboxErrorMessage =
+    catboxStatsError instanceof Error ? catboxStatsError.message : catboxStatsError ? 'Unable to load Catbox insights.' : '';
 
   const statsCards = [
     {
@@ -765,7 +779,12 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <Badge className="bg-white/20 text-white border-white/30">
+                  <Badge
+                    className={cn(
+                      'bg-white/20 text-white border-white/30',
+                      isMobile ? mobileBadgeClasses : 'px-3 py-1 text-xs'
+                    )}
+                  >
                     {Object.values(onboardingProgress).filter(Boolean).length}/3 Complete
                   </Badge>
                 </div>
@@ -812,7 +831,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
             </div>
             <Button
               variant="ghost"
-              size="sm"
+              size={isMobile ? recommendedButtonSize : 'sm'}
               onClick={() => setSidebarOpen(false)}
               className="text-slate-400 transition-colors hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
             >
@@ -835,7 +854,10 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
             >
               <FaReddit className="h-5 w-5" />
               <span>Reddit Hub</span>
-              <Badge className="ml-auto border border-purple-400/30 bg-purple-500/20 text-purple-100" variant="secondary">NEW</Badge>
+              <Badge className={cn(
+                'ml-auto border border-purple-400/30 bg-purple-500/20 text-purple-100',
+                isMobile ? mobileBadgeClasses : 'px-3 py-1 text-xs'
+              )} variant="secondary">NEW</Badge>
             </button>
             <button 
               onClick={() => setLocation('/caption-generator')}
@@ -897,6 +919,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
           <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
             <div className="flex gap-3">
               <Button
+                size={recommendedButtonSize}
                 onClick={handleQuickAction}
                 className="bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white shadow-lg shadow-purple-500/30 transition-colors hover:from-purple-500/90 hover:to-fuchsia-500/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
               >
@@ -904,6 +927,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                 Quick Action
               </Button>
               <Button
+                size={recommendedButtonSize}
                 onClick={handleCommandCenter}
                 className="border border-white/70 bg-white/90 text-slate-900 transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 dark:border-slate-700/70 dark:bg-slate-900/80 dark:text-slate-100 dark:hover:bg-slate-900"
               >
@@ -911,6 +935,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                 Command Center
               </Button>
               <Button
+                size={recommendedButtonSize}
                 onClick={handleTaskFlow}
                 className="bg-slate-900/80 text-slate-100 transition-colors hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
               >
@@ -920,10 +945,10 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
             </div>
             <div className="flex gap-3">
               <ThemeToggle />
-              <Button variant="ghost" size="icon" className="text-slate-200 transition-colors hover:bg-slate-900/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
+              <Button variant="ghost" size={isMobile ? 'lg' : 'icon'} className="text-slate-200 transition-colors hover:bg-slate-900/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
                 <Bell className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="text-slate-200 transition-colors hover:bg-slate-900/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
+              <Button variant="ghost" size={isMobile ? 'lg' : 'icon'} className="text-slate-200 transition-colors hover:bg-slate-900/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
                 <Settings className="h-5 w-5" />
               </Button>
             </div>
@@ -941,18 +966,60 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {statsCards.map((stat) => (
-            <Card key={stat.label} className="bg-slate-950/60 border-slate-800/60 backdrop-blur">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <span className={stat.color}>{stat.icon}</span>
-                  <span className="text-2xl font-bold text-white">{stat.value}</span>
-                </div>
-                <p className="text-slate-300 text-sm">{stat.label}</p>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="mb-8">
+          {isMobile && statsLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 2 }).map((_, index) => (
+                <div
+                  key={`stats-skeleton-${index}`}
+                  className="h-28 w-full animate-pulse rounded-2xl border border-slate-800/60 bg-slate-900/70"
+                />
+              ))}
+            </div>
+          ) : isMobile && statsError ? (
+            <div className="space-y-3 rounded-2xl border border-slate-800/60 bg-slate-950/70 p-4">
+              <p className="text-sm text-slate-200">
+                Unable to load your latest metrics. {statsErrorMessage || 'Please try again.'}
+              </p>
+              <Button
+                size={recommendedButtonSize}
+                onClick={() => refetchStats()}
+                disabled={statsRefetching}
+                className="w-full"
+              >
+                {statsRefetching ? 'Retrying…' : 'Retry'}
+              </Button>
+            </div>
+          ) : (
+            <div
+              className={cn(
+                'gap-4',
+                'md:grid md:grid-cols-4',
+                isMobile
+                  ? 'flex snap-x snap-mandatory overflow-x-auto pb-4 -mx-4 px-4'
+                  : 'grid grid-cols-2'
+              )}
+            >
+              {statsCards.map((stat) => (
+                <Card
+                  key={stat.label}
+                  className={cn(
+                    'bg-slate-950/60 border-slate-800/60 backdrop-blur',
+                    mobileCardSnapClass,
+                    isMobile ? 'px-2 py-2' : ''
+                  )}
+                >
+                  <CardContent className={cn('p-6', isMobile ? 'p-5' : '')}>
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className={stat.color}>{stat.icon}</span>
+                      <span className="text-2xl font-bold text-white">{stat.value}</span>
+                    </div>
+                    <p className="text-sm text-slate-300">{stat.label}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Catbox Analytics */}
@@ -964,11 +1031,38 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {catboxStatsLoading ? (
+            {isMobile && catboxStatsLoading ? (
+              <div className="space-y-3">
+                <div className="h-40 w-full animate-pulse rounded-xl border border-slate-800/60 bg-slate-900/70" />
+                <div className="h-20 w-full animate-pulse rounded-xl border border-slate-800/60 bg-slate-900/70" />
+              </div>
+            ) : isMobile && catboxStatsError ? (
+              <div className="space-y-3 rounded-xl border border-slate-800/60 bg-slate-950/70 p-4">
+                <p className="text-sm text-slate-200">
+                  Unable to load Catbox insights. {catboxErrorMessage || 'Please try again.'}
+                </p>
+                <Button
+                  size={recommendedButtonSize}
+                  className="w-full"
+                  onClick={() => refetchCatboxStats()}
+                  disabled={catboxStatsRefetching}
+                >
+                  {catboxStatsRefetching ? 'Retrying…' : 'Retry'}
+                </Button>
+              </div>
+            ) : catboxStatsLoading ? (
               <div className="h-48 w-full animate-pulse rounded-lg bg-slate-900/70" />
             ) : catboxStats && catboxStats.totalUploads > 0 ? (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 h-72">
+              <div
+                className={cn(
+                  'gap-6',
+                  'lg:grid lg:grid-cols-3',
+                  isMobile
+                    ? 'flex snap-x snap-mandatory overflow-x-auto pb-4 -mx-4 px-4'
+                    : 'grid grid-cols-1'
+                )}
+              >
+                <div className={cn('lg:col-span-2 h-72', isMobile ? 'min-w-[320px]' : '')}>
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={catboxChartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -1013,98 +1107,32 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                       <Area
                         type="monotone"
                         dataKey="successRate"
-                        stroke="#F97316"
-                        fill="#F97316"
-                        fillOpacity={0}
+                        stroke="#34D399"
+                        fill="#34D399"
+                        fillOpacity={0.1}
                         name="successRate"
                       />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-sm text-slate-300">Total attempts</p>
-                      <p className="text-lg font-semibold text-white">
-                        {formatNumber(catboxTotalUploads)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-300">Successful uploads</p>
-                      <p className="text-lg font-semibold text-white">
-                        {formatNumber(catboxSuccessfulUploads)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-300">Failed attempts</p>
-                      <p className="text-lg font-semibold text-white">
-                        {formatNumber(catboxFailedUploads)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-300">Success rate</p>
-                      <p className="text-lg font-semibold text-white">
-                        {(catboxStats?.successRate ?? 0).toFixed(1)}%
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-300">Active streak</p>
-                      <p className="text-lg font-semibold text-white">
-                        {catboxStats?.streakDays ?? 0} {catboxStats && catboxStats.streakDays === 1 ? 'day' : 'days'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-300">Average upload time</p>
-                      <p className="text-lg font-semibold text-white">
-                        {formatDurationMs(catboxStats?.averageDuration ?? 0)}
-                      </p>
-                    </div>
-                    <div className="md:col-span-2 lg:col-span-3">
-                      <p className="text-sm text-slate-300">Data transferred</p>
-                      <p className="text-lg font-semibold text-white">
-                        {formatBytes(catboxStats?.totalSize ?? 0)}
-                      </p>
-                    </div>
+                <div className={cn('space-y-4', isMobile ? recommendedSpacing : '')}>
+                  <div className="rounded-lg border border-slate-800/60 bg-slate-900/70 p-4">
+                    <h4 className="text-sm font-semibold text-white">Upload Summary</h4>
+                    <p className="text-2xl font-bold text-white">{formatNumber(catboxTotalUploads)}</p>
+                    <p className="text-xs text-slate-300">Total uploads this month</p>
                   </div>
-                  <div>
-                    <p className="mb-2 text-sm font-semibold text-slate-200">Recent uploads</p>
-                    <div className="space-y-2">
-                      {catboxRecentUploads.slice(0, 3).map((upload) => (
-                        <div key={upload.id} className="flex items-center justify-between rounded-md bg-slate-900/70 px-3 py-2">
-                          <div className="mr-3 min-w-0">
-                            <p className="truncate text-sm text-slate-100">
-                              {upload.filename ?? upload.url}
-                            </p>
-                            <p className="text-xs text-slate-300">
-                              {upload.fileSize ? formatBytes(upload.fileSize) : 'Size unknown'}
-                            </p>
-                          </div>
-                          <div className="text-right text-xs text-slate-300">
-                            {upload.uploadedAt ? formatChartDateLabel(upload.uploadedAt) : '—'}
-                          </div>
-                        </div>
-                      ))}
-                      {catboxStats.recentUploads.length === 0 && (
-                        <p className="text-sm text-slate-300">Uploads will appear here after your next Catbox transfer.</p>
-                      )}
-                    </div>
+                  <div className="rounded-lg border border-slate-800/60 bg-slate-900/70 p-4">
+                    <h4 className="text-sm font-semibold text-white">Success Rate</h4>
+                    <p className="text-2xl font-bold text-white">{formatPercentage(catboxStats.successRate ?? 0)}</p>
+                    <p className="text-xs text-slate-300">Completed without issues</p>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-start gap-4 rounded-lg border border-dashed border-slate-800/60 bg-slate-950/70 p-6">
-                <div>
-                  <h4 className="text-lg font-semibold text-white">Start tracking your Catbox uploads</h4>
-                  <p className="text-sm text-slate-300">
-                    Upload media through ThottoPilot to unlock analytics and performance trends.
-                  </p>
-                </div>
-                <Button
-                  className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/30 transition-colors hover:from-purple-500/90 hover:to-indigo-500/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-                  onClick={() => setLocation('/settings')}
-                >
-                  Configure Catbox
-                </Button>
+              <div className="text-center py-8 text-slate-300">
+                <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>No Catbox uploads yet</p>
+                <p className="text-sm">Upload media to see performance insights</p>
               </div>
             )}
           </CardContent>
@@ -1122,13 +1150,21 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
         {coreCards.length > 0 && (
           <div className="mb-8">
             <h2 className="text-xl font-semibold text-white mb-4">Getting Started</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div
+              className={cn(
+                'gap-4',
+                'md:grid md:grid-cols-2 lg:grid-cols-3',
+                isMobile ? 'flex snap-x snap-mandatory overflow-x-auto pb-4 -mx-4 px-4' : 'grid grid-cols-1'
+              )}
+            >
               {coreCards.map((card) => (
                 <Card
                   key={card.id}
                   className={cn(
                     "bg-slate-950/60 border-slate-800/60 backdrop-blur cursor-pointer transition-all hover:scale-105",
-                    selectedCard === card.id && "ring-2 ring-purple-500"
+                    selectedCard === card.id && "ring-2 ring-purple-500",
+                    mobileCardSnapClass,
+                    isMobile ? 'min-w-[260px]' : ''
                   )}
                   onClick={() => handleCardClick(card)}
                   onMouseEnter={() => setSelectedCard(card.id)}
@@ -1145,10 +1181,10 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                     <h3 className="text-white font-semibold mb-1">{card.title}</h3>
                     <p className="text-slate-300 text-sm">{card.description}</p>
                     {card.comingSoon && (
-                      <Badge className="mt-2" variant="outline">Coming Soon</Badge>
+                      <Badge className={cn('mt-2', isMobile ? mobileBadgeClasses : "px-3 py-1 text-xs")} variant="outline">Coming Soon</Badge>
                     )}
                     {card.premium && !isPremium && (
-                      <Badge className="mt-2" variant="outline">Pro</Badge>
+                      <Badge className={cn('mt-2', isMobile ? mobileBadgeClasses : "px-3 py-1 text-xs")} variant="outline">Pro</Badge>
                     )}
                   </CardContent>
                 </Card>
@@ -1161,13 +1197,21 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
         {growthCards.length > 0 && (
           <div className="mb-8">
             <h2 className="text-xl font-semibold text-white mb-4">Content Creation</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div
+              className={cn(
+                'gap-4',
+                'md:grid md:grid-cols-2 lg:grid-cols-3',
+                isMobile ? 'flex snap-x snap-mandatory overflow-x-auto pb-4 -mx-4 px-4' : 'grid grid-cols-1'
+              )}
+            >
               {growthCards.map((card) => (
                 <Card
                   key={card.id}
                   className={cn(
                     "bg-slate-950/60 border-slate-800/60 backdrop-blur cursor-pointer transition-all hover:scale-105",
-                    selectedCard === card.id && "ring-2 ring-purple-500"
+                    selectedCard === card.id && "ring-2 ring-purple-500",
+                    mobileCardSnapClass,
+                    isMobile ? 'min-w-[260px]' : ''
                   )}
                   onClick={() => handleCardClick(card)}
                   onMouseEnter={() => setSelectedCard(card.id)}
@@ -1184,10 +1228,10 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                     <h3 className="text-white font-semibold mb-1">{card.title}</h3>
                     <p className="text-slate-300 text-sm">{card.description}</p>
                     {card.comingSoon && (
-                      <Badge className="mt-2" variant="outline">Coming Soon</Badge>
+                      <Badge className={cn('mt-2', isMobile ? mobileBadgeClasses : "px-3 py-1 text-xs")} variant="outline">Coming Soon</Badge>
                     )}
                     {card.premium && !isPremium && (
-                      <Badge className="mt-2" variant="outline">Pro</Badge>
+                      <Badge className={cn('mt-2', isMobile ? mobileBadgeClasses : "px-3 py-1 text-xs")} variant="outline">Pro</Badge>
                     )}
                   </CardContent>
                 </Card>
@@ -1203,6 +1247,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
               <h2 className="text-xl font-semibold text-white">Advanced Tools</h2>
               <Button
                 variant="ghost"
+                size={recommendedButtonSize}
                 onClick={() => setShowMoreTools(!showMoreTools)}
                 className="text-slate-300 hover:text-white"
                 data-testid={`button-${showMoreTools ? 'hide' : 'show'}-more-tools`}
@@ -1214,7 +1259,13 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
             {showMoreTools && (
               <div>
                 {hasTierAccess(resolvedTier, 'starter', isAdminUser) ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div
+              className={cn(
+                'gap-4',
+                'md:grid md:grid-cols-2 lg:grid-cols-3',
+                isMobile ? 'flex snap-x snap-mandatory overflow-x-auto pb-4 -mx-4 px-4' : 'grid grid-cols-1'
+              )}
+            >
                     {secondaryCards.map((card) => (
                       <Card
                         key={card.id}
@@ -1237,17 +1288,23 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                           <h3 className="text-white font-semibold mb-1">{card.title}</h3>
                           <p className="text-slate-300 text-sm">{card.description}</p>
                           {card.comingSoon && (
-                            <Badge className="mt-2" variant="outline">Coming Soon</Badge>
+                            <Badge className={cn('mt-2', isMobile ? mobileBadgeClasses : "px-3 py-1 text-xs")} variant="outline">Coming Soon</Badge>
                           )}
                           {card.premium && !isPremium && (
-                            <Badge className="mt-2" variant="outline">Pro</Badge>
+                            <Badge className={cn('mt-2', isMobile ? mobileBadgeClasses : "px-3 py-1 text-xs")} variant="outline">Pro</Badge>
                           )}
                         </CardContent>
                       </Card>
                     ))}
                   </div>
                 ) : (
-                  <Card className="bg-slate-950/60 border-slate-800/60 backdrop-blur">
+                  <Card
+            className={cn(
+              'bg-slate-950/60 border-slate-800/60 backdrop-blur',
+              mobileCardSnapClass,
+              isMobile ? 'min-w-[280px]' : ''
+            )}
+          >
                     <CardContent className="p-6 text-center">
                       <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center mx-auto mb-4">
                         <Gift className="h-8 w-8 text-white" />
@@ -1257,6 +1314,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                         Upgrade your plan to unlock analytics, takedown scanning, and finance workflows
                       </p>
                       <Button
+                        size={recommendedButtonSize}
                         onClick={() => {
                           toast({
                             title: "Upgrade Available",
@@ -1282,7 +1340,8 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
             <div className="flex gap-3 flex-wrap">
               <Badge
                 className={cn(
-                  "flex items-center gap-2 px-3 py-1",
+                  "flex items-center gap-2",
+                  isMobile ? mobileBadgeClasses : "px-3 py-1",
                   onboardingProgress.connectedReddit
                     ? "bg-green-500/20 text-green-400 border-green-500/30"
                     : "bg-slate-700/30 text-slate-300 border-slate-600/40"
@@ -1297,7 +1356,8 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
               </Badge>
               <Badge
                 className={cn(
-                  "flex items-center gap-2 px-3 py-1",
+                  "flex items-center gap-2",
+                  isMobile ? mobileBadgeClasses : "px-3 py-1",
                   onboardingProgress.selectedCommunities
                     ? "bg-green-500/20 text-green-400 border-green-500/30"
                     : "bg-slate-700/30 text-slate-300 border-slate-600/40"
@@ -1312,7 +1372,8 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
               </Badge>
               <Badge
                 className={cn(
-                  "flex items-center gap-2 px-3 py-1",
+                  "flex items-center gap-2",
+                  isMobile ? mobileBadgeClasses : "px-3 py-1",
                   onboardingProgress.createdFirstPost
                     ? "bg-green-500/20 text-green-400 border-green-500/30"
                     : "bg-slate-700/30 text-slate-300 border-slate-600/40"
@@ -1330,9 +1391,21 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
         )}
 
         {/* Bottom Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div
+          className={cn(
+            'gap-6',
+            'lg:grid lg:grid-cols-2',
+            isMobile ? 'flex snap-x snap-mandatory overflow-x-auto pb-6 -mx-4 px-4' : 'grid grid-cols-1'
+          )}
+        >
           {/* Recent Gallery */}
-          <Card className="bg-slate-950/60 border-slate-800/60 backdrop-blur">
+          <Card
+            className={cn(
+              'bg-slate-950/60 border-slate-800/60 backdrop-blur',
+              mobileCardSnapClass,
+              isMobile ? 'min-w-[280px]' : ''
+            )}
+          >
             <CardHeader>
               <CardTitle className="text-white">Recent Gallery</CardTitle>
               <CardDescription className="text-slate-300">
@@ -1340,7 +1413,30 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {activityLoading ? (
+              {isMobile && activityLoading ? (
+                <div className="flex snap-x snap-mandatory overflow-x-auto pb-2 -mx-1 px-1 gap-2">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div
+                      key={`recent-skeleton-${i}`}
+                      className="h-28 w-28 flex-shrink-0 animate-pulse rounded-lg border border-slate-800/60 bg-slate-900/70"
+                    />
+                  ))}
+                </div>
+              ) : isMobile && activityError ? (
+                <div className="space-y-3 rounded-lg border border-slate-800/60 bg-slate-900/70 p-4 text-left">
+                  <p className="text-sm text-slate-200">
+                    Unable to load recent media. {activityErrorMessage || 'Please try again.'}
+                  </p>
+                  <Button
+                    size={recommendedButtonSize}
+                    className="w-full"
+                    onClick={() => refetchActivity()}
+                    disabled={activityRefetching}
+                  >
+                    {activityRefetching ? 'Retrying…' : 'Retry'}
+                  </Button>
+                </div>
+              ) : activityLoading ? (
                 <div className="grid grid-cols-4 gap-2">
                   {Array.from({ length: 4 }).map((_, i) => (
                     <div key={i} className="aspect-square bg-slate-900/70 rounded-lg border border-slate-800/60 animate-pulse" />
@@ -1353,11 +1449,22 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                   <p className="text-sm">Upload some content to see it here</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-4 gap-2">
+                <div
+                  className={cn(
+                    'gap-2',
+                    'md:grid md:grid-cols-4',
+                    isMobile
+                      ? 'flex snap-x snap-mandatory overflow-x-auto -mx-1 px-1 pb-2'
+                      : 'grid grid-cols-4'
+                  )}
+                >
                   {galleryItems.map((item) => (
                     <div
                       key={item.id}
-                      className="aspect-square bg-slate-900/70 rounded-lg border border-slate-800/60 overflow-hidden"
+                      className={cn(
+                        'aspect-square bg-slate-900/70 rounded-lg border border-slate-800/60 overflow-hidden',
+                        isMobile ? 'min-w-[120px] snap-start' : ''
+                      )}
                     >
                       <img
                         src={item.signedUrl ?? item.url}
@@ -1369,7 +1476,8 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                   ))}
                 </div>
               )}
-              <Button 
+              <Button
+                size={recommendedButtonSize}
                 className="w-full mt-4 bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/30 transition-colors hover:from-purple-500/90 hover:to-indigo-500/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
                 onClick={() => setLocation('/gallery')}
               >
@@ -1380,18 +1488,24 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
           </Card>
 
           {/* Scheduled Posts */}
-          <Card className="bg-slate-950/60 border-slate-800/60 backdrop-blur">
+          <Card
+            className={cn(
+              'bg-slate-950/60 border-slate-800/60 backdrop-blur',
+              mobileCardSnapClass,
+              isMobile ? 'min-w-[280px]' : ''
+            )}
+          >
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-white">Scheduled Posts</CardTitle>
-                <Badge className="bg-orange-500 text-white">2 PENDING</Badge>
+                <Badge className={cn('bg-orange-500 text-white', isMobile ? mobileBadgeClasses : 'px-3 py-1 text-xs')}>2 PENDING</Badge>
               </div>
               <CardDescription className="text-slate-300">
                 Upcoming content
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className={cn(isMobile ? recommendedSpacing : 'space-y-3')}>
                 <div className="flex items-center justify-between p-3 bg-slate-900/70 rounded-lg border border-slate-800/60">
                   <div className="flex items-center gap-3">
                     <Clock className="h-5 w-5 text-purple-400" />
@@ -1412,6 +1526,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                 </div>
               </div>
               <Button
+                size={recommendedButtonSize}
                 className="w-full mt-4 bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/30 transition-colors hover:from-purple-500/90 hover:to-indigo-500/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
                 onClick={handleManageSchedule}
                 disabled={isNavigatingToScheduler}
