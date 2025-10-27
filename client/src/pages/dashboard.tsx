@@ -147,10 +147,6 @@ export default function Dashboard() {
     setIsGuestMode(guest === 'true' || !isAuthenticated);
   }, [location, isAuthenticated, toast, refetch]);
 
-  if (isLoading) {
-    return <DashboardLoading />;
-  }
-
   // Determine admin status and user tier
   const isAdmin = isAdminUser(user);
   const userTier = resolveUserTier(user);
@@ -173,14 +169,16 @@ export default function Dashboard() {
       }
     : undefined;
 
-  return (
-    <DashboardErrorBoundary>
-      <ModernDashboard
-        user={sanitizedUser}
-        userTier={userTier}
-        isAdmin={isAdmin}
-        isRedditConnected={isRedditConnected}
-      />
-    </DashboardErrorBoundary>
+  const content = isLoading ? (
+    <DashboardLoading />
+  ) : (
+    <ModernDashboard
+      user={sanitizedUser}
+      userTier={userTier}
+      isAdmin={isAdmin}
+      isRedditConnected={isRedditConnected}
+    />
   );
+
+  return <DashboardErrorBoundary>{content}</DashboardErrorBoundary>;
 }

@@ -188,6 +188,82 @@ function formatChartDateLabel(value: string): string {
   return parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+interface RedditRateLimitPayload {
+  limit: number;
+  remaining: number;
+  resetAt: string;
+}
+
+interface RedditRateLimitState {
+  blocked: boolean;
+  rateLimit: RedditRateLimitPayload | null;
+  error?: string;
+}
+
+interface DashboardWorkspaceProps {
+  commandBar: React.ReactNode;
+  leftPane: React.ReactNode;
+  rightPane: React.ReactNode;
+}
+
+interface RedditRiskApiResponse {
+  success?: boolean;
+  rateLimit?: RedditRateLimitPayload | null;
+  error?: string;
+}
+
+function formatResetDuration(resetAt: string | null | undefined): string {
+  if (!resetAt) {
+    return 'Unknown';
+  }
+
+  const resetDate = new Date(resetAt);
+  if (Number.isNaN(resetDate.getTime())) {
+    return 'Unknown';
+  }
+
+  const diffMs = resetDate.getTime() - Date.now();
+
+  if (diffMs <= 0) {
+    return 'Ready';
+  }
+
+  const totalMinutes = Math.round(diffMs / 60000);
+  if (totalMinutes <= 0) {
+    return 'Under 1m';
+  }
+
+  if (totalMinutes < 60) {
+    return `${totalMinutes}m`;
+  }
+
+  const totalHours = Math.floor(totalMinutes / 60);
+  const remainingMinutes = totalMinutes % 60;
+
+  if (totalHours < 24) {
+    return remainingMinutes > 0 ? `${totalHours}h ${remainingMinutes}m` : `${totalHours}h`;
+  }
+
+  const totalDays = Math.floor(totalHours / 24);
+  const remainingHours = totalHours % 24;
+
+  return remainingHours > 0 ? `${totalDays}d ${remainingHours}h` : `${totalDays}d`;
+}
+
+function DashboardWorkspace({ commandBar, leftPane, rightPane }: DashboardWorkspaceProps) {
+  return (
+    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6">
+      <section className="rounded-3xl border border-white/5 bg-slate-900/70 p-6">
+        {commandBar}
+      </section>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(360px,420px)_1fr]">
+        <div className="space-y-6">{leftPane}</div>
+        <div className="space-y-6">{rightPane}</div>
+      </div>
+    </div>
+  );
+}
+
 function readStoredProgress(): OnboardingProgress {
   if (typeof window === 'undefined') {
     return onboardingDefaults;
@@ -250,6 +326,8 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     ? 'Review platform performance and respond to creator needs.'
     : 'What would you like to do today?';
 
+  const tierLabel = `${resolvedTier.charAt(0).toUpperCase()}${resolvedTier.slice(1)}`;
+
   const {
     data: statsData,
     isLoading: statsLoading,
@@ -275,6 +353,45 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
   } = useQuery<CatboxUploadStatsResponse>({
     queryKey: ['/api/catbox/stats'],
     enabled: Boolean(resolvedUser?.id),
+  });
+
+  const {
+    data: rateLimitState,
+    isLoading: rateLimitLoading,
+  } = useQuery<RedditRateLimitState>({
+    queryKey: ['/api/reddit/risk'],
+    enabled: Boolean(resolvedUser?.id),
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+    queryFn: async () => {
+      try {
+        const response = await apiRequest('GET', '/api/reddit/risk');
+        const payload = (await response.json()) as RedditRiskApiResponse;
+
+        if (!response.ok || payload.success === false) {
+          const errorMessage = payload.error ?? `Unable to retrieve rate limit (${response.status})`;
+          return {
+            blocked: false,
+            rateLimit: payload.rateLimit ?? null,
+            error: errorMessage,
+          };
+        }
+
+        const rateLimit = payload.rateLimit ?? null;
+
+        return {
+          blocked: Boolean(rateLimit && rateLimit.remaining <= 0),
+          rateLimit,
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error retrieving rate limit';
+        return {
+          blocked: false,
+          rateLimit: null,
+          error: message,
+        };
+      }
+    },
   });
 
   // Sync onboarding progress with props and API data
@@ -671,14 +788,14 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     switch (currentStage) {
       case 'connect-reddit':
         return (
-          <Card className="bg-gradient-to-r from-orange-500 to-red-500 border-0 mb-6">
+          <Card className="border-0 bg-gradient-to-r from-orange-500 to-red-500">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/20">
                   <FaReddit className="h-7 w-7 text-white" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold text-white mb-1">
+                  <h3 className="mb-1 text-xl font-bold text-white">
                     Connect your Reddit account to sync communities
                   </h3>
                   <p className="text-slate-100/80">
@@ -698,14 +815,14 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
         );
       case 'find-communities':
         return (
-          <Card className="bg-gradient-to-r from-blue-500 to-purple-500 border-0 mb-6">
+          <Card className="border-0 bg-gradient-to-r from-blue-500 to-purple-500">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/20">
                   <Target className="h-7 w-7 text-white" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold text-white mb-1">
+                  <h3 className="mb-1 text-xl font-bold text-white">
                     Pick your top subreddits next
                   </h3>
                   <p className="text-slate-100/80">
@@ -724,14 +841,14 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
         );
       case 'first-post':
         return (
-          <Card className="bg-gradient-to-r from-green-500 to-teal-500 border-0 mb-6">
+          <Card className="border-0 bg-gradient-to-r from-green-500 to-teal-500">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/20">
                   <Upload className="h-7 w-7 text-white" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold text-white mb-1">
+                  <h3 className="mb-1 text-xl font-bold text-white">
                     Ship your first Reddit post
                   </h3>
                   <p className="text-slate-100/80">
@@ -750,14 +867,14 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
         );
       case 'advanced':
         return (
-          <Card className="bg-gradient-to-r from-purple-500 to-pink-500 border-0 mb-6">
+          <Card className="border-0 bg-gradient-to-r from-purple-500 to-pink-500">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/20">
                   <CheckCircle2 className="h-7 w-7 text-white" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold text-white mb-1">
+                  <h3 className="mb-1 text-xl font-bold text-white">
                     You're ready for deeper automation
                   </h3>
                   <p className="text-slate-100/80">
@@ -765,7 +882,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <Badge className="bg-white/20 text-white border-white/30">
+                  <Badge className="border-white/30 bg-white/20 text-white">
                     {Object.values(onboardingProgress).filter(Boolean).length}/3 Complete
                   </Badge>
                 </div>
@@ -777,6 +894,537 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
         return null;
     }
   };
+
+  const rateLimit = rateLimitState?.rateLimit ?? null;
+  const isCooldownBlocked = Boolean(rateLimitState?.blocked || (rateLimit && rateLimit.remaining <= 0));
+  const isCooldownWarning = Boolean(
+    !isCooldownBlocked &&
+      rateLimit &&
+      rateLimit.limit > 0 &&
+      rateLimit.remaining / rateLimit.limit <= 0.2,
+  );
+  const isCooldownError = Boolean(rateLimitState?.error);
+
+  const cooldownSummary = (() => {
+    if (isCooldownError) {
+      return 'Check settings';
+    }
+    if (!rateLimit) {
+      return 'Ready';
+    }
+    if (isCooldownBlocked) {
+      return `Reset in ${formatResetDuration(rateLimit.resetAt)}`;
+    }
+    return `${rateLimit.remaining}/${rateLimit.limit} left`;
+  })();
+
+  const cooldownBadgeClass = cn(
+    'border text-sm font-semibold uppercase tracking-wide',
+    isCooldownError
+      ? 'border-slate-500/60 bg-slate-800/70 text-slate-200'
+      : isCooldownBlocked
+      ? 'border-red-400/50 bg-red-500/10 text-red-100'
+      : isCooldownWarning
+      ? 'border-amber-400/40 bg-amber-500/10 text-amber-100'
+      : 'border-emerald-400/40 bg-emerald-500/10 text-emerald-100',
+  );
+
+  const commandBar = (
+    <>
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold text-white md:text-5xl">
+            {getGreeting()}, {displayName}! 👋
+          </h1>
+          <p className="text-lg text-slate-200 md:text-xl">{dashboardPrompt}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge
+            variant="outline"
+            className="border-purple-400/40 bg-purple-500/10 text-sm font-semibold uppercase tracking-wide text-purple-100"
+          >
+            Tier · {tierLabel}
+          </Badge>
+          <Badge variant="outline" className={cooldownBadgeClass}>
+            {rateLimitLoading ? (
+              <>
+                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                Checking cooldown…
+              </>
+            ) : (
+              <>Cooldown · {cooldownSummary}</>
+            )}
+          </Badge>
+        </div>
+      </div>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-wrap gap-3">
+          <Button
+            onClick={handleQuickAction}
+            className="bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white shadow-lg shadow-purple-500/30 transition-colors hover:from-purple-500/90 hover:to-fuchsia-500/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+          >
+            <Zap className="mr-2 h-4 w-4" />
+            Quick Action
+          </Button>
+          <Button
+            onClick={handleCommandCenter}
+            className="border border-white/70 bg-white/90 text-slate-900 transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 dark:border-slate-700/70 dark:bg-slate-900/80 dark:text-slate-100 dark:hover:bg-slate-900"
+          >
+            <Command className="mr-2 h-4 w-4" />
+            Command Center
+          </Button>
+          <Button
+            onClick={handleTaskFlow}
+            className="bg-slate-900/80 text-slate-100 transition-colors hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+          >
+            <ListChecks className="mr-2 h-4 w-4" />
+            Task Flow
+          </Button>
+        </div>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-slate-200 transition-colors hover:bg-slate-900/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+          >
+            <Bell className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-slate-200 transition-colors hover:bg-slate-900/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+          >
+            <Settings className="h-5 w-5" />
+          </Button>
+        </div>
+      </div>
+    </>
+  );
+
+  const heroCard = renderHeroCard();
+
+  const leftPane = (
+    <>
+      <ReferralWidget />
+      {heroCard}
+      {coreCards.length > 0 && (
+        <section className="space-y-4">
+          <h2 className="text-xl font-semibold text-white">Getting Started</h2>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {coreCards.map((card) => (
+              <Card
+                key={card.id}
+                className={cn(
+                  'bg-slate-950/60 border-slate-800/60 backdrop-blur cursor-pointer transition-all hover:scale-105',
+                  selectedCard === card.id && 'ring-2 ring-purple-500',
+                )}
+                onClick={() => handleCardClick(card)}
+                onMouseEnter={() => setSelectedCard(card.id)}
+                onMouseLeave={() => setSelectedCard(null)}
+                data-testid={`card-${card.id}`}
+              >
+                <CardContent className="p-6">
+                  <div
+                    className={cn(
+                      'mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br',
+                      card.color,
+                    )}
+                  >
+                    {card.icon}
+                  </div>
+                  <h3 className="mb-1 font-semibold text-white">{card.title}</h3>
+                  <p className="text-sm text-slate-300">{card.description}</p>
+                  {card.comingSoon && (
+                    <Badge className="mt-2" variant="outline">
+                      Coming Soon
+                    </Badge>
+                  )}
+                  {card.premium && !isPremium && (
+                    <Badge className="mt-2" variant="outline">
+                      Pro
+                    </Badge>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+      {growthCards.length > 0 && (
+        <section className="space-y-4">
+          <h2 className="text-xl font-semibold text-white">Content Creation</h2>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {growthCards.map((card) => (
+              <Card
+                key={card.id}
+                className={cn(
+                  'bg-slate-950/60 border-slate-800/60 backdrop-blur cursor-pointer transition-all hover:scale-105',
+                  selectedCard === card.id && 'ring-2 ring-purple-500',
+                )}
+                onClick={() => handleCardClick(card)}
+                onMouseEnter={() => setSelectedCard(card.id)}
+                onMouseLeave={() => setSelectedCard(null)}
+                data-testid={`card-${card.id}`}
+              >
+                <CardContent className="p-6">
+                  <div
+                    className={cn(
+                      'mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br',
+                      card.color,
+                    )}
+                  >
+                    {card.icon}
+                  </div>
+                  <h3 className="mb-1 font-semibold text-white">{card.title}</h3>
+                  <p className="text-sm text-slate-300">{card.description}</p>
+                  {card.comingSoon && (
+                    <Badge className="mt-2" variant="outline">
+                      Coming Soon
+                    </Badge>
+                  )}
+                  {card.premium && !isPremium && (
+                    <Badge className="mt-2" variant="outline">
+                      Pro
+                    </Badge>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+      {(secondaryCards.length > 0 || currentStage === 'advanced') && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-white">Advanced Tools</h2>
+            <Button
+              variant="ghost"
+              onClick={() => setShowMoreTools(!showMoreTools)}
+              className="text-slate-300 hover:text-white"
+              data-testid={`button-${showMoreTools ? 'hide' : 'show'}-more-tools`}
+            >
+              {showMoreTools ? 'Hide Tools' : 'Show More Tools'}
+              <ChevronRight className={cn('ml-2 h-4 w-4 transition-transform', showMoreTools && 'rotate-90')} />
+            </Button>
+          </div>
+          {showMoreTools && (
+            <div>
+              {hasTierAccess(resolvedTier, 'starter', isAdminUser) ? (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {secondaryCards.map((card) => (
+                    <Card
+                      key={card.id}
+                      className={cn(
+                        'bg-slate-950/60 border-slate-800/60 backdrop-blur cursor-pointer transition-all hover:scale-105',
+                        selectedCard === card.id && 'ring-2 ring-purple-500',
+                      )}
+                      onClick={() => handleCardClick(card)}
+                      onMouseEnter={() => setSelectedCard(card.id)}
+                      onMouseLeave={() => setSelectedCard(null)}
+                      data-testid={`card-${card.id}`}
+                    >
+                      <CardContent className="p-6">
+                        <div
+                          className={cn(
+                            'mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br',
+                            card.color,
+                          )}
+                        >
+                          {card.icon}
+                        </div>
+                        <h3 className="mb-1 font-semibold text-white">{card.title}</h3>
+                        <p className="text-sm text-slate-300">{card.description}</p>
+                        {card.comingSoon && (
+                          <Badge className="mt-2" variant="outline">
+                            Coming Soon
+                          </Badge>
+                        )}
+                        {card.premium && !isPremium && (
+                          <Badge className="mt-2" variant="outline">
+                            Pro
+                          </Badge>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card className="border-slate-800/60 bg-slate-950/60 backdrop-blur">
+                  <CardContent className="p-6 text-center">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-yellow-500 to-orange-500">
+                      <Gift className="h-8 w-8 text-white" />
+                    </div>
+                    <h3 className="mb-2 font-semibold text-white">Upgrade to Unlock</h3>
+                    <p className="mb-4 text-sm text-slate-300">
+                      Upgrade your plan to unlock analytics, takedown scanning, and finance workflows
+                    </p>
+                    <Button
+                      onClick={() => {
+                        toast({
+                          title: 'Upgrade Available',
+                          description: 'Contact support to upgrade your plan.',
+                        });
+                      }}
+                      className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white"
+                    >
+                      Upgrade Plan
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </section>
+      )}
+      {currentStage !== 'connect-reddit' && (
+        <section className="space-y-3">
+          <h3 className="text-lg font-semibold text-white">Your Progress</h3>
+          <div className="flex flex-wrap gap-3">
+            <Badge
+              className={cn(
+                'flex items-center gap-2 px-3 py-1',
+                onboardingProgress.connectedReddit
+                  ? 'border-green-500/30 bg-green-500/20 text-green-400'
+                  : 'border-slate-600/40 bg-slate-700/30 text-slate-300',
+              )}
+            >
+              {onboardingProgress.connectedReddit ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : (
+                <Clock className="h-4 w-4" />
+              )}
+              Connect Reddit
+            </Badge>
+            <Badge
+              className={cn(
+                'flex items-center gap-2 px-3 py-1',
+                onboardingProgress.selectedCommunities
+                  ? 'border-green-500/30 bg-green-500/20 text-green-400'
+                  : 'border-slate-600/40 bg-slate-700/30 text-slate-300',
+              )}
+            >
+              {onboardingProgress.selectedCommunities ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : (
+                <Clock className="h-4 w-4" />
+              )}
+              Pick Communities
+            </Badge>
+            <Badge
+              className={cn(
+                'flex items-center gap-2 px-3 py-1',
+                onboardingProgress.createdFirstPost
+                  ? 'border-green-500/30 bg-green-500/20 text-green-400'
+                  : 'border-slate-600/40 bg-slate-700/30 text-slate-300',
+              )}
+            >
+              {onboardingProgress.createdFirstPost ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : (
+                <Clock className="h-4 w-4" />
+              )}
+              Ship First Post
+            </Badge>
+          </div>
+        </section>
+      )}
+    </>
+  );
+
+  const rightPane = (
+    <>
+      <section className="rounded-3xl border border-white/5 bg-slate-900/70 p-6">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {statsCards.map((stat) => (
+            <Card key={stat.label} className="bg-slate-950/60 border-slate-800/60 backdrop-blur">
+              <CardContent className="p-6">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className={stat.color}>{stat.icon}</span>
+                  <span className="text-2xl font-bold text-white">{stat.value}</span>
+                </div>
+                <p className="text-sm text-slate-300">{stat.label}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+      <Card className="border-slate-800/60 bg-slate-950/60 backdrop-blur">
+        <CardHeader>
+          <CardTitle className="text-white">Catbox Upload Insights</CardTitle>
+          <CardDescription className="text-slate-300">
+            Track your recent upload volume and performance
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {catboxStatsLoading ? (
+            <div className="h-48 w-full animate-pulse rounded-lg bg-slate-900/70" />
+          ) : catboxStats && catboxStats.totalUploads > 0 ? (
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+              <div className="h-72 lg:col-span-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={catboxChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis dataKey="dateLabel" stroke="#9CA3AF" />
+                    <YAxis stroke="#9CA3AF" allowDecimals={false} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#1F2937',
+                        border: '1px solid #4B5563',
+                        borderRadius: '8px',
+                        color: '#F9FAFB',
+                      }}
+                      formatter={(value: number, name: string) => {
+                        if (name === 'uploads') {
+                          return [value, 'Uploads'];
+                        }
+                        if (name === 'totalSize') {
+                          return [formatBytes(value as number), 'Data'];
+                        }
+                        if (name === 'successRate') {
+                          return [`${(value as number).toFixed(1)}%`, 'Success'];
+                        }
+                        return [value, name];
+                      }}
+                    />
+                    <Area type="monotone" dataKey="uploads" stroke="#A855F7" fill="#A855F7" fillOpacity={0.25} name="uploads" />
+                    <Area type="monotone" dataKey="successRate" stroke="#22D3EE" fill="#22D3EE" fillOpacity={0.2} name="successRate" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="space-y-4">
+                <div className="rounded-lg border border-slate-800/60 bg-slate-900/80 p-4">
+                  <p className="text-sm text-slate-300">Total uploads</p>
+                  <p className="text-2xl font-bold text-white">{formatNumber(catboxTotalUploads)}</p>
+                </div>
+                <div className="rounded-lg border border-slate-800/60 bg-slate-900/80 p-4">
+                  <p className="text-sm text-slate-300">Success rate</p>
+                  <p className="text-2xl font-bold text-white">{formatPercentage(catboxStats.successRate)}</p>
+                </div>
+                <div className="rounded-lg border border-slate-800/60 bg-slate-900/80 p-4">
+                  <p className="text-sm text-slate-300">Data moved</p>
+                  <p className="text-2xl font-bold text-white">{formatBytes(catboxStats.totalSize)}</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-start gap-4 rounded-lg border border-dashed border-slate-800/60 bg-slate-950/70 p-6">
+              <div>
+                <h4 className="text-lg font-semibold text-white">Start tracking your Catbox uploads</h4>
+                <p className="text-sm text-slate-300">
+                  Upload media through ThottoPilot to unlock analytics and performance trends.
+                </p>
+              </div>
+              <Button
+                className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/30 transition-colors hover:from-purple-500/90 hover:to-indigo-500/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                onClick={() => setLocation('/settings')}
+              >
+                Configure Catbox
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <Card className="border-slate-800/60 bg-slate-950/60 backdrop-blur">
+          <CardHeader>
+            <CardTitle className="text-white">Recent Gallery</CardTitle>
+            <CardDescription className="text-slate-300">
+              Your latest uploads
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {activityLoading ? (
+              <div className="grid grid-cols-4 gap-2">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="aspect-square rounded-lg border border-slate-800/60 bg-slate-900/70 animate-pulse" />
+                ))}
+              </div>
+            ) : showGalleryEmptyState ? (
+              <div className="py-8 text-center text-slate-300">
+                <ImageIcon className="mx-auto mb-2 h-12 w-12 opacity-50" />
+                <p>No recent media</p>
+                <p className="text-sm">Upload some content to see it here</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-4 gap-2">
+                {galleryItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="aspect-square overflow-hidden rounded-lg border border-slate-800/60 bg-slate-900/70"
+                  >
+                    <img
+                      src={item.signedUrl ?? item.url}
+                      alt={item.alt}
+                      className="h-full w-full object-cover"
+                      data-testid={`img-recent-media-${item.id}`}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+            <Button
+              className="mt-4 w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/30 transition-colors hover:from-purple-500/90 hover:to-indigo-500/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+              onClick={() => setLocation('/gallery')}
+            >
+              View All
+              <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
+          </CardContent>
+        </Card>
+        <Card className="border-slate-800/60 bg-slate-950/60 backdrop-blur">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-white">Scheduled Posts</CardTitle>
+              <Badge className="bg-orange-500 text-white">2 PENDING</Badge>
+            </div>
+            <CardDescription className="text-slate-300">
+              Upcoming content
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between rounded-lg border border-slate-800/60 bg-slate-900/70 p-3">
+                <div className="flex items-center gap-3">
+                  <Clock className="h-5 w-5 text-purple-400" />
+                  <div>
+                    <p className="text-sm font-medium text-white">Morning Selfie</p>
+                    <p className="text-xs text-slate-300">r/SelfieWorld • In 2 hours</p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-slate-800/60 bg-slate-900/70 p-3">
+                <div className="flex items-center gap-3">
+                  <Clock className="h-5 w-5 text-purple-400" />
+                  <div>
+                    <p className="text-sm font-medium text-white">Sunset Vibes</p>
+                    <p className="text-xs text-slate-300">r/FreeKarma4U • In 6 hours</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <Button
+              className="mt-4 w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/30 transition-colors hover:from-purple-500/90 hover:to-indigo-500/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+              onClick={handleManageSchedule}
+              disabled={isNavigatingToScheduler}
+            >
+              {isNavigatingToScheduler ? (
+                <>
+                  Opening Scheduler
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                </>
+              ) : (
+                <>
+                  Manage Schedule
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    </>
+  );
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
@@ -800,9 +1448,9 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-                <img 
-                  src="/logo.png" 
-                  alt="ThottoPilot" 
+                <img
+                  src="/logo.png"
+                  alt="ThottoPilot"
                   className="w-8 h-8 rounded-lg"
                 />
               </div>
@@ -822,14 +1470,14 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
 
           {/* Navigation Items */}
           <nav className="space-y-2">
-            <button 
+            <button
               onClick={() => setLocation('/dashboard')}
               className={sidebarLinkClasses}
             >
               <Home className="h-5 w-5" />
               <span>Dashboard</span>
             </button>
-            <button 
+            <button
               onClick={() => setLocation('/reddit')}
               className={sidebarLinkClasses}
             >
@@ -837,49 +1485,49 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
               <span>Reddit Hub</span>
               <Badge className="ml-auto border border-purple-400/30 bg-purple-500/20 text-purple-100" variant="secondary">NEW</Badge>
             </button>
-            <button 
+            <button
               onClick={() => setLocation('/caption-generator')}
               className={sidebarLinkClasses}
             >
               <Brain className="h-5 w-5" />
               <span>Content Creator</span>
             </button>
-            <button 
+            <button
               onClick={() => setLocation('/imageshield')}
               className={sidebarLinkClasses}
             >
               <Shield className="h-5 w-5" />
               <span>ImageShield</span>
             </button>
-            <button 
+            <button
               onClick={() => setLocation('/gallery')}
               className={sidebarLinkClasses}
             >
               <ImageIcon className="h-5 w-5" />
               <span>Media Gallery</span>
             </button>
-            <button 
+            <button
               onClick={() => setLocation('/reddit/communities')}
               className={sidebarLinkClasses}
             >
               <Users className="h-5 w-5" />
               <span>Communities</span>
             </button>
-            <button 
+            <button
               onClick={() => setLocation('/tax-tracker')}
               className={sidebarLinkClasses}
             >
               <Calculator className="h-5 w-5" />
               <span>Tax Tracker</span>
             </button>
-            <button 
+            <button
               onClick={() => setLocation('/history')}
               className={sidebarLinkClasses}
             >
               <HistoryIcon className="h-5 w-5" />
               <span>History</span>
             </button>
-            <button 
+            <button
               onClick={() => setLocation('/settings')}
               className={sidebarLinkClasses}
             >
@@ -892,545 +1540,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
 
       {/* Main Content */}
       <div className="relative z-10 p-6 md:p-8">
-        {/* Header with Action Buttons */}
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-            <div className="flex gap-3">
-              <Button
-                onClick={handleQuickAction}
-                className="bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white shadow-lg shadow-purple-500/30 transition-colors hover:from-purple-500/90 hover:to-fuchsia-500/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-              >
-                <Zap className="h-4 w-4 mr-2" />
-                Quick Action
-              </Button>
-              <Button
-                onClick={handleCommandCenter}
-                className="border border-white/70 bg-white/90 text-slate-900 transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 dark:border-slate-700/70 dark:bg-slate-900/80 dark:text-slate-100 dark:hover:bg-slate-900"
-              >
-                <Command className="h-4 w-4 mr-2" />
-                Command Center
-              </Button>
-              <Button
-                onClick={handleTaskFlow}
-                className="bg-slate-900/80 text-slate-100 transition-colors hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-              >
-                <ListChecks className="h-4 w-4 mr-2" />
-                Task Flow
-              </Button>
-            </div>
-            <div className="flex gap-3">
-              <ThemeToggle />
-              <Button variant="ghost" size="icon" className="text-slate-200 transition-colors hover:bg-slate-900/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
-                <Bell className="h-5 w-5" />
-              </Button>
-              <Button variant="ghost" size="icon" className="text-slate-200 transition-colors hover:bg-slate-900/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
-                <Settings className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
-            {getGreeting()}, {displayName}! 👋
-          </h1>
-          <p className="text-xl text-slate-200">
-            {dashboardPrompt}
-          </p>
-        </div>
-
-        {/* Stats Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {statsCards.map((stat) => (
-            <Card key={stat.label} className="bg-slate-950/60 border-slate-800/60 backdrop-blur">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <span className={stat.color}>{stat.icon}</span>
-                  <span className="text-2xl font-bold text-white">{stat.value}</span>
-                </div>
-                <p className="text-slate-300 text-sm">{stat.label}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Catbox Analytics */}
-        <Card className="bg-slate-950/60 border-slate-800/60 backdrop-blur mb-8">
-          <CardHeader>
-            <CardTitle className="text-white">Catbox Upload Insights</CardTitle>
-            <CardDescription className="text-slate-300">
-              Track your recent upload volume and performance
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {catboxStatsLoading ? (
-              <div className="h-48 w-full animate-pulse rounded-lg bg-slate-900/70" />
-            ) : catboxStats && catboxStats.totalUploads > 0 ? (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={catboxChartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                      <XAxis dataKey="dateLabel" stroke="#9CA3AF" />
-                      <YAxis stroke="#9CA3AF" allowDecimals={false} />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: '#1F2937',
-                          border: '1px solid #4B5563',
-                          borderRadius: '8px',
-                          color: '#F9FAFB',
-                        }}
-                        formatter={(value: number, name: string) => {
-                          if (name === 'uploads') {
-                            return [value, 'Uploads'];
-                          }
-                          if (name === 'totalSize') {
-                            return [formatBytes(value as number), 'Data'];
-                          }
-                          if (name === 'successRate') {
-                            return [`${(value as number).toFixed(1)}%`, 'Success'];
-                          }
-                          return [value, name];
-                        }}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="uploads"
-                        stroke="#A855F7"
-                        fill="#A855F7"
-                        fillOpacity={0.25}
-                        name="uploads"
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="totalSize"
-                        stroke="#38BDF8"
-                        fill="#38BDF8"
-                        fillOpacity={0.15}
-                        name="totalSize"
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="successRate"
-                        stroke="#F97316"
-                        fill="#F97316"
-                        fillOpacity={0}
-                        name="successRate"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-sm text-slate-300">Total attempts</p>
-                      <p className="text-lg font-semibold text-white">
-                        {formatNumber(catboxTotalUploads)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-300">Successful uploads</p>
-                      <p className="text-lg font-semibold text-white">
-                        {formatNumber(catboxSuccessfulUploads)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-300">Failed attempts</p>
-                      <p className="text-lg font-semibold text-white">
-                        {formatNumber(catboxFailedUploads)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-300">Success rate</p>
-                      <p className="text-lg font-semibold text-white">
-                        {(catboxStats?.successRate ?? 0).toFixed(1)}%
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-300">Active streak</p>
-                      <p className="text-lg font-semibold text-white">
-                        {catboxStats?.streakDays ?? 0} {catboxStats && catboxStats.streakDays === 1 ? 'day' : 'days'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-300">Average upload time</p>
-                      <p className="text-lg font-semibold text-white">
-                        {formatDurationMs(catboxStats?.averageDuration ?? 0)}
-                      </p>
-                    </div>
-                    <div className="md:col-span-2 lg:col-span-3">
-                      <p className="text-sm text-slate-300">Data transferred</p>
-                      <p className="text-lg font-semibold text-white">
-                        {formatBytes(catboxStats?.totalSize ?? 0)}
-                      </p>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="mb-2 text-sm font-semibold text-slate-200">Recent uploads</p>
-                    <div className="space-y-2">
-                      {catboxRecentUploads.slice(0, 3).map((upload) => (
-                        <div key={upload.id} className="flex items-center justify-between rounded-md bg-slate-900/70 px-3 py-2">
-                          <div className="mr-3 min-w-0">
-                            <p className="truncate text-sm text-slate-100">
-                              {upload.filename ?? upload.url}
-                            </p>
-                            <p className="text-xs text-slate-300">
-                              {upload.fileSize ? formatBytes(upload.fileSize) : 'Size unknown'}
-                            </p>
-                          </div>
-                          <div className="text-right text-xs text-slate-300">
-                            {upload.uploadedAt ? formatChartDateLabel(upload.uploadedAt) : '—'}
-                          </div>
-                        </div>
-                      ))}
-                      {catboxStats.recentUploads.length === 0 && (
-                        <p className="text-sm text-slate-300">Uploads will appear here after your next Catbox transfer.</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-start gap-4 rounded-lg border border-dashed border-slate-800/60 bg-slate-950/70 p-6">
-                <div>
-                  <h4 className="text-lg font-semibold text-white">Start tracking your Catbox uploads</h4>
-                  <p className="text-sm text-slate-300">
-                    Upload media through ThottoPilot to unlock analytics and performance trends.
-                  </p>
-                </div>
-                <Button
-                  className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/30 transition-colors hover:from-purple-500/90 hover:to-indigo-500/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-                  onClick={() => setLocation('/settings')}
-                >
-                  Configure Catbox
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Referral Widget - Prominent placement for all users */}
-        <div className="mb-8">
-          <ReferralWidget />
-        </div>
-
-        {/* Hero Onboarding Card */}
-        {renderHeroCard()}
-
-        {/* Core Action Cards */}
-        {coreCards.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-white mb-4">Getting Started</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {coreCards.map((card) => (
-                <Card
-                  key={card.id}
-                  className={cn(
-                    "bg-slate-950/60 border-slate-800/60 backdrop-blur cursor-pointer transition-all hover:scale-105",
-                    selectedCard === card.id && "ring-2 ring-purple-500"
-                  )}
-                  onClick={() => handleCardClick(card)}
-                  onMouseEnter={() => setSelectedCard(card.id)}
-                  onMouseLeave={() => setSelectedCard(null)}
-                  data-testid={`card-${card.id}`}
-                >
-                  <CardContent className="p-6">
-                    <div className={cn(
-                      "w-12 h-12 rounded-lg bg-gradient-to-br flex items-center justify-center mb-4",
-                      card.color
-                    )}>
-                      {card.icon}
-                    </div>
-                    <h3 className="text-white font-semibold mb-1">{card.title}</h3>
-                    <p className="text-slate-300 text-sm">{card.description}</p>
-                    {card.comingSoon && (
-                      <Badge className="mt-2" variant="outline">Coming Soon</Badge>
-                    )}
-                    {card.premium && !isPremium && (
-                      <Badge className="mt-2" variant="outline">Pro</Badge>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Growth Action Cards */}
-        {growthCards.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-white mb-4">Content Creation</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {growthCards.map((card) => (
-                <Card
-                  key={card.id}
-                  className={cn(
-                    "bg-slate-950/60 border-slate-800/60 backdrop-blur cursor-pointer transition-all hover:scale-105",
-                    selectedCard === card.id && "ring-2 ring-purple-500"
-                  )}
-                  onClick={() => handleCardClick(card)}
-                  onMouseEnter={() => setSelectedCard(card.id)}
-                  onMouseLeave={() => setSelectedCard(null)}
-                  data-testid={`card-${card.id}`}
-                >
-                  <CardContent className="p-6">
-                    <div className={cn(
-                      "w-12 h-12 rounded-lg bg-gradient-to-br flex items-center justify-center mb-4",
-                      card.color
-                    )}>
-                      {card.icon}
-                    </div>
-                    <h3 className="text-white font-semibold mb-1">{card.title}</h3>
-                    <p className="text-slate-300 text-sm">{card.description}</p>
-                    {card.comingSoon && (
-                      <Badge className="mt-2" variant="outline">Coming Soon</Badge>
-                    )}
-                    {card.premium && !isPremium && (
-                      <Badge className="mt-2" variant="outline">Pro</Badge>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Advanced Tools Expander */}
-        {(secondaryCards.length > 0 || currentStage === 'advanced') && (
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-white">Advanced Tools</h2>
-              <Button
-                variant="ghost"
-                onClick={() => setShowMoreTools(!showMoreTools)}
-                className="text-slate-300 hover:text-white"
-                data-testid={`button-${showMoreTools ? 'hide' : 'show'}-more-tools`}
-              >
-                {showMoreTools ? 'Hide Tools' : 'Show More Tools'}
-                <ChevronRight className={cn("h-4 w-4 ml-2 transition-transform", showMoreTools && "rotate-90")} />
-              </Button>
-            </div>
-            {showMoreTools && (
-              <div>
-                {hasTierAccess(resolvedTier, 'starter', isAdminUser) ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {secondaryCards.map((card) => (
-                      <Card
-                        key={card.id}
-                        className={cn(
-                          "bg-slate-950/60 border-slate-800/60 backdrop-blur cursor-pointer transition-all hover:scale-105",
-                          selectedCard === card.id && "ring-2 ring-purple-500"
-                        )}
-                        onClick={() => handleCardClick(card)}
-                        onMouseEnter={() => setSelectedCard(card.id)}
-                        onMouseLeave={() => setSelectedCard(null)}
-                        data-testid={`card-${card.id}`}
-                      >
-                        <CardContent className="p-6">
-                          <div className={cn(
-                            "w-12 h-12 rounded-lg bg-gradient-to-br flex items-center justify-center mb-4",
-                            card.color
-                          )}>
-                            {card.icon}
-                          </div>
-                          <h3 className="text-white font-semibold mb-1">{card.title}</h3>
-                          <p className="text-slate-300 text-sm">{card.description}</p>
-                          {card.comingSoon && (
-                            <Badge className="mt-2" variant="outline">Coming Soon</Badge>
-                          )}
-                          {card.premium && !isPremium && (
-                            <Badge className="mt-2" variant="outline">Pro</Badge>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <Card className="bg-slate-950/60 border-slate-800/60 backdrop-blur">
-                    <CardContent className="p-6 text-center">
-                      <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center mx-auto mb-4">
-                        <Gift className="h-8 w-8 text-white" />
-                      </div>
-                      <h3 className="text-white font-semibold mb-2">Upgrade to Unlock</h3>
-                      <p className="text-slate-300 text-sm mb-4">
-                        Upgrade your plan to unlock analytics, takedown scanning, and finance workflows
-                      </p>
-                      <Button
-                        onClick={() => {
-                          toast({
-                            title: "Upgrade Available",
-                            description: "Contact support to upgrade your plan.",
-                          });
-                        }}
-                        className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white"
-                      >
-                        Upgrade Plan
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Progress Pills */}
-        {currentStage !== 'connect-reddit' && (
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-white mb-3">Your Progress</h3>
-            <div className="flex gap-3 flex-wrap">
-              <Badge
-                className={cn(
-                  "flex items-center gap-2 px-3 py-1",
-                  onboardingProgress.connectedReddit
-                    ? "bg-green-500/20 text-green-400 border-green-500/30"
-                    : "bg-slate-700/30 text-slate-300 border-slate-600/40"
-                )}
-              >
-                {onboardingProgress.connectedReddit ? (
-                  <CheckCircle2 className="h-4 w-4" />
-                ) : (
-                  <Clock className="h-4 w-4" />
-                )}
-                Connect Reddit
-              </Badge>
-              <Badge
-                className={cn(
-                  "flex items-center gap-2 px-3 py-1",
-                  onboardingProgress.selectedCommunities
-                    ? "bg-green-500/20 text-green-400 border-green-500/30"
-                    : "bg-slate-700/30 text-slate-300 border-slate-600/40"
-                )}
-              >
-                {onboardingProgress.selectedCommunities ? (
-                  <CheckCircle2 className="h-4 w-4" />
-                ) : (
-                  <Clock className="h-4 w-4" />
-                )}
-                Pick Communities
-              </Badge>
-              <Badge
-                className={cn(
-                  "flex items-center gap-2 px-3 py-1",
-                  onboardingProgress.createdFirstPost
-                    ? "bg-green-500/20 text-green-400 border-green-500/30"
-                    : "bg-slate-700/30 text-slate-300 border-slate-600/40"
-                )}
-              >
-                {onboardingProgress.createdFirstPost ? (
-                  <CheckCircle2 className="h-4 w-4" />
-                ) : (
-                  <Clock className="h-4 w-4" />
-                )}
-                First Post
-              </Badge>
-            </div>
-          </div>
-        )}
-
-        {/* Bottom Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Gallery */}
-          <Card className="bg-slate-950/60 border-slate-800/60 backdrop-blur">
-            <CardHeader>
-              <CardTitle className="text-white">Recent Gallery</CardTitle>
-              <CardDescription className="text-slate-300">
-                Your latest uploads
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {activityLoading ? (
-                <div className="grid grid-cols-4 gap-2">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="aspect-square bg-slate-900/70 rounded-lg border border-slate-800/60 animate-pulse" />
-                  ))}
-                </div>
-              ) : showGalleryEmptyState ? (
-                <div className="text-center py-8 text-slate-300">
-                  <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>No recent media</p>
-                  <p className="text-sm">Upload some content to see it here</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-4 gap-2">
-                  {galleryItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="aspect-square bg-slate-900/70 rounded-lg border border-slate-800/60 overflow-hidden"
-                    >
-                      <img
-                        src={item.signedUrl ?? item.url}
-                        alt={item.alt}
-                        className="w-full h-full object-cover"
-                        data-testid={`img-recent-media-${item.id}`}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-              <Button 
-                className="w-full mt-4 bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/30 transition-colors hover:from-purple-500/90 hover:to-indigo-500/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-                onClick={() => setLocation('/gallery')}
-              >
-                View All
-                <ChevronRight className="h-4 w-4 ml-2" />
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Scheduled Posts */}
-          <Card className="bg-slate-950/60 border-slate-800/60 backdrop-blur">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-white">Scheduled Posts</CardTitle>
-                <Badge className="bg-orange-500 text-white">2 PENDING</Badge>
-              </div>
-              <CardDescription className="text-slate-300">
-                Upcoming content
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-slate-900/70 rounded-lg border border-slate-800/60">
-                  <div className="flex items-center gap-3">
-                    <Clock className="h-5 w-5 text-purple-400" />
-                    <div>
-                      <p className="text-white text-sm font-medium">Morning Selfie</p>
-                      <p className="text-slate-300 text-xs">r/SelfieWorld • In 2 hours</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-slate-900/70 rounded-lg border border-slate-800/60">
-                  <div className="flex items-center gap-3">
-                    <Clock className="h-5 w-5 text-purple-400" />
-                    <div>
-                      <p className="text-white text-sm font-medium">Sunset Vibes</p>
-                      <p className="text-slate-300 text-xs">r/FreeKarma4U • In 6 hours</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <Button
-                className="w-full mt-4 bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/30 transition-colors hover:from-purple-500/90 hover:to-indigo-500/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-                onClick={handleManageSchedule}
-                disabled={isNavigatingToScheduler}
-              >
-                {isNavigatingToScheduler ? (
-                  <>
-                    Opening Scheduler
-                    <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-                  </>
-                ) : (
-                  <>
-                    Manage Schedule
-                    <ChevronRight className="h-4 w-4 ml-2" />
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+        <DashboardWorkspace commandBar={commandBar} leftPane={leftPane} rightPane={rightPane} />
       </div>
 
       {/* Quick Start Modal */}
@@ -1439,7 +1549,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
         onOpenChange={setQuickStartOpen}
         initialStep={quickStartStep}
         isRedditConnected={isRedditConnected}
-        onNavigate={() => setLocation("/reddit")}
+        onNavigate={() => setLocation('/reddit')}
         onConnected={handleQuickStartConnected}
         onSelectedCommunity={handleQuickStartSelectedCommunity}
         onPosted={handleQuickStartPosted}
