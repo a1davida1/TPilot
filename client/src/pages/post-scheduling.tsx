@@ -3,7 +3,7 @@
  * Complete workflow: Upload → Select → Caption → Protect → Schedule
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Calendar, 
@@ -15,11 +15,12 @@ import {
   Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { StickyRail } from '@/components/ui/sticky-rail';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest } from '@/lib/queryClient';
@@ -54,10 +55,20 @@ export default function PostSchedulingPage() {
   // Workflow states
   const [currentStep, setCurrentStep] = useState<'upload' | 'select' | 'caption' | 'protect' | 'schedule'>('upload');
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
-  const [selectedImages, setSelectedImages] = useState<UploadedImage[]>([]);
 
   // Scheduling form state
   const [nsfw, setNsfw] = useState(false);
+
+  const selectedImages = useMemo(() => uploadedImages.filter(img => img.selected), [uploadedImages]);
+
+  const selectedCount = selectedImages.length;
+  const captionedCount = useMemo(() => selectedImages.filter(img => (img.caption ?? '').trim().length > 0).length, [selectedImages]);
+  const protectedCount = useMemo(() => selectedImages.filter(img => img.protected).length, [selectedImages]);
+  const readyToScheduleCount = useMemo(() => selectedImages.filter(img => img.protected && (img.caption ?? '').trim().length > 0).length, [selectedImages]);
+  const uploadsPendingProtection = selectedImages.filter(img => !img.protected).length;
+
+  const queueSaturation = selectedCount > 0 ? Math.round((readyToScheduleCount / selectedCount) * 100) : 0;
+  const missingCaptions = selectedCount - captionedCount;
 
   // Handle image upload
   const handleImageUpload = (result: { imageUrl: string; deleteHash?: string }) => {
@@ -161,7 +172,6 @@ export default function PostSchedulingPage() {
       });
       // Reset workflow
       setUploadedImages([]);
-      setSelectedImages([]);
       setCurrentStep('upload');
     },
     onError: () => {
@@ -199,7 +209,6 @@ export default function PostSchedulingPage() {
           });
           return;
         }
-        setSelectedImages(selected);
         setCurrentStep('caption');
         generateCaptions.mutate(selected);
         break;
@@ -226,6 +235,89 @@ export default function PostSchedulingPage() {
 
   const currentStepNumber = getStepNumber(currentStep);
 
+
+  const railContent = (
+  <>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Queue health</CardTitle>
+        <CardDescription>Monitor readiness before you schedule.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <dl className="space-y-3 text-sm">
+          <div className="flex items-center justify-between">
+            <dt className="text-muted-foreground">Uploads in pipeline</dt>
+            <dd className="font-semibold">{uploadedImages.length}</dd>
+          </div>
+          <div className="flex items-center justify-between">
+            <dt className="text-muted-foreground">Selected for scheduling</dt>
+            <dd className="font-semibold">{selectedCount}</dd>
+          </div>
+          <div className="flex items-center justify-between">
+            <dt className="text-muted-foreground">Captioned</dt>
+            <dd className="font-semibold">{captionedCount}</dd>
+          </div>
+          <div className="flex items-center justify-between">
+            <dt className="text-muted-foreground">Protected</dt>
+            <dd className="font-semibold">{protectedCount}</dd>
+          </div>
+          <div className="flex items-center justify-between">
+            <dt className="text-muted-foreground">Ready to schedule</dt>
+            <dd className="font-semibold">{readyToScheduleCount}</dd>
+          </div>
+        </dl>
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Scheduling readiness</CardTitle>
+        <CardDescription>Resolve blockers before deploying your queue.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm text-muted-foreground">
+        <div className="flex items-center justify-between">
+          <span>Queue saturation</span>
+          <span className="font-semibold text-foreground">{queueSaturation}%</span>
+        </div>
+        <div className="rounded-md border border-muted bg-background p-3">
+          <ul className="space-y-2">
+            <li>
+              {missingCaptions > 0
+                ? `${missingCaptions} selected image${missingCaptions === 1 ? '' : 's'} still need captions.`
+                : 'All selected images have captions.'}
+            </li>
+            <li>
+              {uploadsPendingProtection > 0
+                ? `${uploadsPendingProtection} upload${uploadsPendingProtection === 1 ? '' : 's'} awaiting ImageShield.`
+                : 'ImageShield protection is applied everywhere.'}
+            </li>
+            <li>
+              {readyToScheduleCount > 0
+                ? `${readyToScheduleCount} asset${readyToScheduleCount === 1 ? '' : 's'} can be scheduled immediately.`
+                : 'Complete captions and protection to unlock scheduling.'}
+            </li>
+          </ul>
+        </div>
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Reddit rule checklist</CardTitle>
+        <CardDescription>Keep every campaign compliant with subreddit mods.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ul className="space-y-2 text-sm text-muted-foreground">
+          <li>✅ Respect the 72-hour cooldown per subreddit before re-posting.</li>
+          <li>✅ Confirm required flairs and tagging before queueing content.</li>
+          <li>✅ Stage ImageShield-protected files to avoid duplicate hashing.</li>
+          <li>✅ Review subreddit-specific rules for banned titles or media.</li>
+        </ul>
+      </CardContent>
+    </Card>
+  </>
+);
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Header */}
@@ -238,14 +330,15 @@ export default function PostSchedulingPage() {
         </p>
       </div>
 
-      {/* Progress Steps */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          {['Upload', 'Select', 'Caption', 'Protect', 'Schedule'].map((step, index) => (
-            <div key={step} className="flex items-center">
-              <div className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center font-semibold",
-                currentStepNumber > index + 1 
+      <StickyRail railPosition="end" rail={railContent} mainClassName="space-y-8">
+        {/* Progress Steps */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            {['Upload', 'Select', 'Caption', 'Protect', 'Schedule'].map((step, index) => (
+              <div key={step} className="flex items-center">
+                <div className={cn(
+                  "w-10 h-10 rounded-full flex items-center justify-center font-semibold",
+                  currentStepNumber > index + 1 
                   ? "bg-green-500 text-white" 
                   : currentStepNumber === index + 1 
                   ? "bg-purple-500 text-white" 
@@ -258,13 +351,13 @@ export default function PostSchedulingPage() {
                 <ArrowRight className="mx-4 h-4 w-4 text-gray-400" />
               )}
             </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Step Content */}
-      <Card>
-        <CardContent className="p-6">
+        {/* Step Content */}
+        <Card>
+          <CardContent className="p-6">
           {/* Upload Step */}
           {currentStep === 'upload' && (
             <div className="space-y-6">
@@ -297,7 +390,7 @@ export default function PostSchedulingPage() {
                           <X className="h-3 w-3" />
                         </Button>
                       </div>
-                    ))}
+                      ))}
                   </div>
                 </div>
               )}
@@ -345,7 +438,7 @@ export default function PostSchedulingPage() {
                       </div>
                     )}
                   </div>
-                ))}
+                  ))}
               </div>
               
               <div className="flex justify-between">
@@ -400,7 +493,7 @@ export default function PostSchedulingPage() {
                         />
                       </div>
                     </div>
-                  ))}
+                    ))}
                   
                   <div className="flex justify-between">
                     <Button variant="outline" onClick={() => setCurrentStep('select')}>
@@ -498,7 +591,8 @@ export default function PostSchedulingPage() {
             </div>
           )}
         </CardContent>
-      </Card>
+        </Card>
+      </StickyRail>
     </div>
   );
 }

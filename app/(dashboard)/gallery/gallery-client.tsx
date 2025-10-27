@@ -7,8 +7,11 @@ import { RepostModal } from './repost-modal';
 import type { GalleryItem, GalleryResponse, QuickRepostPayload } from './types';
 import { getCooldownStatus } from './types';
 
+import { StickyRail } from '../../../client/src/components/ui/sticky-rail';
+
 interface GalleryClientProps {
   initialData: GalleryResponse | null;
+  stickyOffset?: number | string;
 }
 
 type FilterPreset = 'all' | 'watermarked' | 'unprotected' | 'cooldownReady' | 'cooldownLocked';
@@ -21,11 +24,9 @@ const descriptionClass = 'text-sm text-gray-600';
 const selectionBadgeClass = 'inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700';
 const clearSelectionButtonClass = 'text-sm font-medium text-blue-600 transition hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50';
 const loadButtonClass = 'inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
-const statsGridClass = 'grid gap-4 sm:grid-cols-2 lg:grid-cols-4';
 const statCardClass = 'rounded-lg border border-gray-200 bg-white p-4 shadow-sm';
 const statLabelClass = 'text-sm font-medium text-gray-500';
 const statHelperClass = 'mt-1 text-xs text-gray-500';
-const filtersContainerClass = 'flex flex-col gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm';
 const filterButtonBase = 'rounded-full border px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2';
 const filterButtonActive = 'border-blue-600 bg-blue-50 text-blue-700';
 const filterButtonInactive = 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50';
@@ -107,7 +108,7 @@ function FilterHelper({ helper }: { helper: string }) {
 
 function LoadingSkeleton() {
   return (
-    <div className="space-y-4">
+      <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {Array.from({ length: 8 }).map((_, index) => (
           <div key={index} className="animate-pulse">
@@ -123,7 +124,7 @@ function LoadingSkeleton() {
   );
 }
 
-export function GalleryClient({ initialData }: GalleryClientProps) {
+export function GalleryClient({ initialData, stickyOffset }: GalleryClientProps) {
   const initial = initialData ?? FALLBACK_RESPONSE;
   const [items, setItems] = useState<GalleryItem[]>(initial.items);
   const [page, setPage] = useState(initial.page);
@@ -312,6 +313,18 @@ export function GalleryClient({ initialData }: GalleryClientProps) {
   const coverageTone: StatTone = coveragePercent >= 90 ? 'success' : coveragePercent >= 70 ? 'default' : 'warning';
   const cooldownTone: StatTone = cooldownLockedCount === 0 ? 'success' : cooldownReadyCount === 0 ? 'warning' : 'default';
 
+  const nextCooldownHours = useMemo(() => {
+    let soonest = Number.POSITIVE_INFINITY;
+    for (const item of items) {
+      const status = getCooldownStatus(item.lastRepostedAt);
+      if (status.active && status.hoursRemaining < soonest) {
+        soonest = status.hoursRemaining;
+      }
+    }
+    return Number.isFinite(soonest) ? ceilHours(soonest) : 0;
+  }, [items]);
+  const unprotectedCount = totalAssets - watermarkedCount;
+
   const visibleItems = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
@@ -379,16 +392,15 @@ export function GalleryClient({ initialData }: GalleryClientProps) {
     );
   }
 
-  return (
-    <section className={sectionClass}>
-      <header className="flex flex-col gap-2">
-        <h1 className={headingClass}>Media gallery</h1>
-        <p className={descriptionClass}>
-          Browse your protected uploads, stage quick reposts, and keep tabs on recent activity.
-        </p>
-      </header>
 
-      <div className={statsGridClass}>
+  const railContent = (
+    <>
+        <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-gray-900">Queue KPIs</h2>
+        <span className="text-xs uppercase tracking-wide text-gray-400">Live</span>
+      </div>
+        <div className="grid gap-3">
         <StatsCard label="Total assets" value={totalAssets.toString()} helper="Uploads available across all campaigns" />
         <StatsCard
           label="Watermark coverage"
@@ -404,98 +416,146 @@ export function GalleryClient({ initialData }: GalleryClientProps) {
         />
         <StatsCard label="Library footprint" value={formatStorage(storageUsed)} helper="Total space used across ImageShield" />
       </div>
+    </div>
 
-      <div className={filtersContainerClass}>
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap gap-2">
-              {FILTER_PRESETS.map((preset) => {
-                const active = filterPreset === preset.id;
-                return (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    className={`${filterButtonBase} ${active ? filterButtonActive : filterButtonInactive}`}
-                    onClick={() => setFilterPreset(preset.id)}
-                  >
-                    {preset.label}
-                  </button>
-                );
-              })}
-            </div>
-            <FilterHelper helper={FILTER_PRESETS.find((preset) => preset.id === filterPreset)?.helper ?? ''} />
-          </div>
-          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
-            <label className="sr-only" htmlFor="gallery-search">Search library</label>
-            <input
-              id="gallery-search"
-              type="search"
-              placeholder="Search by filename"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              className={searchInputClass}
-            />
-            <label className="sr-only" htmlFor="gallery-sort">Sort assets</label>
-            <select
-              id="gallery-sort"
-              className={selectInputClass}
-              value={sortOrder}
-              onChange={(event) => setSortOrder(event.target.value as SortOrder)}
-            >
-              {SORT_OPTIONS.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
+      <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold text-gray-900">Filters</h2>
+        <div className="flex flex-wrap gap-2">
+          {FILTER_PRESETS.map((preset) => {
+            const active = filterPreset === preset.id;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                className={`${filterButtonBase} ${active ? filterButtonActive : filterButtonInactive}`}
+                onClick={() => setFilterPreset(preset.id)}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-sm text-gray-600">
-            Showing {visibleItems.length} of {totalAssets} assets
-            {isFiltered ? ' (filtered)' : ''}
-          </span>
-          <div className="flex items-center gap-3">
-            <span className={selectionBadgeClass} data-testid="selection-count">
-              {selectedCount} selected
-            </span>
-            <button
-              type="button"
-              className={clearSelectionButtonClass}
-              onClick={() => setSelectedIds(new Set())}
-              disabled={selectedCount === 0}
-            >
-              Clear selection
-            </button>
-          </div>
-        </div>
+        <FilterHelper helper={FILTER_PRESETS.find((preset) => preset.id === filterPreset)?.helper ?? ''} />
       </div>
 
-      {error ? (
-        <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">
-          {error}
-        </div>
-      ) : null}
-
-      <GalleryGrid
-        items={visibleItems}
-        selectedIds={selectedIds}
-        onToggleSelect={toggleSelect}
-        onRepost={openRepostModal}
-        isFiltered={isFiltered}
-        onResetFilters={resetFilters}
-      />
-
-      <div className="flex items-center justify-center">
-        <button
-          type="button"
-          className={loadButtonClass}
-          onClick={loadMore}
-          disabled={!hasMore || loading || emptyState}
+      <div className="space-y-2">
+        <label className="sr-only" htmlFor="gallery-search">Search library</label>
+        <input
+          id="gallery-search"
+          type="search"
+          placeholder="Search by filename"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          className={searchInputClass}
+        />
+        <label className="sr-only" htmlFor="gallery-sort">Sort assets</label>
+        <select
+          id="gallery-sort"
+          className={selectInputClass}
+          value={sortOrder}
+          onChange={(event) => setSortOrder(event.target.value as SortOrder)}
         >
-          {loading ? 'Loading…' : hasMore ? 'Load more' : emptyState ? 'No uploads yet' : 'No more items'}
-        </button>
+          {SORT_OPTIONS.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
       </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600">
+        <span>
+          Showing {visibleItems.length} of {totalAssets} assets
+          {isFiltered ? ' (filtered)' : ''}
+        </span>
+        <div className="flex items-center gap-3">
+          <span className={selectionBadgeClass} data-testid="selection-count">
+            {selectedCount} selected
+          </span>
+          <button
+            type="button"
+            className={clearSelectionButtonClass}
+            onClick={() => setSelectedIds(new Set())}
+            disabled={selectedCount === 0}
+          >
+            Clear selection
+          </button>
+        </div>
+      </div>
+    </div>
+
+        <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      <h2 className="text-sm font-semibold text-gray-900">Cooldown & repost guardrails</h2>
+      <p className="text-xs text-gray-500">
+        Reddit enforces a 72-hour cooldown per subreddit. Keep an eye on these indicators before queueing reposts.
+      </p>
+      <ul className="space-y-2 text-sm text-gray-700">
+        <li className="flex items-start gap-2">
+          <span className="mt-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500" aria-hidden="true" />
+          <span>{cooldownReadyCount} assets ready to repost</span>
+        </li>
+        <li className="flex items-start gap-2">
+          <span className="mt-0.5 h-2.5 w-2.5 rounded-full bg-amber-500" aria-hidden="true" />
+          <span>
+            {cooldownLockedCount > 0
+              ? `${cooldownLockedCount} assets cooling down${nextCooldownHours > 0 ? ` · next ready in ~${nextCooldownHours}h` : ''}`
+              : 'No active cooldowns'}
+          </span>
+        </li>
+        <li className="flex items-start gap-2">
+          <span className="mt-0.5 h-2.5 w-2.5 rounded-full bg-purple-500" aria-hidden="true" />
+          <span>
+            {unprotectedCount > 0
+              ? `${unprotectedCount} uploads still need ImageShield before reposting`
+              : 'All media library assets carry ImageShield protection'}
+          </span>
+        </li>
+      </ul>
+      <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
+        Quick repost prevents duplicate hashes by locking Catbox uploads until they are imported into the media library.
+      </div>
+    </div>
+    </>
+);
+
+
+  return (
+    <section className={sectionClass}>
+      <header className="flex flex-col gap-2">
+        <h1 className={headingClass}>Media gallery</h1>
+        <p className={descriptionClass}>
+          Browse your protected uploads, stage quick reposts, and keep tabs on recent activity.
+        </p>
+      </header>
+
+      <StickyRail railPosition="end" rail={railContent} mainClassName="flex flex-col gap-6" offset={stickyOffset}>
+        {error ? (
+          <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">
+            {error}
+          </div>
+        ) : null}
+
+        <GalleryGrid
+          items={visibleItems}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onRepost={openRepostModal}
+          isFiltered={isFiltered}
+          onResetFilters={resetFilters}
+        />
+
+        <div className="flex items-center justify-center">
+          <button
+            type="button"
+            className={loadButtonClass}
+            onClick={loadMore}
+            disabled={!hasMore || loading || emptyState}
+          >
+            {loading ? 'Loading…' : hasMore ? 'Load more' : emptyState ? 'No uploads yet' : 'No more items'}
+          </button>
+        </div>
+      </StickyRail>
 
       <RepostModal
         asset={modalAsset}
