@@ -4,10 +4,13 @@ import { authenticatedRequest } from '@/lib/authenticated-request';
 import {
   CatboxUploadResponse,
   CatboxUploadsApiResponse,
+  ImgurUploadResponse,
+  ImgurUploadsApiResponse,
   GalleryImage,
   MediaAssetResponse,
   mergeGalleryImages,
   parseCatboxUploadsApiResponse,
+  parseImgurUploadsApiResponse,
   parseMediaAssetsResponse
 } from '@/lib/gallery';
 
@@ -15,11 +18,14 @@ interface UseGalleryAssetsResult {
   galleryImages: GalleryImage[];
   mediaAssets: MediaAssetResponse[];
   catboxUploads: CatboxUploadResponse[];
+  imgurUploads: ImgurUploadResponse[];
   isLoading: boolean;
   mediaLoading: boolean;
   catboxLoading: boolean;
+  imgurLoading: boolean;
   mediaError: unknown;
   catboxError: unknown;
+  imgurError: unknown;
 }
 
 interface UseGalleryAssetsOptions {
@@ -64,22 +70,36 @@ export function useGalleryAssets(options: UseGalleryAssetsOptions = {}): UseGall
     staleTime: staleTimeMs
   });
 
+  const imgurQuery = useQuery<ImgurUploadsApiResponse>({
+    queryKey: ['/api/uploads/imgur/my-uploads'],
+    queryFn: async () => {
+      const response = await authenticatedRequest<unknown>('/api/uploads/imgur/my-uploads');
+      return parseImgurUploadsApiResponse(response);
+    },
+    enabled,
+    staleTime: staleTimeMs
+  });
+
   const mediaAssets = mediaQuery.data ?? [];
   const catboxUploads = catboxQuery.data?.uploads ?? [];
+  const imgurUploads = imgurQuery.data?.uploads ?? [];
 
   const galleryImages = useMemo(
-    () => mergeGalleryImages(mediaAssets, catboxUploads),
-    [mediaAssets, catboxUploads]
+    () => mergeGalleryImages(mediaAssets, catboxUploads, imgurUploads),
+    [mediaAssets, catboxUploads, imgurUploads]
   );
 
   return {
     galleryImages,
     mediaAssets,
     catboxUploads,
-    isLoading: enabled && (mediaQuery.isLoading || catboxQuery.isLoading),
+    imgurUploads,
+    isLoading: enabled && (mediaQuery.isLoading || catboxQuery.isLoading || imgurQuery.isLoading),
     mediaLoading: enabled && mediaQuery.isLoading,
     catboxLoading: enabled && catboxQuery.isLoading,
+    imgurLoading: enabled && imgurQuery.isLoading,
     mediaError: enabled ? mediaQuery.error : null,
-    catboxError: enabled ? catboxQuery.error : null
+    catboxError: enabled ? catboxQuery.error : null,
+    imgurError: enabled ? imgurQuery.error : null
   };
 }

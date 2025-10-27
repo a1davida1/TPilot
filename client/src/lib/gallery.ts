@@ -224,6 +224,44 @@ const catboxUploadsApiResponseSchema = z.object({
 export type CatboxUploadResponse = z.infer<typeof catboxUploadResponseSchema>;
 export type CatboxUploadsApiResponse = z.infer<typeof catboxUploadsApiResponseSchema>;
 
+// Imgur upload response schema
+const imgurUploadResponseSchema = z
+  .object({
+    url: z.unknown(),
+    delete_hash: z.unknown().optional(),
+    source_filename: z.unknown().optional(),
+    width: z.unknown().optional(),
+    height: z.unknown().optional(),
+    provider: z.unknown().optional(),
+    created_at: isoDateInputSchema
+  })
+  .transform((raw) => {
+    const url = sanitizeUrl(raw.url);
+    if (!url) {
+      throw new Error('Invalid Imgur upload URL');
+    }
+
+    const filename = sanitizeFilename(raw.source_filename, 'imgur-upload');
+
+    return {
+      url,
+      filename,
+      deleteHash: typeof raw.delete_hash === 'string' ? raw.delete_hash : undefined,
+      width: normalizeBytes(raw.width),
+      height: normalizeBytes(raw.height),
+      provider: sanitizeProvider(raw.provider),
+      createdAt: toIsoString(raw.created_at ?? null)
+    };
+  });
+
+const imgurUploadsApiResponseSchema = z.object({
+  uploads: z.array(imgurUploadResponseSchema),
+  count: z.number().int().optional()
+});
+
+export type ImgurUploadResponse = z.infer<typeof imgurUploadResponseSchema>;
+export type ImgurUploadsApiResponse = z.infer<typeof imgurUploadsApiResponseSchema>;
+
 function _parseWithSchema<T>(schema: z.ZodType<T>, input: unknown, errorMessage: string): T {
   const parsed = schema.safeParse(input);
   if (!parsed.success) {
@@ -261,11 +299,23 @@ export function parseCatboxUploadsApiResponse(input: unknown): CatboxUploadsApiR
   if (!input || typeof input !== 'object') {
     return { uploads: [] };
   }
-  
+
   try {
     return catboxUploadsApiResponseSchema.parse(input);
   } catch {
     return { uploads: [] };
+  }
+}
+
+export function parseImgurUploadsApiResponse(input: unknown): ImgurUploadsApiResponse {
+  if (!input || typeof input !== 'object') {
+    return { uploads: [], count: 0 };
+  }
+
+  try {
+    return imgurUploadsApiResponseSchema.parse(input);
+  } catch {
+    return { uploads: [], count: 0 };
   }
 }
 
@@ -294,7 +344,15 @@ export interface CatboxGalleryImage extends GalleryImageBase {
   provider: string;
 }
 
-export type GalleryImage = LibraryGalleryImage | CatboxGalleryImage;
+export interface ImgurGalleryImage extends GalleryImageBase {
+  origin: 'imgur';
+  deleteHash?: string;
+  width?: number;
+  height?: number;
+  provider: string;
+}
+
+export type GalleryImage = LibraryGalleryImage | CatboxGalleryImage | ImgurGalleryImage;
 
 export function isLibraryImage(image: GalleryImage): image is LibraryGalleryImage {
   return image.origin === 'library';
@@ -333,13 +391,32 @@ export function mapCatboxUploadToGalleryImage(upload: CatboxUploadResponse): Cat
   };
 }
 
+export function mapImgurUploadToGalleryImage(upload: ImgurUploadResponse): ImgurGalleryImage {
+  return {
+    id: `imgur-${upload.url}`,
+    origin: 'imgur',
+    filename: upload.filename,
+    bytes: 0, // Imgur doesn't provide file size in the response
+    mime: 'image/jpeg', // Default, will be detected from filename
+    createdAt: upload.createdAt,
+    signedUrl: upload.url,
+    downloadUrl: upload.url,
+    deleteHash: upload.deleteHash,
+    width: upload.width,
+    height: upload.height,
+    provider: upload.provider
+  };
+}
+
 export function mergeGalleryImages(
   mediaAssets: MediaAssetResponse[],
-  catboxUploads: CatboxUploadResponse[]
+  catboxUploads: CatboxUploadResponse[],
+  imgurUploads: ImgurUploadResponse[] = []
 ): GalleryImage[] {
   return [
     ...mediaAssets.map(mapMediaAssetToGalleryImage),
-    ...catboxUploads.map(mapCatboxUploadToGalleryImage)
+    ...catboxUploads.map(mapCatboxUploadToGalleryImage),
+    ...imgurUploads.map(mapImgurUploadToGalleryImage)
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
