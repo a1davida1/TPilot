@@ -13,8 +13,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
+import { workflowBuckets, filterWorkflowBucketsByAccess } from "@/config/workflows";
+import type { WorkflowRouteConfig } from "@/config/workflows";
+import { useLocation } from "wouter";
 import {
   ArrowLeft,
   ArrowRight,
@@ -64,6 +68,11 @@ interface RedditAccount {
   connectedAt: string;
   karma: number;
   verified: boolean;
+}
+
+interface FollowUpRoute {
+  bucketLabel: string;
+  route: WorkflowRouteConfig;
 }
 
 const POLL_INTERVAL_MS = 2000;
@@ -150,6 +159,10 @@ export function QuickStartModal({
   onPosted,
 }: QuickStartModalProps) {
   const { toast } = useToast();
+  const { isAuthenticated: isUserAuthenticated, user } = useAuth();
+  const [, setLocation] = useLocation();
+  const userTier = user?.tier ?? null;
+  const isAdminUser = Boolean(user?.isAdmin || user?.role === "admin");
   const [currentStep, setCurrentStep] = useState<QuickStartStep>(initialStep);
   const [connected, setConnected] = useState<boolean>(isRedditConnected);
   const [connectionInitiated, setConnectionInitiated] = useState(false);
@@ -162,6 +175,29 @@ export function QuickStartModal({
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const connectionCompletedRef = useRef(false);
+
+  const workflowAccessContext = useMemo(() => ({
+    isAuthenticated: Boolean(isUserAuthenticated),
+    tier: userTier,
+    isAdmin: isAdminUser,
+  }), [isUserAuthenticated, userTier, isAdminUser]);
+
+  const availableWorkflowBuckets = useMemo(() =>
+    filterWorkflowBucketsByAccess(workflowBuckets, workflowAccessContext),
+  [workflowAccessContext]);
+
+  const followUpRoutes = useMemo<FollowUpRoute[]>(() => {
+    return availableWorkflowBuckets
+      .filter(bucket => bucket.key !== "create")
+      .map((bucket) => {
+        const [primaryRoute] = bucket.routes;
+        if (!primaryRoute) {
+          return null;
+        }
+        return { bucketLabel: bucket.label, route: primaryRoute };
+      })
+      .filter((value): value is FollowUpRoute => value !== null);
+  }, [availableWorkflowBuckets]);
 
   const clearConnectionMonitors = useCallback(() => {
     if (pollIntervalRef.current) {
@@ -353,6 +389,12 @@ export function QuickStartModal({
       setPostTitle(template.title);
       setPostBody(template.body);
     }
+  };
+
+  const handleWorkflowNavigate = (href: string) => {
+    onOpenChange(false);
+    setLocation(href);
+    _onNavigate?.();
   };
 
   const handleSubmit = async () => {
@@ -572,6 +614,40 @@ export function QuickStartModal({
                   <p className="text-red-800 text-sm">{submitError}</p>
                 </CardContent>
               </Card>
+            )}
+
+            {followUpRoutes.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-semibold text-foreground">Keep building your workflow</h4>
+                <div className="space-y-2">
+                  {followUpRoutes.map(({ bucketLabel, route }) => {
+                    const Icon = route.icon;
+                    return (
+                      <Button
+                        key={route.key}
+                        variant="outline"
+                        className="w-full justify-start gap-3 text-left py-3"
+                        onClick={() => handleWorkflowNavigate(route.href)}
+                        data-testid={`quick-start-next-${route.key}`}
+                      >
+                        <Icon className="h-4 w-4 text-primary" />
+                        <div className="flex flex-col items-start">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            {bucketLabel}
+                          </span>
+                          <span className="text-sm font-semibold text-foreground">{route.label}</span>
+                          <span className="text-xs text-muted-foreground">{route.description}</span>
+                        </div>
+                        {route.proOnly && (
+                          <Badge variant="secondary" className="ml-auto text-[10px] uppercase tracking-wide">
+                            Pro
+                          </Badge>
+                        )}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
             )}
 
             <Button
