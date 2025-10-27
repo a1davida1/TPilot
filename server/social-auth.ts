@@ -21,6 +21,8 @@ import {
   type OAuthStateRecord,
   type OAuthProvider,
 } from './lib/oauth-state-manager.js';
+import { fetchRedditUserData, getUserTopCommunitiesWithDetails } from './services/reddit-user-data.js';
+import { upsertCommunitiesFromUser } from './services/reddit-community-manager.js';
 
 const require = createRequire(import.meta.url);
 const { Strategy: RedditStrategy } =
@@ -515,7 +517,7 @@ export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
       clientID: process.env.REDDIT_CLIENT_ID,
       clientSecret: process.env.REDDIT_CLIENT_SECRET,
       callbackURL: prefixApiPath('/auth/reddit/callback', apiPrefix),
-      scope: ['identity'],
+      scope: ['identity', 'mysubreddits', 'history', 'read'],
       passReqToCallback: true
     }, async (
       req: Express.Request,
@@ -527,12 +529,28 @@ export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
       try {
         const avatar = profile.icon_img ?? '';
         const username = buildProviderUsername('reddit', profile.id, profile.name);
-        
+
+        // Fetch extended user data from Reddit API
+        let redditData;
+        try {
+          redditData = await fetchRedditUserData(accessToken);
+          logger.info('Fetched Reddit user data', {
+            username: redditData.username,
+            karma: redditData.totalKarma,
+            accountAge: Math.floor((Date.now() - redditData.accountCreatedUtc * 1000) / (1000 * 60 * 60 * 24)),
+          });
+        } catch (error) {
+          logger.warn('Failed to fetch extended Reddit user data', {
+            error: error instanceof Error ? error.message : String(error),
+          });
+          // Continue without extended data rather than failing OAuth
+        }
+
         // First, check by provider ID (most reliable for OAuth)
         let user = await storage.getUserByProviderId('reddit', profile.id);
-        
+
         if (user) {
-          // Update avatar if changed
+          // Update avatar and extended data if changed
           const updates: Partial<UserUpdate> = {};
           if (avatar && user.avatar !== avatar) {
             updates.avatar = avatar;
@@ -543,13 +561,19 @@ export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
           if (shouldUpdateProviderUsername(user.username, 'reddit', username)) {
             updates.username = username;
           }
+          // Add extended Reddit data
+          if (redditData) {
+            updates.redditKarma = redditData.totalKarma;
+            updates.redditAccountCreated = new Date(redditData.accountCreatedUtc * 1000);
+            updates.redditUsername = redditData.username;
+          }
           if (Object.keys(updates).length > 0) {
             user = await storage.updateUser(user.id, updates);
           }
         } else {
           // Check if user is already logged in (linking flow)
           const existingUser = req?.user as User | undefined;
-          
+
           if (existingUser?.id) {
             // Link Reddit to existing logged-in user
             const updates: Partial<UserUpdate> = {
@@ -562,6 +586,12 @@ export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
             }
             if (shouldUpdateProviderUsername(existingUser.username, 'reddit', username)) {
               updates.username = username;
+            }
+            // Add extended Reddit data
+            if (redditData) {
+              updates.redditKarma = redditData.totalKarma;
+              updates.redditAccountCreated = new Date(redditData.accountCreatedUtc * 1000);
+              updates.redditUsername = redditData.username;
             }
             user = await storage.updateUser(existingUser.id, updates);
           } else {
@@ -576,10 +606,36 @@ export function setupSocialAuth(app: Express, apiPrefix: string = API_PREFIX) {
               tier: 'free',
               emailVerified: true,
               ...(avatar ? { avatar } : {}),
+              ...(redditData ? {
+                redditKarma: redditData.totalKarma,
+                redditAccountCreated: new Date(redditData.accountCreatedUtc * 1000),
+                redditUsername: redditData.username,
+              } : {}),
             });
           }
         }
-        
+
+        // Fetch and store user's top 5 communities (async, don't wait)
+        if (user?.id && redditData?.username) {
+          getUserTopCommunitiesWithDetails(accessToken, redditData.username, 5)
+            .then(async (communities) => {
+              if (communities.length > 0) {
+                const result = await upsertCommunitiesFromUser(communities, user!.id);
+                logger.info('Discovered communities from user OAuth', {
+                  userId: user!.id,
+                  username: redditData!.username,
+                  ...result,
+                });
+              }
+            })
+            .catch((error) => {
+              logger.error('Failed to discover communities from user', {
+                userId: user!.id,
+                error: error instanceof Error ? error.message : String(error),
+              });
+            });
+        }
+
         return done(null, user);
       } catch (error) {
         return done(error as Error, false);
