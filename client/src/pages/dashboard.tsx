@@ -11,6 +11,8 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { ModernDashboard } from "@/components/modern-dashboard";
 import { DashboardLoading } from "@/app/(dashboard)/loading";
+import { MobileOptimization } from "@/components/mobile-optimization";
+import { coreNavigationItems } from "@/lib/navigation";
 type ModernDashboardUser = Parameters<typeof ModernDashboard>[0]['user'];
 
 import { DashboardErrorBoundary } from "@/app/(dashboard)/error-boundary";
@@ -148,7 +150,11 @@ export default function Dashboard() {
   }, [location, isAuthenticated, toast, refetch]);
 
   if (isLoading) {
-    return <DashboardLoading />;
+    return (
+      <MobileOptimization navigationItems={coreNavigationItems}>
+        <DashboardLoading />
+      </MobileOptimization>
+    );
   }
 
   // Determine admin status and user tier
@@ -174,13 +180,15 @@ export default function Dashboard() {
     : undefined;
 
   return (
-    <DashboardErrorBoundary>
-      <ModernDashboard
-        user={sanitizedUser}
-        userTier={userTier}
-        isAdmin={isAdmin}
-        isRedditConnected={isRedditConnected}
-      />
-    </DashboardErrorBoundary>
+    <MobileOptimization navigationItems={coreNavigationItems}>
+      <DashboardErrorBoundary>
+        <ModernDashboard
+          user={sanitizedUser}
+          userTier={userTier}
+          isAdmin={isAdmin}
+          isRedditConnected={isRedditConnected}
+        />
+      </DashboardErrorBoundary>
+    </MobileOptimization>
   );
 }
