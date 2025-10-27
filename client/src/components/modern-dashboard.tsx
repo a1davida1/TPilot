@@ -305,7 +305,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
     return () => {
       observer.disconnect();
     };
-  }, [shouldRenderCharts]);
+  }, [shouldRenderCharts, chartContainerRef.current]);
 
   // Sync onboarding progress with props and API data
   useEffect(() => {
