@@ -104,12 +104,16 @@ interface RedditPostErrorResponse {
 interface SubredditLintResponse {
   ok: boolean;
   warnings: string[];
+  blockers: string[]; // NEW: Hard blockers that prevent posting
   rule: {
     subreddit: string;
     nsfwRequired: boolean;
-    requiresFlair: boolean;
-    allowedFlairs: string[];
-    notes: string | null;
+    minKarma: number | null;
+    minAccountAgeDays: number | null;
+    verificationRequired: boolean;
+    promotionalLinks: string | null;
+    linkRestrictions: string[];
+    bannedContent: string[];
   } | null;
 }
 
@@ -255,6 +259,7 @@ export default function QuickPostPage() {
   const [captionShownAt, setCaptionShownAt] = useState<number | null>(null);
   const [validationStatus, setValidationStatus] = useState<'idle' | 'valid' | 'warning' | 'error'>('idle');
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
+  const [validationBlockers, setValidationBlockers] = useState<string[]>([]); // NEW: Hard blockers
   const [posted, setPosted] = useState(false);
   const [communityPickerOpen, setCommunityPickerOpen] = useState(false);
   const [isEditingCaption, setIsEditingCaption] = useState(false);
@@ -296,6 +301,7 @@ export default function QuickPostPage() {
   useEffect(() => {
     setValidationStatus('idle');
     setValidationWarnings([]);
+    setValidationBlockers([]);
   }, [subreddit, confirmedCaptionId]);
 
   // Debug effect to monitor caption options state
@@ -494,24 +500,44 @@ export default function QuickPostPage() {
     }
   });
 
-  const subredditLint = useMutation<SubredditLintResponse, Error, { subreddit: string; title: string; nsfwFlag: boolean }>({
-    mutationFn: async ({ subreddit: targetSubreddit, title, nsfwFlag }) => {
+  const subredditLint = useMutation<SubredditLintResponse, Error, { subreddit: string; title: string; caption: string; nsfwFlag: boolean }>({
+    mutationFn: async ({ subreddit: targetSubreddit, title, caption, nsfwFlag }) => {
       const response = await apiRequest('POST', '/api/subreddit-lint', {
         subreddit: targetSubreddit,
         title,
+        caption, // NEW: Pass caption for validation
         nsfw: nsfwFlag
       });
       return response.json() as Promise<SubredditLintResponse>;
     },
     onSuccess: (data) => {
-      setValidationStatus(data.ok ? 'valid' : 'warning');
+      const hasBlockers = (data.blockers ?? []).length > 0;
+      const hasWarnings = (data.warnings ?? []).length > 0;
+
+      // Set status: error if blockers exist, warning if only warnings, valid if clean
+      if (hasBlockers) {
+        setValidationStatus('error');
+      } else if (hasWarnings) {
+        setValidationStatus('warning');
+      } else {
+        setValidationStatus('valid');
+      }
+
       setValidationWarnings(data.warnings ?? []);
+      setValidationBlockers(data.blockers ?? []);
 
       toast({
-        title: data.ok ? 'Subreddit validated' : 'Warnings detected',
-        description: data.ok
-          ? 'Ready to post. Reddit rule check looks good.'
-          : 'Review subreddit warnings before posting.'
+        title: hasBlockers
+          ? 'Cannot post to this subreddit'
+          : data.ok
+            ? 'Subreddit validated'
+            : 'Warnings detected',
+        description: hasBlockers
+          ? 'You don\'t meet the requirements for this subreddit.'
+          : data.ok
+            ? 'Ready to post. Reddit rule check looks good.'
+            : 'Review subreddit warnings before posting.',
+        variant: hasBlockers ? 'destructive' : 'default'
       });
     },
     onError: (error) => {
@@ -636,6 +662,7 @@ export default function QuickPostPage() {
     setCaptionShownAt(null);
     setValidationStatus('idle');
     setValidationWarnings([]);
+    setValidationBlockers([]);
 
     runCaptionGeneration(result.imageUrl, selectedService, selectedTone, promotionMode, nsfw);
   };
@@ -657,6 +684,7 @@ export default function QuickPostPage() {
     setCaptionShownAt(null);
     setValidationStatus('idle');
     setValidationWarnings([]);
+    setValidationBlockers([]);
 
     generateCaptions.mutate({
       url,
@@ -717,6 +745,7 @@ export default function QuickPostPage() {
     subredditLint.mutate({
       subreddit: subreddit.trim(),
       title: truncateTitle(chosen.text),
+      caption: chosen.text, // NEW: Pass full caption for link validation
       nsfwFlag: nsfw
     });
   };
@@ -734,6 +763,7 @@ export default function QuickPostPage() {
     setCaptionShownAt(null);
     setValidationStatus('idle');
     setValidationWarnings([]);
+    setValidationBlockers([]);
   };
 
   const isReadyToPost = Boolean(
@@ -1344,26 +1374,39 @@ export default function QuickPostPage() {
 
                         {validationStatus !== 'idle' && (
                           <Alert
-                            variant={validationStatus === 'valid' ? 'default' : validationStatus === 'warning' ? 'destructive' : 'default'}
+                            variant={validationStatus === 'valid' ? 'default' : validationStatus === 'error' ? 'destructive' : 'default'}
                           >
                             {validationStatus === 'valid' ? (
                               <CheckCircle className="h-4 w-4 text-green-600" />
+                            ) : validationStatus === 'error' ? (
+                              <X className="h-4 w-4 text-red-600" />
                             ) : (
                               <AlertTriangle className="h-4 w-4 text-orange-500" />
                             )}
-                            <AlertDescription className="space-y-1 text-sm">
+                            <AlertDescription className="space-y-2 text-sm">
                               {validationStatus === 'valid' && 'Subreddit check passed. You are good to go!'}
-                              {validationStatus === 'warning' && (
-                                <div>
-                                  <p className="font-medium">Warnings:</p>
-                                  <ul className="list-disc list-inside">
-                                    {validationWarnings.map((warning) => (
-                                      <li key={warning}>{warning}</li>
+
+                              {validationStatus === 'error' && validationBlockers.length > 0 && (
+                                <div className="space-y-1">
+                                  <p className="font-semibold text-red-600">Cannot Post - Requirements Not Met:</p>
+                                  <ul className="list-disc list-inside space-y-1">
+                                    {validationBlockers.map((blocker) => (
+                                      <li key={blocker} className="text-red-800">{blocker}</li>
                                     ))}
                                   </ul>
                                 </div>
                               )}
-                              {validationStatus === 'error' && 'Could not validate subreddit rules. Try again later.'}
+
+                              {validationStatus === 'warning' && validationWarnings.length > 0 && (
+                                <div className="space-y-1">
+                                  <p className="font-medium text-orange-600">Warnings:</p>
+                                  <ul className="list-disc list-inside space-y-1">
+                                    {validationWarnings.map((warning) => (
+                                      <li key={warning} className="text-orange-800">{warning}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
                             </AlertDescription>
                           </Alert>
                         )}

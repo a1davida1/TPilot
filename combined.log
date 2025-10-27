@@ -832,3 +832,9 @@
 {"level":"warn","message":"ADMIN_PASSWORD_HASH environment variable is not set. Admin login is disabled.","timestamp":"2025-10-20T21:57:56.639Z"}
 {"level":"info","message":"📈 Starting worker auto-scaling...","timestamp":"2025-10-20T21:58:01.159Z"}
 {"level":"info","message":"✅ Worker auto-scaling started (interval: 60000ms)","timestamp":"2025-10-20T21:58:01.159Z"}
+{"filename":"test.jpg","level":"info","message":"File uploaded successfully","size":15,"timestamp":"2025-10-27T07:28:47.397Z","userId":1}
+{"error":"Storage quota exceeded. Used: 100MB, Quota: 100MB","level":"error","message":"Upload error","timestamp":"2025-10-27T07:28:47.404Z"}
+{"error":"Upload failed","level":"error","message":"Upload error","timestamp":"2025-10-27T07:28:47.407Z"}
+{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-27T07:28:50.242Z"}
+{"level":"warn","message":"Session middleware not configured before registerRoutes; applying default session middleware","timestamp":"2025-10-27T07:28:52.164Z"}
+{"level":"warn","message":"API 404","method":"GET","originalUrl":"/api/debug/reddit-session","path":"/","timestamp":"2025-10-27T07:28:52.194Z","url":"/"}
