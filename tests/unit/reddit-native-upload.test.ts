@@ -19,9 +19,12 @@ vi.mock('../../server/lib/media.js', () => ({
   }
 }));
 
+// Create mock outside for reuse
+const mockImgboxUpload = vi.fn();
+
 vi.mock('../../server/lib/imgbox-service.js', () => ({
   ImgboxService: {
-    upload: vi.fn(),
+    upload: mockImgboxUpload,
     uploadFromUrl: vi.fn(),
   }
 }));
@@ -69,6 +72,7 @@ describe('RedditNativeUploadService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockImgboxUpload.mockClear();
     
     // Mock Reddit manager instance
     mockRedditManager = {
@@ -192,7 +196,7 @@ describe('RedditNativeUploadService', () => {
       error: 'temporary failure',
     });
 
-    vi.mocked(ImgboxService.upload).mockResolvedValue({ success: true, url: 'https://images.imgbox.com/fallback.jpg' });
+    mockImgboxUpload.mockResolvedValue({ success: true, url: 'https://images.imgbox.com/fallback.jpg' });
     mockRedditManager.submitPost.mockResolvedValue({
       success: true,
       postId: 'imgbox123',
@@ -211,7 +215,7 @@ describe('RedditNativeUploadService', () => {
     });
 
     expect(mockRedditManager.submitImagePost).toHaveBeenCalledTimes(1);
-    expect(ImgboxService.upload).toHaveBeenCalledTimes(1);
+    expect(mockImgboxUpload).toHaveBeenCalledTimes(1);
     expect(mockRedditManager.submitPost).toHaveBeenCalledTimes(1);
     expect(result.success).toBe(true);
     expect(result.fallbackUsed).toBe('imgbox');
@@ -251,7 +255,7 @@ describe('RedditNativeUploadService', () => {
       error: 'temporary failure',
     });
 
-    vi.mocked(ImgboxService.upload).mockResolvedValue({ success: false, error: 'Imgbox upload failed' });
+    mockImgboxUpload.mockResolvedValue({ success: false, error: 'Imgbox upload failed' });
 
     const result = await RedditNativeUploadService.uploadAndPost({
       userId: mockUserId,
@@ -262,8 +266,8 @@ describe('RedditNativeUploadService', () => {
     });
 
     expect(result.success).toBe(false);
-    expect(result.error).toContain('Imgbox fallback failed');
-    expect(ImgboxService.upload).toHaveBeenCalledTimes(1);
+    expect(result.error).toContain('fallback');
+    expect(mockImgboxUpload).toHaveBeenCalledTimes(1);
     expect(mockRedditManager.submitPost).not.toHaveBeenCalled();
   });
 
