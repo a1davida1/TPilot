@@ -480,9 +480,14 @@ export function ImageGallery() {
   const isModalOpen = selectedImageId !== null && selectedImage !== null;
 
   return (
-    <div className="space-y-6">
+    <main aria-labelledby="gallery-page-title" className="space-y-6">
+      <h1 id="gallery-page-title" className="sr-only">Media gallery</h1>
+      <nav aria-label="Gallery sections" className="sr-only focus-within:not-sr-only" data-testid="gallery-skip-nav">
+        <a href="#gallery-upload-section" className="focus:block focus:fixed focus:z-50 focus:top-4 focus:left-4 focus:bg-background focus:p-2 focus:border focus:shadow-md">Skip to upload form</a>
+        <a href="#gallery-grid-section" className="ml-4 focus:block focus:fixed focus:z-50 focus:top-4 focus:left-40 focus:bg-background focus:p-2 focus:border focus:shadow-md">Skip to gallery grid</a>
+      </nav>
       {/* Upload Section */}
-      <Card>
+      <Card id="gallery-upload-section">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
@@ -528,7 +533,7 @@ export function ImageGallery() {
       </Card>
 
       {/* Gallery */}
-      <Card>
+      <Card id="gallery-grid-section">
         <CardHeader>
           <CardTitle>Your Image Gallery ({galleryImages.length} images)</CardTitle>
           <CardDescription>
@@ -603,6 +608,6 @@ export function ImageGallery() {
         isReposting={quickRepostMutation.isPending}
         isDeleting={deleteMutation.isPending}
       />
-    </div>
+    </main>
   );
 }
