@@ -482,9 +482,9 @@ export function ImageGallery() {
   return (
     <main aria-labelledby="gallery-page-title" className="space-y-6">
       <h1 id="gallery-page-title" className="sr-only">Media gallery</h1>
-      <nav aria-label="Gallery sections" className="sr-only" data-testid="gallery-skip-nav">
-        <a href="#gallery-upload-section">Skip to upload form</a>
-        <a href="#gallery-grid-section" className="ml-4">Skip to gallery grid</a>
+      <nav aria-label="Gallery sections" className="sr-only focus-within:not-sr-only" data-testid="gallery-skip-nav">
+        <a href="#gallery-upload-section" className="focus:block focus:fixed focus:z-50 focus:top-4 focus:left-4 focus:bg-background focus:p-2 focus:border focus:shadow-md">Skip to upload form</a>
+        <a href="#gallery-grid-section" className="ml-4 focus:block focus:fixed focus:z-50 focus:top-4 focus:left-40 focus:bg-background focus:p-2 focus:border focus:shadow-md">Skip to gallery grid</a>
       </nav>
       {/* Upload Section */}
       <Card id="gallery-upload-section">
