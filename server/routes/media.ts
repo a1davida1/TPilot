@@ -7,9 +7,7 @@ import { PostImagesService } from '../lib/postimages-service.js';
 import { SimpleImageUpload } from '../lib/simple-image-upload.js';
 import { DirectUpload } from '../lib/direct-upload.js';
 import { WorkingUpload } from '../lib/working-upload.js';
-import { SimpleImgbox } from '../lib/simple-imgbox.js';
 import { logger } from '../bootstrap/logger.js';
-import rateLimit from 'express-rate-limit';
 import multer from 'multer';
 
 const router = express.Router();

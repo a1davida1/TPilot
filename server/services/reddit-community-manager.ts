@@ -8,7 +8,7 @@ import { redditCommunities, createDefaultRules } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { logger } from '../bootstrap/logger.js';
 import type { RedditSubredditInfo } from './reddit-user-data.js';
-import { parseRulesFromDescription, mergeRules } from './reddit-rule-parser.js';
+import { parseRulesFromDescription } from './reddit-rule-parser.js';
 
 /**
  * Add or update a community in the database
