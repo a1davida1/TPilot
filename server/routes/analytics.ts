@@ -5,6 +5,13 @@ import { db } from "../db.js";
 import { logger } from "../bootstrap/logger.js";
 import { users, contentGenerations, subscriptions, redditPostOutcomes } from "@shared/schema";
 import { authenticateToken, type AuthRequest } from "../middleware/auth.js";
+import {
+  getUserAnalyticsOverview,
+  getSubredditPerformance,
+  getRecentActivity,
+  getPostingActivity,
+  getUserRedditStats
+} from "../services/user-analytics-service.js";
 
 interface LandingMetrics {
   creators: number;
@@ -79,10 +86,10 @@ analyticsRouter.get("/", authenticateToken(true), async (req: AuthRequest, res: 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
-    
+
     const userTier = req.query.tier as string || 'free';
     const range = req.query.range as string || '7d';
-    
+
     // Check tier access
     const tierLevels: Record<string, number> = {
       free: 0,
@@ -91,139 +98,86 @@ analyticsRouter.get("/", authenticateToken(true), async (req: AuthRequest, res: 
       premium: 3,
       admin: 4
     };
-    
+
     const tierLevel = tierLevels[userTier] || 0;
-    
+
     // Free and Starter tiers don't get analytics
     if (tierLevel < 2) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         error: 'Analytics requires Pro or Premium tier',
         requiredTier: 'pro'
       });
     }
-    
-    // Calculate date range
-    const now = new Date();
-    let startDate = new Date();
-    if (range === '30d') {
-      startDate.setDate(now.getDate() - 30);
-    } else if (range === '90d') {
-      startDate.setDate(now.getDate() - 90);
-    } else {
-      startDate.setDate(now.getDate() - 7);
-    }
-    
-    // Get user's posts and engagement data
-    const [postData, engagementData, subredditData] = await Promise.all([
-      // Total posts for user
-      db
-        .select({ 
-          count: sql<number>`count(*)`,
-          today: sql<number>`count(*) filter (where date(occurred_at) = current_date)`,
-          week: sql<number>`count(*) filter (where occurred_at >= current_date - interval '7 days')`,
-          month: sql<number>`count(*) filter (where occurred_at >= current_date - interval '30 days')`
-        })
-        .from(redditPostOutcomes)
-        .where(eq(redditPostOutcomes.userId, userId)),
-      
-      // Engagement metrics (simplified since we don't have upvotes/comments in schema)
-      db
-        .select({
-          totalPosts: sql<number>`count(*)`,
-          successRate: sql<number>`(count(*) filter (where status = 'successful')) * 100.0 / nullif(count(*), 0)`
-        })
-        .from(redditPostOutcomes)
-        .where(
-          and(
-            eq(redditPostOutcomes.userId, userId),
-            gte(redditPostOutcomes.occurredAt, startDate)
-          )
-        ),
-      
-      // Top subreddits
-      db
-        .select({
-          subreddit: redditPostOutcomes.subreddit,
-          posts: sql<number>`count(*)`,
-          successRate: sql<number>`(count(*) filter (where status = 'successful')) * 100.0 / nullif(count(*), 0)`
-        })
-        .from(redditPostOutcomes)
-        .where(
-          and(
-            eq(redditPostOutcomes.userId, userId),
-            gte(redditPostOutcomes.occurredAt, startDate)
-          )
-        )
-        .groupBy(redditPostOutcomes.subreddit)
-        .orderBy(desc(sql`count(*)`))
-        .limit(5)
+
+    // Calculate days back from range
+    const daysBack = range === '90d' ? 90 : range === '30d' ? 30 : 7;
+
+    // Fetch real analytics data using user-analytics-service
+    const [overview, subredditPerformance, postingActivity, bestTimes] = await Promise.all([
+      getUserAnalyticsOverview(userId, daysBack),
+      getSubredditPerformance(userId, daysBack),
+      getPostingActivity(userId, daysBack),
+      getBestPostingTimes(userId, daysBack)
     ]);
-    
-    // Calculate growth rate
-    const growthRate = postData[0]?.week ? 
-      ((postData[0].week / Math.max(postData[0].month - postData[0].week, 1)) * 100 - 100) : 0;
-    
-    // Build base response (Pro tier)
+
+    // Calculate growth rate from posting activity
+    const recentDays = postingActivity.slice(-7);
+    const previousDays = postingActivity.slice(-14, -7);
+    const recentTotal = recentDays.reduce((sum, day) => sum + day.posts, 0);
+    const previousTotal = previousDays.reduce((sum, day) => sum + day.posts, 0);
+    const growthRate = previousTotal > 0
+      ? ((recentTotal - previousTotal) / previousTotal) * 100
+      : 0;
+
+    // Transform to expected format
     const response = {
       overview: {
-        totalPosts: sanitizeCount(postData[0]?.count),
-        totalEngagement: sanitizeCount(engagementData[0]?.totalPosts) * 100, // Estimate engagement
-        averageEngagementRate: Number(engagementData[0]?.successRate || 0).toFixed(1),
-        growthRate: Number(growthRate).toFixed(1),
-        postsToday: sanitizeCount(postData[0]?.today),
-        postsThisWeek: sanitizeCount(postData[0]?.week),
-        postsThisMonth: sanitizeCount(postData[0]?.month)
+        totalPosts: overview.totalPosts,
+        totalEngagement: overview.totalUpvotes + overview.totalViews,
+        averageEngagementRate: overview.successRate,
+        growthRate: Math.round(growthRate * 10) / 10,
+        postsToday: postingActivity.find(d => d.date === new Date().toISOString().split('T')[0])?.posts || 0,
+        postsThisWeek: postingActivity.slice(-7).reduce((sum, day) => sum + day.posts, 0),
+        postsThisMonth: postingActivity.reduce((sum, day) => sum + day.posts, 0)
       },
       performance: {
-        bestPostingTimes: [
-          { hour: 20, day: 'Friday', engagement: 450 },
-          { hour: 21, day: 'Saturday', engagement: 425 },
-          { hour: 19, day: 'Thursday', engagement: 380 }
-        ],
-        topSubreddits: subredditData.map((sub: { subreddit: string; posts: number; successRate: number }) => ({
+        bestPostingTimes: bestTimes,
+        topSubreddits: subredditPerformance.slice(0, 5).map(sub => ({
           name: sub.subreddit,
-          posts: sanitizeCount(sub.posts),
-          engagement: sanitizeCount(sub.posts) * 100, // Estimate engagement based on posts
-          growth: Number(sub.successRate || 15.3).toFixed(1) // Use success rate as growth indicator
+          posts: sub.totalPosts,
+          engagement: sub.avgUpvotes + (sub.totalViews / 10), // Estimate engagement
+          growth: sub.successRate
         })),
         contentPerformance: [
-          { type: 'Gallery', count: 42, avgEngagement: 125 },
-          { type: 'Single Image', count: 78, avgEngagement: 95 },
-          { type: 'Video', count: 22, avgEngagement: 180 }
-        ]
+          { type: 'Posts', count: overview.totalPosts, avgEngagement: overview.averageScore }
+        ] // TODO: Break down by content type when available
       },
       trends: {
-        weeklyGrowth: [] as unknown[], // Would populate from daily data
-        monthlyGrowth: [] as unknown[],
+        weeklyGrowth: postingActivity.slice(-7).map(day => ({
+          date: day.date,
+          posts: day.posts,
+          engagement: day.successful * 100 // Estimate engagement from successful posts
+        })),
+        monthlyGrowth: [], // TODO: Aggregate by month
         projections: tierLevel >= 3 ? {
-          nextWeek: Math.round(postData[0]?.week * 1.1) || 0,
-          nextMonth: Math.round(postData[0]?.month * 1.2) || 0,
+          nextWeek: Math.round(recentTotal * 1.1) || 0,
+          nextMonth: Math.round(overview.totalPosts * 1.2) || 0,
           confidence: 78
         } : { nextWeek: 0, nextMonth: 0, confidence: 0 }
       },
       intelligence: tierLevel >= 3 ? {
-        recommendations: [
-          'Post more galleries on Fridays - 45% higher engagement',
-          'Try posting in r/adorableporn - similar audience, less competition',
-          'Your afternoon posts outperform by 32%'
-        ],
-        warnings: postData[0]?.week < 3 ? ['Posting frequency low - aim for 5+ posts per week'] : [],
-        opportunities: [
-          'r/adorableporn users love gallery posts',
-          'Video content getting 2.1x more engagement'
-        ],
-        competitors: [
-          { username: 'similar_creator1', engagement: 1250, subreddits: ['adorableporn', 'gonewild'] },
-          { username: 'similar_creator2', engagement: 980, subreddits: ['realgirls', 'fitgirls'] }
-        ]
+        recommendations: buildRecommendations(overview, subredditPerformance),
+        warnings: buildWarnings(overview, postingActivity),
+        opportunities: buildOpportunities(subredditPerformance),
+        competitors: [] // TODO: Implement competitor analysis
       } : {
         recommendations: [] as string[],
         warnings: [] as string[],
-        opportunities: [] as string[],
+        opportunities: [] as unknown[],
         competitors: [] as unknown[]
       }
     };
-    
+
     res.json(response);
   } catch (error) {
     logger.error('Failed to fetch analytics', { error });
@@ -231,8 +185,194 @@ analyticsRouter.get("/", authenticateToken(true), async (req: AuthRequest, res: 
   }
 });
 
+// Helper functions for intelligence features
+function buildRecommendations(overview: any, subredditPerf: any[]): string[] {
+  const recommendations: string[] = [];
+
+  if (overview.successRate < 50) {
+    recommendations.push('Your success rate is below 50% - review subreddit rules before posting');
+  }
+
+  const topSub = subredditPerf[0];
+  if (topSub && topSub.successRate > 80) {
+    recommendations.push(`r/${topSub.subreddit} has ${topSub.successRate}% success rate - great fit for your content`);
+  }
+
+  if (overview.totalCaptionsGenerated > overview.totalPosts * 2) {
+    recommendations.push('You generate more captions than posts - consider scheduling more content');
+  }
+
+  return recommendations;
+}
+
+function buildWarnings(overview: any, activity: any[]): string[] {
+  const warnings: string[] = [];
+  const recentDays = activity.slice(-7);
+  const recentPosts = recentDays.reduce((sum, day) => sum + day.posts, 0);
+
+  if (recentPosts < 3) {
+    warnings.push('Posting frequency low - aim for 5+ posts per week for better growth');
+  }
+
+  if (overview.failedPosts > overview.successfulPosts) {
+    warnings.push('More failed posts than successful - check validation warnings before posting');
+  }
+
+  return warnings;
+}
+
+function buildOpportunities(subredditPerf: any[]): Array<{ subreddit: string; reason: string; potential: number }> {
+  return subredditPerf
+    .filter(sub => sub.totalPosts >= 3 && sub.successRate >= 70)
+    .slice(0, 3)
+    .map(sub => ({
+      subreddit: sub.subreddit,
+      reason: `${sub.successRate}% success rate with ${sub.avgUpvotes} avg upvotes`,
+      potential: Math.min(95, sub.successRate + 10)
+    }));
+}
+
+async function getBestPostingTimes(userId: number, daysBack: number): Promise<Array<{ hour: number; day: string; engagement: number }>> {
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - daysBack);
+
+  const results = await db
+    .select({
+      hour: sql<number>`EXTRACT(HOUR FROM occurred_at)`,
+      dayName: sql<string>`TO_CHAR(occurred_at, 'Day')`,
+      postCount: sql<number>`COUNT(*)`,
+      avgEngagement: sql<number>`AVG(COALESCE(upvotes, 0) + COALESCE(views, 0))`,
+      successRate: sql<number>`COUNT(CASE WHEN success = true THEN 1 END)::float / NULLIF(COUNT(*), 0) * 100`
+    })
+    .from(redditPostOutcomes)
+    .where(
+      and(
+        eq(redditPostOutcomes.userId, userId),
+        gte(redditPostOutcomes.occurredAt, startDate)
+      )
+    )
+    .groupBy(sql`EXTRACT(HOUR FROM occurred_at), TO_CHAR(occurred_at, 'Day')`)
+    .having(sql`COUNT(*) >= 3`)
+    .orderBy(desc(sql`AVG(COALESCE(upvotes, 0) + COALESCE(views, 0))`), desc(sql`COUNT(CASE WHEN success = true THEN 1 END)::float / NULLIF(COUNT(*), 0)`))
+    .limit(3);
+
+  return results.map(r => ({
+    hour: Math.floor(Number(r.hour)),
+    day: r.dayName.trim(),
+    engagement: Math.round(Number(r.avgEngagement))
+  }));
+}
+
 analyticsRouter.get("/landing/summary", handleLandingMetrics);
 analyticsRouter.get("/metrics", handleLandingMetrics);
 analyticsRouter.get("/summary", handleLandingMetrics);
+
+/**
+ * GET /api/analytics/overview
+ * User-specific analytics overview with post stats and engagement
+ */
+analyticsRouter.get("/overview", authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const daysBack = parseInt(req.query.days as string) || 30;
+    const overview = await getUserAnalyticsOverview(userId, daysBack);
+
+    res.json(overview);
+  } catch (error) {
+    logger.error('Failed to fetch analytics overview', { error, userId: req.user?.id });
+    res.status(500).json({ error: 'Failed to fetch analytics overview' });
+  }
+});
+
+/**
+ * GET /api/analytics/subreddits
+ * Per-subreddit performance metrics
+ */
+analyticsRouter.get("/subreddits", authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const daysBack = parseInt(req.query.days as string) || 30;
+    const performance = await getSubredditPerformance(userId, daysBack);
+
+    res.json({ subreddits: performance });
+  } catch (error) {
+    logger.error('Failed to fetch subreddit performance', { error, userId: req.user?.id });
+    res.status(500).json({ error: 'Failed to fetch subreddit performance' });
+  }
+});
+
+/**
+ * GET /api/analytics/activity
+ * Recent activity timeline
+ */
+analyticsRouter.get("/activity", authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const limit = parseInt(req.query.limit as string) || 20;
+    const activity = await getRecentActivity(userId, limit);
+
+    res.json({ activity });
+  } catch (error) {
+    logger.error('Failed to fetch recent activity', { error, userId: req.user?.id });
+    res.status(500).json({ error: 'Failed to fetch recent activity' });
+  }
+});
+
+/**
+ * GET /api/analytics/posting-activity
+ * Daily posting stats for charts
+ */
+analyticsRouter.get("/posting-activity", authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const daysBack = parseInt(req.query.days as string) || 30;
+    const activity = await getPostingActivity(userId, daysBack);
+
+    res.json({ activity });
+  } catch (error) {
+    logger.error('Failed to fetch posting activity', { error, userId: req.user?.id });
+    res.status(500).json({ error: 'Failed to fetch posting activity' });
+  }
+});
+
+/**
+ * GET /api/analytics/reddit-stats
+ * User's Reddit account stats (karma, age, username)
+ */
+analyticsRouter.get("/reddit-stats", authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const stats = await getUserRedditStats(userId);
+
+    if (!stats) {
+      return res.status(404).json({ error: 'Reddit account not connected' });
+    }
+
+    res.json(stats);
+  } catch (error) {
+    logger.error('Failed to fetch Reddit stats', { error, userId: req.user?.id });
+    res.status(500).json({ error: 'Failed to fetch Reddit stats' });
+  }
+});
 
 export { analyticsRouter, loadLandingMetrics };

@@ -4,7 +4,7 @@
  */
 
 import { db } from '../db.js';
-import { redditCommunities } from '@shared/schema';
+import { redditCommunities, createDefaultRules } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { logger } from '../bootstrap/logger.js';
 import type { RedditSubredditInfo } from './reddit-user-data.js';
@@ -51,6 +51,9 @@ export async function upsertCommunity(
         community.over18
       );
 
+      // Provide safe defaults if parsing failed
+      const safeRules = parsedRules || createDefaultRules();
+
       // Create new community
       await db.insert(redditCommunities).values({
         id: communityId,
@@ -62,15 +65,15 @@ export async function upsertCommunity(
         description: community.description || community.publicDescription || null,
         engagementRate: 50, // Default, will be updated by analytics later
         category: community.over18 ? 'nsfw' : 'general',
-        verificationRequired: parsedRules.eligibility?.verificationRequired ?? false,
-        promotionAllowed: parsedRules.content?.promotionalLinks === 'yes'
+        verificationRequired: safeRules.eligibility?.verificationRequired ?? false,
+        promotionAllowed: safeRules.content?.promotionalLinks === 'yes'
           ? 'yes'
-          : parsedRules.content?.promotionalLinks === 'limited'
+          : safeRules.content?.promotionalLinks === 'limited'
             ? 'limited'
             : 'no',
-        rules: parsedRules,
-        postingLimits: parsedRules.posting?.maxPostsPerDay
-          ? { perDay: parsedRules.posting.maxPostsPerDay, cooldownHours: parsedRules.posting.cooldownHours }
+        rules: safeRules,
+        postingLimits: safeRules.posting?.maxPostsPerDay
+          ? { perDay: safeRules.posting.maxPostsPerDay, cooldownHours: safeRules.posting.cooldownHours }
           : null,
         tags: [], // Can be enhanced later
         averageUpvotes: null,
@@ -87,10 +90,10 @@ export async function upsertCommunity(
         over18: community.over18,
         contributorUserId,
         rulesDetected: {
-          minKarma: parsedRules.eligibility?.minKarma,
-          minAccountAge: parsedRules.eligibility?.minAccountAgeDays,
-          verification: parsedRules.eligibility?.verificationRequired,
-          promotionalLinks: parsedRules.content?.promotionalLinks,
+          minKarma: safeRules.eligibility?.minKarma,
+          minAccountAge: safeRules.eligibility?.minAccountAgeDays,
+          verification: safeRules.eligibility?.verificationRequired,
+          promotionalLinks: safeRules.content?.promotionalLinks,
         },
       });
     }

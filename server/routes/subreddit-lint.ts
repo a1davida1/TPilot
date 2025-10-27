@@ -221,22 +221,30 @@ router.post('/', authenticateToken(true), async (req: AuthRequest, res: Response
 router.get('/:subreddit', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const subreddit = req.params.subreddit;
-    const rule = getSubredditRule(subreddit);
 
-    if (!rule) {
+    // Fetch subreddit rules from database
+    const [communityData] = await db
+      .select()
+      .from(redditCommunities)
+      .where(eq(redditCommunities.id, subreddit.toLowerCase()))
+      .limit(1);
+
+    if (!communityData) {
       return res.status(404).json({ error: 'No cached rules for this subreddit' });
     }
 
+    const rules = communityData.rules;
+
     return res.status(200).json({
-      subreddit: rule.subreddit,
-      nsfwRequired: rule.nsfwRequired,
-      bannedWords: rule.bannedWords,
-      titleMin: rule.titleMin,
-      titleMax: rule.titleMax,
-      requiresFlair: rule.requiresFlair,
-      allowedFlairs: rule.allowedFlairs,
-      notes: rule.notes,
-      updatedAt: rule.updatedAt
+      subreddit: communityData.name,
+      nsfwRequired: communityData.over18,
+      minKarma: rules?.eligibility?.minKarma ?? null,
+      minAccountAgeDays: rules?.eligibility?.minAccountAgeDays ?? null,
+      verificationRequired: rules?.eligibility?.verificationRequired ?? false,
+      promotionalLinks: rules?.content?.promotionalLinks ?? null,
+      linkRestrictions: rules?.content?.linkRestrictions ?? [],
+      bannedContent: rules?.content?.bannedContent ?? [],
+      updatedAt: communityData.updatedAt?.toISOString() ?? null
     });
 
   } catch (e: unknown) {

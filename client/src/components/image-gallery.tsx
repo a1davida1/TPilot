@@ -561,7 +561,11 @@ export function ImageGallery() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {filteredImages.map((image) => {
                 const isLibrary = isLibraryImage(image);
-                const cardTestId = isLibrary ? `image-card-${image.libraryId}` : `image-card-catbox-${image.catboxId}`;
+                const cardTestId = isLibrary
+                  ? `image-card-${image.libraryId}`
+                  : image.origin === 'catbox'
+                    ? `image-card-catbox-${image.catboxId}`
+                    : `image-card-imgur-${image.id}`;
                 return (
                   <button
                     key={image.id}

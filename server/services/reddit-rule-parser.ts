@@ -266,6 +266,10 @@ export function mergeRules(
     return parsed;
   }
 
+  if (!parsed) {
+    return existing;
+  }
+
   return {
     eligibility: {
       minKarma: existing.eligibility?.minKarma ?? parsed.eligibility?.minKarma,
@@ -278,11 +282,11 @@ export function mergeRules(
       promotionalLinks: existing.content?.promotionalLinks ?? parsed.content?.promotionalLinks,
       watermarksAllowed: existing.content?.watermarksAllowed ?? parsed.content?.watermarksAllowed,
       requiresOriginalContent: existing.content?.requiresOriginalContent ?? parsed.content?.requiresOriginalContent,
-      titleGuidelines: existing.content?.titleGuidelines ?? parsed.content?.titleGuidelines,
-      contentGuidelines: existing.content?.contentGuidelines ?? parsed.content?.contentGuidelines,
-      linkRestrictions: existing.content?.linkRestrictions ?? parsed.content?.linkRestrictions,
-      bannedContent: existing.content?.bannedContent ?? parsed.content?.bannedContent,
-      formattingRequirements: existing.content?.formattingRequirements ?? parsed.content?.formattingRequirements,
+      titleGuidelines: existing.content?.titleGuidelines ?? parsed.content?.titleGuidelines ?? [],
+      contentGuidelines: existing.content?.contentGuidelines ?? parsed.content?.contentGuidelines ?? [],
+      linkRestrictions: existing.content?.linkRestrictions ?? parsed.content?.linkRestrictions ?? [],
+      bannedContent: existing.content?.bannedContent ?? parsed.content?.bannedContent ?? [],
+      formattingRequirements: existing.content?.formattingRequirements ?? parsed.content?.formattingRequirements ?? [],
     },
     posting: {
       maxPostsPerDay: existing.posting?.maxPostsPerDay ?? parsed.posting?.maxPostsPerDay,
