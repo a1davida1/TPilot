@@ -1216,7 +1216,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
         {coreCards.length > 0 && (
           <section aria-labelledby="workflow-core-heading" className="mb-8">
             <h2 id="workflow-core-heading" className="text-xl font-semibold text-white mb-4">Getting Started</h2>
-            <nav aria-labelledby="workflow-core-heading" data-testid="workflow-nav-core">
+            <nav aria-labelledby="workflow-core-heading" id="workflow-core-nav" data-testid="workflow-nav-core">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {coreCards.map((card) => (
                   <Card
