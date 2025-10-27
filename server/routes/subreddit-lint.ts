@@ -244,7 +244,7 @@ router.get('/:subreddit', authenticateToken(true), async (req: AuthRequest, res:
       promotionalLinks: rules?.content?.promotionalLinks ?? null,
       linkRestrictions: rules?.content?.linkRestrictions ?? [],
       bannedContent: rules?.content?.bannedContent ?? [],
-      updatedAt: communityData.updatedAt?.toISOString() ?? null
+      updatedAt: new Date().toISOString() // Community data doesn't have updatedAt field
     });
 
   } catch (e: unknown) {

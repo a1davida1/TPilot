@@ -51,8 +51,8 @@ export async function upsertCommunity(
         community.over18
       );
 
-      // Provide safe defaults if parsing failed
-      const safeRules = parsedRules || createDefaultRules();
+      // Provide safe defaults if parsing failed (non-null assertion safe because createDefaultRules() always returns a value)
+      const safeRules = (parsedRules ?? createDefaultRules())!;
 
       // Create new community
       await db.insert(redditCommunities).values({
