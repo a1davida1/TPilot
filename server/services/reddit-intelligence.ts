@@ -751,10 +751,11 @@ export class RedditIntelligenceService {
         confidence = Math.min(99, confidence + 8);
       }
 
-      let projectedEngagement = Math.max(0, Math.round((engagementRate || 40) * (1 + trend.score / 150)));
-      if (isUserCommunity) {
-        projectedEngagement = Math.max(projectedEngagement, Math.round(projectedEngagement * 1.1 + 5));
-      }
+let projectedEngagement = Math.max(0, Math.round((engagementRate || 40) * (1 + trend.score / 150)));
+if (isUserCommunity) {
+  // Apply a boost of 10% plus a flat 5 points for user communities
+  projectedEngagement = Math.round(projectedEngagement * 1.1 + 5);
+}
 
       let rationale = buildRationale(community, trend, signal);
       if (isUserCommunity) {
