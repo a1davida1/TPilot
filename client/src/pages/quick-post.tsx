@@ -44,9 +44,9 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { RedditNativeUploadPortal } from '@/components/RedditNativeUploadPortal';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { sanitizeImageUrl } from '@/lib/image-utils';
 import { StatusBanner } from '@/components/ui/status-banner';
 import { StickyRail } from '@/components/ui/sticky-rail';
+import { cn } from '@/lib/utils';
 import type { CaptionObject } from '@shared/types/caption';
 import type { SubredditCommunity } from '@/types/reddit';
 import {
@@ -322,7 +322,7 @@ export default function QuickPostPage() {
         const style = nsfwFlag ? 'explicit' : 'authentic';
         const mood = nsfwFlag ? 'seductive' : 'engaging';
 
-        const response = await apiRequest('POST', '/api/caption/generate', {
+        const response = await apiRequest<GenerationApiResponse>('POST', '/api/caption/generate', {
           imageUrl: url,
           platform: service,
           voice: tone,
@@ -333,15 +333,8 @@ export default function QuickPostPage() {
         });
 
         clearInterval(progressInterval);
-
-        if (!response.ok) {
-          console.error('[Quick Post] API response not ok:', response.status, response.statusText);
-          throw new Error(`API request failed: ${response.status}`);
-        }
-
         setCaptionProgress(100);
-        const payload = await response.json() as GenerationApiResponse;
-        return payload;
+        return response;
       } catch (error) {
         clearInterval(progressInterval);
         setCaptionProgress(0);
@@ -497,13 +490,12 @@ export default function QuickPostPage() {
 
   const subredditLint = useMutation<SubredditLintResponse, Error, { subreddit: string; title: string; caption: string; nsfwFlag: boolean }>({
     mutationFn: async ({ subreddit: targetSubreddit, title, caption, nsfwFlag }) => {
-      const response = await apiRequest('POST', '/api/subreddit-lint', {
+      return await apiRequest<SubredditLintResponse>('POST', '/api/subreddit-lint', {
         subreddit: targetSubreddit,
         title,
         caption, // NEW: Pass caption for validation
         nsfw: nsfwFlag
       });
-      return response.json() as Promise<SubredditLintResponse>;
     },
     onSuccess: (data) => {
       const hasBlockers = (data.blockers ?? []).length > 0;
@@ -565,7 +557,7 @@ export default function QuickPostPage() {
       }, 200);
 
       try {
-        const response = await apiRequest('POST', '/api/reddit/post', {
+        const response = await apiRequest<RedditPostSuccessResponse>('POST', '/api/reddit/post', {
           title: truncateTitle(captionText),
           subreddit: normalizedSubreddit,
           assetId: assetId,
@@ -576,39 +568,8 @@ export default function QuickPostPage() {
         });
 
         clearInterval(progressInterval);
-
-        if (!response.ok) {
-          let errorMessage = `Failed to post to Reddit (${response.status})`;
-          try {
-            const errorData = await response.clone().json() as RedditPostErrorResponse;
-            const serverMessage = errorData?.error || errorData?.message || errorData?.reason;
-            const combinedReasons = Array.isArray(errorData?.reasons)
-              ? errorData.reasons.filter((value): value is string => Boolean(value?.trim()))
-              : [];
-            if (serverMessage) {
-              errorMessage = serverMessage;
-            } else if (combinedReasons.length > 0) {
-              errorMessage = combinedReasons.join(' • ');
-            }
-          } catch {
-            try {
-              const fallbackText = await response.text();
-              if (fallbackText) {
-                errorMessage = fallbackText;
-              }
-            } catch {
-              // ignore parsing errors
-            }
-          }
-          throw new Error(errorMessage);
-        }
-
         setPostingProgress(100);
-        try {
-          return await response.json() as RedditPostSuccessResponse;
-        } catch {
-          return { success: true } satisfies RedditPostSuccessResponse;
-        }
+        return response;
       } catch (error) {
         clearInterval(progressInterval);
         setPostingProgress(0);

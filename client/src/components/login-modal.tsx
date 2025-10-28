@@ -34,14 +34,13 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
     const password = formData.get("password") as string;
 
     try {
-      const response = await apiRequest("POST", "/api/auth/login", {
+      const data = await apiRequest<{ accessToken?: string; token?: string; user: { username: string; id?: number }; userId?: number; mustChangePassword?: boolean }>("POST", "/api/auth/login", {
         username,
         password
       });
 
-      // Check for temporary password status (202 response)
-      if (response.status === 202) {
-        const data = await response.json();
+      // Check for temporary password status
+      if (data.mustChangePassword) {
         toast({
           title: "Password Change Required",
           description: "You must change your temporary password before continuing.",
@@ -51,8 +50,6 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
         window.location.href = `/change-password?userId=${data.userId}`;
         return;
       }
-
-      const data = await response.json();
 
       // Phase 3: Store access token in memory only
       const { setAccessToken } = await import('@/lib/auth');
@@ -100,12 +97,11 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
     const password = formData.get("password") as string;
 
     try {
-      const response = await apiRequest("POST", "/api/auth/signup", {
+      const data = await apiRequest<{ accessToken?: string; token?: string; user: { username: string; id?: number; email?: string } }>("POST", "/api/auth/signup", {
         username,
         email,
         password
       });
-      const data = await response.json();
 
       // Phase 3: Store access token in memory only
       const { setAccessToken } = await import('@/lib/auth');

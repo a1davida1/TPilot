@@ -82,18 +82,7 @@ export default function AnalyticsPage() {
   const { data: analytics, isLoading, error } = useQuery<AnalyticsData>({
     queryKey: ['/api/analytics', timeRange, userTier],
     queryFn: async () => {
-      const response = await apiRequest('GET', `/api/analytics?range=${timeRange}&tier=${userTier}`);
-      
-      if (!response.ok) {
-        const errorPayload: unknown = await response.json().catch(() => ({} as unknown));
-        const message = typeof (errorPayload as { message?: unknown }).message === 'string'
-          ? (errorPayload as { message: string }).message
-          : response.statusText || 'Failed to load analytics';
-        throw new Error(message);
-      }
-      
-      const data = await response.json() as AnalyticsData;
-      return data;
+      return await apiRequest<AnalyticsData>('GET', `/api/analytics?range=${timeRange}&tier=${userTier}`);
     },
     enabled: isProOrHigher, // Only fetch for Pro and above
     retry: 1,

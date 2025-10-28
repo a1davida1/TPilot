@@ -43,14 +43,14 @@ export function RedditAccounts() {
   }, [queryClient, toast]);
 
   // Fetch connected Reddit accounts
-  const { data: accounts, isLoading } = useQuery({
+  const { data: accounts, isLoading } = useQuery<RedditAccount[]>({
     queryKey: ['/api/reddit/accounts'],
-    queryFn: () => apiRequest('GET', '/api/reddit/accounts').then(res => res.json())
+    queryFn: () => apiRequest<RedditAccount[]>('GET', '/api/reddit/accounts')
   });
 
   // Test Reddit connection
   const testConnectionMutation = useMutation({
-    mutationFn: () => apiRequest('POST', '/api/reddit/test').then(res => res.json()),
+    mutationFn: () => apiRequest<{ connected: boolean; profile?: { username: string } }>('POST', '/api/reddit/test'),
     onSuccess: (data) => {
       if (data.connected) {
         toast({
@@ -76,7 +76,7 @@ export function RedditAccounts() {
 
   // Disconnect Reddit account
   const disconnectMutation = useMutation({
-    mutationFn: (accountId: number) => apiRequest('DELETE', `/api/reddit/accounts/${accountId}`).then(res => res.json()),
+    mutationFn: (accountId: number) => apiRequest<{ success: boolean }>('DELETE', `/api/reddit/accounts/${accountId}`),
     onSuccess: () => {
       toast({
         title: "Account Disconnected",
@@ -119,9 +119,9 @@ export function RedditAccounts() {
   // Connect to Reddit
   const connectToReddit = async () => {
     if (!requireAuth("connect your Reddit account")) return;
-    
+
     try {
-      const response = await apiRequest('GET', '/api/reddit/connect?intent=account-link&queue=account-management').then(res => res.json());
+      const response = await apiRequest<{ authUrl?: string }>('GET', '/api/reddit/connect?intent=account-link&queue=account-management');
       if (response.authUrl) {
         // Open Reddit OAuth in new window
         window.open(response.authUrl, '_blank', 'width=600,height=700');

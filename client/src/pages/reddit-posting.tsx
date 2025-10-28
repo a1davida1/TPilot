@@ -528,8 +528,7 @@ export default function RedditPostingPage() {
   // Test Reddit connection
   const { mutate: testConnection, isPending: testingConnection } = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/reddit/test');
-      return response.json();
+      return await apiRequest<ConnectionTestResponse>('POST', '/api/reddit/test');
     },
     onSuccess: (data: ConnectionTestResponse) => {
       void queryClient.invalidateQueries({ queryKey: ['/api/reddit/shadowban-status'] });
@@ -553,8 +552,7 @@ export default function RedditPostingPage() {
   // Connect Reddit account
   const { mutate: connectReddit, isPending: connectingReddit } = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('GET', '/api/reddit/connect?intent=posting&queue=reddit-posting');
-      return response.json();
+      return await apiRequest<ConnectRedditResponse>('GET', '/api/reddit/connect?intent=posting&queue=reddit-posting');
     },
     onSuccess: (data: ConnectRedditResponse) => {
       if (data.authUrl) {
@@ -587,8 +585,7 @@ export default function RedditPostingPage() {
   // Content policy validation
   const { mutate: validateContent, isPending: validating, data: validation } = useMutation({
     mutationFn: async (data: { subreddit: string; title: string; body: string; hasLink: boolean }) => {
-      const response = await apiRequest('POST', '/api/preview', data);
-      return response.json();
+      return await apiRequest<ContentValidationResponse>('POST', '/api/preview', data);
     },
     onSuccess: (data: ContentValidationResponse) => {
       toast({
@@ -602,8 +599,7 @@ export default function RedditPostingPage() {
   // Submit post
   const { mutate: submitPost, isPending: submitting } = useMutation({
     mutationFn: async (data: PostData) => {
-      const response = await apiRequest('POST', '/api/reddit/submit', data);
-      return response.json();
+      return await apiRequest<PostSubmissionResponse>('POST', '/api/reddit/submit', data);
     },
     onSuccess: (data: PostSubmissionResponse) => {
       if (data.success) {
@@ -641,8 +637,7 @@ export default function RedditPostingPage() {
   // Schedule post
   const { mutate: schedulePost, isPending: scheduling } = useMutation<SchedulePostResponse, unknown, { subreddit: string; title: string; body: string; scheduledAt?: string }>({
     mutationFn: async (data) => {
-      const response = await apiRequest('POST', '/api/posts/schedule', data);
-      return response.json();
+      return await apiRequest<SchedulePostResponse>('POST', '/api/posts/schedule', data);
     },
     onSuccess: (data) => {
       if (data.success) {

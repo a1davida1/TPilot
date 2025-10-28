@@ -47,9 +47,7 @@ export function useDashboardStats() {
     queryKey: ['dashboard-stats'],
     queryFn: async () => {
       try {
-        const response = await apiRequest('GET', '/api/dashboard/stats');
-        const data = await response.json() as DashboardStats;
-        return data;
+        return await apiRequest<DashboardStats>('GET', '/api/dashboard/stats');
       } catch (error) {
         // Return fallback data if API fails
         console.error('Failed to fetch dashboard stats:', error);
@@ -73,9 +71,7 @@ export function useRecentActivity() {
     queryKey: ['dashboard-activity'],
     queryFn: async () => {
       try {
-        const response = await apiRequest('GET', '/api/dashboard/activity');
-        const data = await response.json() as RecentActivity[];
-        return data;
+        return await apiRequest<RecentActivity[]>('GET', '/api/dashboard/activity');
       } catch (error) {
         console.error('Failed to fetch activity:', error);
         // Return mock data as fallback
@@ -108,12 +104,7 @@ export function useUpcomingPosts(limit: number = 5) {
     queryKey: ['upcoming-posts', limit],
     queryFn: async () => {
       try {
-        const response = await apiRequest(
-          'GET',
-          `/api/posts/upcoming?limit=${limit}`
-        );
-        const data = await response.json() as UpcomingPost[];
-        return data;
+        return await apiRequest<UpcomingPost[]>('GET', `/api/posts/upcoming?limit=${limit}`);
       } catch (error) {
         console.error('Failed to fetch upcoming posts:', error);
         return [];
@@ -130,9 +121,13 @@ export function usePerformanceData(days: number = 7) {
     queryKey: ['performance-data', days],
     queryFn: async () => {
       try {
-        const response = await apiRequest('GET', `/api/analytics/performance?days=${days}`);
-        const data = await response.json();
-        return data;
+        return await apiRequest<{
+          labels: string[];
+          datasets: {
+            views: number[];
+            engagement: number[];
+          };
+        }>('GET', `/api/analytics/performance?days=${days}`);
       } catch (error) {
         console.error('Failed to fetch performance data:', error);
         // Return mock data structure

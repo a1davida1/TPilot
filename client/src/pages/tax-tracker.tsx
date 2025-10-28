@@ -178,8 +178,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier: _userTier = 'free' })
   const { data: expenseCategories = [], isLoading: categoriesLoading, error: categoriesError } = useQuery<ExpenseCategory[]>({
     queryKey: ['/api/expense-categories'],
     queryFn: async () => {
-      const res = await apiRequest('GET', '/api/expense-categories');
-      return res.json();
+      return await apiRequest<ExpenseCategory[]>('GET', '/api/expense-categories');
     }
   });
 
@@ -205,8 +204,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier: _userTier = 'free' })
     useQuery({
     queryKey: ['/api/expenses/totals'],
     queryFn: async () => {
-      const res = await apiRequest('GET', '/api/expenses/totals');
-      return res.json();
+      return await apiRequest<{ total: number; deductible: number; byCategory: Record<string, number> }>('GET', '/api/expenses/totals');
     }
   });
 
@@ -216,8 +214,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier: _userTier = 'free' })
   const { data: recentExpenses = [], isLoading: recentLoading, error: recentError } = useQuery<Expense[]>({
     queryKey: ['/api/expenses'],
     queryFn: async () => {
-      const res = await apiRequest('GET', '/api/expenses');
-      return res.json();
+      return await apiRequest<Expense[]>('GET', '/api/expenses');
     }
   });
 
@@ -230,8 +227,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier: _userTier = 'free' })
         startDate: format(startOfMonth(calendarDate), 'yyyy-MM-dd'),
         endDate: format(endOfMonth(calendarDate), 'yyyy-MM-dd')
       });
-      const res = await apiRequest('GET', `/api/expenses/range?${params.toString()}`);
-      return res.json();
+      return await apiRequest<Expense[]>('GET', `/api/expenses/range?${params.toString()}`);
     }
   });
 
@@ -251,8 +247,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier: _userTier = 'free' })
         params.set('category', category);
       }
       const url = params.size > 0 ? `${endpoint}?${params.toString()}` : endpoint;
-      const res = await apiRequest('GET', url);
-      return res.json();
+      return await apiRequest<TaxDeductionGuidance[]>('GET', url);
     },
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 15
@@ -261,8 +256,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier: _userTier = 'free' })
   // Create expense mutation
   const createExpenseMutation = useMutation({
     mutationFn: async (expenseData: Omit<Expense, 'id' | 'category'>) => {
-      const response = await apiRequest('POST', '/api/expenses', expenseData);
-      return response.json();
+      return await apiRequest<Expense>('POST', '/api/expenses', expenseData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
@@ -281,8 +275,7 @@ const TaxTracker: React.FC<TaxTrackerProps> = ({ userTier: _userTier = 'free' })
     mutationFn: async ({ expenseId, file }: { expenseId: string; file: File }) => {
       const formData = new FormData();
       formData.append('receipt', file);
-      const res = await apiRequest('POST', `/api/expenses/${expenseId}/receipt`, formData);
-      return res.json();
+      return await apiRequest<Expense>('POST', `/api/expenses/${expenseId}/receipt`, formData);
     },
     onSuccess: (updatedExpense: Expense) => {
       queryClient.setQueryData<Expense[]>(['/api/expenses'], (old = []) =>

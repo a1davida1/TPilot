@@ -110,9 +110,8 @@ export function RedditQuickPost() {
   const connectReddit = async () => {
     setIsConnecting(true);
     try {
-      const response = await apiRequest('GET', '/api/reddit/connect?intent=posting&queue=reddit-posting');
-      const data = await response.json();
-      
+      const data = await apiRequest<{ authUrl?: string }>('GET', '/api/reddit/connect?intent=posting&queue=reddit-posting');
+
       if (data.authUrl) {
         window.open(data.authUrl, '_blank');
         toast({
@@ -134,8 +133,7 @@ export function RedditQuickPost() {
   // Submit post
   const { mutate: submitPost, isPending: submitting } = useMutation({
     mutationFn: async (data: QuickPostPayload) => {
-      const response = await apiRequest('POST', '/api/reddit/submit', data);
-      return response.json();
+      return await apiRequest<{ success?: boolean; error?: string }>('POST', '/api/reddit/submit', data);
     },
     onSuccess: (data: unknown) => {
       const responseData = data as { success?: boolean; error?: string };

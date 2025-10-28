@@ -20,22 +20,7 @@ export default function HistoryPage() {
   const [filterType, setFilterType] = useState('all');
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  // Helper for consistent error handling
-  const performRequest = async (method: string, url: string, payload?: unknown) => {
-    const response = await apiRequest(method, url, payload);
-    if (!response.ok) {
-      const rawBody: unknown = await response.json().catch(() => ({} as unknown));
-      const message = typeof (rawBody as { message?: unknown }).message === 'string'
-        ? (rawBody as { message: string }).message
-        : typeof (rawBody as { error?: unknown }).error === 'string'
-          ? (rawBody as { error: string }).error
-          : response.statusText || 'Request failed';
-      throw new Error(message);
-    }
-    return response;
-  };
-  
+
   // Batch selection for bulk actions
   const {
     selectedItems,
@@ -51,7 +36,7 @@ export default function HistoryPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      await performRequest('DELETE', `/api/content-generations/${id}`);
+      await apiRequest('DELETE', `/api/content-generations/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/content-generations'] });
@@ -64,7 +49,7 @@ export default function HistoryPage() {
 
   const saveMutation = useMutation({
     mutationFn: async (generation: ContentGeneration) => {
-      await performRequest('POST', '/api/saved-content', {
+      await apiRequest('POST', '/api/saved-content', {
         title: Array.isArray(generation.titles) ? generation.titles[0] || 'Untitled' : 'Untitled',
         content: generation.content,
         platform: generation.platform,

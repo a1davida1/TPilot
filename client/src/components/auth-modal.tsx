@@ -65,20 +65,18 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
 
     try {
       const { apiRequest } = await import('@/lib/queryClient');
-      const response = await apiRequest('POST', '/api/referral/apply', {
+      const payload = await apiRequest<{
+        success?: boolean;
+        error?: string;
+        status?: 'linked' | 'recorded';
+      }>('POST', '/api/referral/apply', {
         referralCode: code,
         applicant: {
           email: email.trim().toLowerCase()
         }
       });
 
-      const payload = await response.json().catch(() => null) as null | {
-        success?: boolean;
-        error?: string;
-        status?: 'linked' | 'recorded';
-      };
-
-      if (response.ok && payload?.success) {
+      if (payload?.success) {
         window.localStorage.removeItem('pendingReferralCode');
         setReferralCode(null);
         latestSignupEmailRef.current = null;
@@ -193,23 +191,9 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
       
       // Import apiRequest directly to use CSRF protection
       const { apiRequest } = await import('@/lib/queryClient');
-      
-      // Handle response errors properly for email verification
-      const response = await apiRequest('POST', endpoint, requestData);
 
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        const error = new Error(responseData.message || 'Authentication failed') as Error & AuthError;
-        error.code = responseData.code;
-        error.email = responseData.email;
-        throw error;
-      }
-
-      // Mark password change requirement in response data
-      if (response.status === 202) {
-        responseData.mustChangePassword = true;
-      }
+      // apiRequest handles errors internally and returns parsed JSON directly
+      const responseData = await apiRequest<AuthResponse>('POST', endpoint, requestData);
 
       return responseData;
     },
@@ -315,14 +299,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
   const forgotPasswordMutation = useMutation({
     mutationFn: async (email: string) => {
       const { apiRequest } = await import('@/lib/queryClient');
-      const response = await apiRequest('POST', '/api/auth/forgot-password', { email });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to send reset email');
-      }
-
-      return response.json();
+      return await apiRequest<{ success: boolean; message?: string }>('POST', '/api/auth/forgot-password', { email });
     },
     onSuccess: () => {
       toast({
@@ -347,9 +324,8 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'login' }:
     setIsResending(true);
     try {
       const { apiRequest } = await import('@/lib/queryClient');
-      const res = await apiRequest('POST', '/api/auth/resend-verification', { email });
-      
-      const _data = await res.json();
+      const _data = await apiRequest<{ success: boolean; message?: string }>('POST', '/api/auth/resend-verification', { email });
+
       toast({
         title: "Verification email sent",
         description: "Please check your inbox and spam folder",

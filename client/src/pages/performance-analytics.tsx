@@ -98,9 +98,8 @@ export function PerformanceAnalytics() {
 
   const loadUserSubreddits = async () => {
     try {
-      const response = await apiRequest('GET', `/api/analytics/user-subreddits?userId=${user?.id}`);
-      const data = await response.json();
-      
+      const data = await apiRequest<{ success: boolean; subreddits: string[] }>('GET', `/api/analytics/user-subreddits?userId=${user?.id}`);
+
       if (data.success && data.subreddits.length > 0) {
         setSubreddits(data.subreddits);
         setSubreddit(data.subreddits[0]); // Auto-select first
@@ -123,17 +122,13 @@ export function PerformanceAnalytics() {
     try {
       setLoading(true);
       setError(null);
-      
-      // Fetch performance, peak hours, and historical data in parallel
-      const [perfResponse, peakResponse, historicalResponse] = await Promise.all([
-        apiRequest('GET', `/api/analytics/performance?subreddit=${subreddit}&userId=${user?.id}`),
-        apiRequest('GET', `/api/analytics/peak-hours?subreddit=${subreddit}`),
-        apiRequest('GET', `/api/analytics/historical-performance?subreddit=${subreddit}&userId=${user?.id}&days=30`)
-      ]);
 
-      const perfData = await perfResponse.json();
-      const peakData = await peakResponse.json();
-      const historicalData = await historicalResponse.json();
+      // Fetch performance, peak hours, and historical data in parallel
+      const [perfData, peakData, historicalData] = await Promise.all([
+        apiRequest<{ success: boolean; data: PerformanceData }>('GET', `/api/analytics/performance?subreddit=${subreddit}&userId=${user?.id}`),
+        apiRequest<{ success: boolean; data: PeakHoursData }>('GET', `/api/analytics/peak-hours?subreddit=${subreddit}`),
+        apiRequest<{ success: boolean; data: HistoricalDataPoint[] }>('GET', `/api/analytics/historical-performance?subreddit=${subreddit}&userId=${user?.id}&days=30`)
+      ]);
 
       if (perfData.success) {
         setPerformanceData(perfData.data);
