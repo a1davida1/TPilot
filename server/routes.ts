@@ -1474,6 +1474,10 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   const { intelligenceRouter } = await import('./routes/intelligence.js');
   app.use('/api/intelligence', intelligenceRouter);
 
+  // Register Level 2 Intelligence Routes (hot posts analysis, community health)
+  const intelligenceLevel2Router = (await import('./routes/intelligence-level2.js')).default;
+  app.use('/api/intelligence-level2', intelligenceLevel2Router);
+
   // Register Health Monitor Routes (for account/community health tracking)
   const healthMonitorRouter = (await import('./routes/health-monitor.js')).default;
   app.use('/api/health', healthMonitorRouter);

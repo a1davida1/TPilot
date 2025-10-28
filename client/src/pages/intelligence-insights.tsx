@@ -139,6 +139,58 @@ interface CommunityRecommendation {
   };
 }
 
+// Level 2 Intelligence Types
+interface HotPost {
+  id: string;
+  title: string;
+  score: number;
+  numComments: number;
+  author: string;
+  createdUtc: number;
+  url: string;
+  permalink: string;
+}
+
+interface HotPostsAnalysis {
+  subreddit: string;
+  sampleSize: number;
+  fetchedAt: string;
+  topPosts: HotPost[];
+  patterns: {
+    avgTitleLength: number;
+    questionTitlePercentage: number;
+    emojiUsagePercentage: number;
+    avgEmojiCount: number;
+    avgScore: number;
+    avgComments: number;
+    topKeywords: Array<{ word: string; count: number; avgScore: number }>;
+    bestPerformingPattern: string;
+  };
+  insights: string[];
+}
+
+interface CommunityHealth {
+  subreddit: string;
+  fetchedAt: string;
+  metrics: {
+    subscribers: number;
+    activeUsers: number;
+    activeUserPercentage: number;
+    postsPerDay: number;
+    avgEngagementRate: number;
+  };
+  health: {
+    score: number;
+    status: 'thriving' | 'healthy' | 'declining' | 'dying';
+    trend: 'growing' | 'stable' | 'shrinking';
+  };
+  moderators: {
+    count: number;
+    names: string[];
+  };
+  recommendations: string[];
+}
+
 export function IntelligenceInsightsPage() {
   const { user } = useAuth();
   const [selectedSubreddit, setSelectedSubreddit] = useState<string>('');
@@ -173,6 +225,20 @@ export function IntelligenceInsightsPage() {
     queryKey: ['subreddit-recommendations'],
     queryFn: async () => apiRequest<SubredditRecommendations>('/api/intelligence/subreddit-recommendations'),
     enabled: !!user
+  });
+
+  // Fetch Level 2 hot posts analysis
+  const { data: hotPostsAnalysis, isLoading: hotPostsLoading } = useQuery({
+    queryKey: ['hot-posts-analysis', selectedSubreddit],
+    queryFn: async () => apiRequest<HotPostsAnalysis>(`/api/intelligence-level2/hot-posts/${selectedSubreddit}`),
+    enabled: !!selectedSubreddit
+  });
+
+  // Fetch Level 2 community health
+  const { data: communityHealth, isLoading: communityHealthLoading } = useQuery({
+    queryKey: ['community-health', selectedSubreddit],
+    queryFn: async () => apiRequest<CommunityHealth>(`/api/intelligence-level2/community-health/${selectedSubreddit}`),
+    enabled: !!selectedSubreddit
   });
 
   // Check tier access
@@ -263,7 +329,7 @@ export function IntelligenceInsightsPage() {
         </Alert>
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="title">
               <MessageSquare className="h-4 w-4 mr-2" />
               Title Analysis
@@ -275,6 +341,14 @@ export function IntelligenceInsightsPage() {
             <TabsTrigger value="recommendations">
               <Target className="h-4 w-4 mr-2" />
               Recommendations
+            </TabsTrigger>
+            <TabsTrigger value="hotposts">
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Hot Posts
+            </TabsTrigger>
+            <TabsTrigger value="health">
+              <Users className="h-4 w-4 mr-2" />
+              Community Health
             </TabsTrigger>
           </TabsList>
 
