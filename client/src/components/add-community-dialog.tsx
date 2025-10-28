@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, type ApiError } from '@/lib/queryClient';
 import { Plus, Search, Loader2, CheckCircle, AlertCircle, Users, Shield } from 'lucide-react';
 
 interface LookupCommunityResponse {
@@ -36,13 +36,30 @@ export function AddCommunityDialog({ onCommunityAdded, trigger }: AddCommunityDi
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const lookupMutation = useMutation({
+  const lookupMutation = useMutation<LookupCommunityResponse, ApiError, string>({
     mutationFn: async (name: string) => {
       const cleanName = name.toLowerCase().replace(/^r\//, '').trim();
-      return apiRequest<LookupCommunityResponse>('/api/user-communities/lookup', {
-        method: 'POST',
-        body: { subreddit: cleanName }
-      });
+      const response = await apiRequest('POST', '/api/user-communities/lookup', { subreddit: cleanName });
+
+      const payload: unknown = await response
+        .json()
+        .catch(() => ({ error: 'Failed to parse lookup response' }));
+
+      if (!response.ok) {
+        const message = typeof (payload as { error?: unknown }).error === 'string'
+          ? (payload as { error: string }).error
+          : typeof (payload as { message?: unknown }).message === 'string'
+            ? (payload as { message: string }).message
+            : 'Failed to look up subreddit';
+        const apiError = new Error(message) as ApiError;
+        apiError.status = response.status;
+        apiError.statusText = response.statusText;
+        apiError.userMessage = message;
+        apiError.responseBody = payload;
+        throw apiError;
+      }
+
+      return payload as LookupCommunityResponse;
     },
     onSuccess: (data) => {
       if (data.alreadyExists) {
@@ -65,8 +82,12 @@ export function AddCommunityDialog({ onCommunityAdded, trigger }: AddCommunityDi
       setSubredditName('');
       onCommunityAdded?.();
     },
-    onError: (error: any) => {
-      const message = error?.message || 'Failed to look up subreddit';
+    onError: (error) => {
+      const message = (error && typeof error === 'object' && 'userMessage' in error && typeof (error as ApiError).userMessage === 'string')
+        ? (error as ApiError).userMessage
+        : error instanceof Error
+          ? error.message
+          : 'Failed to look up subreddit';
       toast({
         title: 'Error',
         description: message,
