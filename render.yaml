@@ -49,6 +49,45 @@ services:
         sync: false
     healthCheckPath: /api/health
 
+  # Cron service for scheduled tasks ($7/month Starter plan)
+  # Runs scheduled posts, analytics updates, cleanup jobs
+  - type: cron
+    name: thottopilot-scheduler
+    runtime: node
+    schedule: "* * * * *"  # Every minute (cron-manager handles individual job schedules)
+    buildCommand: npm ci && npm run build
+    startCommand: node dist/server/bin/cron-runner.js
+    envVars:
+      - key: NODE_VERSION
+        value: 20.9.0
+      - key: NODE_ENV
+        value: production
+      - key: USE_PG_QUEUE
+        value: true
+      # Database
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tpilot-db
+          property: connectionString
+      # Required secrets
+      - key: JWT_SECRET
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      # Reddit OAuth (required for posting)
+      - key: REDDIT_CLIENT_ID
+        sync: false
+      - key: REDDIT_CLIENT_SECRET
+        sync: false
+      # OpenRouter (for AI caption generation in scheduled posts)
+      - key: OPENROUTER_API_KEY
+        sync: false
+      # Image storage
+      - key: IMGUR_CLIENT_ID
+        sync: false
+
 databases:
   - name: tpilot-db
     databaseName: tpilot_production
