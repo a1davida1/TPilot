@@ -3,10 +3,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { ArrowLeft, Sparkles } from "lucide-react";
+import { StatusBanner } from "@/components/ui/status-banner";
+import { useQuery } from "@tanstack/react-query";
 
 export default function CaptionGeneratorPage() {
+  // Fetch caption usage stats
+const { data: captionStats } = useQuery<{ used: number; limit: number; remaining: number }>({
+  queryKey: ['/api/generations/stats'],
+  queryFn: () => fetch('/api/generations/stats').then(res => res.json()),
+});
+
+const showLimitWarning = captionStats?.remaining !== undefined && captionStats.remaining < 10;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 dark:from-gray-900 dark:via-purple-950 dark:to-indigo-950">
+      {/* Status Banner for Caption Limits */}
+      {showLimitWarning && (
+        <StatusBanner
+          message={`⚠️ Only ${captionStats.remaining} captions remaining this month. Upgrade for unlimited generations!`}
+          variant="warning"
+        />
+      )}
+      
       <div className="container mx-auto p-4 max-w-4xl">
         {/* Header */}
         <div className="mb-6">

@@ -11,6 +11,8 @@ import { History, Search, Calendar, Trash2, Copy, ArrowLeft } from 'lucide-react
 import { Link } from 'wouter';
 import type { ContentGeneration } from '@shared/schema';
 import { ThottoPilotLogo } from '@/components/thottopilot-logo';
+import { BatchActionsBar, useBatchSelection } from '@/components/ui/batch-actions-bar';
+import { TableSkeleton } from '@/components/ui/loading-states';
 
 export default function HistoryPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -18,6 +20,14 @@ export default function HistoryPage() {
   const [filterType, setFilterType] = useState('all');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Batch selection for bulk actions
+  const {
+    selectedItems,
+    selectedCount,
+    toggleSelection,
+    clearSelection,
+  } = useBatchSelection<ContentGeneration>();
 
   const { data: generations = [], isLoading } = useQuery<ContentGeneration[]>({
     queryKey: ['/api/content-generations'],
@@ -73,8 +83,34 @@ export default function HistoryPage() {
     return matchesSearch && matchesPlatform && matchesType;
   });
 
+  // Handle bulk delete
+  const handleBulkDelete = async () => {
+    for (const itemId of selectedItems) {
+      await deleteMutation.mutateAsync(itemId);
+    }
+    clearSelection();
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <>
+      {/* Batch Actions Bar */}
+      {selectedCount > 0 && (
+        <BatchActionsBar
+          selectedCount={selectedCount}
+          onClearSelection={clearSelection}
+          actions={[
+            {
+              id: 'delete',
+              label: 'Delete Selected',
+              icon: Trash2,
+              onClick: handleBulkDelete,
+              variant: 'destructive' as const,
+            },
+          ]}
+        />
+      )}
+      
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -183,10 +219,7 @@ export default function HistoryPage() {
 
         {/* Content List */}
         {isLoading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-muted-foreground">Loading your content history...</p>
-          </div>
+          <TableSkeleton rows={5} columns={3} />
         ) : filteredGenerations.length === 0 ? (
           <Card className="text-center py-12 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <CardContent>
@@ -278,5 +311,6 @@ export default function HistoryPage() {
         )}
       </main>
     </div>
+    </>
   );
 }
