@@ -33,6 +33,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ActivitySkeleton, DashboardStatsSkeleton } from '@/components/ui/loading-states';
 
 // Custom Components
 import { CaptionLimitBanner, CommandBar } from '@/components/ui/status-banner';
@@ -558,11 +559,7 @@ export function ModernDashboardV2({
 
                   <TabsContent value="activity" className="space-y-4">
                     {activityLoading ? (
-                      <div className="space-y-3">
-                        {[1, 2, 3].map((i) => (
-                          <Skeleton key={i} className="h-20 w-full" />
-                        ))}
-                      </div>
+                      <ActivitySkeleton />
                     ) : mappedActivity && mappedActivity.length > 0 ? (
                       <div className="space-y-3">
                         {mappedActivity.map((item) => (
