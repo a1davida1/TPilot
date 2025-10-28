@@ -356,12 +356,10 @@ export function ModernDashboardV2({
     <div className="relative min-h-screen bg-background">
       {/* Status Banners */}
       {(userTier === 'free' || userTier === 'starter') && captionUsage && (
-        <CaptionLimitBanner
           remaining={captionUsage.remaining}
           limit={captionUsage.limit}
-          tier={'free'}
+          tier={userTier}
           onUpgrade={handleUpgrade}
-        />
       )}
       
       <CommandBar
