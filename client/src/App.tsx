@@ -104,6 +104,7 @@ function AuthenticatedRoutes() {
       <Route path="/intelligence" component={IntelligenceInsightsPage} />
       <Route path="/gallery" component={GalleryV2Page} />
       <Route path="/bulk-caption" component={CaptionGeneratorPage} />
+      <Route path="/campaigns" component={HistoryPage} />
       <Route path="/tax-tracker" component={() => <TaxTracker />} />
       {/* Referral Program - Available to all authenticated users */}
       <Route path="/referral" component={ReferralPage} />
