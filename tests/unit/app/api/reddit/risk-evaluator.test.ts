@@ -83,7 +83,7 @@ describe('evaluateRedditPostingRisk', () => {
     expect(warning.type).toBe('cadence');
     expect(warning.severity).toBe('high');
     expect(warning.recommendedAction).toContain('Delay this post');
-    expect(warning.metadata?.cooldownHours).toBe(48);
+    expect(warning.metadata?.cooldownHours).toBe(72);
     expect(dataSource.snapshots).toHaveLength(1);
     expect(dataSource.snapshots[0]?.userId).toBe(42);
     expect(dataSource.snapshots[0]?.result.warnings[0]?.type).toBe('cadence');
@@ -121,7 +121,9 @@ describe('evaluateRedditPostingRisk', () => {
   it('surfaces rule-based warnings for promotional restrictions', async () => {
     const now = new Date('2024-04-10T08:00:00.000Z');
     const dataSource = new FakeDataSource(
-      [],
+      [
+        { id: 1, subreddit: 'onlyfanspromos', scheduledFor: new Date('2024-04-10T12:00:00.000Z'), title: 'Check out my page!' },
+      ],
       [],
       [],
       new Map([
