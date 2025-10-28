@@ -106,44 +106,6 @@ function NotificationBell({ count = 0, onClick }: NotificationBellProps) {
   );
 }
 
-// Search Bar Component
-interface SearchBarProps {
-  open: boolean;
-  onClose: () => void;
-  placeholder?: string;
-}
-
-function SearchBar({ open, onClose, placeholder = 'Search posts...' }: SearchBarProps) {
-  const [query, setQuery] = useState('');
-
-  if (!open) return null;
-
-  return (
-    <div className="flex items-center gap-2 px-3 py-1 bg-muted rounded-lg">
-      <Search className="h-4 w-4 text-muted-foreground" />
-      <input
-        type="text"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder={placeholder}
-        className="bg-transparent border-none outline-none text-sm flex-1"
-        autoFocus
-      />
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => {
-          setQuery('');
-          onClose();
-        }}
-        className="h-6 w-6 p-0"
-      >
-        <X className="h-3 w-3" />
-      </Button>
-    </div>
-  );
-}
-
 // Workflow Dropdown Component
 interface WorkflowDropdownProps {
   bucket: typeof workflowBuckets[0];
@@ -219,12 +181,11 @@ export function HeaderEnhanced({ onReplayWalkthrough }: HeaderEnhancedProps) {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [_authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [notificationCount, setNotificationCount] = useState(2);
   const { open: commandPaletteOpen, setOpen: setCommandPaletteOpen } = useCommandPalette();
 
-  // Get generation stats
-  const { data: generationStats } = useQuery<{ remaining: number; limit: number }>({
+  // Get generation stats (for future use)
+  const { data: _generationStats } = useQuery<{ remaining: number; limit: number }>({
     queryKey: ['/api/generations/stats'],
     enabled: isAuthenticated,
   });
@@ -315,21 +276,15 @@ export function HeaderEnhanced({ onReplayWalkthrough }: HeaderEnhancedProps) {
 
             {/* Right Section: Actions + User Menu */}
             <div className="flex items-center gap-2">
-              {/* Search (Desktop) */}
-              {!searchOpen ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="hidden md:inline-flex"
-                  onClick={() => setSearchOpen(true)}
-                >
-                  <Search className="h-4 w-4" />
-                </Button>
-              ) : (
-                <div className="hidden md:block">
-                  <SearchBar open={searchOpen} onClose={() => setSearchOpen(false)} />
-                </div>
-              )}
+              {/* Search (Desktop) - Opens Command Palette */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="hidden md:inline-flex"
+                onClick={() => setCommandPaletteOpen(true)}
+              >
+                <Search className="h-4 w-4" />
+              </Button>
 
               {/* Notifications */}
               {isAuthenticated && (
