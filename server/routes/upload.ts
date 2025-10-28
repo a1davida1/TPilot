@@ -15,6 +15,7 @@ import { imageStreamingUpload, cleanupUploadedFiles, type UploadedFile, type Upl
 import { embedSignature } from '../lib/steganography.js';
 import { buildUploadUrl } from '../lib/uploads.js';
 
+import { applyImageShieldToFile, protectionPresets } from '../images/imageShield.js';
 // Extended AuthRequest with upload-specific properties
 interface UploadAuthRequest extends AuthRequest {
   file?: Express.Multer.File;
@@ -74,73 +75,25 @@ const upload = multer({
   }
 });
 
-// Server-side ImageShield protection levels
-interface ProtectionSettings {
-  level: 'light' | 'standard' | 'heavy';
-  blur: number;
-  noise: number;
-  resize: number;
-  quality: number;
-}
-
-const protectionPresets: Record<string, ProtectionSettings> = {
-  light: { level: 'light', blur: 0.5, noise: 5, resize: 95, quality: 92 },
-  standard: { level: 'standard', blur: 1.0, noise: 10, resize: 90, quality: 88 },
-  heavy: { level: 'heavy', blur: 1.5, noise: 15, resize: 85, quality: 85 }
-};
-
-// Apply ImageShield protection server-side
+// Server-side ImageShield protection pipeline
 async function applyImageShieldProtection(
-  inputPath: string, 
-  outputPath: string, 
+  inputPath: string,
+  outputPath: string,
   protectionLevel: 'light' | 'standard' | 'heavy' = 'standard',
   addWatermark: boolean = false,
-  userId?: string
+  userId?: string,
 ): Promise<void> {
-  const settings = protectionPresets[protectionLevel];
-  
-  const metadata = await sharp(inputPath).metadata();
-  const resizeWidth = Math.round((metadata.width || 1920) * settings.resize / 100);
-  const resizeHeight = Math.round((metadata.height || 1080) * settings.resize / 100);
-  
-  let pipeline = sharp(inputPath)
-    .blur(settings.blur)
-    .resize(resizeWidth, resizeHeight)
-    .jpeg({ quality: settings.quality });
-  
-  // Add noise by modifying image metadata and slight color variations
-  if (settings.noise > 0) {
-    pipeline = pipeline.modulate({
-      brightness: 1 + (Math.random() - 0.5) * (settings.noise / 100),
-      saturation: 1 + (Math.random() - 0.5) * (settings.noise / 200)
-    });
-  }
-  
-  // Add watermark for free users
-  if (addWatermark) {
-    const userHash = crypto.createHash('sha256')
-      .update(`${userId ?? 'anon'}-${Date.now()}`)
-      .digest('hex')
-      .slice(0, 10);
-    const watermarkSvg = `
-      <svg width="220" height="50">
-        <text x="10" y="30" font-family="Arial" font-size="14" font-weight="bold" 
-              fill="white" stroke="black" stroke-width="1" opacity="0.7">
-          ${userHash}
-        </text>
-      </svg>
-    `;
-    
-    pipeline = pipeline.composite([
-      {
-        input: Buffer.from(watermarkSvg),
-        gravity: 'southeast'
-      }
-    ]);
-  }
-  
-  await pipeline.toFile(outputPath);
+  const preset = protectionPresets[protectionLevel] ?? protectionPresets.standard;
+  await applyImageShieldToFile({
+    sourcePath: inputPath,
+    destinationPath: outputPath,
+    preset,
+    addWatermark,
+    watermarkSeed: userId ?? 'anon',
+    cleanupSource: true,
+  });
 }
+
 
 // Real MIME type detection using file content analysis
 async function validateImageFile(filePath: string, originalMimeType: string): Promise<{ isValid: boolean; detectedType?: string; error?: string }> {
@@ -530,7 +483,6 @@ router.post('/image', uploadLimiter, tierProtectionLimiter, authenticateToken(tr
     await fs.writeFile(protectedFilePath, protectedBuffer);
     
     // Clean up original file
-    await fs.unlink(tempFilePath);
     tempFilePath = '';
     
     const fileUrl = buildUploadUrl(protectedFileName);
