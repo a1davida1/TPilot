@@ -63,7 +63,7 @@ export default function HistoryPage() {
 
   const saveMutation = useMutation({
     mutationFn: async (generation: ContentGeneration) => {
-      await performRequest('POST', '/api/saved-content', {
+      return performRequest('POST', '/api/saved-content', {
         title: Array.isArray(generation.titles) ? generation.titles[0] || 'Untitled' : 'Untitled',
         content: generation.content,
         platform: generation.platform,
