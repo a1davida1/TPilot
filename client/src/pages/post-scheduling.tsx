@@ -26,6 +26,8 @@ import { apiRequest } from '@/lib/queryClient';
 import { RedditNativeUploadPortal } from '@/components/RedditNativeUploadPortal';
 import { cn } from '@/lib/utils';
 import { SchedulingCalendar } from '@/components/SchedulingCalendar';
+import { StickyRail } from '@/components/ui/sticky-rail';
+import { StatusBanner } from '@/components/ui/status-banner';
 
 interface UploadedImage {
   id: string;
@@ -226,8 +228,34 @@ export default function PostSchedulingPage() {
 
   const currentStepNumber = getStepNumber(currentStep);
 
+  const scheduledCount = images.filter(img => img.scheduled).length;
+
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <>
+      {scheduledCount > 5 && (
+        <StatusBanner
+          message={`📅 You have ${scheduledCount} posts scheduled`}
+          variant="info"
+        />
+      )}
+      
+      <StickyRail
+        rail={
+          <Card>
+            <CardContent className="space-y-2 text-sm pt-6">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total Images</span>
+                <span className="font-medium">{images.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Scheduled</span>
+                <span className="font-medium">{scheduledCount}</span>
+              </div>
+            </CardContent>
+          </Card>
+        }
+      >
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
@@ -499,6 +527,8 @@ export default function PostSchedulingPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+        </div>
+      </StickyRail>
+    </>
   );
 }

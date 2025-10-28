@@ -27,6 +27,8 @@ import { apiRequest } from '@/lib/queryClient';
 import { useLocation } from 'wouter';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { StickyRail } from '@/components/ui/sticky-rail';
+import { DashboardStatsSkeleton } from '@/components/ui/loading-states';
 
 // Tier access levels
 const TIER_ACCESS = {
