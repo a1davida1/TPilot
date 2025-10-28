@@ -1020,14 +1020,14 @@ router.get('/subreddit-recommendations', authenticateToken(true), async (req: Au
         lowRisk: lowRisk.length,
         mediumRisk: mediumRisk.length,
         highRisk: highRisk.length,
-        avgCompetition: community => {
-          const counts = { low: 0, medium: 0, high: 0 };
-          sortedRecommendations.forEach(r => counts[r.competition]++);
-          const max = Math.max(counts.low, counts.medium, counts.high);
-          if (counts.low === max) return 'low';
-          if (counts.medium === max) return 'medium';
-          return 'high';
-        }
+avgCompetition: (() => {
+  const counts = { low: 0, medium: 0, high: 0 };
+  sortedRecommendations.forEach(r => counts[r.competition]++);
+  const max = Math.max(counts.low, counts.medium, counts.high);
+  if (counts.low === max) return 'low';
+  if (counts.medium === max) return 'medium';
+  return 'high';
+})()
       },
       recommendations: {
         lowRisk: lowRisk.slice(0, 5),
