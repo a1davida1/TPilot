@@ -2,6 +2,10 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
+import { Loader2 } from 'lucide-react';
+import { WidgetErrorBoundary } from '../_components/widget-error-boundary';
+import { useCaptionDrafts, useGenerateCaptionMutation, usePostToRedditMutation } from '../../../client/hooks/dashboard';
+
 const PERSONA_OPTIONS = [
   { value: 'flirty_playful', label: 'Flirty Playful (SFW)' },
   { value: 'gamer_nerdy', label: 'Gamer Nerdy (SFW)' },
@@ -127,40 +131,34 @@ export function PostingClient() {
   const [imageId, setImageId] = useState('');
   const [nsfw, setNsfw] = useState(false);
   const [targets, setTargets] = useState<TargetFormState[]>([createTarget(nsfw ? 'seductive_goddess' : 'flirty_playful')]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [variants, setVariants] = useState<ApiVariantResponse[]>([]);
   const [drafts, setDrafts] = useState<StoredVariantResponse[]>([]);
-  const [draftLoading, setDraftLoading] = useState(true);
-  const [draftError, setDraftError] = useState<string | null>(null);
   const [selectedVariants, setSelectedVariants] = useState<Set<number>>(new Set());
   const [overrides, setOverrides] = useState<Record<number, VariantOverride>>({});
   const [throttleMs, setThrottleMs] = useState(2000);
-  const [postLoading, setPostLoading] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
   const [postSuccess, setPostSuccess] = useState<string | null>(null);
   const [rateLimitInfo, setRateLimitInfo] = useState<RateLimitInfo | null>(null);
   const [currentImageUrl, setCurrentImageUrl] = useState('');
 
+  const draftsQuery = useCaptionDrafts();
+  const generateMutation = useGenerateCaptionMutation();
+  const postMutation = usePostToRedditMutation();
+
   useEffect(() => {
-    const controller = new AbortController();
-    const loadDrafts = async () => {
-      try {
-        const response = await fetch('/api/ai/generate/variants', { credentials: 'include', signal: controller.signal });
-        if (!response.ok) throw new Error('Failed to load saved variants');
-        const data = (await response.json()) as { success: boolean; variants: StoredVariantResponse[] };
-        if (data.success) setDrafts(data.variants);
-      } catch (loadError) {
-        if ((loadError as DOMException).name === 'AbortError') return;
-        setDraftError(loadError instanceof Error ? loadError.message : 'Unable to load saved variants');
-      } finally {
-        setDraftLoading(false);
-      }
-    };
-    void loadDrafts();
-    return () => controller.abort();
-  }, []);
+    if (draftsQuery.data) {
+      setDrafts(draftsQuery.data);
+    }
+  }, [draftsQuery.data]);
+
+  const draftLoading = draftsQuery.isLoading;
+  const draftError = draftsQuery.error
+    ? draftsQuery.error instanceof Error
+      ? draftsQuery.error.message
+      : 'Unable to load saved variants'
+    : null;
 
   const handlePersonaChange = useCallback((targetId: string, persona: PersonaValue) => {
     setTargets(previous => previous.map(target => (target.id === targetId ? { ...target, persona } : target)));
@@ -212,39 +210,89 @@ export function PostingClient() {
 
   const handleGenerate = useCallback(async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setLoading(true);
     setError(null);
     setSuccess(null);
-    if (!imageUrl.trim()) { setLoading(false); setError('Please provide an image URL to generate captions.'); return; }
-    const preparedTargets = targets.map(target => ({ id: target.id, subreddit: target.subreddit.trim(), persona: target.persona, tones: target.tones })).filter(target => target.subreddit.length > 0);
-    if (preparedTargets.length === 0) { setLoading(false); setError('Add at least one subreddit target before generating captions.'); return; }
+
+    if (!imageUrl.trim()) {
+      setError('Please provide an image URL to generate captions.');
+      return;
+    }
+
+    const preparedTargets = targets
+      .map(target => ({ id: target.id, subreddit: target.subreddit.trim(), persona: target.persona, tones: target.tones }))
+      .filter(target => target.subreddit.length > 0);
+
+    if (preparedTargets.length === 0) {
+      setError('Add at least one subreddit target before generating captions.');
+      return;
+    }
+
     try {
-      const response = await fetch('/api/ai/generate', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify({ imageUrl: imageUrl.trim(), imageId: imageId ? Number(imageId) : undefined, platform: 'reddit', nsfw, targets: preparedTargets.map(target => ({ subreddit: target.subreddit, persona: target.persona, tones: target.tones })) }),
-      });
-      if (response.status === 429) { const body = await response.json(); throw new Error(body?.error ?? 'Caption generation rate limit reached.'); }
-      if (!response.ok) { const body = await response.json().catch(() => ({})); throw new Error(body?.error ?? 'Failed to generate captions.'); }
-      const data = (await response.json()) as { success: boolean; data: { imageUrl: string; imageId: number | null; tier: string; rateLimit: { remaining: number; resetAt: string }; variants: ApiVariantResponse[] } };
-      if (!data.success) throw new Error('Generation request failed.');
-      setCurrentImageUrl(data.data.imageUrl);
-      setVariants(data.data.variants);
-      setSuccess(`Generated ${data.data.variants.length} caption${data.data.variants.length === 1 ? '' : 's'}.`);
-      setRateLimitInfo({ tier: data.data.tier, remaining: data.data.rateLimit.remaining, resetAt: data.data.rateLimit.resetAt });
+      const payload = {
+        imageUrl: imageUrl.trim(),
+        imageId: imageId ? Number(imageId) : undefined,
+        platform: 'reddit',
+        nsfw,
+        targets: preparedTargets.map(target => ({ subreddit: target.subreddit, persona: target.persona, tones: target.tones })),
+      };
+
+      const result = await generateMutation.mutateAsync(payload) as {
+        success?: boolean;
+        error?: string;
+        data?: {
+          imageUrl: string;
+          imageId: number | null;
+          tier: string;
+          rateLimit: { remaining: number; resetAt: string };
+          variants: ApiVariantResponse[];
+        };
+      };
+
+      if (!result || result.success !== true || !result.data) {
+        throw new Error(result?.error ?? 'Generation request failed.');
+      }
+
+      const { imageUrl: resolvedImageUrl, imageId: resolvedImageId, tier, rateLimit, variants: generatedVariants } = result.data;
+
+      setCurrentImageUrl(resolvedImageUrl);
+      setVariants(generatedVariants);
+      setSuccess(`Generated ${generatedVariants.length} caption${generatedVariants.length === 1 ? '' : 's'}.`);
+      setRateLimitInfo({ tier, remaining: rateLimit.remaining, resetAt: rateLimit.resetAt });
+
       setDrafts(previous => {
         const next = new Map(previous.map(item => [item.id, item] as const));
-        for (const variant of data.data.variants) {
-          next.set(variant.variantId, { id: variant.variantId, subreddit: variant.subreddit, persona: variant.persona, tones: variant.tones, finalCaption: variant.suggestion.caption, finalAlt: variant.suggestion.alt ?? null, finalCta: variant.suggestion.cta ?? null, hashtags: variant.suggestion.hashtags ?? [], rankedMetadata: variant.ranked, imageUrl: data.data.imageUrl, imageId: data.data.imageId, createdAt: variant.createdAt });
+        for (const variant of generatedVariants) {
+          next.set(variant.variantId, {
+            id: variant.variantId,
+            subreddit: variant.subreddit,
+            persona: variant.persona,
+            tones: variant.tones,
+            finalCaption: variant.suggestion.caption,
+            finalAlt: variant.suggestion.alt ?? null,
+            finalCta: variant.suggestion.cta ?? null,
+            hashtags: variant.suggestion.hashtags ?? [],
+            rankedMetadata: variant.ranked,
+            imageUrl: resolvedImageUrl,
+            imageId: resolvedImageId,
+            createdAt: variant.createdAt,
+          });
         }
         return Array.from(next.values());
       });
-      setSelectedVariants(previous => { const next = new Set(previous); for (const variant of data.data.variants) { next.add(variant.variantId); } return next; });
+
+      setSelectedVariants(previous => {
+        const next = new Set(previous);
+        for (const variant of generatedVariants) {
+          next.add(variant.variantId);
+        }
+        return next;
+      });
+
+      void draftsQuery.refetch();
     } catch (generateError) {
       setError(generateError instanceof Error ? generateError.message : 'Unable to generate captions.');
-    } finally {
-      setLoading(false);
     }
-  }, [imageId, imageUrl, nsfw, targets]);
+  }, [draftsQuery, generateMutation, imageId, imageUrl, nsfw, targets]);
 
   const handleVariantSelection = useCallback((variantId: number) => {
     setSelectedVariants(previous => { const next = new Set(previous); if (next.has(variantId)) { next.delete(variantId); } else { next.add(variantId); } return next; });
@@ -258,32 +306,45 @@ export function PostingClient() {
     setPostError(null);
     setPostSuccess(null);
     const selected = Array.from(selectedVariants);
-    if (selected.length === 0) { setPostError('Select at least one caption variant to post.'); return; }
-    const variantRequests = [] as Array<{ variantId: number; scheduleAt?: string; flairId?: string; flairText?: string; nsfw?: boolean }>;
+    if (selected.length === 0) {
+      setPostError('Select at least one caption variant to post.');
+      return;
+    }
+
+    const variantRequests: Array<{ variantId: number; scheduleAt?: string; flairId?: string; flairText?: string; nsfw?: boolean }> = [];
+
     for (const variantId of selected) {
       const override = overrides[variantId];
       let scheduleIso: string | undefined;
       if (override?.scheduleAt) {
         const parsed = new Date(override.scheduleAt);
-        if (Number.isNaN(parsed.getTime())) { setPostError('One of the scheduling fields contains an invalid date.'); return; }
+        if (Number.isNaN(parsed.getTime())) {
+          setPostError('One of the scheduling fields contains an invalid date.');
+          return;
+        }
         scheduleIso = parsed.toISOString();
       }
-      variantRequests.push({ variantId, scheduleAt: scheduleIso, flairId: override?.flairId?.trim() ? override.flairId.trim() : undefined, flairText: override?.flairText?.trim() ? override.flairText.trim() : undefined, nsfw: typeof override?.nsfw === 'boolean' ? override.nsfw : undefined });
+      variantRequests.push({
+        variantId,
+        scheduleAt: scheduleIso,
+        flairId: override?.flairId?.trim() ? override.flairId.trim() : undefined,
+        flairText: override?.flairText?.trim() ? override.flairText.trim() : undefined,
+        nsfw: typeof override?.nsfw === 'boolean' ? override.nsfw : undefined,
+      });
     }
-    setPostLoading(true);
+
     try {
-      const response = await fetch('/api/reddit/post', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ variantRequests, throttleMs }) });
-      const body = await response.json().catch(() => ({ success: false, error: 'Failed to parse server response.' }));
-      if (!response.ok) throw new Error(body?.error ?? 'Failed to post to Reddit.');
-      if (!body.success) throw new Error(body?.error ?? 'Posting did not succeed.');
-      const postedCount = (body.results as Array<{ status: string }> | undefined)?.filter(item => item.status === 'success').length ?? 0;
+      const result = await postMutation.mutateAsync({ variantRequests, throttleMs }) as { success?: boolean; error?: string; results?: Array<{ status: string }> };
+      if (!result || result.success !== true) {
+        throw new Error(result?.error ?? 'Posting did not succeed.');
+      }
+      const postedCount = result.results?.filter(item => item.status === 'success').length ?? 0;
       setPostSuccess(`Queued ${postedCount} submission${postedCount === 1 ? '' : 's'} for Reddit.`);
+      void draftsQuery.refetch();
     } catch (postErr) {
       setPostError(postErr instanceof Error ? postErr.message : 'Unable to post captions to Reddit.');
-    } finally {
-      setPostLoading(false);
     }
-  }, [overrides, selectedVariants, throttleMs]);
+  }, [draftsQuery, overrides, postMutation, selectedVariants, throttleMs]);
 
   const personaDefault = nsfw ? 'seductive_goddess' : 'flirty_playful';
   useEffect(() => {
@@ -291,7 +352,8 @@ export function PostingClient() {
   }, [personaDefault]);
 
   return (
-    <div className={containerClass}>
+    <WidgetErrorBoundary>
+      <div className={containerClass}>
       <section className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold text-gray-900">Multi-subreddit caption lab</h1>
         <p className="text-sm text-gray-600">Generate tailored Reddit captions for multiple communities at once, save the variants, and post directly using your linked Reddit account.</p>
@@ -330,7 +392,7 @@ export function PostingClient() {
           </div>
           {error && <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
           {success && <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{success}</p>}
-          <div className="flex items-center gap-3"><button type="submit" className={classNames('inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2', loading && 'opacity-60')} disabled={loading}>{loading ? 'Generating…' : 'Generate captions'}</button>{loading && <span className="text-xs text-gray-500">Calling OpenRouter and saving your drafts…</span>}</div>
+          <div className="flex items-center gap-3"><button type="submit" className={classNames('inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2', generateMutation.isPending && 'opacity-60')} disabled={generateMutation.isPending}>{generateMutation.isPending ? 'Generating…' : 'Generate captions'}</button>{generateMutation.isPending && <span className="flex items-center gap-2 text-xs text-gray-400"><Loader2 className="h-3.5 w-3.5 animate-spin" />Calling OpenRouter and saving your drafts…</span>}</div>
         </form>
       </section>
       <section className="flex flex-col gap-4">
@@ -379,7 +441,7 @@ export function PostingClient() {
             {postSuccess && <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{postSuccess}</p>}
             <div className="flex items-center gap-3">
               <label className={labelClass}>Throttle between posts (ms)<input className={inputClass} type="number" min={0} max={600000} value={throttleMs} onChange={event => setThrottleMs(Number(event.target.value))} /></label>
-              <button type="button" onClick={handlePost} className={classNames('mt-5 inline-flex items-center justify-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2', postLoading && 'opacity-60')} disabled={postLoading}>{postLoading ? 'Submitting…' : 'Post to selected subs'}</button>
+              <button type="button" onClick={handlePost} className={classNames('mt-5 inline-flex items-center justify-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2', postMutation.isPending && 'opacity-60')} disabled={postMutation.isPending}>{postMutation.isPending ? 'Submitting…' : 'Post to selected subs'}</button>
             </div>
           </div>
         </section>

@@ -1,30 +1,27 @@
-import type { GalleryResponse } from './types';
+import { QueryClient, dehydrate } from '@tanstack/react-query';
+import { HydrateClient } from '../../providers';
 import { GalleryClient } from './gallery-client';
-
-async function fetchInitialGallery(): Promise<GalleryResponse | null> {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? '';
-    const requestUrl = `${baseUrl}/api/gallery?page=1&pageSize=20`;
-    const response = await fetch(requestUrl, {
-      cache: 'no-store',
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = (await response.json()) as GalleryResponse;
-    return data;
-  } catch (error) {
-    console.error('Failed to preload gallery', error);
-    return null;
-  }
-}
+import type { GalleryResponse } from './types';
+import { fetchGallery, galleryQueryKey } from '../../../client/hooks/dashboard';
 
 export const dynamic = 'force-dynamic';
 
 export default async function GalleryPage() {
-  const initialData = await fetchInitialGallery();
-  return <GalleryClient initialData={initialData} />;
+  const queryClient = new QueryClient();
+  const initialData = await fetchGallery({ page: 1, pageSize: 20 }).catch<GalleryResponse | null>(() => null);
+
+  if (initialData) {
+    queryClient.setQueryData(galleryQueryKey({ page: 1, pageSize: 20 }), {
+      pages: [initialData],
+      pageParams: [1],
+    });
+  }
+
+  const dehydratedState = dehydrate(queryClient);
+
+  return (
+    <HydrateClient state={dehydratedState}>
+      <GalleryClient initialData={initialData} />
+    </HydrateClient>
+  );
 }

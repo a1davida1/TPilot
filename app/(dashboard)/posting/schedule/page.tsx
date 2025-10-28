@@ -1,7 +1,9 @@
+import { QueryClient, dehydrate } from '@tanstack/react-query';
 import { cookies } from 'next/headers';
 
 import type { RiskApiResponse, RiskApiSuccess } from './types';
 import { ScheduleClient } from './schedule-client';
+import { HydrateClient } from '../../../providers';
 
 async function fetchInitialRiskSummary(): Promise<RiskApiSuccess | null> {
   try {
@@ -32,5 +34,17 @@ export const dynamic = 'force-dynamic';
 
 export default async function SchedulePage() {
   const initialResponse = await fetchInitialRiskSummary();
-  return <ScheduleClient initialResponse={initialResponse} />;
+  const queryClient = new QueryClient();
+
+  if (initialResponse) {
+    queryClient.setQueryData(['dashboard', 'risk-assessment'], initialResponse);
+  }
+
+  const dehydratedState = dehydrate(queryClient);
+
+  return (
+    <HydrateClient state={dehydratedState}>
+      <ScheduleClient initialResponse={initialResponse} />
+    </HydrateClient>
+  );
 }

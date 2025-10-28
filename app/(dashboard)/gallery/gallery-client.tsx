@@ -1,55 +1,29 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-
+import { useCallback, useMemo, useState } from 'react';
+import type { GalleryItem, GalleryResponse } from './types';
 import { GalleryGrid } from './gallery-grid';
-import { RepostModal } from './repost-modal';
-import type { GalleryItem, GalleryResponse, QuickRepostPayload } from './types';
-import { getCooldownStatus } from './types';
+import { StickyRail } from '../_components/sticky-rail';
+import { WidgetErrorBoundary } from '../_components/widget-error-boundary';
+import { useGalleryInfiniteQuery } from '../../../client/hooks/dashboard';
+import { Loader2, Search, SlidersHorizontal } from 'lucide-react';
 
 interface GalleryClientProps {
-  initialData: GalleryResponse | null;
+  initialData?: GalleryResponse | null;
 }
 
 type FilterPreset = 'all' | 'watermarked' | 'unprotected' | 'cooldownReady' | 'cooldownLocked';
 type SortOrder = 'newest' | 'oldest' | 'sizeDesc' | 'sizeAsc' | 'recentlyReposted';
-type StatTone = 'default' | 'success' | 'warning';
 
-const sectionClass = 'mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-10';
-const headingClass = 'text-2xl font-semibold text-gray-900';
-const descriptionClass = 'text-sm text-gray-600';
-const selectionBadgeClass = 'inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700';
-const clearSelectionButtonClass = 'text-sm font-medium text-blue-600 transition hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50';
-const loadButtonClass = 'inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
-const statsGridClass = 'grid gap-4 sm:grid-cols-2 lg:grid-cols-4';
-const statCardClass = 'rounded-lg border border-gray-200 bg-white p-4 shadow-sm';
-const statLabelClass = 'text-sm font-medium text-gray-500';
-const statHelperClass = 'mt-1 text-xs text-gray-500';
-const filtersContainerClass = 'flex flex-col gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm';
-const filterButtonBase = 'rounded-full border px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2';
-const filterButtonActive = 'border-blue-600 bg-blue-50 text-blue-700';
-const filterButtonInactive = 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50';
-const searchInputClass = 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500';
-const selectInputClass = 'rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500';
-
-const FALLBACK_RESPONSE: GalleryResponse = {
-  page: 1,
-  pageSize: 20,
-  totalItems: 0,
-  totalPages: 1,
-  hasMore: false,
-  items: [],
-};
-
-const FILTER_PRESETS: ReadonlyArray<{ id: FilterPreset; label: string; helper: string }> = [
+const filterPresets: ReadonlyArray<{ id: FilterPreset; label: string; helper: string }> = [
   { id: 'all', label: 'All assets', helper: 'Everything in your library' },
   { id: 'watermarked', label: 'ImageShield', helper: 'Protected uploads' },
-  { id: 'unprotected', label: 'Needs protection', helper: 'Original uploads without watermark' },
+  { id: 'unprotected', label: 'Needs protection', helper: 'Uploads missing watermark' },
   { id: 'cooldownReady', label: 'Ready to repost', helper: 'Cleared the 72h Reddit cooldown' },
-  { id: 'cooldownLocked', label: 'In cooldown', helper: 'Recently posted—cooldown active' },
+  { id: 'cooldownLocked', label: 'Cooling down', helper: 'Recently posted — cooldown active' },
 ];
 
-const SORT_OPTIONS: ReadonlyArray<{ id: SortOrder; label: string }> = [
+const sortOptions: ReadonlyArray<{ id: SortOrder; label: string }> = [
   { id: 'newest', label: 'Newest first' },
   { id: 'oldest', label: 'Oldest first' },
   { id: 'sizeDesc', label: 'Largest file size' },
@@ -57,141 +31,76 @@ const SORT_OPTIONS: ReadonlyArray<{ id: SortOrder; label: string }> = [
   { id: 'recentlyReposted', label: 'Recently reposted' },
 ];
 
-function parseDate(value: string): number {
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+function createSkeleton(count: number) {
+  return Array.from({ length: count }).map((_, index) => (
+    <div key={index} className="animate-pulse rounded-2xl border border-slate-800 bg-slate-900/70">
+      <div className="h-48 w-full rounded-t-2xl bg-slate-800" />
+      <div className="space-y-3 p-4">
+        <div className="h-4 w-2/3 rounded bg-slate-800" />
+        <div className="h-3 w-1/2 rounded bg-slate-800" />
+        <div className="h-3 w-full rounded bg-slate-800" />
+      </div>
+    </div>
+  ));
 }
 
-function formatStorage(bytes: number): string {
-  const gigabytes = bytes / (1024 * 1024 * 1024);
-  if (gigabytes >= 1) {
-    return `${gigabytes.toFixed(1)} GB`;
-  }
-
-  const megabytes = bytes / (1024 * 1024);
-  if (megabytes >= 1) {
-    return `${megabytes.toFixed(1)} MB`;
-  }
-
-  const kilobytes = bytes / 1024;
-  return `${kilobytes.toFixed(1)} KB`;
-}
-
-function formatPercentage(value: number): string {
-  return `${Math.round(value)}%`;
-}
-
-function ceilHours(value: number): number {
-  return Math.ceil(value);
-}
-
-function StatsCard({ label, value, helper, tone = 'default' }: { label: string; value: string; helper: string; tone?: StatTone }) {
-  const toneClassMap: Record<StatTone, string> = {
-    default: 'text-gray-900',
-    success: 'text-emerald-600',
-    warning: 'text-amber-600',
-  };
-
+function GallerySkeleton() {
   return (
-    <article className={statCardClass}>
-      <p className={statLabelClass}>{label}</p>
-      <p className={`mt-2 text-2xl font-semibold ${toneClassMap[tone]}`}>{value}</p>
-      <p className={statHelperClass}>{helper}</p>
-    </article>
-  );
-}
-
-function FilterHelper({ helper }: { helper: string }) {
-  return <span className="block text-xs text-gray-500">{helper}</span>;
-}
-
-function LoadingSkeleton() {
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, index) => (
-          <div key={index} className="animate-pulse">
-            <div className="h-48 w-full rounded-lg bg-gray-200" />
-            <div className="mt-3 space-y-2 px-2">
-              <div className="h-4 w-3/4 rounded bg-gray-200" />
-              <div className="h-3 w-1/2 rounded bg-gray-200" />
-            </div>
-          </div>
-        ))}
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+        <div className="h-5 w-1/3 animate-pulse rounded bg-slate-800" />
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {createSkeleton(4)}
+        </div>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {createSkeleton(8)}
       </div>
     </div>
   );
 }
 
+function normalizeItems(pages: Array<GalleryResponse | undefined>): GalleryItem[] {
+  return pages
+    .filter((page): page is GalleryResponse => Boolean(page))
+    .flatMap((page) => page.items);
+}
+
 export function GalleryClient({ initialData }: GalleryClientProps) {
-  const initial = initialData ?? FALLBACK_RESPONSE;
-  const [items, setItems] = useState<GalleryItem[]>(initial.items);
-  const [page, setPage] = useState(initial.page);
-  const [pageSize] = useState(initial.pageSize);
-  const [hasMore, setHasMore] = useState(initial.hasMore);
-  const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(!initialData);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [modalAsset, setModalAsset] = useState<GalleryItem | null>(null);
-  const [repostError, setRepostError] = useState<string | null>(null);
-  const [repostSuccess, setRepostSuccess] = useState<string | null>(null);
-  const [repostLoading, setRepostLoading] = useState(false);
-  const [reposting, setReposting] = useState<Set<number>>(new Set());
   const [filterPreset, setFilterPreset] = useState<FilterPreset>('all');
   const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchValue, setSearchValue] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
-  // Load initial data if not provided by SSR
-  useEffect(() => {
-    if (!initialData) {
-      const loadInitial = async () => {
-        try {
-          const response = await fetch(`/api/gallery?page=1&pageSize=${pageSize}`, {
-            credentials: 'include',
-          });
-          if (!response.ok) {
-            throw new Error('Failed to load gallery');
-          }
-          const data = (await response.json()) as GalleryResponse;
-          setItems(data.items);
-          setPage(data.page);
-          setHasMore(data.hasMore);
-        } catch (err) {
-          const message = err instanceof Error ? err.message : 'Unable to load gallery';
-          setError(message);
-        } finally {
-          setInitialLoading(false);
-        }
-      };
-      void loadInitial();
-    }
-  }, [initialData, pageSize]);
+  const galleryQuery = useGalleryInfiniteQuery(
+    {
+      page: 1,
+      pageSize: 20,
+      filter: filterPreset === 'all' ? undefined : filterPreset,
+      sort: sortOrder,
+      search: searchValue.trim() || undefined,
+    },
+    initialData ?? undefined,
+  );
 
-  useEffect(() => {
-    setSelectedIds((previous) => {
-      if (previous.size === 0) {
-        return previous;
-      }
+  const items = useMemo(() => normalizeItems(galleryQuery.data?.pages ?? []), [galleryQuery.data]);
+  const isFiltered = filterPreset !== 'all' || Boolean(searchValue);
 
-      const validIds = new Set<number>();
-      for (const id of previous) {
-        if (items.some((item) => item.id === id)) {
-          validIds.add(id);
-        }
-      }
-
-      if (validIds.size === previous.size) {
-        return previous;
-      }
-
-      return validIds;
-    });
+  const stats = useMemo(() => {
+    const totalSize = items.reduce((sum, item) => sum + item.bytes, 0);
+    const watermarked = items.filter((item) => item.isWatermarked).length;
+    const readyToRepost = items.filter((item) => item.lastRepostedAt).length;
+    return {
+      totalAssets: items.length,
+      librarySizeMb: (totalSize / (1024 * 1024)).toFixed(1),
+      watermarked,
+      readyToRepost,
+    };
   }, [items]);
 
-  const toggleSelect = useCallback((item: GalleryItem) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
+  const handleToggleSelect = useCallback((item: GalleryItem) => {
+    setSelectedIds((previous) => {
+      const next = new Set(previous);
       if (next.has(item.id)) {
         next.delete(item.id);
       } else {
@@ -201,311 +110,161 @@ export function GalleryClient({ initialData }: GalleryClientProps) {
     });
   }, []);
 
-  const openRepostModal = useCallback((item: GalleryItem) => {
-    setModalAsset(item);
-    setRepostError(null);
-    setRepostSuccess(null);
-  }, []);
-
-  const closeRepostModal = useCallback(() => {
-    setModalAsset(null);
-    setRepostError(null);
-    setRepostSuccess(null);
-  }, []);
-
-  const loadMore = useCallback(async () => {
-    if (loading || !hasMore) {
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const nextPage = page + 1;
-      const response = await fetch(`/api/gallery?page=${nextPage}&pageSize=${pageSize}`, {
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        throw new Error('Failed to load additional media');
-      }
-      const data = (await response.json()) as GalleryResponse;
-      setItems((prev) => [...prev, ...data.items]);
-      setPage(data.page);
-      setHasMore(data.hasMore);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unable to load more items';
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }, [hasMore, loading, page, pageSize]);
-
-  const handleRepost = useCallback(async (payload: QuickRepostPayload) => {
-    if (!modalAsset) {
-      return;
-    }
-
-    // Prevent concurrent reposts of same asset
-    const cooldown = getCooldownStatus(modalAsset.lastRepostedAt);
-    if (cooldown.active) {
-      setRepostError(`Reddit cooldown active. Try again in ${ceilHours(cooldown.hoursRemaining)} hours.`);
-      return;
-    }
-
-    if (reposting.has(modalAsset.id)) {
-      setRepostError('Repost already in progress for this asset.');
-      return;
-    }
-
-    setReposting((prev) => new Set(prev).add(modalAsset.id));
-    setRepostLoading(true);
-    setRepostError(null);
-    setRepostSuccess(null);
-
-    try {
-      const response = await fetch('/api/reddit/quick-repost', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, assetId: modalAsset.id }),
-      });
-
-      const data: { error?: string; repostedAt?: string } = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.error ?? 'Quick repost failed');
-      }
-
-      const timestamp = data.repostedAt ?? new Date().toISOString();
-      setItems((prev) =>
-        prev.map((item) => (item.id === modalAsset.id ? { ...item, lastRepostedAt: timestamp } : item)),
-      );
-      setRepostSuccess('Repost queued successfully.');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to repost image';
-      setRepostError(message);
-    } finally {
-      setRepostLoading(false);
-      setReposting((prev) => {
-        const next = new Set(prev);
-        next.delete(modalAsset.id);
-        return next;
-      });
-    }
-  }, [modalAsset, reposting]);
-
-  const resetFilters = useCallback(() => {
+  const handleResetFilters = useCallback(() => {
     setFilterPreset('all');
-    setSearchQuery('');
+    setSearchValue('');
+    setSortOrder('newest');
   }, []);
 
-  const selectedCount = useMemo(() => selectedIds.size, [selectedIds]);
-  const totalAssets = items.length;
-  const watermarkedCount = useMemo(() => items.reduce((count, item) => (item.isWatermarked ? count + 1 : count), 0), [items]);
-  const storageUsed = useMemo(() => items.reduce((total, item) => total + item.bytes, 0), [items]);
-  const cooldownReadyCount = useMemo(
-    () => items.reduce((count, item) => (getCooldownStatus(item.lastRepostedAt).active ? count : count + 1), 0),
-    [items],
-  );
-  const cooldownLockedCount = totalAssets - cooldownReadyCount;
+  const handleRepost = useCallback((item: GalleryItem) => {
+    console.info('Trigger repost workflow', item.id);
+  }, []);
 
-  const coveragePercent = totalAssets > 0 ? (watermarkedCount / totalAssets) * 100 : 0;
-  const coverageTone: StatTone = coveragePercent >= 90 ? 'success' : coveragePercent >= 70 ? 'default' : 'warning';
-  const cooldownTone: StatTone = cooldownLockedCount === 0 ? 'success' : cooldownReadyCount === 0 ? 'warning' : 'default';
+  if (galleryQuery.isLoading && !initialData) {
+    return <GallerySkeleton />;
+  }
 
-  const visibleItems = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase();
-
-    let filtered = items;
-    switch (filterPreset) {
-      case 'watermarked':
-        filtered = filtered.filter((item) => item.isWatermarked);
-        break;
-      case 'unprotected':
-        filtered = filtered.filter((item) => !item.isWatermarked);
-        break;
-      case 'cooldownReady':
-        filtered = filtered.filter((item) => !getCooldownStatus(item.lastRepostedAt).active);
-        break;
-      case 'cooldownLocked':
-        filtered = filtered.filter((item) => getCooldownStatus(item.lastRepostedAt).active);
-        break;
-      default:
-        break;
-    }
-
-    if (normalizedQuery) {
-      filtered = filtered.filter((item) => item.filename.toLowerCase().includes(normalizedQuery));
-    }
-
-    const sorted = [...filtered];
-    switch (sortOrder) {
-      case 'oldest':
-        sorted.sort((a, b) => parseDate(a.createdAt) - parseDate(b.createdAt));
-        break;
-      case 'sizeDesc':
-        sorted.sort((a, b) => b.bytes - a.bytes);
-        break;
-      case 'sizeAsc':
-        sorted.sort((a, b) => a.bytes - b.bytes);
-        break;
-      case 'recentlyReposted':
-        sorted.sort((a, b) => parseDate(b.lastRepostedAt ?? '') - parseDate(a.lastRepostedAt ?? ''));
-        break;
-      case 'newest':
-      default:
-        sorted.sort((a, b) => parseDate(b.createdAt) - parseDate(a.createdAt));
-        break;
-    }
-
-    return sorted;
-  }, [filterPreset, items, searchQuery, sortOrder]);
-
-  const isFiltered = filterPreset !== 'all' || searchQuery.trim() !== '';
-  const emptyState = totalAssets === 0 && !initialLoading;
-
-  if (initialLoading) {
+  if (galleryQuery.error) {
     return (
-      <section className={sectionClass}>
-        <header className="flex flex-col gap-2">
-          <h1 className={headingClass}>Media gallery</h1>
-          <p className={descriptionClass}>
-            Browse your protected uploads, stage quick reposts, and keep tabs on recent activity.
-          </p>
-        </header>
-        <div className="space-y-4">
-          <LoadingSkeleton />
-        </div>
-      </section>
+      <div className="rounded-2xl border border-red-300 bg-red-50 px-6 py-10 text-center text-red-700">
+        <h2 className="text-lg font-semibold">Unable to load your gallery</h2>
+        <p className="mt-2 text-sm">
+          {galleryQuery.error instanceof Error ? galleryQuery.error.message : 'Please retry in a few moments.'}
+        </p>
+        <button
+          type="button"
+          className="mt-5 inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+          onClick={() => galleryQuery.refetch()}
+        >
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Retry
+        </button>
+      </div>
     );
   }
 
   return (
-    <section className={sectionClass}>
-      <header className="flex flex-col gap-2">
-        <h1 className={headingClass}>Media gallery</h1>
-        <p className={descriptionClass}>
-          Browse your protected uploads, stage quick reposts, and keep tabs on recent activity.
-        </p>
-      </header>
-
-      <div className={statsGridClass}>
-        <StatsCard label="Total assets" value={totalAssets.toString()} helper="Uploads available across all campaigns" />
-        <StatsCard
-          label="Watermark coverage"
-          value={totalAssets === 0 ? '0%' : formatPercentage(coveragePercent)}
-          helper={`${watermarkedCount} protected / ${totalAssets} total`}
-          tone={coverageTone}
-        />
-        <StatsCard
-          label="Cooldown ready"
-          value={cooldownReadyCount.toString()}
-          helper={cooldownLockedCount > 0 ? `${cooldownLockedCount} cooling down` : 'All clear to repost'}
-          tone={cooldownTone}
-        />
-        <StatsCard label="Library footprint" value={formatStorage(storageUsed)} helper="Total space used across ImageShield" />
-      </div>
-
-      <div className={filtersContainerClass}>
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap gap-2">
-              {FILTER_PRESETS.map((preset) => {
-                const active = filterPreset === preset.id;
-                return (
+    <WidgetErrorBoundary>
+      <StickyRail
+        rail={
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+              <h3 className="text-sm font-semibold text-slate-100">Quick stats</h3>
+              <ul className="mt-4 space-y-3 text-sm text-slate-300">
+                <li className="flex items-center justify-between"><span>Total assets</span><span className="font-semibold text-white">{stats.totalAssets}</span></li>
+                <li className="flex items-center justify-between"><span>Library size</span><span className="font-semibold text-white">{stats.librarySizeMb} MB</span></li>
+                <li className="flex items-center justify-between"><span>Watermarked</span><span className="font-semibold text-white">{stats.watermarked}</span></li>
+                <li className="flex items-center justify-between"><span>Repost-ready</span><span className="font-semibold text-white">{stats.readyToRepost}</span></li>
+              </ul>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-slate-400">
+                <SlidersHorizontal className="h-4 w-4" /> Filters
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {filterPresets.map((preset) => (
                   <button
-                    key={preset.id}
                     type="button"
-                    className={`${filterButtonBase} ${active ? filterButtonActive : filterButtonInactive}`}
+                    key={preset.id}
                     onClick={() => setFilterPreset(preset.id)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                      preset.id === filterPreset
+                        ? 'bg-rose-500 text-white shadow-bubble'
+                        : 'border border-slate-700 bg-slate-900 text-slate-200 hover:border-slate-500'
+                    }`}
                   >
                     {preset.label}
                   </button>
-                );
-              })}
+                ))}
+              </div>
+              <p className="text-xs text-slate-400">
+                {filterPresets.find((preset) => preset.id === filterPreset)?.helper}
+              </p>
             </div>
-            <FilterHelper helper={FILTER_PRESETS.find((preset) => preset.id === filterPreset)?.helper ?? ''} />
+            <div className="space-y-3">
+              <label className="text-xs font-semibold uppercase tracking-wide text-slate-400">Sort order</label>
+              <select
+                className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100"
+                value={sortOrder}
+                onChange={(event) => setSortOrder(event.target.value as SortOrder)}
+              >
+                {sortOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-3">
+              <label className="text-xs font-semibold uppercase tracking-wide text-slate-400">Search</label>
+              <div className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3">
+                <Search className="h-4 w-4 text-slate-500" />
+                <input
+                  type="search"
+                  value={searchValue}
+                  onChange={(event) => setSearchValue(event.target.value)}
+                  placeholder="Find filename or subreddit"
+                  className="flex-1 bg-transparent py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none"
+                />
+              </div>
+            </div>
+            <div className="space-y-3 rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+              <h4 className="text-sm font-semibold text-slate-100">Selection</h4>
+              <p className="text-xs text-slate-400">{selectedIds.size} assets selected.</p>
+              {selectedIds.size > 0 && (
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-rose-300 underline-offset-4 hover:underline"
+                  onClick={() => setSelectedIds(new Set())}
+                >
+                  Clear selection
+                </button>
+              )}
+            </div>
           </div>
-          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
-            <label className="sr-only" htmlFor="gallery-search">Search library</label>
-            <input
-              id="gallery-search"
-              type="search"
-              placeholder="Search by filename"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              className={searchInputClass}
-            />
-            <label className="sr-only" htmlFor="gallery-sort">Sort assets</label>
-            <select
-              id="gallery-sort"
-              className={selectInputClass}
-              value={sortOrder}
-              onChange={(event) => setSortOrder(event.target.value as SortOrder)}
-            >
-              {SORT_OPTIONS.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+        }
+      >
+        <section className="space-y-6">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+            <h1 className="text-2xl font-semibold text-white">Media control center</h1>
+            <p className="mt-2 text-sm text-slate-300">
+              Organize watermarked assets, check repost cooldowns, and queue content straight to your Reddit scheduler.
+            </p>
+            {isFiltered && (
+              <button
+                type="button"
+                className="mt-4 text-sm font-semibold text-rose-300 underline-offset-4 hover:underline"
+                onClick={handleResetFilters}
+              >
+                Reset filters
+              </button>
+            )}
           </div>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-sm text-gray-600">
-            Showing {visibleItems.length} of {totalAssets} assets
-            {isFiltered ? ' (filtered)' : ''}
-          </span>
-          <div className="flex items-center gap-3">
-            <span className={selectionBadgeClass} data-testid="selection-count">
-              {selectedCount} selected
-            </span>
-            <button
-              type="button"
-              className={clearSelectionButtonClass}
-              onClick={() => setSelectedIds(new Set())}
-              disabled={selectedCount === 0}
-            >
-              Clear selection
-            </button>
+          <GalleryGrid
+            items={items}
+            selectedIds={selectedIds}
+            onToggleSelect={handleToggleSelect}
+            onRepost={handleRepost}
+            isFiltered={isFiltered}
+            onResetFilters={handleResetFilters}
+          />
+          <div className="flex justify-center">
+            {galleryQuery.hasNextPage ? (
+              <button
+                type="button"
+                onClick={() => galleryQuery.fetchNextPage()}
+                disabled={galleryQuery.isFetchingNextPage}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-100 hover:border-slate-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {galleryQuery.isFetchingNextPage && <Loader2 className="h-4 w-4 animate-spin" />}
+                Load more
+              </button>
+            ) : (
+              <span className="text-xs text-slate-500">All assets loaded</span>
+            )}
           </div>
-        </div>
-      </div>
-
-      {error ? (
-        <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">
-          {error}
-        </div>
-      ) : null}
-
-      <GalleryGrid
-        items={visibleItems}
-        selectedIds={selectedIds}
-        onToggleSelect={toggleSelect}
-        onRepost={openRepostModal}
-        isFiltered={isFiltered}
-        onResetFilters={resetFilters}
-      />
-
-      <div className="flex items-center justify-center">
-        <button
-          type="button"
-          className={loadButtonClass}
-          onClick={loadMore}
-          disabled={!hasMore || loading || emptyState}
-        >
-          {loading ? 'Loading…' : hasMore ? 'Load more' : emptyState ? 'No uploads yet' : 'No more items'}
-        </button>
-      </div>
-
-      <RepostModal
-        asset={modalAsset}
-        open={modalAsset !== null}
-        loading={repostLoading}
-        error={repostError}
-        successMessage={repostSuccess}
-        onClose={closeRepostModal}
-        onSubmit={handleRepost}
-      />
-    </section>
+        </section>
+      </StickyRail>
+    </WidgetErrorBoundary>
   );
 }
