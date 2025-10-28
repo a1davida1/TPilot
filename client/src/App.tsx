@@ -34,6 +34,7 @@ const ProPerksPage = React.lazy(() => import("@/pages/pro-perks"));
 const HistoryPage = React.lazy(() => import("@/pages/history"));
 const AnalyticsPage = React.lazy(() => import("@/pages/analytics"));
 const PerformanceAnalyticsPage = React.lazy(() => import("@/pages/performance-analytics").then(module => ({ default: module.PerformanceAnalytics })));
+const IntelligenceInsightsPage = React.lazy(() => import("@/pages/intelligence-insights").then(module => ({ default: module.IntelligenceInsightsPage })));
 const PostSchedulingPage = React.lazy(() => import("@/pages/post-scheduling"));
 const ScheduledPostsPage = React.lazy(() => import("@/pages/scheduled-posts"));
 const Settings = React.lazy(() => import("@/pages/settings"));
@@ -126,6 +127,7 @@ function AuthenticatedRoutes() {
       <Route path="/flight-school" component={FlightSchoolPage} />
       <Route path="/analytics" component={AnalyticsPage} />
       <Route path="/performance" component={PerformanceAnalyticsPage} />
+      <Route path="/intelligence" component={IntelligenceInsightsPage} />
       <Route path="/gallery" component={() => <ImageGallery />} />
       <Route path="/tax-tracker" component={() => <TaxTracker />} />
       {/* Referral Program - Available to all authenticated users */}
