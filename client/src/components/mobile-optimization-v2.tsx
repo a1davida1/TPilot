@@ -39,10 +39,12 @@ export function useDeviceDetection() {
   const [isTouchDevice, setIsTouchDevice] = useState(false);
 
   useEffect(() => {
+    // Skip for SSR
+    if (typeof window === 'undefined') return;
+    
     const updateDeviceInfo = () => {
       const width = window.innerWidth;
       const height = window.innerHeight;
-      
       // Update device type
       if (width < 640) {
         setDeviceType('mobile');
