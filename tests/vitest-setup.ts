@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import { Assertion, util as chaiUtils } from 'chai';
 import { beforeEach, afterEach, afterAll, vi } from 'vitest';
+import '@testing-library/jest-dom/vitest';
 
 // Load .env.test file specifically for vitest tests
 dotenv.config({ path: '.env.test' });

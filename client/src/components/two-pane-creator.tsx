@@ -118,8 +118,7 @@ export function TwoPaneCreator({ className }: TwoPaneCreatorProps) {
       formData.append('tone', selectedTone.value);
       formData.append('tags', JSON.stringify(tags));
 
-      const response = await apiRequest('POST', '/api/caption/generate', formData);
-      const data = await response.json();
+      const data = await apiRequest<unknown>('POST', '/api/caption/generate', formData);
       return data;
     },
     onSuccess: (data: any) => {
@@ -163,8 +162,7 @@ export function TwoPaneCreator({ className }: TwoPaneCreatorProps) {
         };
       });
 
-      const response = await apiRequest('POST', '/api/posts/schedule', { posts: scheduledPosts });
-      const data = await response.json();
+      const data = await apiRequest<unknown>('POST', '/api/posts/schedule', { posts: scheduledPosts });
       return data;
     },
     onSuccess: () => {

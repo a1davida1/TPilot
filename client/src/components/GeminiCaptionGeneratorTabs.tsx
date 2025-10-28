@@ -155,11 +155,9 @@ export function GeminiCaptionGeneratorTabs() {
     setSelectedCaption('');
 
     try {
-      const response = await apiRequest('POST', '/api/caption/generate', {
+      const result = await apiRequest<{ topVariants?: Array<{ caption: string; style?: string }>; final?: { caption: string } }>('POST', '/api/caption/generate', {
         imageUrl, platform, voice, style, mood, nsfw, includeHashtags, promotionMode
       });
-
-      const result = await response.json() as { topVariants?: Array<{ caption: string; style?: string }>; final?: { caption: string } };
 
       // Extract top 2 variants from response
       const topVariants = result.topVariants || [];
@@ -222,11 +220,9 @@ export function GeminiCaptionGeneratorTabs() {
     setSelectedCaption('');
 
     try {
-      const response = await apiRequest('POST', '/api/caption/generate-text', {
+      const result = await apiRequest<{ topVariants?: Array<{ caption: string; style?: string }>; final?: { caption: string } }>('POST', '/api/caption/generate-text', {
         platform, voice, style, mood, theme, context, nsfw, includeHashtags, promotionMode
       });
-
-      const result = await response.json() as { topVariants?: Array<{ caption: string; style?: string }>; final?: { caption: string } };
 
       // Extract top 2 variants from response
       const topVariants = result.topVariants || [];
@@ -287,7 +283,11 @@ export function GeminiCaptionGeneratorTabs() {
     setSelectedCaption('');
 
     try {
-      const response = await apiRequest('POST', '/api/caption/rewrite', {
+      const result = await apiRequest<{
+        topVariants?: Array<{ caption: string; style?: string }>;
+        final?: { caption: string };
+        error?: string;
+      }>('POST', '/api/caption/rewrite', {
         platform,
         voice,
         style,
@@ -298,13 +298,6 @@ export function GeminiCaptionGeneratorTabs() {
         includeHashtags,
         promotionMode,
       });
-
-      const result = await response.json() as { 
-        topVariants?: Array<{ caption: string; style?: string }>; 
-        final?: { caption: string };
-        error?: string;
-      };
-      if (!response.ok) throw new Error(result.error || 'Rewrite failed');
 
       // Extract top 2 variants from response
       const topVariants = result.topVariants || [];

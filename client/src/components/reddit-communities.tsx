@@ -106,8 +106,7 @@ export function RedditCommunities() {
       if (filterCategory !== 'all') params.append('category', filterCategory);
       if (searchTerm) params.append('search', searchTerm);
 
-      const response = await apiRequest('GET', `/api/reddit/communities?${params.toString()}`);
-      const data = await response.json();
+      const data = await apiRequest<unknown>('GET', `/api/reddit/communities?${params.toString()}`);
       
       // Ensure we always return an array
       if (Array.isArray(data)) {

@@ -132,15 +132,13 @@ export function GeminiCaptionGenerator() {
     setCaptionData(null);
 
     try {
-      const response = await apiRequest('POST', '/api/caption/generate', {
+      const result = await apiRequest<GenerationResponse>('POST', '/api/caption/generate', {
         imageUrl,
         platform,
         voice,
         nsfw,
         includeHashtags,
       });
-
-      const result = await response.json();
 
       setCaptionData(result);
       toast({
@@ -153,7 +151,7 @@ export function GeminiCaptionGenerator() {
 
       if (isApiError(err) && shouldUseTextFallback(err)) {
         try {
-          const fallbackResponse = await apiRequest('POST', '/api/caption/generate-text', {
+          const fallbackResult = await apiRequest<GenerationResponse>('POST', '/api/caption/generate-text', {
             platform,
             voice,
             style: 'authentic',
@@ -163,8 +161,6 @@ export function GeminiCaptionGenerator() {
             nsfw: false,
             includeHashtags,
           });
-
-          const fallbackResult = await fallbackResponse.json();
           setCaptionData(fallbackResult);
           toast({
             title: "Fallback caption generated",
