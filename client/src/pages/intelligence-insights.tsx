@@ -144,7 +144,8 @@ export function IntelligenceInsightsPage() {
   const [selectedSubreddit, setSelectedSubreddit] = useState<string>('');
   const [activeTab, setActiveTab] = useState('title');
 
-  const fetchJson = async <T>(endpoint: string): Promise<T> => {
+const fetchJson = async <T>(endpoint: string): Promise<T> => {
+  try {
     const response = await apiRequest('GET', endpoint);
     if (!response.ok) {
       const body: unknown = await response.json().catch(() => ({} as unknown));
@@ -156,7 +157,10 @@ export function IntelligenceInsightsPage() {
       throw new Error(message);
     }
     return response.json() as Promise<T>;
-  };
+  } catch (error) {
+    throw error instanceof Error ? error : new Error('Network request failed');
+  }
+};```
 
   const parseCommunityOptions = (value: unknown): Array<{ id: string; name: string; displayName: string }> => {
     if (!Array.isArray(value)) {
