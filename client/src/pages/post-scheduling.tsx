@@ -26,6 +26,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { RedditNativeUploadPortal } from '@/components/RedditNativeUploadPortal';
 import { cn } from '@/lib/utils';
 import { SchedulingCalendar } from '@/components/SchedulingCalendar';
+import { StickyRail } from '@/components/ui/sticky-rail';
 
 interface UploadedImage {
   id: string;
@@ -227,7 +228,19 @@ export default function PostSchedulingPage() {
   const currentStepNumber = getStepNumber(currentStep);
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <StickyRail
+      rail={
+        <Card>
+          <CardContent className="space-y-2 text-sm pt-6">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Step</span>
+              <span className="font-medium">{currentStepNumber}/5</span>
+            </div>
+          </CardContent>
+        </Card>
+      }
+    >
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
@@ -499,6 +512,7 @@ export default function PostSchedulingPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+        </div>
+      </StickyRail>
   );
 }

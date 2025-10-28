@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { RedditManager, getRedditAuthUrl, exchangeRedditCode, type RedditPostResult } from './lib/reddit.js';
 import { SafetyManager } from './lib/safety-systems.js';
 import { db } from './db.js';
-import { creatorAccounts, type ShadowbanCheckApiResponse } from '@shared/schema';
+import { creatorAccounts, createDefaultRules, type ShadowbanCheckApiResponse } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 import { authenticateToken, type AuthRequest } from './middleware/auth.js';
 import { stateStore, encrypt, decrypt, rateLimit } from './services/state-store.js';
@@ -327,6 +327,65 @@ export function registerRedditRoutes(app: Express) {
         });
 
       logger.info('Reddit account connected successfully', { userId });
+
+      // Auto-import user's top subscribed communities
+      try {
+        const manager = await RedditManager.forUser(userId);
+        if (!manager) {
+          throw new Error('Failed to create Reddit manager');
+        }
+        const subscriptions = await manager.getSubscribedSubreddits(10);
+        
+        if (subscriptions && subscriptions.length > 0) {
+          logger.info(`Importing ${subscriptions.length} user communities`, { userId });
+          
+          for (const sub of subscriptions) {
+            try {
+              // Check if community already exists
+              const existing = await searchCommunities(sub.display_name);
+              if (existing.length > 0) {
+                logger.debug('Community already exists', { name: sub.display_name });
+                continue;
+              }
+              
+              // Add new community to database
+              await createCommunity({
+                id: sub.display_name.toLowerCase(),
+                name: sub.display_name.toLowerCase(),
+                displayName: sub.display_name,
+                members: sub.subscribers || 0,
+                engagementRate: 10, // Default, can be calculated later
+                category: sub.subreddit_type === 'public' ? 'general' : 'other',
+                verificationRequired: false,
+                promotionAllowed: 'unknown',
+                postingLimits: null,
+                rules: createDefaultRules(),
+                bestPostingTimes: ['evening'],
+                averageUpvotes: 50,
+                successProbability: 50,
+                growthTrend: 'stable',
+                modActivity: 'medium',
+                description: sub.public_description || sub.title || `User community: ${sub.display_name}`,
+                tags: ['user-added'],
+                competitionLevel: 'medium',
+              });
+              
+              logger.info('Added user community', { name: sub.display_name, userId });
+            } catch (err) {
+              logger.warn('Failed to add user community', { 
+                name: sub.display_name, 
+                error: err instanceof Error ? err.message : String(err) 
+              });
+            }
+          }
+        }
+      } catch (err) {
+        // Don't fail OAuth if community import fails
+        logger.warn('Failed to import user communities', { 
+          userId, 
+          error: err instanceof Error ? err.message : String(err) 
+        });
+      }
 
       // Success redirect to dashboard
       const redirectLocation = buildRedirectLocation(stateIntent, profile.username, stateData.queue);

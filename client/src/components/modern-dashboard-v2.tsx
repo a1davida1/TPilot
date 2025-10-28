@@ -32,8 +32,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Skeleton } from '@/components/ui/skeleton';
-import { ActivitySkeleton, DashboardStatsSkeleton } from '@/components/ui/loading-states';
+import { ActivitySkeleton } from '@/components/ui/loading-states';
 
 // Custom Components
 import { CaptionLimitBanner, CommandBar } from '@/components/ui/status-banner';

@@ -46,6 +46,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { sanitizeImageUrl } from '@/lib/image-utils';
 import { StatusBanner } from '@/components/ui/status-banner';
+import { StickyRail } from '@/components/ui/sticky-rail';
 import type { CaptionObject } from '@shared/types/caption';
 import type { SubredditCommunity } from '@/types/reddit';
 import {
@@ -785,7 +786,44 @@ export default function QuickPostPage() {
         />
       )}
       
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <StickyRail
+        rail={
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Progress</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {imageUrl && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Image</span>
+                    <Badge variant="default">✓</Badge>
+                  </div>
+                )}
+                {protectedImageUrl && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Protected</span>
+                    <Badge variant="default">✓</Badge>
+                  </div>
+                )}
+                {confirmedCaptionId && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Caption</span>
+                    <Badge variant="default">✓</Badge>
+                  </div>
+                )}
+                {posted && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Posted</span>
+                    <Badge variant="default">✓</Badge>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        }
+      >
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-8 text-center">
           <div className="inline-flex items-center gap-2 mb-4">
             <div className="p-2 bg-yellow-500 text-white rounded-full">
@@ -1460,9 +1498,8 @@ export default function QuickPostPage() {
           </ul>
         </CardContent>
       </Card>
-    </div>
-    
-    {/* Floating Action Button removed for now - needs proper integration */}
+        </div>
+      </StickyRail>
     </>
   );
 }

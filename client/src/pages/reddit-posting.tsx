@@ -15,6 +15,8 @@ import { apiRequest, type ApiError } from '@/lib/queryClient';
 import { AuthModal } from '@/components/auth-modal';
 import { getCommunityAccessState } from '@/lib/community-access';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { StickyRail } from '@/components/ui/sticky-rail';
+import { StatusBanner } from '@/components/ui/status-banner';
 import {
   Command,
   CommandEmpty,
@@ -51,6 +53,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { MediaLibrarySelector } from '@/components/MediaLibrarySelector';
+import { AddCommunityDialog } from '@/components/add-community-dialog';
 import { normalizeRulesToStructured } from '@shared/reddit-utils';
 import type {
   ShadowbanStatusType,
@@ -790,11 +793,41 @@ export default function RedditPostingPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <>
+      {/* Status Banner */}
+      {accounts && accounts.length === 0 && isAuthenticated && (
+        <StatusBanner
+          message="📱 Connect your Reddit account to start posting!"
+          variant="info"
+        />
+      )}
+      
+      <StickyRail
+        rail={
+          <div className="space-y-4">
+            <Card className="bg-card/90">
+              <CardHeader>
+                <CardTitle className="text-sm">Quick Stats</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Accounts</span>
+                  <span className="font-medium">{accounts?.length || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Communities</span>
+                  <span className="font-medium">{communities?.length || 0}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        }
+      >
+        <div className="min-h-screen bg-gradient-to-br from-background to-muted p-6">
+          <div className="max-w-7xl mx-auto space-y-6">
 
-        {/* Header */}
-        <Card className="bg-card/90 backdrop-blur-sm border-accent/20 shadow-xl">
+            {/* Header */}
+            <Card className="bg-card/90 backdrop-blur-sm border-accent/20 shadow-xl">
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="p-2 bg-accent rounded-lg">
@@ -1210,6 +1243,18 @@ export default function RedditPostingPage() {
                     </Popover>
                   )}
 
+                  {/* Add Community Button */}
+                  {activeAccount && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <div className="text-xs text-gray-500">Don't see your community?</div>
+                      <AddCommunityDialog
+                        onCommunityAdded={() => {
+                          // Refresh communities query
+                          queryClient.invalidateQueries({ queryKey: ['reddit-communities'] });
+                        }}
+                      />
+                    </div>
+                  )}
 
                   {/* Enhanced Community Insights */}
                   {selectedCommunity && (() => {
@@ -1701,6 +1746,8 @@ export default function RedditPostingPage() {
         }}
         initialMode="signup"
       />
-    </div>
+        </div>
+      </StickyRail>
+    </>
   );
 }

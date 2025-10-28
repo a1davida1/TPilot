@@ -27,6 +27,8 @@ import { apiRequest } from '@/lib/queryClient';
 import { useLocation } from 'wouter';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { StickyRail } from '@/components/ui/sticky-rail';
+import { DashboardStatsSkeleton } from '@/components/ui/loading-states';
 
 // Tier access levels
 const TIER_ACCESS = {
@@ -327,40 +329,40 @@ export default function AnalyticsPage() {
       <div className="container mx-auto p-6 max-w-7xl">
         <div className="mb-6">
           <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
-          <p className="text-muted-foreground mt-2">Loading your analytics...</p>
+          <p className="text-muted-foreground">Loading your analytics data...</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          {[1, 2, 3, 4].map(i => (
-            <Card key={i}>
-              <CardHeader className="pb-3">
-                <Skeleton className="h-4 w-20 mb-2" />
-                <Skeleton className="h-8 w-32" />
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {[1, 2].map(i => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-6 w-48" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-32 w-full" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <DashboardStatsSkeleton />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
+    <StickyRail
+      rail={
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Time Range</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Select value={timeRange} onValueChange={setTimeRange}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7d">Last 7 days</SelectItem>
+                <SelectItem value="30d">Last 30 days</SelectItem>
+                <SelectItem value="90d">Last 90 days</SelectItem>
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+      }
+    >
+      <div className="container mx-auto p-6 max-w-7xl">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
           <p className="text-muted-foreground mt-2">
             {isPremium ? 'Premium Analytics - Full Intelligence Suite' : 'Pro Analytics - Performance Tracking'}
           </p>
@@ -550,6 +552,7 @@ export default function AnalyticsPage() {
           {renderIntelligence()}
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </StickyRail>
   );
 }
