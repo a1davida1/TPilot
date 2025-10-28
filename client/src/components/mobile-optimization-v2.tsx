@@ -120,7 +120,9 @@ function BottomNavBar({ items, currentPath, onNavigate }: BottomNavBarProps) {
               <Icon className="h-5 w-5" />
               <span className="text-xs truncate max-w-full">{item.label}</span>
               {item.badge && (
-                <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-destructive" />
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-destructive"></span>
+                </span>
               )}
             </button>
           );
