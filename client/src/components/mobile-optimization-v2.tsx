@@ -217,7 +217,7 @@ function MobileSidebar({
                     )}
                   </div>
                   {item.badge && (
-                    <Badge variant={item.badge.variant as any}>
+                    <Badge variant={item.badge.variant || 'default'}>
                       {item.badge.text}
                     </Badge>
                   )}
