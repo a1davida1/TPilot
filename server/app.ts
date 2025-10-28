@@ -14,6 +14,7 @@ import { permissionsPolicy } from './middleware/permissions-policy.js';
 import { mountStripeWebhook } from './routes/webhooks.stripe.js';
 import { logger } from './bootstrap/logger.js';
 import { startQueue } from './bootstrap/queue.js';
+import { schedulerJobWorker } from './jobs/scheduler.js';
 import { prepareResponseLogPayload, truncateLogLine } from './lib/request-logger.js';
 import passport from 'passport';
 import { createSessionMiddleware } from './bootstrap/session.js';
@@ -461,18 +462,30 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
   const enableVite = options.enableVite ?? (!isProduction && app.get('env') === 'development');
   const queuePrerequisitesPresent = Boolean(process.env.REDIS_URL || process.env.DATABASE_URL);
+  const schedulerDisabled = process.env.SCHEDULER_DISABLED === 'true';
   const shouldStartQueue = startQueueOption && queuePrerequisitesPresent;
 
   try {
 
     if (shouldStartQueue) {
       await startQueue();
+      if (schedulerDisabled) {
+        logger.info('Scheduling worker disabled via SCHEDULER_DISABLED flag.');
+      } else {
+        schedulerJobWorker.start();
+      }
     } else if (startQueueOption) {
       logger.info(
         'Queue startup skipped: provide REDIS_URL or DATABASE_URL environment variables to enable background workers.'
       );
+      if (!schedulerDisabled) {
+        logger.info('Scheduling worker not started because queue prerequisites were missing.');
+      }
     } else {
       logger.info('Queue startup disabled for current execution context.');
+      if (!schedulerDisabled) {
+        logger.info('Scheduling worker not started because queue startup was disabled.');
+      }
     }
 
     mountStripeWebhook(app, API_PREFIX);
