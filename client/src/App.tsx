@@ -44,8 +44,8 @@ const TermsOfService = React.lazy(() => import("@/pages/terms-of-service"));
 const PrivacyPolicy = React.lazy(() => import("@/pages/privacy-policy"));
 const QuickPostPage = React.lazy(() => import("@/pages/quick-post"));
 const FlightSchoolPage = React.lazy(() => import("@/pages/flight-school"));
+const GalleryV2Page = React.lazy(() => import("@/pages/gallery-v2"));
 import { RedditCommunities } from "@/components/reddit-communities";
-import { ImageGallery } from "@/components/image-gallery";
 // Phase 1: Real Analytics Tracking
 import { trackPageView, setUserId, trackFeatureUsage } from "@/lib/analytics-tracker";
 
@@ -70,32 +70,6 @@ function CommunitiesPage() {
           </p>
         </div>
         <RedditCommunities />
-      </div>
-    </div>
-  );
-}
-
-// Gallery Page Component
-function _GalleryPage() {
-  return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-background via-primary-50/60 to-primary-100/50 dark:from-background dark:via-primary-900/40 dark:to-primary-950/40">
-      {/* Animated Background */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-card/10 via-transparent to-[hsl(var(--accent-yellow)/0.12)] opacity-60"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--accent-pink)/0.12),transparent_55%)]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,hsl(var(--accent-yellow)/0.08),transparent_55%)]"></div>
-      </div>
-
-      <div className="relative z-10 container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="mb-2 text-4xl font-bold bg-gradient-to-r from-primary-600 via-accent-rose to-primary-700 dark:from-primary-400 dark:via-accent-rose dark:to-primary-500 bg-clip-text text-transparent drop-shadow-sm">
-            Media Gallery
-          </h1>
-          <p className="max-w-2xl text-lg text-muted-foreground">
-            Upload, organize, and protect your images. Apply advanced protection to prevent reverse searches.
-          </p>
-        </div>
-        <ImageGallery />
       </div>
     </div>
   );
@@ -128,7 +102,8 @@ function AuthenticatedRoutes() {
       <Route path="/analytics" component={AnalyticsPage} />
       <Route path="/performance" component={PerformanceAnalyticsPage} />
       <Route path="/intelligence" component={IntelligenceInsightsPage} />
-      <Route path="/gallery" component={() => <ImageGallery />} />
+      <Route path="/gallery" component={GalleryV2Page} />
+      <Route path="/bulk-caption" component={CaptionGeneratorPage} />
       <Route path="/tax-tracker" component={() => <TaxTracker />} />
       {/* Referral Program - Available to all authenticated users */}
       <Route path="/referral" component={ReferralPage} />
