@@ -44,6 +44,15 @@ export interface PostCheckContext {
 
 type PostType = 'text' | 'link' | 'image' | 'gallery' | 'video';
 
+export interface SubredditSummary {
+  displayName?: string;
+  title?: string;
+  publicDescription?: string;
+  subscribers?: number;
+  over18: boolean;
+  subredditType: string;
+}
+
 interface AccountMetadata {
   karma?: number;
   verified?: boolean;
@@ -1189,6 +1198,41 @@ export class RedditManager {
         error: (error as { message?: string }).message ?? 'Failed to submit gallery',
         decision: permission,
       };
+    }
+  }
+
+  /**
+   * Fetch summary information for a subreddit
+   */
+  async fetchSubredditSummary(subredditName: string): Promise<SubredditSummary | null> {
+    try {
+      const reddit = await this.initReddit() as {
+        getSubreddit(name: string): {
+          fetch(): Promise<{
+            display_name?: string;
+            title?: string;
+            public_description?: string;
+            subscribers?: number;
+            over18?: boolean;
+            subreddit_type?: string;
+          }>;
+        };
+      };
+      const subreddit = await reddit.getSubreddit(subredditName).fetch();
+      return {
+        displayName: typeof subreddit.display_name === 'string' ? subreddit.display_name : undefined,
+        title: typeof subreddit.title === 'string' ? subreddit.title : undefined,
+        publicDescription: typeof subreddit.public_description === 'string' ? subreddit.public_description : undefined,
+        subscribers: typeof subreddit.subscribers === 'number' ? subreddit.subscribers : undefined,
+        over18: Boolean(subreddit.over18),
+        subredditType: typeof subreddit.subreddit_type === 'string' ? subreddit.subreddit_type : 'public',
+      };
+    } catch (error) {
+      logger.warn('Failed to fetch subreddit summary', {
+        subreddit: subredditName,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return null;
     }
   }
 

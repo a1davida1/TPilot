@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -144,35 +144,81 @@ export function IntelligenceInsightsPage() {
   const [selectedSubreddit, setSelectedSubreddit] = useState<string>('');
   const [activeTab, setActiveTab] = useState('title');
 
+  const fetchJson = async <T>(endpoint: string): Promise<T> => {
+    const response = await apiRequest('GET', endpoint);
+    if (!response.ok) {
+      const body: unknown = await response.json().catch(() => ({} as unknown));
+      const message = typeof (body as { error?: unknown }).error === 'string'
+        ? (body as { error: string }).error
+        : typeof (body as { message?: unknown }).message === 'string'
+          ? (body as { message: string }).message
+          : response.statusText || 'Request failed';
+      throw new Error(message);
+    }
+    return response.json() as Promise<T>;
+  };
+
+  const parseCommunityOptions = (value: unknown): Array<{ id: string; name: string; displayName: string }> => {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+    return value
+      .map((entry) => {
+        if (!entry || typeof entry !== 'object') {
+          return null;
+        }
+        const candidate = entry as Record<string, unknown>;
+        const id = typeof candidate.id === 'string' && candidate.id.trim().length > 0
+          ? candidate.id.trim()
+          : typeof candidate.name === 'string' && candidate.name.trim().length > 0
+            ? candidate.name.trim()
+            : null;
+        if (!id) {
+          return null;
+        }
+        const name = typeof candidate.name === 'string' && candidate.name.trim().length > 0
+          ? candidate.name.trim()
+          : id;
+        const displayName = typeof candidate.displayName === 'string' && candidate.displayName.trim().length > 0
+          ? candidate.displayName.trim()
+          : name;
+        return { id, name, displayName };
+      })
+      .filter((entry): entry is { id: string; name: string; displayName: string } => Boolean(entry));
+  };
+
   // Fetch user's subreddits
-  const { data: subreddits } = useQuery({
-    queryKey: ['reddit-communities'],
-    queryFn: async () => {
-      const response = await apiRequest<{ success: boolean; data: Array<{ id: string; name: string; displayName: string }> }>('/api/communities');
-      return response.data;
-    },
-    enabled: !!user
+  const { data: subreddits = [] } = useQuery<{ id: string; name: string; displayName: string }[]>({
+    queryKey: ['/api/reddit/communities'],
+    enabled: !!user,
+    queryFn: async () => parseCommunityOptions(await fetchJson<unknown>('/api/reddit/communities')),
   });
 
+  useEffect(() => {
+    if (!selectedSubreddit && subreddits.length > 0) {
+      setSelectedSubreddit(subreddits[0].name);
+    }
+  }, [selectedSubreddit, subreddits]);
+
   // Fetch title analysis
-  const { data: titleAnalysis, isLoading: titleLoading } = useQuery({
-    queryKey: ['title-analysis', selectedSubreddit],
-    queryFn: async () => apiRequest<TitleAnalysis>(`/api/intelligence/title-analysis/${selectedSubreddit}`),
-    enabled: !!selectedSubreddit
+  const { data: titleAnalysis, isLoading: titleLoading } = useQuery<TitleAnalysis>({
+    queryKey: [`/api/intelligence/title-analysis/${encodeURIComponent(selectedSubreddit)}`],
+    enabled: !!selectedSubreddit,
+    queryFn: async () => fetchJson<TitleAnalysis>(`/api/intelligence/title-analysis/${encodeURIComponent(selectedSubreddit)}`)
   });
 
   // Fetch posting cadence
-  const { data: cadenceAnalysis, isLoading: cadenceLoading } = useQuery({
-    queryKey: ['posting-cadence', selectedSubreddit],
-    queryFn: async () => apiRequest<PostingCadence>(`/api/intelligence/posting-cadence/${selectedSubreddit}`),
-    enabled: !!selectedSubreddit
+  const { data: cadenceAnalysis, isLoading: cadenceLoading } = useQuery<PostingCadence>({
+    queryKey: [`/api/intelligence/posting-cadence/${encodeURIComponent(selectedSubreddit)}`],
+    enabled: !!selectedSubreddit,
+    queryFn: async () => fetchJson<PostingCadence>(`/api/intelligence/posting-cadence/${encodeURIComponent(selectedSubreddit)}`)
   });
 
   // Fetch subreddit recommendations
-  const { data: recommendations, isLoading: recommendationsLoading } = useQuery({
-    queryKey: ['subreddit-recommendations'],
-    queryFn: async () => apiRequest<SubredditRecommendations>('/api/intelligence/subreddit-recommendations'),
-    enabled: !!user
+  const { data: recommendations, isLoading: recommendationsLoading } = useQuery<SubredditRecommendations>({
+    queryKey: ['/api/intelligence/subreddit-recommendations'],
+    enabled: !!user,
+    queryFn: async () => fetchJson<SubredditRecommendations>('/api/intelligence/subreddit-recommendations')
   });
 
   // Check tier access
