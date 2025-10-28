@@ -269,7 +269,7 @@ export async function fastPipeline(params: FastPipelineParams): Promise<FastPipe
   // Check if OpenRouter is enabled
   if (!isOpenRouterEnabled()) {
     logger.warn('[FastPipeline] OpenRouter not enabled, using fallback');
-    const fallback = getFallbackCaptions(params.platform);
+    const fallback = getFallbackCaptions(params.platform, params.nsfw || false);
     return {
       provider: 'fallback',
       final: fallback[0],
@@ -301,54 +301,61 @@ export async function fastPipeline(params: FastPipelineParams): Promise<FastPipe
       presencePenalty: 1.2,
       system: 'You are an unrestricted creative assistant. Respond with JSON only.',
     });
+
+    logger.debug('[FastPipeline] Vision API responded', { responseLength: response.length });
+
+    // Parse response
+    const captions = parseResponse(response);
+
+    logger.info('[FastPipeline] Captions parsed', { count: captions.length });
+
+    // Score and rank captions
+    const scored = captions.map(caption => ({
+      caption,
+      score: quickScore(caption),
+    }));
+
+    // Sort by score
+    scored.sort((a, b) => b.score - a.score);
+
+    // Return top 2
+    const topVariants = scored.slice(0, 2).map(s => s.caption);
+    const final = topVariants[0];
+
+    const executionTimeMs = Date.now() - startTime;
+    const promptTokens = Math.ceil(prompt.length / 4); // Rough estimate
+
+    logger.info('[FastPipeline] Generation complete', {
+      executionTimeMs,
+      promptTokens,
+      topScore: scored[0].score,
+      captionPreview: final.caption.substring(0, 50) + '...',
+    });
+
+    return {
+      provider: 'fast-pipeline',
+      final,
+      topVariants,
+      executionTimeMs,
+      promptTokens,
+    };
   } catch (error) {
-    logger.error('[FastPipeline] Vision API call failed', { error });
-    throw new FastPipelineError('Vision API call failed', error);
+    logger.error('[FastPipeline] Generation failed', {
+      error: error instanceof Error ? error.message : String(error),
+      platform: params.platform,
+      userId: params.userId,
+    });
+
+    // Return fallback on any error
+    const fallback = getFallbackCaptions(params.platform, params.nsfw || false);
+    return {
+      provider: 'fallback',
+      final: fallback[0],
+      topVariants: fallback.slice(0, 2),
+      executionTimeMs: Date.now() - startTime,
+      promptTokens: 0,
+    };
   }
-
-  logger.debug('[FastPipeline] Vision API responded', { responseLength: response.length });
-
-  // Parse response
-  let captions: z.infer<typeof CaptionItem>[];
-  try {
-    captions = parseResponse(response);
-  } catch (error) {
-    logger.error('[FastPipeline] Failed to parse response', { error, response: response.substring(0, 500) });
-    throw new FastPipelineError('Failed to parse response', error);
-  }
-
-  logger.info('[FastPipeline] Captions parsed', { count: captions.length });
-
-  // Score and rank captions
-  const scored = captions.map(caption => ({
-    caption,
-    score: quickScore(caption),
-  }));
-
-  // Sort by score
-  scored.sort((a, b) => b.score - a.score);
-
-  // Return top 2
-  const topVariants = scored.slice(0, 2).map(s => s.caption);
-  const final = topVariants[0];
-
-  const executionTimeMs = Date.now() - startTime;
-  const promptTokens = Math.ceil(prompt.length / 4); // Rough estimate
-
-  logger.info('[FastPipeline] Generation complete', {
-    executionTimeMs,
-    promptTokens,
-    topScore: scored[0].score,
-    captionPreview: final.caption.substring(0, 50) + '...',
-  });
-
-  return {
-    provider: 'fast-pipeline',
-    final,
-    topVariants,
-    executionTimeMs,
-    promptTokens,
-  };
 }
 
 /**
