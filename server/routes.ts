@@ -26,7 +26,7 @@ import { referralRouter } from "./routes/referrals.js";
 // import { getOpenApiRouter } from "./routes/openapi.js"; // Commented out - file missing
 import { registerExpenseRoutes } from "./expense-routes.js";
 import { adminCommunitiesRouter } from "./routes/admin-communities.js";
-// import { userCommunitiesRouter } from "./routes/user-communities.js"; // Temporarily disabled - needs fixes
+import userCommunitiesRouter from "./routes/user-communities.js";
 import { createCancelSubscriptionHandler } from "./routes/subscription-management.js";
 import { createLocalDownloadRouter } from "./routes/downloads.js";
 import imgurUploadRouter from "./routes/imgur-uploads.js";
@@ -1012,7 +1012,7 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   app.use('/api/admin/communities', authenticateToken(true), adminCommunitiesRouter);
 
   // User community discovery and management
-  // app.use('/api/user-communities', userCommunitiesRouter); // Temporarily disabled - needs fixes
+  app.use('/api/user-communities', userCommunitiesRouter);
 
   // Local file serving for media uploads (tokenized downloads)
   app.use('/uploads', createLocalDownloadRouter());
