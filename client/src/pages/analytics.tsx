@@ -79,16 +79,21 @@ export default function AnalyticsPage() {
   const isPremium = tierLevel >= TIER_ACCESS.premium;
 
   // Fetch analytics data based on tier
-  const { data: analytics, isLoading } = useQuery<AnalyticsData>({
+  const { data: analytics, isLoading, error } = useQuery<AnalyticsData>({
     queryKey: ['/api/analytics', timeRange, userTier],
     queryFn: async () => {
-      try {
-        const response = await apiRequest('GET', `/api/analytics?range=${timeRange}&tier=${userTier}`);
-        return response as unknown as AnalyticsData;
-      } catch (err) {
-        console.error('Analytics fetch error:', err);
-        throw err;
+      const response = await apiRequest('GET', `/api/analytics?range=${timeRange}&tier=${userTier}`);
+      
+      if (!response.ok) {
+        const errorPayload: unknown = await response.json().catch(() => ({} as unknown));
+        const message = typeof (errorPayload as { message?: unknown }).message === 'string'
+          ? (errorPayload as { message: string }).message
+          : response.statusText || 'Failed to load analytics';
+        throw new Error(message);
       }
+      
+      const data = await response.json() as AnalyticsData;
+      return data;
     },
     enabled: isProOrHigher, // Only fetch for Pro and above
     retry: 1,

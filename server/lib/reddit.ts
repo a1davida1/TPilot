@@ -1681,6 +1681,54 @@ export class RedditManager {
   }
 
   /**
+   * Fetch subreddit summary information (type-safe)
+   * Replaces unsafe (manager as any).reddit.getSubreddit() pattern
+   */
+  async fetchSubredditSummary(subredditName: string): Promise<{
+    display_name: string;
+    subscribers: number;
+    public_description: string;
+    title: string;
+    subreddit_type: string;
+    over18: boolean;
+    description?: string;
+  } | null> {
+    try {
+      const normalized = subredditName.replace(/^r\//, '').trim();
+      
+      const subreddit = await (this.reddit as unknown as {
+        getSubreddit(name: string): {
+          fetch(): Promise<{
+            display_name: string;
+            subscribers: number;
+            public_description: string;
+            title: string;
+            subreddit_type: string;
+            over18: boolean;
+            description?: string;
+          }>;
+        };
+      }).getSubreddit(normalized).fetch();
+
+      return {
+        display_name: subreddit.display_name || normalized,
+        subscribers: subreddit.subscribers || 0,
+        public_description: subreddit.public_description || '',
+        title: subreddit.title || '',
+        subreddit_type: subreddit.subreddit_type || 'public',
+        over18: subreddit.over18 || false,
+        description: subreddit.description,
+      };
+    } catch (error) {
+      logger.error('Failed to fetch subreddit summary:', {
+        subreddit: subredditName,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return null;
+    }
+  }
+
+  /**
    * Test Reddit connection
    */
   async testConnection(): Promise<boolean> {
