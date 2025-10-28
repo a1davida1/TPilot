@@ -22,6 +22,8 @@ const createScheduledPostSchema = z.object({
   nsfw: z.boolean().default(true),
   flair: z.string().optional(),
   scheduledFor: z.string().datetime(), // ISO timestamp
+  caption: z.string().optional(),
+  body: z.string().optional(),
   captionId: z.string().optional(),
   pairId: z.string().optional(),
   protectionMetrics: z.object({
@@ -30,6 +32,14 @@ const createScheduledPostSchema = z.object({
     preset: z.string()
   }).optional()
 });
+
+const sanitizeOptionalText = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
 
 const getOptimalTimesSchema = z.object({
   subreddit: z.string(),
@@ -44,10 +54,29 @@ const getOptimalTimesSchema = z.object({
 router.post('/', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const data = createScheduledPostSchema.parse(req.body ?? {});
-    
+
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
+
+    const sanitizedSubreddit = data.subreddit.trim();
+    const sanitizedTitle = data.title.trim();
+
+    if (sanitizedSubreddit.length === 0) {
+      return res.status(400).json({ error: 'Subreddit is required.' });
+    }
+
+    if (sanitizedTitle.length === 0) {
+      return res.status(400).json({ error: 'Title is required.' });
+    }
+
+    const sanitizedFlair = sanitizeOptionalText(data.flair);
+    const sanitizedCaption = sanitizeOptionalText(data.caption);
+    const sanitizedBody = sanitizeOptionalText(data.body);
+    const sanitizedCaptionId = sanitizeOptionalText(data.captionId);
+
+    const contentValue: string | null = sanitizedCaptionId ?? sanitizedBody ?? sanitizedCaption ?? null;
+    const captionValue: string | null = sanitizedCaption ?? sanitizedBody ?? null;
 
     // Check tier restrictions
     const userTier = req.user.tier || 'free';
@@ -57,39 +86,40 @@ router.post('/', authenticateToken(true), async (req: AuthRequest, res: Response
 
     // Tier restrictions for scheduling
     if (userTier === 'free' || userTier === 'starter') {
-      return res.status(403).json({ 
+      return res.status(403).json({
         error: 'Scheduling requires Pro or Premium tier',
-        requiredTier: 'pro' 
+        requiredTier: 'pro'
       });
     }
 
     if (userTier === 'pro' && daysAhead > 7) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         error: 'Pro tier can only schedule up to 7 days in advance',
         maxDays: 7,
-        requestedDays: daysAhead 
+        requestedDays: daysAhead
       });
     }
 
     if (userTier === 'premium' && daysAhead > 30) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         error: 'Premium tier can schedule up to 30 days in advance',
         maxDays: 30,
-        requestedDays: daysAhead 
+        requestedDays: daysAhead
       });
     }
 
     // Insert into database
     const [scheduledPost] = await db.insert(scheduledPosts).values({
       userId: req.user.id,
-      subreddit: data.subreddit,
-      title: data.title,
-      content: data.captionId || '',
+      subreddit: sanitizedSubreddit,
+      title: sanitizedTitle,
+      content: contentValue,
       imageUrl: data.imageUrl,
+      caption: captionValue,
       scheduledFor: scheduledDate,
       status: 'pending',
       nsfw: data.nsfw,
-      flairText: data.flair,
+      flairText: sanitizedFlair ?? null,
       createdAt: now,
       updatedAt: now
     }).returning();
@@ -97,8 +127,8 @@ router.post('/', authenticateToken(true), async (req: AuthRequest, res: Response
     logger.info('Scheduled post created', {
       postId: scheduledPost.id,
       userId: req.user.id,
-      subreddit: data.subreddit,
-      scheduledFor: data.scheduledFor
+      subreddit: sanitizedSubreddit,
+      scheduledFor: scheduledDate.toISOString()
     });
 
     return res.status(201).json(scheduledPost);
