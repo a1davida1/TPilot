@@ -1011,6 +1011,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // Admin communities routes are exposed under a dedicated admin namespace
   app.use('/api/admin/communities', authenticateToken(true), adminCommunitiesRouter);
 
+  // User community discovery and management
+  app.use('/api/user-communities', userCommunitiesRouter);
+
   // Local file serving for media uploads (tokenized downloads)
   app.use('/uploads', createLocalDownloadRouter());
 

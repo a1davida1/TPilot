@@ -53,6 +53,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { MediaLibrarySelector } from '@/components/MediaLibrarySelector';
+import { AddCommunityDialog } from '@/components/add-community-dialog';
 import { normalizeRulesToStructured } from '@shared/reddit-utils';
 import type {
   ShadowbanStatusType,
@@ -1242,6 +1243,18 @@ export default function RedditPostingPage() {
                     </Popover>
                   )}
 
+                  {/* Add Community Button */}
+                  {activeAccount && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <div className="text-xs text-gray-500">Don't see your community?</div>
+                      <AddCommunityDialog
+                        onCommunityAdded={() => {
+                          // Refresh communities query
+                          queryClient.invalidateQueries({ queryKey: ['reddit-communities'] });
+                        }}
+                      />
+                    </div>
+                  )}
 
                   {/* Enhanced Community Insights */}
                   {selectedCommunity && (() => {
