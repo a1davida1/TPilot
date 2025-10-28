@@ -81,16 +81,19 @@ export class SchedulerJobWorker {
   private async claimNextJob(): Promise<typeof scheduleJobs.$inferSelect | null> {
     return db.transaction(async (trx) => {
       const now = new Date();
-      const job = await trx.query.scheduleJobs.findFirst({
-        where: (jobs, { and: whereAnd, or: whereOr, eq: whereEq, lte: whereLte, isNull: whereIsNull, lt: whereLt }) =>
-          whereAnd(
-            whereOr(whereEq(jobs.status, 'pending'), whereEq(jobs.status, 'queued')),
-            whereLte(jobs.runAt, now),
-            whereOr(whereIsNull(jobs.retryAt), whereLte(jobs.retryAt, now)),
-            whereOr(whereIsNull(jobs.lockedAt), whereLt(jobs.lockedAt, new Date(now.getTime() - LOCK_TIMEOUT_MS))),
-          ),
-        orderBy: (jobs, { asc }) => [asc(jobs.priority), asc(jobs.runAt)],
-      });
+      const [job] = await trx
+        .select()
+        .from(scheduleJobs)
+        .where(
+          and(
+            or(eq(scheduleJobs.status, 'pending'), eq(scheduleJobs.status, 'queued')),
+            lte(scheduleJobs.runAt, now),
+            or(isNull(scheduleJobs.retryAt), lte(scheduleJobs.retryAt, now)),
+            or(isNull(scheduleJobs.lockedAt), lt(scheduleJobs.lockedAt, new Date(now.getTime() - LOCK_TIMEOUT_MS))),
+          )
+        )
+        .orderBy(scheduleJobs.priority, scheduleJobs.runAt)
+        .limit(1);
 
       if (!job) {
         return null;
@@ -124,9 +127,11 @@ export class SchedulerJobWorker {
         return;
       }
 
-      const scheduledPost = await db.query.scheduledPosts.findFirst({
-        where: (posts, { eq: whereEq }) => whereEq(posts.id, job.scheduledPostId!),
-      });
+      const [scheduledPost] = await db
+        .select()
+        .from(scheduledPosts)
+        .where(eq(scheduledPosts.id, job.scheduledPostId!))
+        .limit(1);
 
       if (!scheduledPost) {
         await this.markFailure(job, start, `Scheduled post ${job.scheduledPostId} not found`);
