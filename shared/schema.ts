@@ -1,7 +1,8 @@
-import { pgTable, serial, varchar, text, integer, timestamp, jsonb, boolean, unique, index, doublePrecision, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, text, integer, timestamp, jsonb, boolean, unique, index, doublePrecision, primaryKey, pgMaterializedView, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { growthTrendSchema } from "./growth-trends";
 
 // ==========================================
@@ -1001,6 +1002,9 @@ export type MediaUsage = typeof mediaUsages.$inferSelect;
 export type InsertMediaUsage = z.infer<typeof insertMediaUsageSchema>;
 
 export type AiGeneration = typeof aiGenerations.$inferSelect;
+export type AnalyticsContentPerformanceDaily = typeof analyticsContentPerformanceDaily.$inferSelect;
+export type AnalyticsAiUsageDaily = typeof analyticsAiUsageDaily.$inferSelect;
+
 export type InsertAiGeneration = z.infer<typeof insertAiGenerationSchema>;
 
 // Phase 5: Types for new tables
@@ -1272,6 +1276,115 @@ export const analyticsMetrics = pgTable("analytics_metrics", {
 }, (table) => ({
   userDateIdx: unique("analytics_metrics_user_date_idx").on(table.userId, table.date, table.metricType),
 }));
+
+export const analyticsContentPerformanceDaily = pgMaterializedView(
+  'analytics_content_performance_daily',
+  {
+    userId: integer('user_id').notNull(),
+    contentId: integer('content_id').notNull(),
+    platform: varchar('platform', { length: 50 }).notNull(),
+    subreddit: varchar('subreddit', { length: 100 }),
+    primaryTitle: text('primary_title'),
+    day: date('day').notNull(),
+    totalViews: integer('total_views').notNull(),
+    uniqueViewers: integer('unique_viewers').notNull(),
+    avgTimeSpent: doublePrecision('avg_time_spent').notNull(),
+    totalTimeSpent: integer('total_time_spent').notNull(),
+    socialViews: integer('social_views').notNull(),
+    likes: integer('likes').notNull(),
+    comments: integer('comments').notNull(),
+    shares: integer('shares').notNull(),
+    engagementRate: doublePrecision('engagement_rate').notNull(),
+  }
+).as(sql`
+  WITH view_stats AS (
+    SELECT
+      cg.user_id,
+      cv.content_id,
+      DATE_TRUNC('day', cv.created_at)::date AS day,
+      COUNT(*) AS total_views,
+      COUNT(DISTINCT COALESCE(cv.session_id, cv.user_id::text)) AS unique_viewers,
+      COALESCE(AVG(cv.time_spent), 0)::double precision AS avg_time_spent,
+      COALESCE(SUM(cv.time_spent), 0) AS total_time_spent
+    FROM content_views cv
+    JOIN content_generations cg ON cg.id = cv.content_id
+    GROUP BY cg.user_id, cv.content_id, DATE_TRUNC('day', cv.created_at)::date
+  ),
+  social_stats AS (
+    SELECT
+      cg.user_id,
+      sm.content_id,
+      DATE_TRUNC('day', sm.created_at)::date AS day,
+      COALESCE(SUM(sm.views), 0) AS social_views,
+      COALESCE(SUM(sm.likes), 0) AS likes,
+      COALESCE(SUM(sm.comments), 0) AS comments,
+      COALESCE(SUM(sm.shares), 0) AS shares
+    FROM social_metrics sm
+    JOIN content_generations cg ON cg.id = sm.content_id
+    GROUP BY cg.user_id, sm.content_id, DATE_TRUNC('day', sm.created_at)::date
+  ),
+  combined AS (
+    SELECT user_id, content_id, day FROM view_stats
+    UNION
+    SELECT user_id, content_id, day FROM social_stats
+  )
+  SELECT
+    cg.user_id,
+    cg.id AS content_id,
+    cg.platform,
+    cg.subreddit,
+    COALESCE(cg.titles ->> 0, 'Untitled') AS primary_title,
+    combined.day,
+    COALESCE(vs.total_views, 0) AS total_views,
+    COALESCE(vs.unique_viewers, 0) AS unique_viewers,
+    COALESCE(vs.avg_time_spent, 0)::double precision AS avg_time_spent,
+    COALESCE(vs.total_time_spent, 0) AS total_time_spent,
+    COALESCE(ss.social_views, 0) AS social_views,
+    COALESCE(ss.likes, 0) AS likes,
+    COALESCE(ss.comments, 0) AS comments,
+    COALESCE(ss.shares, 0) AS shares,
+    CASE
+      WHEN COALESCE(vs.total_views, 0) = 0 THEN 0::double precision
+      ELSE ((COALESCE(ss.likes, 0) + COALESCE(ss.comments, 0) + COALESCE(ss.shares, 0))::double precision / GREATEST(COALESCE(vs.total_views, 0), 1)) * 100
+    END AS engagement_rate
+  FROM combined
+  JOIN content_generations cg ON cg.id = combined.content_id
+  LEFT JOIN view_stats vs ON vs.content_id = combined.content_id AND vs.day = combined.day
+  LEFT JOIN social_stats ss ON ss.content_id = combined.content_id AND ss.day = combined.day
+`);
+
+export const analyticsAiUsageDaily = pgMaterializedView(
+  'analytics_ai_usage_daily',
+  {
+    userId: integer('user_id').notNull(),
+    day: date('day').notNull(),
+    generationCount: integer('generation_count').notNull(),
+    modelBreakdown: jsonb('model_breakdown').notNull(),
+  }
+).as(sql`
+  WITH model_counts AS (
+    SELECT
+      user_id,
+      DATE_TRUNC('day', created_at)::date AS day,
+      model,
+      COUNT(*) AS generation_count
+    FROM ai_generations
+    GROUP BY user_id, DATE_TRUNC('day', created_at)::date, model
+  )
+  SELECT
+    user_id,
+    day,
+    SUM(generation_count) AS generation_count,
+    COALESCE(
+      JSONB_AGG(
+        JSONB_BUILD_OBJECT('model', model, 'count', generation_count)
+        ORDER BY model
+      ),
+      '[]'::jsonb
+    ) AS model_breakdown
+  FROM model_counts
+  GROUP BY user_id, day
+`);
 
 export const postMetrics = pgTable('post_metrics', {
   id: serial('id').primaryKey(),
