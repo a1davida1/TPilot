@@ -1,14 +1,17 @@
 /**
  * Fast Caption Generation Pipeline
  *
- * Optimizations:
- * 1. Skip separate fact extraction (use vision model directly)
- * 2. Remove retry loops (fail fast, fix prompts instead)
- * 3. Simplified prompts (3KB vs 25KB)
- * 4. Target: <10 seconds (70% faster than current)
+ * Optimized for speed (<10s) and cost (75% cheaper than standard pipeline)
  *
- * Cost: $0.008-0.012 per generation (75% cheaper)
- * Quality: 90-95% of current system
+ * Key optimizations:
+ * - Skip separate fact extraction (vision model sees image directly)
+ * - Generate 3 variants in single API call (vs 5 variants + ranking)
+ * - Simplified prompts (3KB vs 30KB)
+ * - Quick client-side scoring (no AI ranking call)
+ * - No retry loops (fail fast with fallback)
+ *
+ * Target: <10 seconds, $0.008-0.012 per generation
+ * Standard: 15-48 seconds, $0.038-0.06 per generation
  */
 
 import { z } from 'zod';
@@ -18,8 +21,8 @@ import {
   isOpenRouterEnabled,
   GROK_4_FAST,
 } from '../lib/openrouter-client.js';
-import { CaptionItem } from './schema.js';
-import { type CaptionPersonalizationContext } from './personalization-context.js';
+import { CaptionItem, platformChecks } from './schema.js';
+import type { CaptionPersonalizationContext } from './personalization-context.js';
 
 export class FastPipelineError extends Error {
   constructor(message: string, public readonly cause?: unknown) {
@@ -258,30 +261,38 @@ function quickScore(caption: z.infer<typeof CaptionItem>): number {
 
 /**
  * Fast caption generation pipeline
- * Target: <10 seconds
+ * Target: <10 seconds, $0.008-0.012 per generation
  */
 export async function fastPipeline(params: FastPipelineParams): Promise<FastPipelineResult> {
   const startTime = Date.now();
 
-  logger.info('[FastPipeline] Starting fast caption generation', {
-    platform: params.platform,
-    voice: params.voice,
-    nsfw: params.nsfw,
-    userId: params.userId,
-  });
-
+  // Check if OpenRouter is enabled
   if (!isOpenRouterEnabled()) {
-    throw new FastPipelineError('OpenRouter is not enabled');
+    logger.warn('[FastPipeline] OpenRouter not enabled, using fallback');
+    const fallback = getFallbackCaptions(params.platform);
+    return {
+      provider: 'fallback',
+      final: fallback[0],
+      topVariants: fallback.slice(0, 2),
+      executionTimeMs: Date.now() - startTime,
+      promptTokens: 0,
+    };
   }
 
-  // Build simplified prompt
-  const prompt = buildFastPrompt(params);
-  logger.debug('[FastPipeline] Prompt built', { promptLength: prompt.length });
-
-  // Single vision API call (no separate fact extraction)
-  let response: string;
   try {
-    response = await generateVision({
+    // Build simplified prompt
+    const prompt = buildFastPrompt(params);
+
+    logger.info('[FastPipeline] Generating captions', {
+      platform: params.platform,
+      voice: params.voice,
+      nsfw: params.nsfw,
+      promptLength: prompt.length,
+      userId: params.userId,
+    });
+
+    // Single vision API call (no separate fact extraction)
+    const response = await generateVision({
       prompt,
       imageUrl: params.imageUrl,
       model: GROK_4_FAST,
