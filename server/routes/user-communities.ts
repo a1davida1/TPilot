@@ -13,6 +13,77 @@ import { createDefaultRules } from '@shared/schema';
 const router = Router();
 
 /**
+ * POST /api/user-communities/lookup
+ * Validate and fetch subreddit info without adding to database
+ */
+router.post('/lookup', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { subredditName } = req.body;
+    if (!subredditName || typeof subredditName !== 'string') {
+      return res.status(400).json({ error: 'subredditName is required' });
+    }
+
+    // Normalize and validate subreddit name
+    const normalizedName = subredditName.replace(/^r\//, '').toLowerCase().trim();
+    
+    if (!normalizedName || normalizedName.length === 0) {
+      return res.status(400).json({ error: 'Invalid subreddit name' });
+    }
+
+    logger.info('User looking up community', { userId, subreddit: normalizedName });
+
+    // Check if already exists in our database
+    const existing = await searchCommunities(normalizedName);
+    if (existing.length > 0) {
+      return res.json({
+        success: true,
+        alreadyExists: true,
+        community: existing[0],
+        message: 'Community already exists in database'
+      });
+    }
+
+    // Fetch from Reddit API
+    const manager = await RedditManager.forUser(userId);
+    if (!manager) {
+      return res.status(403).json({ error: 'Reddit account not connected' });
+    }
+
+    const subredditInfo = await manager.fetchSubredditSummary(normalizedName);
+    
+    if (!subredditInfo) {
+      return res.status(404).json({ error: 'Subreddit not found on Reddit' });
+    }
+
+    // Return info without adding to database
+    return res.json({
+      success: true,
+      alreadyExists: false,
+      subredditInfo: {
+        name: normalizedName,
+        displayName: subredditInfo.display_name,
+        subscribers: subredditInfo.subscribers,
+        description: subredditInfo.public_description || subredditInfo.title,
+        type: subredditInfo.subreddit_type,
+        nsfw: subredditInfo.over18,
+      },
+      message: 'Subreddit found and ready to add'
+    });
+
+  } catch (error) {
+    logger.error('Error looking up community', {
+      error: error instanceof Error ? error.message : String(error)
+    });
+    return res.status(500).json({ error: 'Failed to lookup community' });
+  }
+});
+
+/**
  * POST /api/user-communities/add
  * Add a new subreddit to the platform (requires authentication)
  */
@@ -29,7 +100,11 @@ router.post('/add', authenticateToken(true), async (req: AuthRequest, res: Respo
     }
 
     // Normalize subreddit name
-    const normalizedName = subredditName.replace(/^r\//, '').toLowerCase();
+    const normalizedName = subredditName.replace(/^r\//, '').toLowerCase().trim();
+    
+    if (!normalizedName || normalizedName.length === 0) {
+      return res.status(400).json({ error: 'Invalid subreddit name' });
+    }
     
     logger.info('User requesting to add community', { userId, subreddit: normalizedName });
 
@@ -49,51 +124,42 @@ router.post('/add', authenticateToken(true), async (req: AuthRequest, res: Respo
       return res.status(403).json({ error: 'Reddit account not connected' });
     }
 
-    try {
-      // Fetch subreddit information
-      const subredditInfo = await (manager as any).reddit.getSubreddit(normalizedName).fetch();
-      
-      if (!subredditInfo) {
-        return res.status(404).json({ error: 'Subreddit not found on Reddit' });
-      }
-
-      // Add to database
-      const newCommunity = await createCommunity({
-        id: normalizedName,
-        name: normalizedName,
-        displayName: subredditInfo.display_name || normalizedName,
-        members: subredditInfo.subscribers || 0,
-        engagementRate: 10, // Default
-        category: subredditInfo.subreddit_type === 'public' ? 'general' : 'other',
-        verificationRequired: false,
-        promotionAllowed: 'unknown',
-        postingLimits: null,
-        rules: createDefaultRules(),
-        bestPostingTimes: ['evening'],
-        averageUpvotes: 50,
-        successProbability: 50,
-        growthTrend: 'stable',
-        modActivity: 'medium',
-        description: subredditInfo.public_description || subredditInfo.title || `Community: ${normalizedName}`,
-        tags: ['user-added'],
-        competitionLevel: 'medium',
-      });
-
-      logger.info('User added new community', { userId, subreddit: normalizedName });
-
-      return res.json({
-        success: true,
-        message: 'Community added successfully',
-        community: newCommunity
-      });
-
-    } catch (err) {
-      logger.error('Failed to fetch subreddit info', {
-        subreddit: normalizedName,
-        error: err instanceof Error ? err.message : String(err)
-      });
-      return res.status(404).json({ error: 'Subreddit not found or inaccessible' });
+    // Use type-safe method instead of (manager as any)
+    const subredditInfo = await manager.fetchSubredditSummary(normalizedName);
+    
+    if (!subredditInfo) {
+      return res.status(404).json({ error: 'Subreddit not found on Reddit' });
     }
+
+    // Add to database
+    const newCommunity = await createCommunity({
+      id: normalizedName,
+      name: normalizedName,
+      displayName: subredditInfo.display_name,
+      members: subredditInfo.subscribers,
+      engagementRate: 10, // Default
+      category: subredditInfo.subreddit_type === 'public' ? 'general' : 'other',
+      verificationRequired: false,
+      promotionAllowed: subredditInfo.over18 ? 'yes' : 'unknown',
+      postingLimits: null,
+      rules: createDefaultRules(),
+      bestPostingTimes: ['evening'],
+      averageUpvotes: 50,
+      successProbability: 50,
+      growthTrend: 'stable',
+      modActivity: 'medium',
+      description: subredditInfo.public_description || subredditInfo.title || `Community: ${normalizedName}`,
+      tags: ['user-added'],
+      competitionLevel: 'medium',
+    });
+
+    logger.info('User added new community', { userId, subreddit: normalizedName });
+
+    return res.json({
+      success: true,
+      message: 'Community added successfully',
+      community: newCommunity
+    });
 
   } catch (error) {
     logger.error('Error adding user community', {

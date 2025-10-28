@@ -20,3 +20,5 @@
 {"correlationId":"ca2e30c5-71e0-4328-86d9-9d0199f236e8","level":"info","message":"⏰ Starting caption metrics polling...","timestamp":"2025-10-28T09:15:00.017Z"}
 {"correlationId":"ca2e30c5-71e0-4328-86d9-9d0199f236e8","level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-28T09:15:01.124Z"}
 {"correlationId":"ca2e30c5-71e0-4328-86d9-9d0199f236e8","level":"info","message":"📊 Updating analytics metrics","timestamp":"2025-10-28T10:00:00.012Z"}
+{"correlationId":"ca2e30c5-71e0-4328-86d9-9d0199f236e8","level":"info","message":"⏰ Starting caption metrics polling...","timestamp":"2025-10-28T10:15:00.014Z"}
+{"correlationId":"ca2e30c5-71e0-4328-86d9-9d0199f236e8","level":"info","message":"📊 Caption metrics polling complete: 0 updated, 0 errors","timestamp":"2025-10-28T10:15:01.147Z"}
