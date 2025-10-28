@@ -1,11 +1,15 @@
 import { Router, type Response } from 'express';
 import { pipeline, OpenRouterError } from '../caption/openrouterPipeline';
+import { fastPipeline, FastPipelineError, getFallbackCaptions } from '../caption/fastPipeline';
 import { loadCaptionPersonalizationContext } from '../caption/personalization-context';
 import { storage } from '../storage';
 import { authenticateToken, type AuthRequest } from '../middleware/auth';
 import { type CaptionObject } from '@shared/types/caption';
 import { z } from 'zod';
 import { logger } from '../bootstrap/logger';
+
+// Feature flag: Use fast pipeline (set USE_FAST_PIPELINE=true in .env)
+const USE_FAST_PIPELINE = process.env.USE_FAST_PIPELINE === 'true';
 
 // Local validation schema to prevent import issues
 const captionObjectSchema = z.object({
@@ -116,7 +120,7 @@ const rewriteSchema = z.object({
 router.post('/generate', authenticateToken(true), async (req: AuthRequest, res: Response) => {
   try {
     const { imageUrl, platform, voice, style, mood, nsfw, promotionMode } = generateSchema.parse(req.body ?? {});
-    
+
     // Fetch user preferences for promotional URLs
     let promotionalUrl: string | undefined;
     if (promotionMode === 'explicit' && req.user?.id) {
@@ -127,20 +131,79 @@ router.post('/generate', authenticateToken(true), async (req: AuthRequest, res: 
         logger.warn('Failed to fetch user preferences for promotional URL', { userId: req.user.id });
       }
     }
-    
+
     const personalization = req.user?.id ? await loadCaptionPersonalizationContext(req.user.id) : null;
 
-    const result = await pipeline({ 
-      imageUrl, 
-      platform, 
-      voice, 
-      style, 
-      mood, 
-      nsfw: nsfw || false,
-      promotionMode,
-      promotionalUrl,
-      personalization,
-    });
+    // Choose pipeline based on feature flag
+    let result: any;
+    if (USE_FAST_PIPELINE) {
+      logger.info('[Caption] Using FAST pipeline', { userId: req.user?.id, platform });
+      try {
+        const fastResult = await fastPipeline({
+          imageUrl,
+          platform,
+          voice,
+          style,
+          mood,
+          nsfw: nsfw || false,
+          promotionMode,
+          promotionalUrl,
+          personalization,
+          userId: req.user?.id,
+        });
+
+        // Convert fast pipeline result to standard format
+        result = {
+          provider: fastResult.provider,
+          final: fastResult.final,
+          topVariants: fastResult.topVariants,
+          facts: {}, // Fast pipeline doesn't extract facts
+          ranked: {
+            final: fastResult.final,
+            reason: `Fast generation (${fastResult.executionTimeMs}ms)`,
+          },
+          titles: fastResult.final.titles,
+        };
+
+        // Log performance metrics
+        logger.info('[Caption] Fast pipeline complete', {
+          executionTimeMs: fastResult.executionTimeMs,
+          promptTokens: fastResult.promptTokens,
+          userId: req.user?.id,
+        });
+      } catch (error) {
+        if (error instanceof FastPipelineError) {
+          logger.error('[Caption] Fast pipeline failed, falling back', { error: error.message });
+          // Fallback to standard pipeline
+          result = await pipeline({
+            imageUrl,
+            platform,
+            voice,
+            style,
+            mood,
+            nsfw: nsfw || false,
+            promotionMode,
+            promotionalUrl,
+            personalization,
+          });
+        } else {
+          throw error;
+        }
+      }
+    } else {
+      logger.info('[Caption] Using STANDARD pipeline', { userId: req.user?.id, platform });
+      result = await pipeline({
+        imageUrl,
+        platform,
+        voice,
+        style,
+        mood,
+        nsfw: nsfw || false,
+        promotionMode,
+        promotionalUrl,
+        personalization,
+      });
+    }
     
     // Validate response payload matches expected schema
     const validatedResult = generationResponseSchema.parse(result);

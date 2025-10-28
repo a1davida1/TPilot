@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, integer, timestamp, jsonb, boolean, unique, index, doublePrecision, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, text, integer, timestamp, jsonb, boolean, unique, index, doublePrecision, primaryKey, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -1255,6 +1255,32 @@ export const socialMetrics = pgTable("social_metrics", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Materialized Views for Analytics (Migration 018)
+export const analyticsContentPerformanceDaily = pgTable("analytics_content_performance_daily", {
+  userId: integer("user_id").notNull(),
+  contentId: integer("content_id").notNull(),
+  platform: varchar("platform", { length: 50 }).notNull(),
+  subreddit: varchar("subreddit", { length: 255 }),
+  primaryTitle: varchar("primary_title", { length: 500 }),
+  day: date("day").notNull(),
+  totalViews: integer("total_views").default(0).notNull(),
+  uniqueViewers: integer("unique_viewers").default(0).notNull(),
+  avgTimeSpent: doublePrecision("avg_time_spent").default(0).notNull(),
+  totalTimeSpent: integer("total_time_spent").default(0).notNull(),
+  socialViews: integer("social_views").default(0).notNull(),
+  likes: integer("likes").default(0).notNull(),
+  comments: integer("comments").default(0).notNull(),
+  shares: integer("shares").default(0).notNull(),
+  engagementRate: doublePrecision("engagement_rate").default(0).notNull(),
+});
+
+export const analyticsAiUsageDaily = pgTable("analytics_ai_usage_daily", {
+  userId: integer("user_id").notNull(),
+  day: date("day").notNull(),
+  generationCount: integer("generation_count").default(0).notNull(),
+  modelBreakdown: jsonb("model_breakdown").notNull(), // Array<{model: string, count: number}>
+});
+
 export const analyticsMetrics = pgTable("analytics_metrics", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
@@ -1640,3 +1666,7 @@ export type RedditAccount = typeof redditAccounts.$inferSelect;
 export type InsertRedditAccount = z.infer<typeof insertRedditAccountSchema>;
 export type RedditAccountAuditLog = typeof redditAccountAuditLog.$inferSelect;
 export type InsertRedditAccountAuditLog = z.infer<typeof insertRedditAuditLogSchema>;
+
+// Analytics Materialized View Types (Migration 018)
+export type AnalyticsContentPerformanceDaily = typeof analyticsContentPerformanceDaily.$inferSelect;
+export type AnalyticsAiUsageDaily = typeof analyticsAiUsageDaily.$inferSelect;
