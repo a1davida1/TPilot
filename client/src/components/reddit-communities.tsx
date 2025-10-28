@@ -35,7 +35,7 @@ import type { ApiError } from "@/lib/queryClient";
 import { getCommunityAccessState } from "@/lib/community-access";
 import { useAuth } from "@/hooks/useAuth";
 
-type RuleAllowance = 'yes' | 'limited' | 'no';
+type RuleAllowance = 'allowed' | 'limited' | 'not_allowed' | 'unknown' | 'yes' | 'no';
 
 interface _RedditCommunity {
   id: string;
@@ -138,19 +138,22 @@ export function RedditCommunities() {
 
   const _formatAllowance = (value?: RuleAllowance) => {
     switch (value) {
+      case 'allowed':
       case 'yes':
         return 'Allowed';
       case 'limited':
         return 'Limited';
+      case 'not_allowed':
       case 'no':
         return 'Not allowed';
+      case 'unknown':
       default:
-        return undefined;
+        return 'Unknown';
     }
   };
 
   const _formatBoolean = (value?: boolean) => {
-    if (typeof value !== 'boolean') return undefined;
+    if (typeof value !== 'boolean') return 'Unknown';
     return value ? 'Allowed' : 'Not allowed';
   };
 
@@ -467,6 +470,9 @@ export function RedditCommunities() {
               ) : (
                 filteredCommunities.map((community) => {
                 const modActivityDisplay = getModActivityDisplay(community.modActivity);
+                const watermarkStatus = _formatBoolean(community.rules?.watermarksAllowed);
+                const sellingStatus = _formatAllowance(community.rules?.sellingAllowed);
+                const promotionalLinksStatus = _formatAllowance(community.rules?.promotionalLinksAllowed);
                 return (
                   <React.Fragment key={community.id}>
                     <TableRow 
@@ -560,16 +566,25 @@ export function RedditCommunities() {
                                 <div className="space-y-1 text-xs text-purple-800 dark:text-purple-300">
                                   {community.rules?.minKarma !== undefined && community.rules?.minKarma !== null && <p>⚡ Need at least <strong>{community.rules.minKarma}</strong> karma</p>}
                                   {community.rules?.minAccountAge !== undefined && community.rules?.minAccountAge !== null && <p>📅 Account must be <strong>{community.rules.minAccountAge} days</strong> old</p>}
-                                  <p>{community.rules?.watermarksAllowed ? '✅ Watermarks are OK' : '❌ No watermarks allowed'}</p>
-                                  <p>{(() => {
-                                    const policy = community.rules?.sellingAllowed;
-                                    switch (policy) {
-                                      case 'allowed': return '💰 Selling links allowed';
-                                      case 'limited': return '⚠️ Limited selling allowed';
-                                      case 'not_allowed': return '🚫 No selling allowed';
-                                      default: return '❓ Selling policy unclear';
-                                    }
-                                  })()}</p>
+                                  <p>{watermarkStatus === 'Allowed'
+                                    ? '✅ Watermarks are OK'
+                                    : watermarkStatus === 'Not allowed'
+                                      ? '❌ No watermarks allowed'
+                                      : '❓ Watermark policy unknown'}</p>
+                                  <p>{sellingStatus === 'Allowed'
+                                    ? '💰 Selling links allowed'
+                                    : sellingStatus === 'Limited'
+                                      ? '⚠️ Limited selling allowed'
+                                      : sellingStatus === 'Not allowed'
+                                        ? '🚫 No selling allowed'
+                                        : '❓ Selling policy unclear'}</p>
+                                  <p>{promotionalLinksStatus === 'Allowed'
+                                    ? '🔗 Promotional links allowed'
+                                    : promotionalLinksStatus === 'Limited'
+                                      ? '⚠️ Promotional links limited'
+                                      : promotionalLinksStatus === 'Not allowed'
+                                        ? '🚫 Promotional links not allowed'
+                                        : '❓ Promotional link policy unknown'}</p>
                                 </div>
                               </div>
 
