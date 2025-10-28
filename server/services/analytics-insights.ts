@@ -367,7 +367,7 @@ export async function getAiSummary(
     .where(where);
 
   const totalGenerations = Number(row?.totalGenerations ?? 0);
-  const activeDays = Number(row?.activeDays ?? 0) || 1;
+  const activeDays = Number(row?.activeDays ?? 0);
 
   return {
     totalGenerations,
