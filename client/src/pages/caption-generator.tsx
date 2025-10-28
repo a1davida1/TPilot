@@ -13,7 +13,7 @@ const { data: captionStats } = useQuery<{ used: number; limit: number; remaining
   queryFn: () => fetch('/api/generations/stats').then(res => res.json()),
 });
 
-  const showLimitWarning = captionStats && captionStats.remaining < 10;
+const showLimitWarning = captionStats?.remaining !== undefined && captionStats.remaining < 10;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 dark:from-gray-900 dark:via-purple-950 dark:to-indigo-950">
