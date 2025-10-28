@@ -53,7 +53,11 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
 
       // Phase 3: Store access token in memory only
       const { setAccessToken } = await import('@/lib/auth');
-      setAccessToken(data.accessToken || data.token);
+      const token = data.accessToken || data.token;
+      if (!token) {
+        throw new Error("No authentication token received from server");
+      }
+      setAccessToken(token);
       
       // Keep user data in localStorage for now (non-sensitive)
       localStorage.setItem("user", JSON.stringify(data.user));
@@ -105,7 +109,11 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
 
       // Phase 3: Store access token in memory only
       const { setAccessToken } = await import('@/lib/auth');
-      setAccessToken(data.accessToken || data.token);
+      const token = data.accessToken || data.token;
+      if (!token) {
+        throw new Error("No authentication token received from server");
+      }
+      setAccessToken(token);
 
       // Keep user data in localStorage for now (non-sensitive)
       localStorage.setItem("user", JSON.stringify(data.user));

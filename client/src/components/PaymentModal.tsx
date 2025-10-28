@@ -35,11 +35,11 @@ function PaymentForm({ tier, onSuccess, onCancel }: PaymentFormProps) {
 
     try {
       // Create payment intent
-      const response = await apiRequest('POST', '/api/payments/create-intent', {
+      const response = await apiRequest<{ clientSecret: string }>('POST', '/api/payments/create-intent', {
         tier,
         priceId: TIER_PRICES[tier].priceId
       });
-      const { clientSecret } = await response.json();
+      const { clientSecret } = response;
 
       // Confirm payment
       const cardElement = elements.getElement(CardElement);

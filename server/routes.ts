@@ -22,6 +22,7 @@ import { createSessionMiddleware } from "./bootstrap/session.js";
 import { mediaRoutes } from "./routes/media.js";
 import { galleryRoutes } from "./routes/gallery.js";
 import { analyticsRouter } from "./routes/analytics.js";
+import { generationsRouter } from "./routes/generations.js";
 import { referralRouter } from "./routes/referrals.js";
 // import { getOpenApiRouter } from "./routes/openapi.js"; // Commented out - file missing
 import { registerExpenseRoutes } from "./expense-routes.js";
@@ -925,7 +926,8 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
         prefixApiPath('/auth/login', apiPrefix),
         prefixApiPath('/auth/logout', apiPrefix),
         prefixApiPath('/auth/signup', apiPrefix),
-        prefixApiPath('/uploads/imgur', apiPrefix)  // Exempt Imgur uploads from CSRF
+        prefixApiPath('/uploads/imgur', apiPrefix),  // Exempt Imgur uploads from CSRF
+        prefixApiPath('/analytics/events', apiPrefix)  // Exempt analytics tracking (non-destructive)
       ];
       
       if (exemptPaths.some(path => fullPath === path || fullPath.startsWith(path + '/'))) {
@@ -1004,6 +1006,9 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
 
   // Analytics routes
   app.use('/api/analytics', analyticsRouter);
+
+  // Generations stats routes
+  app.use('/api/generations', generationsRouter);
 
   // Referral routes
   app.use('/api/referral', referralRouter);
