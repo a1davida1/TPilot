@@ -246,6 +246,7 @@ export function BatchCheckbox({
         type="checkbox"
         checked={checked}
         onChange={onChange}
+        aria-label={indeterminate ? "Select some items" : checked ? "Deselect all items" : "Select all items"}
         className={cn(
           'h-4 w-4 rounded border-gray-300',
           'text-purple-600 focus:ring-purple-500',

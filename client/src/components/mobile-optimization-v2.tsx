@@ -31,7 +31,7 @@ interface MobileNavigationItem {
   };
 }
 
-function resolveBadgeVariant(variant?: MobileNavigationItem['badge']['variant']): BadgeProps['variant'] {
+function resolveBadgeVariant(variant?: 'default' | 'success' | 'warning' | 'error' | 'pro'): BadgeProps['variant'] {
   switch (variant) {
     case 'success':
       return 'secondary';
@@ -160,6 +160,7 @@ function FloatingMenuButton({ onClick, isOpen }: FloatingMenuButtonProps) {
   return (
     <button
       onClick={onClick}
+      aria-label={isOpen ? "Close menu" : "Open menu"}
       className={cn(
         'fixed top-4 left-4 z-50',
         'h-10 w-10 rounded-full',
@@ -270,6 +271,7 @@ function MobileQuickAction({ onClick }: MobileQuickActionProps) {
   return (
     <button
       onClick={onClick}
+      aria-label="Quick action"
       className={cn(
         'fixed bottom-20 right-4 z-40',
         'h-14 w-14 rounded-full',

@@ -148,7 +148,7 @@ interface ModernDashboardV2Props {
 export function ModernDashboardV2({ 
   user: propUser,
   userTier = 'free',
-  isAdmin = false,
+  isAdmin: _isAdmin = false,
   isRedditConnected = false 
 }: ModernDashboardV2Props) {
   const { user: authUser } = useAuth();
@@ -159,7 +159,7 @@ export function ModernDashboardV2({
   // State
   const [showQuickStart, setShowQuickStart] = useState(false);
   const [selectedTab, setSelectedTab] = useState('overview');
-  const [onboardingProgress, setOnboardingProgress] = useState<OnboardingProgress>({
+  const [onboardingProgress, _setOnboardingProgress] = useState<OnboardingProgress>({
     redditConnected: isRedditConnected,
     firstPostCreated: false,
     profileCompleted: false,
@@ -167,7 +167,7 @@ export function ModernDashboardV2({
 
   // Batch selection for activity items
   const {
-    selectedItems,
+    selectedItems: _selectedItems,
     selectedCount,
     isSelected,
     toggleSelection,
@@ -175,8 +175,20 @@ export function ModernDashboardV2({
   } = useBatchSelection<ActivityItem>();
 
   // Fetch dashboard stats - using custom hooks with proper API integration
-  const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const { data: stats, isLoading: _statsLoading } = useDashboardStats();
   const { data: recentActivity, isLoading: activityLoading } = useRecentActivity();
+  
+  // Map RecentActivity to ActivityItem (component expects more fields than API returns)
+  const mappedActivity: ActivityItem[] = (recentActivity?.map(item => ({
+    id: item.id,
+    type: 'post' as const, // Simplify - backend returns different types
+    title: item.title,
+    description: item.description,
+    timestamp: new Date(item.timestamp),
+    // Optional fields that backend may not provide
+    imageUrl: undefined,
+    metrics: undefined,
+  })) || []) as ActivityItem[];
   
   // Fetch caption usage
   const { data: captionUsage } = useQuery<{ used: number; limit: number; remaining: number }>({
@@ -341,7 +353,7 @@ export function ModernDashboardV2({
         <CaptionLimitBanner
           remaining={captionUsage.remaining}
           limit={captionUsage.limit}
-          tier={userTier}
+          tier={userTier === 'starter' ? 'free' : userTier}
           onUpgrade={handleUpgrade}
         />
       )}
@@ -551,9 +563,9 @@ export function ModernDashboardV2({
                           <Skeleton key={i} className="h-20 w-full" />
                         ))}
                       </div>
-                    ) : recentActivity && recentActivity.length > 0 ? (
+                    ) : mappedActivity && mappedActivity.length > 0 ? (
                       <div className="space-y-3">
-                        {recentActivity.map((item) => (
+                        {mappedActivity.map((item) => (
                           <div
                             key={item.id}
                             className="flex items-center gap-4 rounded-lg border p-4"
