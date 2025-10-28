@@ -1467,6 +1467,71 @@ export const scheduledPosts = pgTable("scheduled_posts", {
 }));
 
 // Insert schemas for new admin tables
+
+export const scheduleJobStatusValues = ['pending', 'queued', 'running', 'succeeded', 'failed', 'cancelled'] as const;
+export const scheduleJobStatusSchema = z.enum(scheduleJobStatusValues);
+export type ScheduleJobStatus = typeof scheduleJobStatusValues[number];
+
+export const scheduleJobs = pgTable('schedule_jobs', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  scheduledPostId: integer('scheduled_post_id').references(() => scheduledPosts.id, { onDelete: 'set null' }),
+  jobType: varchar('job_type', { length: 50 }).notNull(),
+  status: varchar('status', { length: 20 }).notNull().default('pending'),
+  priority: integer('priority').notNull().default(0),
+  runAt: timestamp('run_at', { withTimezone: true }).notNull(),
+  lockedAt: timestamp('locked_at', { withTimezone: true }),
+  lockedBy: varchar('locked_by', { length: 100 }),
+  attempts: integer('attempts').notNull().default(0),
+  maxAttempts: integer('max_attempts').notNull().default(5),
+  retryBackoffSeconds: integer('retry_backoff_seconds').notNull().default(60),
+  retryAt: timestamp('retry_at', { withTimezone: true }),
+  lastError: text('last_error'),
+  lastRunAt: timestamp('last_run_at', { withTimezone: true }),
+  payload: jsonb('payload').$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  userRunIdx: index('schedule_jobs_user_run_idx').on(table.userId, table.runAt),
+  statusIdx: index('schedule_jobs_status_idx').on(table.status),
+  retryIdx: index('schedule_jobs_retry_idx').on(table.retryAt),
+  scheduledPostIdx: index('schedule_jobs_scheduled_post_idx').on(table.scheduledPostId),
+}));
+
+export const scheduleJobAttempts = pgTable('schedule_job_attempts', {
+  id: serial('id').primaryKey(),
+  jobId: integer('job_id').references(() => scheduleJobs.id, { onDelete: 'cascade' }).notNull(),
+  attemptNumber: integer('attempt_number').notNull(),
+  startedAt: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),
+  finishedAt: timestamp('finished_at', { withTimezone: true }),
+  error: text('error'),
+  result: jsonb('result').$type<Record<string, unknown>>(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  jobAttemptIdx: unique('schedule_job_attempts_job_attempt_idx').on(table.jobId, table.attemptNumber),
+}));
+
+export const scheduleJobsRelations = relations(scheduleJobs, ({ one, many }) => ({
+  user: one(users, { fields: [scheduleJobs.userId], references: [users.id] }),
+  scheduledPost: one(scheduledPosts, { fields: [scheduleJobs.scheduledPostId], references: [scheduledPosts.id] }),
+  attempts: many(scheduleJobAttempts),
+}));
+
+export const scheduleJobAttemptsRelations = relations(scheduleJobAttempts, ({ one }) => ({
+  job: one(scheduleJobs, { fields: [scheduleJobAttempts.jobId], references: [scheduleJobs.id] }),
+}));
+
+export const insertScheduleJobSchema = createInsertSchema(scheduleJobs, {
+  status: scheduleJobStatusSchema,
+});
+export const insertScheduleJobAttemptSchema = createInsertSchema(scheduleJobAttempts);
+
+export type InsertScheduleJob = z.infer<typeof insertScheduleJobSchema>;
+export type InsertScheduleJobAttempt = z.infer<typeof insertScheduleJobAttemptSchema>;
+export type ScheduleJob = typeof scheduleJobs.$inferSelect;
+export type ScheduleJobAttempt = typeof scheduleJobAttempts.$inferSelect;
+
+
 export const insertSystemLogSchema = createInsertSchema(systemLogs);
 export const insertContentFlagSchema = createInsertSchema(contentFlags);
 export const insertUserActionSchema = createInsertSchema(userActions);
