@@ -8,6 +8,10 @@ import { db } from '../../db.js';
 import { scheduledPosts } from '@shared/schema';
 import { eq, lte, and, or } from 'drizzle-orm';
 import { addJob, QUEUE_NAMES } from '../queue/index.js';
+import {
+  aggregateYesterday,
+  updateCurrentDayMetrics
+} from '../../services/analytics-aggregation.js';
 // import { syncRedditCommunityRules } from '../reddit-community-sync.js'; // File doesn't exist yet
 
 interface CronJob {
@@ -43,12 +47,21 @@ class CronManager {
       }
     });
 
-    // Update analytics metrics every hour
+    // Update current day analytics metrics every hour
     this.addJob({
-      name: 'update-analytics',
+      name: 'update-current-day-analytics',
       schedule: '0 * * * *', // Every hour
       task: async () => {
-        await this.updateAnalyticsMetrics();
+        await this.updateCurrentDayAnalytics();
+      }
+    });
+
+    // Aggregate yesterday's analytics daily at 2 AM
+    this.addJob({
+      name: 'aggregate-daily-analytics',
+      schedule: '0 2 * * *', // Daily at 2 AM
+      task: async () => {
+        await this.aggregateDailyAnalytics();
       }
     });
 
@@ -270,18 +283,28 @@ class CronManager {
   }
 
   /**
-   * Update analytics metrics
+   * Update current day analytics metrics (runs hourly)
    */
-  private async updateAnalyticsMetrics() {
+  private async updateCurrentDayAnalytics() {
     try {
-      // This would aggregate data for the analytics dashboard
-      // For now, just log that it ran
-      logger.info('📊 Updating analytics metrics');
-      
-      // You can add actual metric calculations here
-      // e.g., calculate daily/weekly/monthly aggregates
+      logger.info('📊 Updating current day analytics metrics');
+      await updateCurrentDayMetrics();
     } catch (error) {
-      logger.error('❌ Failed to update analytics', {
+      logger.error('❌ Failed to update current day analytics', {
+        error: error instanceof Error ? error.message : error
+      });
+    }
+  }
+
+  /**
+   * Aggregate yesterday's analytics (runs daily at 2 AM)
+   */
+  private async aggregateDailyAnalytics() {
+    try {
+      logger.info('📊 Aggregating daily analytics for yesterday');
+      await aggregateYesterday();
+    } catch (error) {
+      logger.error('❌ Failed to aggregate daily analytics', {
         error: error instanceof Error ? error.message : error
       });
     }

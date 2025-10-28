@@ -35,6 +35,7 @@
     "test:jest": "jest",
     "ops:check-env": "tsx scripts/check-env.ts",
     "backfill:post-rate-limits": "tsx scripts/backfill-post-rate-limits.ts",
+    "backfill:analytics": "tsx server/bin/backfill-analytics.ts",
     "test:coverage": "vitest run --config vitest.unit.config.ts --coverage",
     "test:full": "vitest run --config vitest.config.ts",
     "test:e2e": "node --import=tsx vendor/playwright-test/runner.ts",
