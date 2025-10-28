@@ -15,6 +15,13 @@
       "when": 1761500000000,
       "tag": "0001_multi_subreddit_caption_variants",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1761645903087,
+      "tag": "0002_analytics_views",
+      "breakpoints": true
     }
   ]
 }
