@@ -1,13 +1,14 @@
-import express, { type Express } from 'express';
+import { Router, type Request } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
-import sharp from 'sharp';
 import { authenticateToken } from './middleware/auth.js';
 import { storage } from './storage.js';
 import { MediaManager } from './lib/media.js';
-import { buildUploadUrl } from './lib/uploads.js';
 import { logger } from './bootstrap/logger.js';
+import { pool } from './db.js';
+import type { AuthRequest } from './middleware/auth.js';
+import { applyImageShieldToBuffer, protectionPresets } from './images/imageShield.js';
 import { type Expense, type ExpenseCategory, type InsertExpense, type User } from '@shared/schema';
 
 interface AuthRequest extends express.Request {
@@ -49,81 +50,16 @@ const upload = multer({
   }
 });
 
-// ImageShield protection for receipt uploads
-interface ProtectionSettings {
-  level: string;
-  blur: number;
-  noise: number;
-  resize: number;
-  quality: number;
-}
-
-const protectionPresets: Record<string, ProtectionSettings> = {
-  light: { level: 'light', blur: 0.3, noise: 3, resize: 98, quality: 95 },
-  standard: { level: 'standard', blur: 0.5, noise: 5, resize: 95, quality: 92 },
-  heavy: { level: 'heavy', blur: 0.8, noise: 8, resize: 90, quality: 88 }
-};
-
 // Apply ImageShield protection server-side for receipts
+// Now uses centralized imageShield module
 async function applyReceiptImageShieldProtection(
   inputBuffer: Buffer, 
   protectionLevel: 'light' | 'standard' | 'heavy' = 'light',
   addWatermark: boolean = false
 ): Promise<Buffer> {
   try {
-    const settings = protectionPresets[protectionLevel];
-    let pipeline: sharp.Sharp;
-
-    try {
-      pipeline = sharp(inputBuffer);
-    } catch (sharpError) {
-      logger.warn('Unable to process receipt image buffer with Sharp:', sharpError);
-      return inputBuffer;
-    }
-
-    // Apply protection transformations
-    if (settings.blur > 0) {
-      pipeline = pipeline.blur(settings.blur);
-    }
-
-    if (settings.noise > 0) {
-      // Apply noise through modulation instead of deprecated noise() method
-      pipeline = pipeline.modulate({
-        brightness: 1 + (Math.random() - 0.5) * (settings.noise / 100),
-        saturation: 1 + (Math.random() - 0.5) * (settings.noise / 200)
-      });
-    }
-
-    if (settings.resize < 100) {
-      const metadata = await pipeline.metadata();
-      if (metadata.width && metadata.height) {
-        const newWidth = Math.round(metadata.width * (settings.resize / 100));
-        const newHeight = Math.round(metadata.height * (settings.resize / 100));
-        pipeline = pipeline.resize(newWidth, newHeight);
-      }
-    }
-
-    // Add watermark for free users
-    if (addWatermark) {
-      const metadata = await pipeline.metadata();
-      const watermarkText = Buffer.from(`
-        <svg width="${metadata.width || 800}" height="${metadata.height || 600}">
-          <text x="50%" y="95%" font-family="Arial" font-size="16" fill="rgba(255,255,255,0.6)" text-anchor="middle">
-            Protected by ThottoPilot™
-          </text>
-        </svg>
-      `);
-      
-      pipeline = pipeline.composite([{
-        input: watermarkText,
-        top: 0,
-        left: 0,
-      }]);
-    }
-
-    return await pipeline
-      .jpeg({ quality: settings.quality })
-      .toBuffer();
+    const preset = protectionPresets[protectionLevel];
+    return await applyImageShieldToBuffer(inputBuffer, preset, addWatermark, 'receipt-protection');
   } catch (error) {
     logger.error('Receipt ImageShield protection failed:', error);
     // Return original buffer if protection fails

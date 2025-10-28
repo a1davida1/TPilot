@@ -69,6 +69,65 @@ async function ensureOutputDirectory(pathname: string): Promise<void> {
 }
 
 /**
+ * Apply ImageShield protection to a buffer (for in-memory processing)
+ * 
+ * @param inputBuffer - Source image buffer
+ * @param preset - Protection preset to apply
+ * @param addWatermark - Whether to add watermark
+ * @param watermarkSeed - Seed for watermark generation
+ * @returns Protected image buffer
+ */
+export async function applyImageShieldToBuffer(
+  inputBuffer: Buffer,
+  preset: ProtectionPreset,
+  addWatermark: boolean = false,
+  watermarkSeed: string = crypto.randomUUID()
+): Promise<Buffer> {
+  // Get original image metadata
+  const metadata = await sharp(inputBuffer).metadata();
+  const width = metadata.width ?? 1920;
+  const height = metadata.height ?? 1080;
+  const resizeWidth = Math.round(width * (preset.resize / 100));
+  const resizeHeight = Math.round(height * (preset.resize / 100));
+
+  // Create transformation pipeline
+  let transformer = sharp(inputBuffer)
+    .blur(preset.blur)
+    .resize(resizeWidth, resizeHeight, {
+      fit: 'inside',
+      withoutEnlargement: true,
+    });
+
+  // Apply noise if configured
+  if (preset.noise > 0) {
+    const noiseFactor = preset.noise / 100;
+    transformer = transformer.modulate({
+      brightness: 1 + (Math.random() - 0.5) * noiseFactor,
+      saturation: 1 + (Math.random() - 0.5) * (noiseFactor / 2),
+    });
+  }
+
+  // Add watermark if requested
+  if (addWatermark) {
+    const watermark = createWatermarkSvg(`${watermarkSeed}-${Date.now()}`);
+    transformer = transformer.composite([
+      {
+        input: watermark,
+        gravity: 'southeast',
+      },
+    ]);
+  }
+
+  // Return as JPEG buffer
+  return transformer
+    .jpeg({
+      quality: preset.quality,
+      progressive: true,
+    })
+    .toBuffer();
+}
+
+/**
  * Apply ImageShield protection to a file using streaming pipeline
  * 
  * @param options - Configuration for image protection
