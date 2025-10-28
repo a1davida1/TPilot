@@ -40,6 +40,7 @@ import { FloatingActionButton } from '@/components/ui/floating-action-button';
 import { StickyRail } from '@/components/ui/sticky-rail';
 import { BatchActionsBar, useBatchSelection, BatchCheckbox } from '@/components/ui/batch-actions-bar';
 import { QuickStartModal } from '@/components/dashboard-quick-start';
+import { useDashboardStats, useRecentActivity } from '@/hooks/useDashboardStats';
 import { cn } from '@/lib/utils';
 
 // Types
@@ -53,18 +54,7 @@ interface DashboardUser {
   redditUsername?: string;
 }
 
-interface DashboardStats {
-  postsToday: number;
-  postsThisWeek: number;
-  totalViews: number;
-  totalEngagement: number;
-  topSubreddit: string;
-  scheduledPosts: number;
-  queuedPosts: number;
-  captionsGenerated: number;
-  captionsRemaining: number;
-  captionsLimit: number;
-}
+// DashboardStats is now imported from @/hooks/useDashboardStats
 
 interface ActivityItem {
   id: string;
@@ -184,18 +174,10 @@ export function ModernDashboardV2({
     clearSelection,
   } = useBatchSelection<ActivityItem>();
 
-  // Fetch dashboard stats
-  const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
-    queryKey: ['/api/dashboard/stats'],
-    enabled: Boolean(user?.id),
-  });
-
-  // Fetch recent activity
-  const { data: recentActivity, isLoading: activityLoading } = useQuery<ActivityItem[]>({
-    queryKey: ['/api/dashboard/activity'],
-    enabled: Boolean(user?.id),
-  });
-
+  // Fetch dashboard stats - using custom hooks with proper API integration
+  const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const { data: recentActivity, isLoading: activityLoading } = useRecentActivity();
+  
   // Fetch caption usage
   const { data: captionUsage } = useQuery<{ used: number; limit: number; remaining: number }>({
     queryKey: ['/api/generations/stats'],

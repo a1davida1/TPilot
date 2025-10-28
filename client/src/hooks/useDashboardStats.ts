@@ -1,15 +1,26 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 
+// Frontend-facing interface (what component expects)
 export interface DashboardStats {
-  totalPosts: number;
+  postsToday: number;
+  postsThisWeek?: number;
+  totalViews?: number;
+  totalEngagement?: number;
+  topSubreddit?: string;
+  scheduledPosts?: number;
+  queuedPosts?: number;
+  captionsGenerated?: number;
+  captionsRemaining?: number;
+  captionsLimit?: number;
   engagementRate: number;
-  scheduled: number;
-  revenue: string;
-  revenueChange: number;
-  postsChange: number;
-  engagementChange: number;
-  scheduledChange: number;
+  takedownsFound?: number;
+  estimatedTaxSavings?: number;
+  // Optional change indicators
+  postsChange?: number;
+  engagementChange?: number;
+  scheduledChange?: number;
+  revenueChange?: number;
 }
 
 export interface RecentActivity {
@@ -43,14 +54,11 @@ export function useDashboardStats() {
         // Return fallback data if API fails
         console.error('Failed to fetch dashboard stats:', error);
         return {
-          totalPosts: 0,
+          postsToday: 0,
           engagementRate: 0,
-          scheduled: 0,
-          revenue: '$0',
-          revenueChange: 0,
-          postsChange: 0,
-          engagementChange: 0,
-          scheduledChange: 0,
+          totalViews: 0,
+          totalEngagement: 0,
+          scheduledPosts: 0,
         };
       }
     },

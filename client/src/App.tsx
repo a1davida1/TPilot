@@ -6,7 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { Header } from "@/components/header";
+import { HeaderEnhanced } from "@/components/header-enhanced";
 import { useAuth } from "@/hooks/useAuth";
 import { SEOOptimization, seoConfigs } from "@/components/seo-optimization";
 import { UnifiedLanding } from "@/components/unified-landing";
@@ -218,7 +218,6 @@ function Router() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
       <main>
         <Suspense fallback={<div className="p-4">Loading...</div>}>
           {isAuthenticated ? <AuthenticatedRoutes /> : <UnauthenticatedRoutes />}
@@ -247,9 +246,10 @@ function App() {
         <ThemeProvider defaultTheme="system" storageKey="thottopilot-ui-theme">
           <TooltipProvider>
             <div className="min-h-screen bg-background text-foreground font-poppins">
-              <Toaster />
+              <HeaderEnhanced />
               <Router />
               <FeedbackWidget />
+              <Toaster />
             </div>
           </TooltipProvider>
         </ThemeProvider>
