@@ -8,9 +8,10 @@ import { useQuery } from "@tanstack/react-query";
 
 export default function CaptionGeneratorPage() {
   // Fetch caption usage stats
-  const { data: captionStats } = useQuery<{ used: number; limit: number; remaining: number }>({
-    queryKey: ['/api/generations/stats'],
-  });
+const { data: captionStats } = useQuery<{ used: number; limit: number; remaining: number }>({
+  queryKey: ['/api/generations/stats'],
+  queryFn: () => fetch('/api/generations/stats').then(res => res.json()),
+});
 
   const showLimitWarning = captionStats && captionStats.remaining < 10;
 
