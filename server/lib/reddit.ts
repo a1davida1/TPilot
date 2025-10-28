@@ -1653,6 +1653,34 @@ export class RedditManager {
   }
 
   /**
+   * Get user's subscribed subreddits
+   */
+  async getSubscribedSubreddits(limit: number = 10): Promise<Array<{
+    display_name: string;
+    subscribers: number;
+    public_description: string;
+    title: string;
+    subreddit_type: string;
+  }>> {
+    try {
+      const subscriptions = await (this.reddit as unknown as {
+        getSubscriptions(options: { limit: number }): Promise<Array<{
+          display_name: string;
+          subscribers: number;
+          public_description: string;
+          title: string;
+          subreddit_type: string;
+        }>>;
+      }).getSubscriptions({ limit });
+
+      return subscriptions;
+    } catch (error) {
+      logger.error('Failed to get user subscriptions:', error);
+      return [];
+    }
+  }
+
+  /**
    * Test Reddit connection
    */
   async testConnection(): Promise<boolean> {
