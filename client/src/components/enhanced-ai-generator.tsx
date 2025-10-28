@@ -225,7 +225,7 @@ export function EnhancedAIGenerator({
   const generateContentMutation = useMutation<GeneratedContent, ApiError | Error, GenerateContentVariables>({
     mutationFn: async (data) => {
       const effectivePrompt = data.customPrompt || data.prompt || "";
-      const response = await apiRequest("POST", "/api/generate-unified", {
+      return await apiRequest<GeneratedContent>("POST", "/api/generate-unified", {
         mode: "text",
         platform: data.platform || "reddit",
         style: data.style || "confident",
@@ -237,7 +237,6 @@ export function EnhancedAIGenerator({
             ? data.includePromotion
             : data.allowsPromotion !== "none"
       });
-      return (await response.json()) as GeneratedContent;
     },
     onSuccess: (data, variables) => {
       setGeneratedContent(data);

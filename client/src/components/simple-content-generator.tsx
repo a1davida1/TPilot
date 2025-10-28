@@ -43,19 +43,18 @@ export function SimpleContentGenerator({ isGuestMode: _isGuestMode = false, onCo
 
   const generateContentMutation = useMutation({
     mutationFn: async (data: unknown) => {
-      const response = await apiRequest("POST", "/api/generate-ai", {
+      return await apiRequest<unknown>("POST", "/api/generate-ai", {
         ...(data as GenerationRequest),
         generationType: "prompt",
         userProfile: {
           toneOfVoice: "confident",
-          contentStyle: "authentic", 
+          contentStyle: "authentic",
           personalBrand: "girl-next-door",
           contentLength: "medium",
           includeEmojis: true,
           promotionLevel: "moderate"
         }
       });
-      return await response.json();
     },
     onSuccess: (data) => {
       // Transform the data to match our display format

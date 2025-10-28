@@ -4,7 +4,8 @@
     "shared/**/*.ts",
     "client/**/*.ts",
     "client/**/*.tsx",
-    "client/vite-env.d.ts"
+    "client/vite-env.d.ts",
+    "vitest-env.d.ts"
   ],
   "exclude": ["node_modules", "dist"],
   "compilerOptions": {
@@ -29,7 +30,7 @@
     "downlevelIteration": true,
     "baseUrl": ".",
     "rootDir": ".",
-    "types": ["node", "vite/client"],
+    "types": ["node", "vite/client", "@testing-library/jest-dom"],
     "paths": {
       "@shared/*": ["shared/*"],
       "@server/*": ["server/*"],

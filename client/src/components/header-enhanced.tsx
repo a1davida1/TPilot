@@ -19,7 +19,8 @@ import {
   Plus,
   ChevronDown,
   HelpCircle,
-  CreditCard
+  CreditCard,
+  Calendar
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -227,6 +228,10 @@ export function HeaderEnhanced({ onReplayWalkthrough }: HeaderEnhancedProps) {
     setLocation('/quick-post');
   };
 
+  const handleSchedulePost = () => {
+    setLocation('/post-scheduling');
+  };
+
   const handleShowUpgrade = () => {
     setLocation('/settings#billing');
   };
@@ -294,16 +299,30 @@ export function HeaderEnhanced({ onReplayWalkthrough }: HeaderEnhancedProps) {
                 />
               )}
 
-              {/* Create Button */}
+              {/* Create Button with Dropdown Menu */}
               {isAuthenticated && (
-                <Button
-                  size="sm"
-                  className="hidden sm:inline-flex gap-2 bg-gradient-to-r from-purple-600 to-pink-600"
-                  onClick={handleQuickPost}
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Create</span>
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="sm"
+                      className="hidden sm:inline-flex gap-2 bg-gradient-to-r from-purple-600 to-pink-600"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Create</span>
+                      <ChevronDown className="h-3 w-3 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={handleQuickPost} className="cursor-pointer">
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Quick Post
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleSchedulePost} className="cursor-pointer">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Schedule Post
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
 
               {/* User Menu or Auth Buttons */}

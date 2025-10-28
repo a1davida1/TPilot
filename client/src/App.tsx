@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { HeaderEnhanced } from "@/components/header-enhanced";
+import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { useAuth } from "@/hooks/useAuth";
 import { SEOOptimization, seoConfigs } from "@/components/seo-optimization";
 import { UnifiedLanding } from "@/components/unified-landing";
@@ -104,7 +105,7 @@ function AuthenticatedRoutes() {
       <Route path="/intelligence" component={IntelligenceInsightsPage} />
       <Route path="/subreddit-insights" component={IntelligenceInsightsPage} />
       <Route path="/gallery" component={GalleryV2Page} />
-      <Route path="/bulk-caption" component={CaptionGeneratorPage} />
+      <Route path="/bulk-caption" component={PostSchedulingPage} />
       <Route path="/campaigns" component={HistoryPage} />
       <Route path="/tax-tracker" component={() => <TaxTracker />} />
       {/* Referral Program - Available to all authenticated users */}
@@ -227,6 +228,7 @@ function App() {
             <div className="min-h-screen bg-background text-foreground font-poppins">
               <HeaderEnhanced />
               <Router />
+              <FloatingActionButton />
               <FeedbackWidget />
               <Toaster />
             </div>
