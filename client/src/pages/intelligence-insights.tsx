@@ -891,6 +891,316 @@ export function IntelligenceInsightsPage() {
               </Alert>
             )}
           </TabsContent>
+
+          {/* Hot Posts Analysis Tab - Level 2 */}
+          <TabsContent value="hotposts" className="space-y-4">
+            {hotPostsLoading ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                  <p className="text-gray-600">Analyzing hot posts...</p>
+                </CardContent>
+              </Card>
+            ) : hotPostsAnalysis ? (
+              <>
+                {/* Overview Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-orange-500" />
+                      Trending Posts Analysis
+                    </CardTitle>
+                    <CardDescription>
+                      Real-time analysis of hot posts in r/{hotPostsAnalysis.subreddit}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">Sample Size</p>
+                        <p className="text-2xl font-bold">{hotPostsAnalysis.sampleSize}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">Avg Title Length</p>
+                        <p className="text-2xl font-bold">{hotPostsAnalysis.patterns.avgTitleLength}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">Questions</p>
+                        <p className="text-2xl font-bold">{hotPostsAnalysis.patterns.questionTitlePercentage}%</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">Emoji Usage</p>
+                        <p className="text-2xl font-bold">{hotPostsAnalysis.patterns.emojiUsagePercentage}%</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Insights Card */}
+                {hotPostsAnalysis.insights.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Lightbulb className="h-5 w-5 text-yellow-500" />
+                        Trending Insights
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-2">
+                        {hotPostsAnalysis.insights.map((insight, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <Zap className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                            <span>{insight}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Top Keywords Card */}
+                {hotPostsAnalysis.patterns.topKeywords.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Hash className="h-5 w-5" />
+                        Top Keywords in Hot Posts
+                      </CardTitle>
+                      <CardDescription>
+                        Words appearing in high-scoring titles
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {hotPostsAnalysis.patterns.topKeywords.slice(0, 9).map((keyword) => (
+                          <div key={keyword.word} className="border rounded-lg p-3 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-sm">{keyword.word}</span>
+                              <Badge variant="secondary">{keyword.count}x</Badge>
+                            </div>
+                            <p className="text-xs text-gray-500">Avg {keyword.avgScore} upvotes</p>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Top Posts Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Award className="h-5 w-5 text-yellow-500" />
+                      Current Hot Posts
+                    </CardTitle>
+                    <CardDescription>
+                      Top performing posts right now
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {hotPostsAnalysis.topPosts.slice(0, 5).map((post) => (
+                        <div key={post.id} className="border rounded-lg p-3 space-y-2">
+                          <p className="font-medium text-sm line-clamp-2">{post.title}</p>
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <span className="flex items-center gap-1">
+                              <ArrowUp className="h-3 w-3" />
+                              {post.score}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MessageSquare className="h-3 w-3" />
+                              {post.numComments}
+                            </span>
+                            <span>u/{post.author}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Best Pattern Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Target className="h-5 w-5 text-green-500" />
+                      Best Performing Pattern
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Alert>
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <AlertDescription>
+                        <strong className="capitalize">{hotPostsAnalysis.patterns.bestPerformingPattern}</strong> are getting the most engagement right now
+                      </AlertDescription>
+                    </Alert>
+                  </CardContent>
+                </Card>
+              </>
+            ) : (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>Failed to load hot posts analysis</AlertDescription>
+              </Alert>
+            )}
+          </TabsContent>
+
+          {/* Community Health Tab - Level 2 */}
+          <TabsContent value="health" className="space-y-4">
+            {communityHealthLoading ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                  <p className="text-gray-600">Analyzing community health...</p>
+                </CardContent>
+              </Card>
+            ) : communityHealth ? (
+              <>
+                {/* Health Score Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5 text-blue-500" />
+                      Community Health Score
+                    </CardTitle>
+                    <CardDescription>
+                      Overall health of r/{communityHealth.subreddit}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-4xl font-bold">{communityHealth.health.score}/100</span>
+                        <Badge
+                          variant={
+                            communityHealth.health.status === 'thriving' ? 'default' :
+                            communityHealth.health.status === 'healthy' ? 'secondary' :
+                            communityHealth.health.status === 'declining' ? 'outline' :
+                            'destructive'
+                          }
+                          className="text-lg px-4 py-1"
+                        >
+                          {communityHealth.health.status.toUpperCase()}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500">Trend:</span>
+                        {communityHealth.health.trend === 'growing' && (
+                          <Badge variant="default" className="flex items-center gap-1">
+                            <ArrowUp className="h-3 w-3" />
+                            Growing
+                          </Badge>
+                        )}
+                        {communityHealth.health.trend === 'stable' && (
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            <Minus className="h-3 w-3" />
+                            Stable
+                          </Badge>
+                        )}
+                        {communityHealth.health.trend === 'shrinking' && (
+                          <Badge variant="destructive" className="flex items-center gap-1">
+                            <ArrowDown className="h-3 w-3" />
+                            Shrinking
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Metrics Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5" />
+                      Key Metrics
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">Subscribers</p>
+                        <p className="text-2xl font-bold">{communityHealth.metrics.subscribers.toLocaleString()}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">Active Users</p>
+                        <p className="text-2xl font-bold">{communityHealth.metrics.activeUsers.toLocaleString()}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">Active %</p>
+                        <p className="text-2xl font-bold">{communityHealth.metrics.activeUserPercentage.toFixed(2)}%</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">Posts/Day</p>
+                        <p className="text-2xl font-bold">{communityHealth.metrics.postsPerDay}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">Engagement Rate</p>
+                        <p className="text-2xl font-bold">{(communityHealth.metrics.avgEngagementRate * 100).toFixed(3)}%</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">Moderators</p>
+                        <p className="text-2xl font-bold">{communityHealth.moderators.count}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Moderators Card */}
+                {communityHealth.moderators.names.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Shield className="h-5 w-5 text-purple-500" />
+                        Moderator Team
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        {communityHealth.moderators.names.map((modName) => (
+                          <Badge key={modName} variant="secondary">
+                            u/{modName}
+                          </Badge>
+                        ))}
+                        {communityHealth.moderators.count > communityHealth.moderators.names.length && (
+                          <Badge variant="outline">
+                            +{communityHealth.moderators.count - communityHealth.moderators.names.length} more
+                          </Badge>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Recommendations Card */}
+                {communityHealth.recommendations.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Lightbulb className="h-5 w-5 text-yellow-500" />
+                        Recommendations
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-2">
+                        {communityHealth.recommendations.map((rec, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <Zap className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                            <span>{rec}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            ) : (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>Failed to load community health data</AlertDescription>
+              </Alert>
+            )}
+          </TabsContent>
         </Tabs>
       )}
     </div>
