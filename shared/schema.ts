@@ -1321,6 +1321,11 @@ export const scheduleJobAttempts = pgTable('schedule_job_attempts', {
   jobAttemptIdx: unique('schedule_job_attempts_job_attempt_idx').on(table.jobId, table.attemptNumber),
 }));
 
+// Type exports for schedule jobs
+export type ScheduleJob = typeof scheduleJobs.$inferSelect;
+export type InsertScheduleJob = typeof scheduleJobs.$inferInsert;
+export type ScheduleJobStatus = 'pending' | 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
+
 export const analyticsMetrics = pgTable("analytics_metrics", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),

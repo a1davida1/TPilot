@@ -1,19 +1,15 @@
-import { Router, type Request } from 'express';
+import { Router, type Request, type Response, type Express } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
-import { authenticateToken } from './middleware/auth.js';
+import { authenticateToken, type AuthRequest } from './middleware/auth.js';
 import { storage } from './storage.js';
 import { MediaManager } from './lib/media.js';
 import { logger } from './bootstrap/logger.js';
 import { pool } from './db.js';
-import type { AuthRequest } from './middleware/auth.js';
 import { applyImageShieldToBuffer, protectionPresets } from './images/imageShield.js';
-import { type Expense, type ExpenseCategory, type InsertExpense, type User } from '@shared/schema';
-
-interface AuthRequest extends express.Request {
-  user?: User;
-}
+import { buildUploadUrl } from './lib/uploads.js';
+import { type Expense, type ExpenseCategory, type InsertExpense } from '@shared/schema';
 
 type ExpenseCategoryWithDefaults = ExpenseCategory & {
   defaultBusinessPurpose?: string | null;
@@ -69,7 +65,7 @@ async function applyReceiptImageShieldProtection(
 
 export function registerExpenseRoutes(app: Express) {
   // Get all expense categories
-  app.get('/api/expense-categories', async (req, res) => {
+  app.get('/api/expense-categories', async (req: Request, res: Response) => {
     try {
       const categories = await storage.getExpenseCategories();
       res.json(categories);
@@ -80,7 +76,7 @@ export function registerExpenseRoutes(app: Express) {
   });
 
   // Get user expenses
-  app.get('/api/expenses', authenticateToken(true), async (req: AuthRequest, res) => {
+  app.get('/api/expenses', authenticateToken(true), async (req: AuthRequest, res: Response) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: 'Authentication required' });
@@ -96,7 +92,7 @@ export function registerExpenseRoutes(app: Express) {
   });
 
   // Create new expense
-  app.post('/api/expenses', authenticateToken(true), async (req: AuthRequest, res) => {
+  app.post('/api/expenses', authenticateToken(true), async (req: AuthRequest, res: Response) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: 'Authentication required' });
@@ -175,7 +171,7 @@ export function registerExpenseRoutes(app: Express) {
   });
 
   // Update expense
-  app.put('/api/expenses/:id', authenticateToken(true), async (req: AuthRequest, res) => {
+  app.put('/api/expenses/:id', authenticateToken(true), async (req: AuthRequest, res: Response) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: 'Authentication required' });
@@ -299,7 +295,7 @@ export function registerExpenseRoutes(app: Express) {
   });
 
   // Delete expense
-  app.delete('/api/expenses/:id', authenticateToken(true), async (req: AuthRequest, res) => {
+  app.delete('/api/expenses/:id', authenticateToken(true), async (req: AuthRequest, res: Response) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: 'Authentication required' });
@@ -315,7 +311,7 @@ export function registerExpenseRoutes(app: Express) {
   });
 
   // Get expense totals and analytics
-  app.get('/api/expenses/totals', authenticateToken(true), async (req: AuthRequest, res) => {
+  app.get('/api/expenses/totals', authenticateToken(true), async (req: AuthRequest, res: Response) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: 'Authentication required' });
@@ -331,7 +327,7 @@ export function registerExpenseRoutes(app: Express) {
   });
 
   // Get expenses by date range for calendar view
-  app.get('/api/expenses/range', authenticateToken(true), async (req: AuthRequest, res) => {
+  app.get('/api/expenses/range', authenticateToken(true), async (req: AuthRequest, res: Response) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: 'Authentication required' });
@@ -348,7 +344,7 @@ export function registerExpenseRoutes(app: Express) {
   });
 
   // Get tax deduction guidance with optional category filtering
-  app.get('/api/expenses/tax-guidance', async (req, res) => {
+  app.get('/api/expenses/tax-guidance', async (req: Request, res: Response) => {
     try {
       const category = req.query.category as string;
       
@@ -367,7 +363,7 @@ export function registerExpenseRoutes(app: Express) {
   });
 
   // Upload receipt for an expense with ImageShield protection
-  app.post('/api/expenses/:id/receipt', authenticateToken(true), upload.single('receipt'), async (req: AuthRequest, res) => {
+  app.post('/api/expenses/:id/receipt', authenticateToken(true), upload.single('receipt'), async (req: AuthRequest, res: Response) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: 'Authentication required' });

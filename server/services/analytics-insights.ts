@@ -70,19 +70,19 @@ export interface AnalyticsDashboardData {
   topContent: TopContentEntry[];
 }
 
-function buildWhereClause(
+function buildContentWhereClause(
   userId: number,
   userColumn: typeof analyticsContentPerformanceDaily.userId,
   dayColumn: typeof analyticsContentPerformanceDaily.day,
   startDate?: Date,
   endDate?: Date,
-): SQL<unknown> {
+): SQL<unknown> | undefined {
   const conditions: SQL<unknown>[] = [eq(userColumn, userId)];
   if (startDate) {
-    conditions.push(gte(dayColumn, startDate));
+    conditions.push(gte(dayColumn, startDate.toISOString().split('T')[0]));
   }
   if (endDate) {
-    conditions.push(lte(dayColumn, endDate));
+    conditions.push(lte(dayColumn, endDate.toISOString().split('T')[0]));
   }
   return conditions.length === 1 ? conditions[0] : and(...conditions);
 }
@@ -91,13 +91,13 @@ function buildAiWhereClause(
   userId: number,
   startDate?: Date,
   endDate?: Date,
-): SQL<unknown> {
+): SQL<unknown> | undefined {
   const conditions: SQL<unknown>[] = [eq(analyticsAiUsageDaily.userId, userId)];
   if (startDate) {
-    conditions.push(gte(analyticsAiUsageDaily.day, startDate));
+    conditions.push(gte(analyticsAiUsageDaily.day, startDate.toISOString().split('T')[0]));
   }
   if (endDate) {
-    conditions.push(lte(analyticsAiUsageDaily.day, endDate));
+    conditions.push(lte(analyticsAiUsageDaily.day, endDate.toISOString().split('T')[0]));
   }
   return conditions.length === 1 ? conditions[0] : and(...conditions);
 }
@@ -108,7 +108,7 @@ export async function getContentPerformancePage(
 ): Promise<PaginatedResult<AnalyticsContentPerformanceDaily>> {
   const { page, pageSize, startDate, endDate } = options;
   const offset = (page - 1) * pageSize;
-  const where = buildWhereClause(
+  const where = buildContentWhereClause(
     userId,
     analyticsContentPerformanceDaily.userId,
     analyticsContentPerformanceDaily.day,
@@ -184,7 +184,7 @@ export async function getContentSeries(
   startDate?: Date,
   endDate?: Date,
 ): Promise<ContentSeriesPoint[]> {
-  const where = buildWhereClause(
+  const where = buildContentWhereClause(
     userId,
     analyticsContentPerformanceDaily.userId,
     analyticsContentPerformanceDaily.day,
@@ -204,9 +204,9 @@ export async function getContentSeries(
     .orderBy(analyticsContentPerformanceDaily.day);
 
   return rows.map(row => ({
-    day: row.day,
+    day: new Date(row.day),
     totalViews: Number(row.totalViews ?? 0),
-    avgEngagementRate: Number(row.avgEngagementRate ?? 0),
+    avgEngagementRate: Number(row.avgEngagementRate.toFixed(2)),
   }));
 }
 
@@ -228,8 +228,8 @@ export async function getAiSeries(
     .orderBy(analyticsAiUsageDaily.day);
 
   return rows.map(row => ({
-    day: row.day,
-    generationCount: Number(row.generationCount ?? 0),
+    day: new Date(row.day),
+    generationCount: row.generationCount,
   }));
 }
 
@@ -280,7 +280,7 @@ export async function getTopContent(
   startDate?: Date,
   endDate?: Date,
 ): Promise<TopContentEntry[]> {
-  const where = buildWhereClause(
+  const where = buildContentWhereClause(
     userId,
     analyticsContentPerformanceDaily.userId,
     analyticsContentPerformanceDaily.day,
@@ -325,7 +325,7 @@ export async function getContentSummary(
   startDate?: Date,
   endDate?: Date,
 ): Promise<ContentSummary> {
-  const where = buildWhereClause(
+  const where = buildContentWhereClause(
     userId,
     analyticsContentPerformanceDaily.userId,
     analyticsContentPerformanceDaily.day,
