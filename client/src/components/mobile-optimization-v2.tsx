@@ -79,8 +79,9 @@ export function useDeviceDetection() {
 
 // Responsive sizing utilities
 export function useResponsiveSizes() {
-  const { deviceType } = useDeviceDetection();
+  const { deviceType = 'desktop' } = typeof window !== 'undefined' ? useDeviceDetection() : { deviceType: 'desktop' };
   
+  const buttonSize = deviceType === 'mobile' ? 'default' : 'sm';
   const buttonSize = deviceType === 'mobile' ? 'default' : 'sm';
   const iconSize = deviceType === 'mobile' ? 'h-5 w-5' : 'h-4 w-4';
   const paddingSize = deviceType === 'mobile' ? 'p-4' : 'p-2';
