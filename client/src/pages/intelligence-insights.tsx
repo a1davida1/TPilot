@@ -198,11 +198,11 @@ const fetchJson = async <T>(endpoint: string): Promise<T> => {
     queryFn: async () => parseCommunityOptions(await fetchJson<unknown>('/api/reddit/communities')),
   });
 
-  useEffect(() => {
-    if (!selectedSubreddit && subreddits.length > 0) {
-      setSelectedSubreddit(subreddits[0].name);
-    }
-  }, [selectedSubreddit, subreddits]);
+useEffect(() => {
+  if (!selectedSubreddit && subreddits.length > 0) {
+    setSelectedSubreddit(subreddits[0].name);
+  }
+}, [subreddits]);```
 
   // Fetch title analysis
   const { data: titleAnalysis, isLoading: titleLoading } = useQuery<TitleAnalysis>({
