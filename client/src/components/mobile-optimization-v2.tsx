@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, ReactNode } from 'react';
+import { useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { useLocation } from 'wouter';
 import {
   Menu,
@@ -13,9 +13,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { Badge } from '@/components/ui/badge';
+import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { getMobileNavigation, type NavigationItem } from '@/config/navigation';
+import { getMobileNavigation, navigationItems as defaultNavigationItems, type NavigationItem } from '@/config/navigation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -29,6 +29,21 @@ interface MobileNavigationItem {
     text: string;
     variant?: 'default' | 'success' | 'warning' | 'error' | 'pro';
   };
+}
+
+function resolveBadgeVariant(variant?: MobileNavigationItem['badge']['variant']): BadgeProps['variant'] {
+  switch (variant) {
+    case 'success':
+      return 'secondary';
+    case 'warning':
+      return 'outline';
+    case 'error':
+      return 'destructive';
+    case 'pro':
+      return 'default';
+    default:
+      return 'default';
+  }
 }
 
 // Device Detection Hook
@@ -79,14 +94,14 @@ export function useDeviceDetection() {
 
 // Responsive sizing utilities
 export function useResponsiveSizes() {
-  const { deviceType = 'desktop' } = typeof window !== 'undefined' ? useDeviceDetection() : { deviceType: 'desktop' };
-  
-  const buttonSize = deviceType === 'mobile' ? 'default' : 'sm';
-  const buttonSize = deviceType === 'mobile' ? 'default' : 'sm';
-  const iconSize = deviceType === 'mobile' ? 'h-5 w-5' : 'h-4 w-4';
-  const paddingSize = deviceType === 'mobile' ? 'p-4' : 'p-2';
-  const textSize = deviceType === 'mobile' ? 'text-base' : 'text-sm';
-  
+  const { deviceType } = useDeviceDetection();
+  const currentDevice = deviceType ?? 'desktop';
+
+  const buttonSize = currentDevice === 'mobile' ? 'default' : 'sm';
+  const iconSize = currentDevice === 'mobile' ? 'h-5 w-5' : 'h-4 w-4';
+  const paddingSize = currentDevice === 'mobile' ? 'p-4' : 'p-2';
+  const textSize = currentDevice === 'mobile' ? 'text-base' : 'text-sm';
+
   return { buttonSize, iconSize, paddingSize, textSize };
 }
 
@@ -220,7 +235,7 @@ function MobileSidebar({
                     )}
                   </div>
                   {item.badge && (
-                    <Badge variant={item.badge.variant || 'default'}>
+                    <Badge variant={resolveBadgeVariant(item.badge.variant)}>
                       {item.badge.text}
                     </Badge>
                   )}
@@ -297,12 +312,18 @@ export function MobileOptimization({
   const { deviceType, isTouchDevice } = useDeviceDetection();
   
   // Get mobile-optimized navigation items
-  const mobileNavItems = navigationItems ? 
-    getMobileNavigation(navigationItems).map(item => ({
-      ...item,
-      icon: item.icon as LucideIcon,
-    } as MobileNavigationItem)) : [];
-  
+  const mobileNavItems = useMemo<MobileNavigationItem[]>(() => {
+    const sourceItems = navigationItems ?? defaultNavigationItems;
+
+    return getMobileNavigation(sourceItems).map((item) => ({
+      href: item.href,
+      label: item.label,
+      description: item.description,
+      icon: item.icon,
+      badge: item.badge,
+    }));
+  }, [navigationItems]);
+
   const handleNavigate = useCallback((path: string) => {
     setLocation(path);
     setSidebarOpen(false);
