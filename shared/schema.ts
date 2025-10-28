@@ -1326,6 +1326,17 @@ export type ScheduleJob = typeof scheduleJobs.$inferSelect;
 export type InsertScheduleJob = typeof scheduleJobs.$inferInsert;
 export type ScheduleJobStatus = 'pending' | 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
 
+// Schedule jobs relations
+export const scheduleJobsRelations = relations(scheduleJobs, ({ one, many }) => ({
+  user: one(users, { fields: [scheduleJobs.userId], references: [users.id] }),
+  scheduledPost: one(scheduledPosts, { fields: [scheduleJobs.scheduledPostId], references: [scheduledPosts.id] }),
+  attempts: many(scheduleJobAttempts),
+}));
+
+export const scheduleJobAttemptsRelations = relations(scheduleJobAttempts, ({ one }) => ({
+  job: one(scheduleJobs, { fields: [scheduleJobAttempts.jobId], references: [scheduleJobs.id] }),
+}));
+
 export const analyticsMetrics = pgTable("analytics_metrics", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
