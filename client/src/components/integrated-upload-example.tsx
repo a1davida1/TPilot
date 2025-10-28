@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Upload, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { UploadProgress, MultiUploadProgress } from '@/components/ui/upload-progress';
+import { MultiUploadProgress } from '@/components/ui/upload-progress';
 import { CaptionProgress } from '@/components/ui/caption-progress';
 import { FriendlyError, useErrorHandler } from '@/components/ui/friendly-error';
 import { useToast } from '@/hooks/use-toast';
@@ -90,7 +90,7 @@ export function IntegratedUploadExample() {
               ));
               setSelectedImage(response.url);
               resolve(response);
-            } catch (error) {
+            } catch (_error) {
               reject(new Error('Invalid response from server'));
             }
           } else {
@@ -163,13 +163,19 @@ export function IntegratedUploadExample() {
       setCaptionStatus('generating');
       setCaptionProgress(40);
       
-      const response = await apiRequest('/api/caption/generate', {
-        method: 'POST',
-        body: JSON.stringify({
+      const response = await apiRequest(
+        'POST',
+        '/api/caption/generate',
+        {
           imageUrl: selectedImage,
           styles: ['playful', 'seductive', 'mysterious']
-        })
-      });
+        }
+      );
+      
+      // Parse response
+      const data = await response.json() as { 
+        captions?: Array<{ text: string; style: string }> 
+      };
 
       // Stage 3: Refine results
       setCaptionStatus('refining');
@@ -181,11 +187,11 @@ export function IntegratedUploadExample() {
       setCaptionProgress(100);
       setCaptionStatus('complete');
       
-      if (response.captions) {
-        setGeneratedCaptions(response.captions);
+      if (data?.captions) {
+        setGeneratedCaptions(data.captions);
         toast({
           title: 'Success!',
-          description: `Generated ${response.captions.length} captions`,
+          description: `Generated ${data.captions.length} captions`,
         });
       }
 
