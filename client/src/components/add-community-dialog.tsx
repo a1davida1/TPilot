@@ -39,10 +39,7 @@ export function AddCommunityDialog({ onCommunityAdded, trigger }: AddCommunityDi
   const lookupMutation = useMutation({
     mutationFn: async (name: string) => {
       const cleanName = name.toLowerCase().replace(/^r\//, '').trim();
-      return apiRequest<LookupCommunityResponse>('/api/user-communities/lookup', {
-        method: 'POST',
-        body: { subreddit: cleanName }
-      });
+      return apiRequest<LookupCommunityResponse>('POST', '/api/user-communities/lookup', { subreddit: cleanName });
     },
     onSuccess: (data) => {
       if (data.alreadyExists) {

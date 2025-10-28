@@ -220,7 +220,49 @@ async function _throwIfResNotOk(res: Response) {
   throw error;
 }
 
-export async function apiRequest(
+// Generic API request function with type safety
+export async function apiRequest<T = unknown>(url: string): Promise<T>;
+export async function apiRequest<T = unknown>(method: string, url: string, data?: unknown): Promise<T>;
+export async function apiRequest<T = unknown>(
+  methodOrUrl: string,
+  urlOrData?: string | unknown,
+  data?: unknown
+): Promise<T> {
+  let method: string;
+  let url: string;
+  let requestData: unknown;
+
+  // Determine if first param is method or url
+  if (typeof urlOrData === 'string') {
+    // Called as: apiRequest(method, url, data?)
+    method = methodOrUrl;
+    url = urlOrData;
+    requestData = data;
+  } else {
+    // Called as: apiRequest(url) - defaults to GET
+    method = 'GET';
+    url = methodOrUrl;
+    requestData = undefined;
+  }
+
+  const response = await apiRequestInternal(method, url, requestData);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({})) as Record<string, unknown>;
+    const errorMessage = typeof errorData.message === 'string' ? errorData.message : response.statusText;
+    const error: ApiError = new Error(errorMessage) as ApiError;
+    error.status = response.status;
+    error.statusText = response.statusText;
+    error.isAuthError = response.status === 401 || response.status === 403;
+    error.userMessage = getErrorMessage(response.status, errorData);
+    throw error;
+  }
+
+  return response.json() as Promise<T>;
+}
+
+// Internal implementation (renamed from original apiRequest)
+async function apiRequestInternal(
   method: string,
   url: string,
   data?: unknown,
@@ -238,7 +280,7 @@ export async function apiRequest(
         hasRefreshableToken,
       } = await import('@/lib/auth');
       let token = getAccessToken();
-      
+
       // If no token in memory, try localStorage for backwards compatibility (one-time migration)
       if (!token && window.localStorage?.getItem("authToken")) {
         const oldToken = window.localStorage.getItem("authToken");
@@ -247,18 +289,18 @@ export async function apiRequest(
           const { setAccessToken } = await import('@/lib/auth');
           setAccessToken(oldToken);
           token = getAccessToken(); // Get it again (might be expired)
-          
+
           // Clear from localStorage after migration
           window.localStorage.removeItem("authToken");
         }
       }
-      
+
       // Only attempt refresh if we previously had a token (even if expired)
       // Don't refresh on initial page load when user never logged in
       if (!token && hasRefreshableToken()) {
         token = await refreshAccessToken();
       }
-      
+
       if (token && !headers["Authorization"]) {
         headers["Authorization"] = `Bearer ${token}`;
       }
@@ -276,7 +318,7 @@ export async function apiRequest(
         // 1. x-csrf-token header (lowercase)
         // 2. _csrf in the request body
         headers["x-csrf-token"] = token;
-        
+
         // Also include in body for redundancy
         if (data instanceof FormData) {
           // Add CSRF token to FormData
@@ -312,16 +354,16 @@ export async function apiRequest(
       const responseText = await clonedResponse.text();
       if (responseText.toLowerCase().includes('csrf')) {
         console.warn('CSRF token validation failed, fetching new token and retrying...');
-        
+
         // Clear the stale token
         clearCsrfToken();
-        
+
         // Get a fresh token
         const newToken = await getCsrfToken();
         if (newToken) {
           headers["x-csrf-token"] = newToken;
-          
-          // Update token in body if needed  
+
+          // Update token in body if needed
           if (data instanceof FormData) {
             // FormData is mutable, update the token
             data.set('_csrf', newToken);
@@ -332,7 +374,7 @@ export async function apiRequest(
               body = JSON.stringify(data);
             }
           }
-          
+
           // Retry the request with the new token
           const retryResponse = await fetch(url, {
             method,
@@ -340,7 +382,7 @@ export async function apiRequest(
             body,
             credentials: "include",
           });
-          
+
           return retryResponse;
         }
       }
