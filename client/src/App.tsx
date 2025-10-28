@@ -102,6 +102,7 @@ function AuthenticatedRoutes() {
       <Route path="/analytics" component={AnalyticsPage} />
       <Route path="/performance" component={PerformanceAnalyticsPage} />
       <Route path="/intelligence" component={IntelligenceInsightsPage} />
+      <Route path="/subreddit-insights" component={IntelligenceInsightsPage} />
       <Route path="/gallery" component={GalleryV2Page} />
       <Route path="/bulk-caption" component={CaptionGeneratorPage} />
       <Route path="/campaigns" component={HistoryPage} />
