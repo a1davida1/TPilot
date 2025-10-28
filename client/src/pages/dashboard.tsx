@@ -9,9 +9,9 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import { ModernDashboard } from "@/components/modern-dashboard";
+import { ModernDashboardV2 } from "@/components/modern-dashboard-v2";
 import { DashboardLoading } from "@/app/(dashboard)/loading";
-type ModernDashboardUser = Parameters<typeof ModernDashboard>[0]['user'];
+type ModernDashboardUser = Parameters<typeof ModernDashboardV2>[0]['user'];
 
 import { DashboardErrorBoundary } from "@/app/(dashboard)/error-boundary";
 import { useToast } from "@/hooks/use-toast";
@@ -153,7 +153,13 @@ export default function Dashboard() {
 
   // Determine admin status and user tier
   const isAdmin = isAdminUser(user);
-  const userTier = resolveUserTier(user);
+  const resolvedTier = resolveUserTier(user);
+  
+  // Map tier to what ModernDashboardV2 expects (exclude guest/basic)
+  const userTier: 'free' | 'starter' | 'pro' | 'premium' | 'admin' = 
+    resolvedTier === 'guest' || resolvedTier === 'basic' 
+      ? 'free' 
+      : resolvedTier;
   
   // Check Reddit connection status
   const typedUser = user as DashboardUser | undefined;
@@ -168,14 +174,13 @@ export default function Dashboard() {
         id: user.id,
         username: user.username || user.email || 'User',
         email: user.email ?? undefined,
-        tier: user.tier ?? undefined,
-        isVerified: user.emailVerified ?? undefined,
+        tier: userTier,
       }
     : undefined;
 
   return (
     <DashboardErrorBoundary>
-      <ModernDashboard
+      <ModernDashboardV2
         user={sanitizedUser}
         userTier={userTier}
         isAdmin={isAdmin}

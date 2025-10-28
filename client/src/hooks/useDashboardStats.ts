@@ -36,8 +36,9 @@ export function useDashboardStats() {
     queryKey: ['dashboard-stats'],
     queryFn: async () => {
       try {
-        const response = await apiRequest<DashboardStats>('/api/dashboard/stats');
-        return response;
+        const response = await apiRequest('GET', '/api/dashboard/stats');
+        const data = await response.json() as DashboardStats;
+        return data;
       } catch (error) {
         // Return fallback data if API fails
         console.error('Failed to fetch dashboard stats:', error);
@@ -54,7 +55,7 @@ export function useDashboardStats() {
       }
     },
     staleTime: 60000, // Consider data fresh for 1 minute
-    cacheTime: 300000, // Keep in cache for 5 minutes
+    gcTime: 300000, // Keep in cache for 5 minutes
   });
 }
 
@@ -64,8 +65,9 @@ export function useRecentActivity() {
     queryKey: ['dashboard-activity'],
     queryFn: async () => {
       try {
-        const response = await apiRequest<RecentActivity[]>('/api/dashboard/activity');
-        return response;
+        const response = await apiRequest('GET', '/api/dashboard/activity');
+        const data = await response.json() as RecentActivity[];
+        return data;
       } catch (error) {
         console.error('Failed to fetch activity:', error);
         // Return mock data as fallback
@@ -88,7 +90,7 @@ export function useRecentActivity() {
       }
     },
     staleTime: 30000, // Consider data fresh for 30 seconds
-    cacheTime: 180000, // Keep in cache for 3 minutes
+    gcTime: 180000, // Keep in cache for 3 minutes
   });
 }
 
@@ -98,17 +100,19 @@ export function useUpcomingPosts(limit: number = 5) {
     queryKey: ['upcoming-posts', limit],
     queryFn: async () => {
       try {
-        const response = await apiRequest<UpcomingPost[]>(
+        const response = await apiRequest(
+          'GET',
           `/api/posts/upcoming?limit=${limit}`
         );
-        return response;
+        const data = await response.json() as UpcomingPost[];
+        return data;
       } catch (error) {
         console.error('Failed to fetch upcoming posts:', error);
         return [];
       }
     },
     staleTime: 60000,
-    cacheTime: 300000,
+    gcTime: 300000,
   });
 }
 
@@ -118,8 +122,9 @@ export function usePerformanceData(days: number = 7) {
     queryKey: ['performance-data', days],
     queryFn: async () => {
       try {
-        const response = await apiRequest(`/api/analytics/performance?days=${days}`);
-        return response;
+        const response = await apiRequest('GET', `/api/analytics/performance?days=${days}`);
+        const data = await response.json();
+        return data;
       } catch (error) {
         console.error('Failed to fetch performance data:', error);
         // Return mock data structure
@@ -133,6 +138,6 @@ export function usePerformanceData(days: number = 7) {
       }
     },
     staleTime: 300000, // Consider data fresh for 5 minutes
-    cacheTime: 600000, // Keep in cache for 10 minutes
+    gcTime: 600000, // Keep in cache for 10 minutes
   });
 }
