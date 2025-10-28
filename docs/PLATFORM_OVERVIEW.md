@@ -1,5 +1,5 @@
 # ThottoPilot Platform Overview
-*Last Updated: October 19, 2025*
+*Last Updated: October 28, 2025*
 
 **⚠️ SEE MASTER REFERENCE: `/PLATFORM_MASTER_REFERENCE.md` is the comprehensive source of truth.**
 
@@ -7,6 +7,31 @@ This document provides a high-level overview. For technical details, architectur
 
 ## 🎯 Core Purpose
 ThottoPilot is a professional content management platform for adult content creators to manage their Reddit presence with legal compliance, content protection, and growth tools.
+
+## 🏗️ Architecture
+
+### **Hybrid Stack**
+- **Primary Frontend**: React + Wouter (client-side routing)
+  - Main app shell in `/client/src`
+  - SPA with Express backend API
+- **Secondary Frontend**: Next.js App Router (`/app` directory)
+  - Used for specific features: Gallery (`app/(dashboard)/gallery/*`)
+  - Posting pages (`app/(dashboard)/posting/*`)  
+  - API routes (`app/api/*`)
+  - Coexists with Express - not a full Next.js migration
+- **Backend**: Express.js (`/server`)
+  - REST API at `/api/*` routes
+  - All business logic, authentication, database access
+  - Reddit integration, caption generation, scheduling
+- **Database**: PostgreSQL with Drizzle ORM
+- **Queue System**: Bull (Redis-based) for scheduled posts & async jobs
+- **Deployment**: Render.com with environment-based config
+
+### **Why Hybrid?**
+- Started as Express + Wouter SPA
+- Added Next.js App Router for specific features (gallery, some dashboards)
+- Gradual migration strategy - not all-or-nothing
+- Both systems work together via shared API layer
 
 ## 💎 Tier Structure
 
@@ -88,11 +113,18 @@ Scheduling Page → Bulk Upload → Select Images → Generate Captions → Set 
 
 ### **Content Pipeline**
 - **Image Storage**: 
-  - **PRIMARY**: Reddit native uploads (i.redd.it) - ALL images uploaded directly to Reddit CDN
-  - **FALLBACK ONLY**: Imgbox - ONLY used when Reddit CDN rejects the upload
+  - **PRIMARY**: Imgur (imgur.com) - Anonymous & authorized uploads
+    - Endpoints: `/api/uploads/imgur` (upload), `/api/uploads/imgur/:deleteHash` (delete)
+    - Daily limits: 12,500 uploads anonymous, 500 authorized per IP
+    - Supports NSFW content flagging
+  - **BACKUP**: Imgbox (imgbox.com) - Used when Imgur fails
+    - Automatic fallback for quota/error scenarios
+    - Alternative CDN for reliability
+  - **LEGACY**: Catbox (catbox.moe) - Still available via `/api/catbox/*` routes
+    - User-requested alternative for specific use cases
+    - Not used in primary workflow
   - **NO LOCAL STORAGE**: Zero files saved to server (legal compliance requirement)
-  - **NO S3/Database storage**: All media goes through Reddit → Imgbox fallback flow
-- **Legacy/Deprecated**: Catbox.moe, Imgur (old implementations, not used in current flow)
+  - **NO S3/Database storage**: All media goes through Imgur → Imgbox fallback flow
 - **AI Caption Generation**: OpenRouter ONLY (Grok-4-Fast primary model)
   - **SFW Voices**: flirty_playful, gamer_nerdy, luxury_minimal, arts_muse, gym_energy, cozy_girl
   - **NSFW Voices**: seductive_goddess, intimate_girlfriend, bratty_tease, submissive_kitten
