@@ -210,6 +210,16 @@ export async function getSubredditPerformance(
       const total = Number(s.totalPosts);
       const successful = Number(s.successful);
 
+      // Convert lastPosted to Date if it's a string (Drizzle returns it as string from SQL)
+      let lastPostedISO: string | null = null;
+      if (s.lastPosted) {
+        if (typeof s.lastPosted === 'string') {
+          lastPostedISO = new Date(s.lastPosted).toISOString();
+        } else if (s.lastPosted instanceof Date) {
+          lastPostedISO = s.lastPosted.toISOString();
+        }
+      }
+
       return {
         subreddit: s.subreddit,
         totalPosts: total,
@@ -219,7 +229,7 @@ export async function getSubredditPerformance(
         avgUpvotes: Math.round(Number(s.avgUpvotes)),
         avgScore: metricsMap.get(s.subreddit) ?? 0,
         totalViews: Number(s.totalViews),
-        lastPosted: s.lastPosted ? s.lastPosted.toISOString() : null
+        lastPosted: lastPostedISO
       };
     });
   } catch (error) {

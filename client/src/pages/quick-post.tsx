@@ -747,44 +747,47 @@ export default function QuickPostPage() {
         />
       )}
       
-      <StickyRail
-        rail={
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Progress</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                {imageUrl && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Image</span>
-                    <Badge variant="default">✓</Badge>
-                  </div>
-                )}
-                {protectedImageUrl && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Protected</span>
-                    <Badge variant="default">✓</Badge>
-                  </div>
-                )}
-                {confirmedCaptionId && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Caption</span>
-                    <Badge variant="default">✓</Badge>
-                  </div>
-                )}
-                {posted && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Posted</span>
-                    <Badge variant="default">✓</Badge>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="flex gap-6">
+          {/* Left Pane - Progress Sidebar */}
+          <div className="w-64 flex-shrink-0">
+            <div className="sticky top-20 space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Progress</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  {imageUrl && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Image</span>
+                      <Badge variant="default">✓</Badge>
+                    </div>
+                  )}
+                  {protectedImageUrl && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Protected</span>
+                      <Badge variant="default">✓</Badge>
+                    </div>
+                  )}
+                  {confirmedCaptionId && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Caption</span>
+                      <Badge variant="default">✓</Badge>
+                    </div>
+                  )}
+                  {posted && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Posted</span>
+                      <Badge variant="default">✓</Badge>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        }
-      >
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
+          
+          {/* Right Pane - Main Content */}
+          <div className="flex-1 min-w-0">
         <div className="mb-8 text-center">
           <div className="inline-flex items-center gap-2 mb-4">
             <div className="p-2 bg-yellow-500 text-white rounded-full">
