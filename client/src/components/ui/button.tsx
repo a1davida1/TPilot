@@ -21,7 +21,7 @@ const buttonVariants = cva(
       },
       size: {
         default: "h-11 px-6 py-3 text-base",
-        sm: "h-9 px-4 py-2 text-sm",
+        sm: "h-11 px-4 py-2 text-sm", // Changed from h-9 to h-11 for 44px touch target
         lg: "h-14 px-8 py-4 text-lg",
         icon: "h-11 w-11",
       },
