@@ -163,7 +163,9 @@ export function IntegratedUploadExample() {
       setCaptionStatus('generating');
       setCaptionProgress(40);
       
-      const response = await apiRequest(
+      const data = await apiRequest<{
+        captions?: Array<{ text: string; style: string }>
+      }>(
         'POST',
         '/api/caption/generate',
         {
@@ -171,11 +173,6 @@ export function IntegratedUploadExample() {
           styles: ['playful', 'seductive', 'mysterious']
         }
       );
-      
-      // Parse response
-      const data = await response.json() as { 
-        captions?: Array<{ text: string; style: string }> 
-      };
 
       // Stage 3: Refine results
       setCaptionStatus('refining');

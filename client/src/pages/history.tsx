@@ -27,7 +27,7 @@ export default function HistoryPage() {
     selectedCount,
     toggleSelection,
     clearSelection,
-  } = useBatchSelection<ContentGeneration>();
+  } = useBatchSelection<{ id: string }>();
 
   const { data: generations = [], isLoading } = useQuery<ContentGeneration[]>({
     queryKey: ['/api/content-generations'],

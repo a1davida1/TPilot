@@ -92,8 +92,7 @@ export default function SampleUpload() {
   const fetchSamples = useMemo(
     () =>
       async (): Promise<SamplePost[]> => {
-        const response = await apiRequest("GET", "/api/sample-posts");
-        const payload = (await response.json()) as SamplePostResponse[];
+        const payload = await apiRequest<SamplePostResponse[]>("GET", "/api/sample-posts");
         return payload.map(normalizeSample);
       },
     [],
@@ -155,8 +154,7 @@ export default function SampleUpload() {
   });
 
   const handleGetUploadParameters = async () => {
-    const response = await apiRequest("POST", "/api/objects/upload");
-    const { uploadURL } = (await response.json()) as { uploadURL: string };
+    const { uploadURL } = await apiRequest<{ uploadURL: string }>("POST", "/api/objects/upload");
     return { method: "PUT" as const, url: uploadURL };
   };
 

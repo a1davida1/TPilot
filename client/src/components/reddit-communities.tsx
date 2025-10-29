@@ -107,15 +107,15 @@ export function RedditCommunities() {
       if (searchTerm) params.append('search', searchTerm);
 
       const data = await apiRequest<unknown>('GET', `/api/reddit/communities?${params.toString()}`);
-      
+
       // Ensure we always return an array
       if (Array.isArray(data)) {
         return data;
       }
-      
+
       // Handle error responses
-      if (data.error && data.items) {
-        return data.items;
+      if (typeof data === 'object' && data !== null && 'error' in data && 'items' in data) {
+        return (data as { items: unknown }).items;
       }
       
       // Fallback to empty array if response is unexpected

@@ -259,8 +259,7 @@ export function QuickStartModal({
         return false;
       }
       try {
-        const response = await apiRequest("GET", "/api/reddit/accounts");
-        const data = (await response.json()) as unknown;
+        const data = await apiRequest<unknown>("GET", "/api/reddit/accounts");
         if (isRedditAccountList(data) && data.length > 0) {
           return finishConnection();
         }
@@ -271,8 +270,7 @@ export function QuickStartModal({
     };
 
     try {
-      const response = await apiRequest("GET", "/api/reddit/connect?intent=posting&queue=quick-start");
-      const data = await response.json() as RedditConnectResponse;
+      const data = await apiRequest<RedditConnectResponse>("GET", "/api/reddit/connect?intent=posting&queue=quick-start");
 
 
       if (data.authUrl) {
@@ -364,14 +362,12 @@ export function QuickStartModal({
     setSubmitError(null);
 
     try {
-      const response = await apiRequest("POST", "/api/reddit/submit", {
+      const data = await apiRequest<RedditSubmitResponse>("POST", "/api/reddit/submit", {
         subreddit: selectedTemplate.subreddit,
         title: postTitle,
         body: postBody,
         nsfw: selectedTemplate.isNsfw,
       });
-
-      const data = await response.json() as RedditSubmitResponse;
 
       if (data.success) {
         toast({

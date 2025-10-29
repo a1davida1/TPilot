@@ -27,8 +27,7 @@ export default function BillingDashboard() {
   // Generate payment link mutation
   const paymentLinkMutation = useMutation({
     mutationFn: async (plan: string) => {
-      const response = await apiRequest('POST', '/api/billing/payment-link', { plan });
-      return response.json();
+      return await apiRequest<unknown>('POST', '/api/billing/payment-link', { plan });
     },
     onSuccess: (data: unknown) => {
       const paymentData = data as { paymentUrl: string };

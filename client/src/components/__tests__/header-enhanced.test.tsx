@@ -13,20 +13,75 @@ vi.mock('wouter', () => ({
 
 describe('HeaderEnhanced', () => {
   const mockToast = vi.fn();
-  const mockUser = { id: 1, email: 'test@example.com', firstName: 'Test' };
+  const mockDismiss = vi.fn();
+  const mockUser = {
+    id: 1,
+    username: 'testuser',
+    email: 'test@example.com',
+    firstName: 'Test',
+    lastName: null,
+    role: 'user',
+    isAdmin: false,
+    emailVerified: true,
+    tier: 'free',
+    mustChangePassword: false,
+    subscriptionStatus: 'inactive',
+    trialEndsAt: null,
+    provider: null,
+    providerId: null,
+    avatar: null,
+    bio: null,
+    referralCodeId: null,
+    referredBy: null,
+    redditUsername: null,
+    redditAccessToken: null,
+    redditRefreshToken: null,
+    redditId: null,
+    redditKarma: null,
+    redditAccountCreated: null,
+    redditIsVerified: false,
+    stripeCustomerId: null,
+    stripeSubscriptionId: null,
+    catboxUserhash: null,
+    bannedAt: null,
+    suspendedUntil: null,
+    banReason: null,
+    suspensionReason: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    lastLogin: null,
+    passwordResetAt: null,
+    deletedAt: null,
+    isDeleted: false,
+    avatarUrl: null,
+    website: null,
+    timezone: null,
+    language: 'en',
+    twoFactorEnabled: false,
+    lastLoginAt: null,
+    passwordHash: '',
+    lastPasswordChange: null,
+    postsCount: 0,
+    captionsGenerated: 0,
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useAuth).mockReturnValue({
       user: mockUser,
       isAuthenticated: true,
-      loading: false,
-      error: null,
+      isLoading: false,
+      isVerified: true,
+      hasFullAccess: true,
       login: vi.fn(),
-      logout: vi.fn(),
-      register: vi.fn(),
+      logout: vi.fn(async () => {}),
+      refetch: vi.fn(),
     });
-    vi.mocked(useToast).mockReturnValue({ toast: mockToast });
+    vi.mocked(useToast).mockReturnValue({
+      toast: mockToast,
+      dismiss: mockDismiss,
+      toasts: [],
+    });
   });
 
   it('renders header with user information when authenticated', () => {
@@ -90,11 +145,12 @@ describe('HeaderEnhanced', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: null,
       isAuthenticated: false,
-      loading: false,
-      error: null,
+      isLoading: false,
+      isVerified: false,
+      hasFullAccess: false,
       login: vi.fn(),
-      logout: vi.fn(),
-      register: vi.fn(),
+      logout: vi.fn(async () => {}),
+      refetch: vi.fn(),
     });
 
     render(<HeaderEnhanced />);

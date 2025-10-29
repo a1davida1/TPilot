@@ -117,8 +117,7 @@ export default function PostScheduler() {
   const { data: scheduledPosts = [], isLoading } = useQuery<PostJob[]>({
     queryKey: ['/api/posts/scheduled'],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/posts/scheduled');
-      const payload = await response.json();
+      const payload = await apiRequest<unknown>('GET', '/api/posts/scheduled');
       return parsePostJobs(payload);
     },
   });
@@ -126,8 +125,7 @@ export default function PostScheduler() {
   // Schedule post mutation
   const scheduleMutation = useMutation({
     mutationFn: async (data: SchedulePostForm) => {
-      const response = await apiRequest('POST', '/api/posts/schedule', data);
-      return response.json();
+      return await apiRequest<unknown>('POST', '/api/posts/schedule', data);
     },
     onSuccess: (_data) => {
       const scheduledSubreddit = formData.subreddit;

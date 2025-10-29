@@ -89,27 +89,27 @@ export function AppleInspiredApp() {
 
   const generateContentMutation = useMutation({
     mutationFn: async (data: unknown) => {
-      const response = await apiRequest("POST", "/api/generate-ai", {
+      return await apiRequest<unknown>("POST", "/api/generate-ai", {
         ...(data as GenerationRequest),
         generationType: "prompt",
         userProfile: {
           toneOfVoice: "confident",
-          contentStyle: "authentic", 
+          contentStyle: "authentic",
           personalBrand: "girl-next-door",
           contentLength: "medium",
           includeEmojis: true,
           promotionLevel: "moderate"
         }
       });
-      return await response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data: unknown) => {
+      const responseData = data as Record<string, unknown>;
       const displayData: GeneratedContent = {
-        titles: Array.isArray(data.titles) ? data.titles : 
-                typeof data.titles === 'string' ? [data.titles] :
-                data.titles ? Object.values(data.titles).filter(Boolean) : [],
-        content: data.content || "",
-        photoInstructions: data.photoInstructions
+        titles: Array.isArray(responseData.titles) ? responseData.titles as string[] :
+                typeof responseData.titles === 'string' ? [responseData.titles] :
+                responseData.titles ? Object.values(responseData.titles as object).filter(Boolean) as string[] : [],
+        content: (responseData.content as string) || "",
+        photoInstructions: responseData.photoInstructions as GeneratedContent['photoInstructions']
       };
       
       setGeneratedContent(displayData);

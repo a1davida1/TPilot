@@ -45,8 +45,7 @@ export default function AIContentStudio() {
       styleHints?: string[];
       variants: number;
     }) => {
-      const response = await apiRequest('POST', '/api/ai/generate', data);
-      return response.json();
+      return await apiRequest<unknown>('POST', '/api/ai/generate', data);
     },
     onSuccess: (data: unknown) => {
       const aiResponse = data as AiResponse;

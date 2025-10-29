@@ -44,12 +44,11 @@ export function SchedulingCalendar() {
       const start = startOfMonth(currentMonth);
       const end = endOfMonth(currentMonth);
       
-      const response = await apiRequest('GET', '/api/scheduled-posts', {
+      const data = await apiRequest<{ posts?: ScheduledPost[] }>('GET', '/api/scheduled-posts', {
         startDate: start.toISOString(),
         endDate: end.toISOString()
       });
-      const data = await response.json();
-      
+
       setScheduledPosts(data.posts || []);
     } catch (_error) {
       console.error('Failed to fetch scheduled posts:', _error);

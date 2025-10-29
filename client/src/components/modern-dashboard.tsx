@@ -605,8 +605,7 @@ export function ModernDashboard({ isRedditConnected = false, user, userTier = 'f
 
   const handleConnectReddit = useCallback(async () => {
     try {
-      const response = await apiRequest('GET', '/api/reddit/connect?intent=posting&queue=modern-dashboard');
-      const data = await response.json() as { authUrl?: string; message?: string };
+      const data = await apiRequest<{ authUrl?: string; message?: string }>('GET', '/api/reddit/connect?intent=posting&queue=modern-dashboard');
 
       if (data?.authUrl) {
         window.open(data.authUrl, '_blank', 'noopener,noreferrer');

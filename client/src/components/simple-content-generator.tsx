@@ -56,24 +56,28 @@ export function SimpleContentGenerator({ isGuestMode: _isGuestMode = false, onCo
         }
       });
     },
-    onSuccess: (data) => {
+    onSuccess: (data: unknown) => {
+      const responseData = data as Record<string, unknown>;
+      const titles = responseData.titles;
+      const content = responseData.content;
+      const photoInstructions = responseData.photoInstructions as Record<string, unknown> | undefined;
       // Transform the data to match our display format
       const displayData: GeneratedContent = {
-        titles: Array.isArray(data.titles) ? data.titles : 
-                typeof data.titles === 'string' ? [data.titles] :
-                data.titles ? Object.values(data.titles).filter(Boolean) : [],
-        content: data.content || "",
-        photoInstructions: data.photoInstructions ? {
-          lighting: data.photoInstructions.lighting || "Soft, warm lighting - preferably golden hour (1 hour before sunset) or use warm LED panels. Avoid harsh overhead lighting.",
-          angles: data.photoInstructions.angles || [
+        titles: Array.isArray(titles) ? titles as string[] :
+                typeof titles === 'string' ? [titles] :
+                titles ? Object.values(titles as object).filter(Boolean) as string[] : [],
+        content: (content as string) || "",
+        photoInstructions: photoInstructions ? {
+          lighting: (photoInstructions.lighting as string) || "Soft, warm lighting - preferably golden hour (1 hour before sunset) or use warm LED panels. Avoid harsh overhead lighting.",
+          angles: (photoInstructions.angles as string[]) || [
             "Eye-level for intimate connection",
-            "Slightly above for flattering perspective", 
+            "Slightly above for flattering perspective",
             "Profile shot to show silhouette",
             "Over-shoulder looking back"
           ],
-          composition: data.photoInstructions.composition || "Rule of thirds - place yourself off-center. Leave negative space for text overlay. Include interesting background elements but keep them soft/blurred.",
-          styling: data.photoInstructions.styling || "Casual-chic outfit, natural makeup with emphasis on glowing skin, loose hair with movement, minimal jewelry for elegance",
-          technical: data.photoInstructions.technical || "Use portrait mode or f/1.8-2.8 for background blur. ISO 100-400 for quality. Take multiple shots for variety. Shoot in RAW for editing flexibility."
+          composition: (photoInstructions.composition as string) || "Rule of thirds - place yourself off-center. Leave negative space for text overlay. Include interesting background elements but keep them soft/blurred.",
+          styling: (photoInstructions.styling as string) || "Casual-chic outfit, natural makeup with emphasis on glowing skin, loose hair with movement, minimal jewelry for elegance",
+          technical: (photoInstructions.technical as string) || "Use portrait mode or f/1.8-2.8 for background blur. ISO 100-400 for quality. Take multiple shots for variety. Shoot in RAW for editing flexibility."
         } : undefined
       };
       

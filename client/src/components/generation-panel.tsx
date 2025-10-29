@@ -39,14 +39,13 @@ export function GenerationPanel({ onContentGenerated }: GenerationPanelProps) {
 
   const generateMutation = useMutation({
     mutationFn: async (data: { platform: string; style: string; theme: string; timing: string }) => {
-      const response = await apiRequest("POST", "/api/ai/generate", {
+      return await apiRequest<unknown>("POST", "/api/ai/generate", {
         platforms: [data.platform],
         prompt: `Generate ${data.style} ${data.theme} content for ${data.platform} optimized for ${data.timing} posting`,
         styleHints: [data.style, data.theme],
         timing: data.timing,
         variants: 1
       });
-      return response.json();
     },
     onSuccess: (data: unknown) => {
       // Transform AI service response to ContentGeneration format

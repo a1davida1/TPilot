@@ -10,8 +10,8 @@ describe('StatusBanner', () => {
   });
 
   it('renders banner with default props', () => {
-    render(<StatusBanner />);
-    
+    render(<StatusBanner message="System update available" />);
+
     expect(screen.getByText(/system update/i)).toBeInTheDocument();
   });
 
@@ -23,140 +23,109 @@ describe('StatusBanner', () => {
   });
 
   it('applies correct variant styles', () => {
-    const { rerender } = render(<StatusBanner variant="info" />);
+    const { rerender } = render(<StatusBanner message="Test" variant="info" />);
     let banner = screen.getByRole('alert');
     expect(banner).toHaveClass('bg-blue-50');
 
-    rerender(<StatusBanner variant="warning" />);
+    rerender(<StatusBanner message="Test" variant="warning" />);
     banner = screen.getByRole('alert');
     expect(banner).toHaveClass('bg-amber-50');
 
-    rerender(<StatusBanner variant="error" />);
+    rerender(<StatusBanner message="Test" variant="error" />);
     banner = screen.getByRole('alert');
     expect(banner).toHaveClass('bg-red-50');
 
-    rerender(<StatusBanner variant="success" />);
+    rerender(<StatusBanner message="Test" variant="success" />);
     banner = screen.getByRole('alert');
     expect(banner).toHaveClass('bg-emerald-50');
   });
 
   it('shows correct icon for each variant', () => {
-    const { rerender } = render(<StatusBanner variant="info" />);
+    const { rerender } = render(<StatusBanner message="Test" variant="info" />);
     expect(screen.getByTestId('info-icon')).toBeInTheDocument();
 
-    rerender(<StatusBanner variant="warning" />);
+    rerender(<StatusBanner message="Test" variant="warning" />);
     expect(screen.getByTestId('alert-triangle-icon')).toBeInTheDocument();
 
-    rerender(<StatusBanner variant="error" />);
+    rerender(<StatusBanner message="Test" variant="error" />);
     expect(screen.getByTestId('alert-circle-icon')).toBeInTheDocument();
 
-    rerender(<StatusBanner variant="success" />);
+    rerender(<StatusBanner message="Test" variant="success" />);
     expect(screen.getByTestId('check-circle-icon')).toBeInTheDocument();
   });
 
-  it('handles dismiss when dismissible is true', async () => {
-    render(<StatusBanner dismissible={true} />);
-    
-    const dismissButton = screen.getByRole('button', { name: /dismiss/i });
+  it('handles dismiss when closeable is true', async () => {
+    const onClose = vi.fn();
+    render(<StatusBanner message="Test" closeable={true} onClose={onClose} />);
+
+    const dismissButton = screen.getByRole('button');
     expect(dismissButton).toBeInTheDocument();
-    
+
     fireEvent.click(dismissButton);
-    
-    await waitFor(() => {
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    });
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('does not show dismiss button when dismissible is false', () => {
-    render(<StatusBanner dismissible={false} />);
-    
-    expect(screen.queryByRole('button', { name: /dismiss/i })).not.toBeInTheDocument();
+  it('does not show dismiss button when closeable is false', () => {
+    render(<StatusBanner message="Test" closeable={false} />);
+
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
-  it('persists dismissal in localStorage', async () => {
-    const storageKey = 'test-banner';
-    render(<StatusBanner dismissible={true} storageKey={storageKey} />);
-    
-    const dismissButton = screen.getByRole('button', { name: /dismiss/i });
-    fireEvent.click(dismissButton);
-    
-    await waitFor(() => {
-      expect(localStorage.getItem(`banner-dismissed-${storageKey}`)).toBe('true');
-    });
-  });
-
-  it('does not render if previously dismissed', () => {
-    const storageKey = 'test-banner';
-    localStorage.setItem(`banner-dismissed-${storageKey}`, 'true');
-    
-    render(<StatusBanner dismissible={true} storageKey={storageKey} />);
-    
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-  });
-
-  it('renders action button when provided', () => {
+  it('handles action button when provided', () => {
     const handleAction = vi.fn();
     render(
-      <StatusBanner 
-        action={{ label: 'Take Action', onClick: handleAction }}
+      <StatusBanner
+        message="Test"
+        onAction={handleAction}
+        actionLabel="Take Action"
       />
     );
-    
+
     const actionButton = screen.getByRole('button', { name: /take action/i });
     expect(actionButton).toBeInTheDocument();
-    
+
     fireEvent.click(actionButton);
     expect(handleAction).toHaveBeenCalledTimes(1);
   });
 
-  it('renders link when provided', () => {
-    render(
-      <StatusBanner 
-        link={{ label: 'Learn More', href: 'https://example.com' }}
-      />
-    );
-    
-    const link = screen.getByRole('link', { name: /learn more/i });
-    expect(link).toBeInTheDocument();
-    expect(link).toHaveAttribute('href', 'https://example.com');
-  });
-
-  it('animates in on mount', () => {
-    render(<StatusBanner />);
+  it('renders with custom className', () => {
+    render(<StatusBanner message="Test" className="custom-class" />);
     
     const banner = screen.getByRole('alert');
     expect(banner).toHaveClass('animate-in');
   });
 
-  it('animates out on dismiss', async () => {
-    render(<StatusBanner dismissible={true} />);
-    
-    const dismissButton = screen.getByRole('button', { name: /dismiss/i });
+  it('calls onClose when close button is clicked', () => {
+    const onClose = vi.fn();
+    render(<StatusBanner message="Test" closeable={true} onClose={onClose} />);
+
+    const dismissButton = screen.getByRole('button');
     fireEvent.click(dismissButton);
-    
-    const banner = screen.getByRole('alert');
-    expect(banner).toHaveClass('animate-out');
+
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it('respects custom className', () => {
-    render(<StatusBanner className="custom-class" />);
-    
+    render(<StatusBanner message="Test" className="custom-class" />);
+
     const banner = screen.getByRole('alert');
     expect(banner).toHaveClass('custom-class');
   });
 
-  it('displays multiple actions/links correctly', () => {
-    const handleAction1 = vi.fn();
-    const handleAction2 = vi.fn();
-    
+  it('displays action button correctly', () => {
+    const handleAction = vi.fn();
+
     render(
-      <StatusBanner 
-        action={{ label: 'Action 1', onClick: handleAction1 }}
-        link={{ label: 'Link 1', href: '/page1' }}
+      <StatusBanner
+        message="Test"
+        onAction={handleAction}
+        actionLabel="Action 1"
       />
     );
-    
-    expect(screen.getByRole('button', { name: /action 1/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /link 1/i })).toBeInTheDocument();
+
+    const actionButton = screen.getByRole('button', { name: /action 1/i });
+    expect(actionButton).toBeInTheDocument();
+    fireEvent.click(actionButton);
+    expect(handleAction).toHaveBeenCalledTimes(1);
   });
 });

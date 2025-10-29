@@ -129,8 +129,7 @@ export default function SettingsPage() {
 
   const updateSettingsMutation = useMutation<UpdateSettingsResponse, ApiError, UserSettingsPayload>({
     mutationFn: async (settings) => {
-      const response = await apiRequest('PATCH', '/api/user/settings', settings);
-      return response.json() as Promise<UpdateSettingsResponse>;
+      return await apiRequest<UpdateSettingsResponse>('PATCH', '/api/user/settings', settings);
     },
     onSuccess: (data) => {
       queryClient.setQueryData<UserSettingsResponse>(['/api/user/settings'], data.settings);
@@ -160,8 +159,7 @@ export default function SettingsPage() {
 
   const updateProfileMutation = useMutation<UpdateProfileResponse, ApiError, UpdateProfilePayload>({
     mutationFn: async (payload) => {
-      const response = await apiRequest('PUT', '/api/users/profile', payload);
-      return response.json() as Promise<UpdateProfileResponse>;
+      return await apiRequest<UpdateProfileResponse>('PUT', '/api/users/profile', payload);
     },
     onSuccess: (data) => {
       const normalizedUsername = data.profile.username ?? displayName;
@@ -224,8 +222,7 @@ export default function SettingsPage() {
 
   const exportDataMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('GET', '/api/user/export');
-      return response.json();
+      return await apiRequest<unknown>('GET', '/api/user/export');
     },
     onSuccess: (data) => {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });

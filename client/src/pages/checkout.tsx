@@ -186,11 +186,10 @@ export default function Checkout() {
     // Create subscription payment intent
     const setupPayment = async () => {
       try {
-        const response = await apiRequest("POST", "/api/create-subscription", {
+        const data = await apiRequest<{ clientSecret?: string; error?: string }>("POST", "/api/create-subscription", {
           plan,
           amount: plan === 'pro' ? 2499 : 1399 // in cents
         });
-        const data = await response.json();
 
         if (data.clientSecret) {
           setClientSecret(data.clientSecret);
