@@ -435,7 +435,9 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
       `${API_PREFIX}/uploads/imgur`,        // Exempt Imgur uploads from CSRF
       `${API_PREFIX}/upload/catbox-proxy`,  // Exempt Catbox proxy from CSRF
       `${API_PREFIX}/catbox/`,              // Exempt all Catbox endpoints from CSRF
-      `${API_PREFIX}/caption/`              // Exempt caption generation from CSRF
+      `${API_PREFIX}/caption/`,             // Exempt caption generation from CSRF
+      `${API_PREFIX}/analytics/events`,     // Exempt visitor analytics tracking from CSRF
+      `${API_PREFIX}/media/upload`          // Exempt media uploads from CSRF
     ];
 
     const isExempt = exemptPaths.some((path) => req.path.startsWith(path));
