@@ -2,6 +2,7 @@ import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { uploadLimiter } from '../middleware/security.js';
 import { MediaManager } from '../lib/media.js';
+import * as ImgurService from '../services/imgur-uploader.js';
 import { ImgboxService } from '../lib/imgbox-service.js';
 import { PostImagesService } from '../lib/postimages-service.js';
 import { SimpleImageUpload } from '../lib/simple-image-upload.js';
@@ -85,44 +86,71 @@ router.post('/upload', uploadLimiter, authenticateToken(true), upload.single('fi
     let imageUrl: string;
     let thumbnailUrl: string | undefined;
     let provider: string = 'unknown';
-    
-    // Try Imgbox first
+
+    // Try Imgur first (PRIMARY - required for legal compliance)
     try {
-      const imgboxResult = await ImgboxService.upload({
+      const imgurResult = await ImgurService.uploadAnonymousToImgur(
         buffer,
-        filename: req.file.originalname,
-        contentType: req.file.mimetype,
-        nsfw: true,
+        req.file.originalname,
+        true // markMature for NSFW content
+      );
+
+      logger.debug('Imgur result:', {
+        hasLink: !!imgurResult.link,
+        link: imgurResult.link,
+        deleteHash: imgurResult.deleteHash,
       });
-      
-      logger.debug('Imgbox result:', {
-        success: imgboxResult.success,
-        hasUrl: !!imgboxResult.url,
-        url: imgboxResult.url,
-        thumbnailUrl: imgboxResult.thumbnailUrl,
-        error: imgboxResult.error,
-      });
-      
-      if (imgboxResult.success && imgboxResult.url) {
-        imageUrl = imgboxResult.url;
-        thumbnailUrl = imgboxResult.thumbnailUrl;
-        provider = 'imgbox';
-        logger.info(`Media uploaded to Imgbox successfully: ${req.file.originalname}`, {
+
+      if (imgurResult.link) {
+        imageUrl = imgurResult.link;
+        thumbnailUrl = imgurResult.link; // Imgur doesn't provide separate thumbnail
+        provider = 'imgur';
+        logger.info(`Media uploaded to Imgur successfully: ${req.file.originalname}`, {
           url: imageUrl,
-          thumbnailUrl,
         });
-      } else if (imgboxResult.success && !imgboxResult.url) {
-        // This is the "upload succeeded but no url provided" case
-        logger.error('CRITICAL: Imgbox reported success but no URL provided', {
-          result: imgboxResult,
-          resultKeys: Object.keys(imgboxResult),
-        });
-        throw new Error('Imgbox upload succeeded but no URL provided');
       } else {
-        throw new Error(imgboxResult.error || 'Imgbox upload failed');
+        throw new Error('Imgur upload succeeded but no link provided');
       }
-    } catch (imgboxError) {
-      logger.warn('Imgbox upload failed, trying PostImages:', imgboxError);
+    } catch (imgurError) {
+      logger.warn('Imgur upload failed, trying Imgbox:', imgurError);
+
+      // Fallback to Imgbox
+      try {
+        const imgboxResult = await ImgboxService.upload({
+          buffer,
+          filename: req.file.originalname,
+          contentType: req.file.mimetype,
+          nsfw: true,
+        });
+
+        logger.debug('Imgbox result:', {
+          success: imgboxResult.success,
+          hasUrl: !!imgboxResult.url,
+          url: imgboxResult.url,
+          thumbnailUrl: imgboxResult.thumbnailUrl,
+          error: imgboxResult.error,
+        });
+
+        if (imgboxResult.success && imgboxResult.url) {
+          imageUrl = imgboxResult.url;
+          thumbnailUrl = imgboxResult.thumbnailUrl;
+          provider = 'imgbox';
+          logger.info(`Media uploaded to Imgbox successfully: ${req.file.originalname}`, {
+            url: imageUrl,
+            thumbnailUrl,
+          });
+        } else if (imgboxResult.success && !imgboxResult.url) {
+          // This is the "upload succeeded but no url provided" case
+          logger.error('CRITICAL: Imgbox reported success but no URL provided', {
+            result: imgboxResult,
+            resultKeys: Object.keys(imgboxResult),
+          });
+          throw new Error('Imgbox upload succeeded but no URL provided');
+        } else {
+          throw new Error(imgboxResult.error || 'Imgbox upload failed');
+        }
+      } catch (imgboxError) {
+        logger.warn('Imgbox upload failed, trying PostImages:', imgboxError);
       
       // Fallback to PostImages
       try {
@@ -232,8 +260,9 @@ router.post('/upload', uploadLimiter, authenticateToken(true), upload.single('fi
           }
         }
       }
+      }
     }
-    
+
     // Clean up temp file immediately
     await fs.unlink(req.file.path).catch(() => {});
 
