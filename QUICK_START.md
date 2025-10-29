@@ -5,7 +5,7 @@
 
 - Node.js 20+
 - PostgreSQL 15+
-- Redis (for queue system)
+- Redis or Valkey (for queue system)
 - Git
 
 ## Step 1: Clone & Install (2 min)

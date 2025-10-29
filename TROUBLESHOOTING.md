@@ -153,7 +153,7 @@ npm run lint -- --fix
 **Check:**
 1. All environment variables set?
 2. Database migrations applied?
-3. Redis running for queue?
+3. Redis/Valkey running for queue?
 4. Check browser console for errors
 
 ### TypeScript Errors in IDE but Build Works
@@ -203,14 +203,14 @@ SELECT reddit_access_token FROM users WHERE id = YOUR_USER_ID;
 ### Scheduled Posts Not Posting
 
 **Check:**
-1. Redis running? `redis-cli ping` should return "PONG"
+1. Redis/Valkey running? `redis-cli ping` should return "PONG"
 2. Queue worker running? Check logs for "Scheduler worker started"
 3. Job in database? Check `scheduled_posts` table
 4. Future time? Can't schedule in the past
 
 **Debug:**
 ```bash
-# Check Redis
+# Check Redis/Valkey
 redis-cli
 > KEYS *
 
@@ -279,7 +279,7 @@ Open browser DevTools -> Network tab
 1. Database indexes exist?
 2. N+1 query problem?
 3. Missing pagination?
-4. Redis cache being used?
+4. Redis/Valkey cache being used?
 
 **Solution:**
 ```sql
@@ -438,7 +438,7 @@ psql thottopilot -c "SELECT COUNT(*) FROM users"
 ### Queue System Down
 
 ```bash
-# 1. Check Redis
+# 1. Check Redis/Valkey
 redis-cli ping
 
 # 2. Clear failed jobs

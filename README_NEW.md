@@ -42,7 +42,7 @@ A modern, full-stack Reddit content management platform for adult content creato
 
 **Frontend:** React 18 + TypeScript + Wouter + React Query + Tailwind CSS  
 **Backend:** Express.js + TypeScript + Drizzle ORM + PostgreSQL  
-**Queue:** Bull (Redis) for background jobs  
+**Queue:** Bull (Valkey - Redis-compatible) for background jobs  
 **AI:** OpenRouter API (Grok-4-Fast primary)  
 **Deployment:** Render.com
 

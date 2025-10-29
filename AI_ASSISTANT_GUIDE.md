@@ -53,7 +53,7 @@ ThottoPilot is a **professional content management platform** for adult content 
 │  /server/*                                  │
 │                                             │
 │  ┌──────────────────────────────────────┐  │
-│  │  Queue System (Bull + Redis)         │  │
+│  │  Queue System (Bull + Valkey)        │  │
 │  │  - Scheduled posts                   │  │
 │  │  - Caption generation                │  │
 │  │  - Analytics processing              │  │
@@ -71,7 +71,7 @@ ThottoPilot is a **professional content management platform** for adult content 
 - **Express Backend:** Mature, stable, excellent for REST APIs
 - **React Frontend:** Component-based, rich ecosystem
 - **Wouter Routing:** Lightweight (1.2KB), fast client-side routing
-- **Bull Queue:** Reliable job processing with Redis
+- **Bull Queue:** Reliable job processing with Valkey (Redis-compatible)
 - **Drizzle ORM:** Type-safe SQL with excellent TypeScript support
 
 ---
@@ -94,7 +94,7 @@ ThottoPilot is a **professional content management platform** for adult content 
 - **Language:** TypeScript
 - **Database:** PostgreSQL 15+
 - **ORM:** Drizzle ORM
-- **Queue:** Bull (Redis-based)
+- **Queue:** Bull (Valkey - Redis-compatible)
 - **Authentication:** JWT + Passport.js
 - **Logging:** Winston
 - **Validation:** Zod
@@ -108,7 +108,7 @@ ThottoPilot is a **professional content management platform** for adult content 
 ### **DevOps**
 - **Deployment:** Render.com
 - **Database:** Render PostgreSQL
-- **Redis:** Render Redis
+- **Redis:** Valkey (Render - Redis-compatible)
 - **CI/CD:** GitHub Actions (optional)
 - **Monitoring:** Sentry (configured, needs DSN)
 
