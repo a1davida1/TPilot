@@ -10,10 +10,10 @@ export function ThemeToggle() {
     <Button
       variant="ghost"
       size="icon"
-      onClick={() => setTheme(resolvedTheme === "light" ? "dark" : "light")}
+      onClick={() => setTheme(resolvedTheme === "bubblegum-pink" ? "midnight-rose" : "bubblegum-pink")}
       className="h-9 w-9 rounded-full border-2 border-transparent hover:border-primary/20 hover:bg-primary/10 dark:hover:bg-primary/20 transition-all duration-300 ease-in-out hover:scale-105 active:scale-95"
       data-testid="theme-toggle"
-      aria-label={`Switch to ${resolvedTheme === "light" ? "dark" : "light"} mode`}
+      aria-label={`Switch to ${resolvedTheme === "bubblegum-pink" ? "dark" : "light"} mode`}
     >
       <div className="relative flex items-center justify-center">
         <Sun className="h-4 w-4 rotate-0 scale-100 transition-all duration-300 ease-in-out dark:-rotate-90 dark:scale-0 text-primary" />

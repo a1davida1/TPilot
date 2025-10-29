@@ -6,11 +6,12 @@ import { act } from "react"
 
 import { ThemeProvider, useTheme } from "./theme-provider"
 
-type Theme = "light" | "dark" | "system"
+type Theme = "bubblegum-pink" | "midnight-rose" | "system"
+type ThemeName = "bubblegum-pink" | "midnight-rose"
 
 type Snapshot = {
   theme: Theme
-  resolvedTheme: "light" | "dark"
+  resolvedTheme: ThemeName
 }
 
 const flushEffects = async () => {
@@ -125,7 +126,7 @@ describe("ThemeProvider", () => {
       return snapshot
     }
 
-    localStorage.setItem(storageKey, "dark")
+    localStorage.setItem(storageKey, "midnight-rose")
 
     function Consumer() {
       const context = useTheme()
@@ -148,18 +149,18 @@ describe("ThemeProvider", () => {
 
     await flushEffects()
 
-    expect(getLatestSnapshot()).toEqual({ theme: "dark", resolvedTheme: "dark" })
-    expect(localStorage.getItem(storageKey)).toBe("dark")
+    expect(getLatestSnapshot()).toEqual({ theme: "midnight-rose", resolvedTheme: "midnight-rose" })
+    expect(localStorage.getItem(storageKey)).toBe("midnight-rose")
     expect(document.documentElement.classList.contains("dark")).toBe(true)
 
     await act(async () => {
-      requireSetTheme()("light")
+      requireSetTheme()("bubblegum-pink")
     })
 
     await flushEffects()
 
-    expect(getLatestSnapshot()).toEqual({ theme: "light", resolvedTheme: "light" })
-    expect(localStorage.getItem(storageKey)).toBe("light")
+    expect(getLatestSnapshot()).toEqual({ theme: "bubblegum-pink", resolvedTheme: "bubblegum-pink" })
+    expect(localStorage.getItem(storageKey)).toBe("bubblegum-pink")
     expect(document.documentElement.classList.contains("light")).toBe(true)
 
     systemPrefersDark = true
@@ -170,19 +171,19 @@ describe("ThemeProvider", () => {
 
     await flushEffects()
 
-    expect(getLatestSnapshot()).toEqual({ theme: "system", resolvedTheme: "dark" })
+    expect(getLatestSnapshot()).toEqual({ theme: "system", resolvedTheme: "midnight-rose" })
     expect(localStorage.getItem(storageKey)).toBe("system")
     expect(document.documentElement.classList.contains("dark")).toBe(true)
 
     systemPrefersDark = false
-    
+
     await act(async () => {
       emitSystemChange()
     })
 
     await flushEffects()
 
-    expect(getLatestSnapshot()).toEqual({ theme: "system", resolvedTheme: "light" })
+    expect(getLatestSnapshot()).toEqual({ theme: "system", resolvedTheme: "bubblegum-pink" })
     expect(document.documentElement.classList.contains("light")).toBe(true)
   })
 })
