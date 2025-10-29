@@ -78,6 +78,28 @@ function isLikelyJson(contentType: string | null): boolean {
   return /json|javascript|text\/plain/i.test(contentType);
 }
 
+function normalizeContentType(contentType: string | undefined): string {
+  if (!contentType) {
+    return 'image/jpeg';
+  }
+
+  // Normalize common MIME types to what Imgbox accepts
+  const normalized = contentType.toLowerCase().trim();
+
+  // Map of accepted types
+  const acceptedTypes: Record<string, string> = {
+    'image/jpeg': 'image/jpeg',
+    'image/jpg': 'image/jpeg',
+    'image/png': 'image/png',
+    'image/gif': 'image/gif',
+    'image/webp': 'image/webp',
+    'image/bmp': 'image/bmp',
+  };
+
+  // Return normalized type or default to jpeg
+  return acceptedTypes[normalized] || 'image/jpeg';
+}
+
 export class ImgboxService {
   private static tokenCache: ImgboxToken | null = null;
 
@@ -384,12 +406,18 @@ export class ImgboxService {
       
       // STEP 1: Upload the file first
       logger.debug('Step 1: Uploading file to Imgbox...');
+      const normalizedContentType = normalizeContentType(options.contentType);
+      logger.debug('Normalized content type', {
+        original: options.contentType,
+        normalized: normalizedContentType
+      });
+
       const fileForm = new FormData();
       fileForm.append('utf8', '✓');
       fileForm.append('authenticity_token', token.token);
       fileForm.append('files[]', options.buffer, {
         filename,
-        contentType: options.contentType || 'image/jpeg',
+        contentType: normalizedContentType,
       });
       
       const { body: fileBody, headers: fileHeaders } = this.prepareRequest(fileForm);
