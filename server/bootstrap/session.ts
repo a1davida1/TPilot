@@ -103,7 +103,7 @@ export function createSessionMiddleware(): ReturnType<typeof session> {
     logger.info(`Session store: Redis URL found, USE_PG_QUEUE=${usePgQueue}`);
     const redisClient = new Redis(redisUrl, {
       lazyConnect: false,        // Connect immediately on startup
-      maxRetriesPerRequest: 3,   // Increased retries for better reliability
+      maxRetriesPerRequest: null, // Must be null for compatibility with connect-redis
       enableAutoPipelining: true,
       enableOfflineQueue: true,  // Allow commands to queue while connecting
       retryStrategy: (times) => {
