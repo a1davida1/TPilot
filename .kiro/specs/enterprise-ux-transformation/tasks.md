@@ -48,7 +48,7 @@ This plan breaks down the enterprise UX transformation into discrete, manageable
 
 ## Phase 2: Navigation System
 
-- [ ] 2. Implement workflow-based navigation structure
+- [x] 2. Implement workflow-based navigation structure
   - Create `client/src/components/navigation/WorkflowNavigation.tsx` for header dropdowns
   - Use existing `workflowBuckets` from `config/navigation.ts`
   - Implement dropdown menus for Create, Protect, Schedule, Analyze
@@ -57,7 +57,7 @@ This plan breaks down the enterprise UX transformation into discrete, manageable
   - Filter routes based on user tier (free/pro/premium)
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
-- [ ] 2.1 Create enhanced sidebar for desktop
+- [x] 2.1 Create enhanced sidebar for desktop
   - Create `client/src/components/navigation/WorkflowSidebar.tsx`
   - Display 4 workflow sections with collapsible sub-items
   - Highlight active route with pink accent
@@ -66,7 +66,7 @@ This plan breaks down the enterprise UX transformation into discrete, manageable
   - Make sidebar sticky on scroll
   - _Requirements: 1.1, 1.7_
 
-- [ ] 2.2 Implement mobile hamburger menu
+- [x] 2.2 Implement mobile hamburger menu
   - Update `client/src/components/header-enhanced.tsx` mobile menu
   - Use existing Sheet component for slide-over
   - Display same 4-section structure as desktop
@@ -74,7 +74,7 @@ This plan breaks down the enterprise UX transformation into discrete, manageable
   - Ensure touch targets are 44x44px minimum
   - _Requirements: 1.6_
 
-- [ ] 2.3 Add breadcrumb navigation (desktop only)
+- [x] 2.3 Add breadcrumb navigation (desktop only)
   - Create `client/src/components/navigation/Breadcrumbs.tsx`
   - Use existing `ui/breadcrumb.tsx` component
   - Generate breadcrumbs from current route
@@ -82,7 +82,7 @@ This plan breaks down the enterprise UX transformation into discrete, manageable
   - Truncate long paths with ellipsis
   - _Requirements: 5.1, 5.2, 5.3, 5.6_
 
-- [ ] 2.4 Implement mobile back button
+- [x] 2.4 Implement mobile back button
   - Add contextual back button to mobile header
   - Navigate to parent route (not browser history)
   - Hide on top-level pages
@@ -125,27 +125,6 @@ This plan breaks down the enterprise UX transformation into discrete, manageable
 
 ---
 
-## Phase 4: Floating Action Button & Command Palette
-
-- [ ] 4. Add keyboard shortcut to existing FAB
-  - Update `client/src/components/ui/floating-action-button.tsx`
-  - Add Cmd+N / Ctrl+N keyboard listener
-  - Open FAB popover on shortcut press
-  - Add tooltip showing "Cmd+N" on hover
-  - _Requirements: 3.4, 3.7_
-
-- [ ] 4.1 Ensure FAB hides on creation pages
-  - Update FAB to check current route
-  - Hide on `/quick-post`, `/bulk-caption`, `/post-scheduling`
-  - Show on all other pages
-  - _Requirements: 3.6_
-
-- [ ] 4.2 Verify Command Palette integration
-  - Ensure `client/src/components/ui/command-palette.tsx` is imported in App.tsx
-  - Test Cmd+K shortcut opens palette
-  - Verify all navigation items appear
-  - Test keyboard navigation (arrows, enter, escape)
-  - _Requirements: 10.1, 10.2, 10.4_
 
 ---
 
