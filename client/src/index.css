@@ -22,7 +22,38 @@
 
 @layer base {
   :root {
-    /* Light Mode - Clean & Minimal */
+    /* Theme System Variables - Bubblegum Pink (Light) */
+    /* These are set by the ThemeProvider and override based on selected theme */
+    --background-primary: #FFFFFF;
+    --background-secondary: #F9FAFB;
+    --background-tertiary: #F3F4F6;
+    
+    --surface-primary: #FFFFFF;
+    --surface-secondary: #FFF1F2;
+    --surface-elevated: #FFFFFF;
+    --surface-glass: rgba(255, 255, 255, 0.8);
+    
+    --text-primary: #111827;
+    --text-secondary: #4B5563;
+    --text-tertiary: #6B7280;
+    --text-disabled: #9CA3AF;
+    
+    --border-subtle: #F3F4F6;
+    --border-light: #E5E7EB;
+    --border-medium: #D1D5DB;
+    --border-strong: #9CA3AF;
+    
+    --interactive-hover: #FFF1F2;
+    --interactive-active: #FCE7F3;
+    --interactive-focus: #EC4899;
+    
+    --shadow-sm: rgba(0, 0, 0, 0.05);
+    --shadow-md: rgba(0, 0, 0, 0.1);
+    --shadow-lg: rgba(0, 0, 0, 0.15);
+    --shadow-xl: rgba(0, 0, 0, 0.2);
+    --shadow-pink: rgba(236, 72, 153, 0.3);
+    
+    /* Legacy Light Mode - Clean & Minimal */
     --background: 0 0 100;
     --foreground: 0 0 11;
     
@@ -75,8 +106,39 @@
     --sidebar-ring: 211 100 50;
   }
 
-  .dark {
-    /* Dark Mode - Elegant */
+  .dark,
+  .midnight-rose {
+    /* Theme System Variables - Midnight Rose (Dark) */
+    --background-primary: #0F0F0F;
+    --background-secondary: #1A1A1A;
+    --background-tertiary: #262626;
+    
+    --surface-primary: #1A1A1A;
+    --surface-secondary: #262626;
+    --surface-elevated: #2D2D2D;
+    --surface-glass: rgba(26, 26, 26, 0.8);
+    
+    --text-primary: #F9FAFB;
+    --text-secondary: #D1D5DB;
+    --text-tertiary: #9CA3AF;
+    --text-disabled: #6B7280;
+    
+    --border-subtle: #262626;
+    --border-light: #404040;
+    --border-medium: #525252;
+    --border-strong: #737373;
+    
+    --interactive-hover: #2D2D2D;
+    --interactive-active: #333333;
+    --interactive-focus: #F472B6;
+    
+    --shadow-sm: rgba(0, 0, 0, 0.3);
+    --shadow-md: rgba(0, 0, 0, 0.4);
+    --shadow-lg: rgba(0, 0, 0, 0.5);
+    --shadow-xl: rgba(0, 0, 0, 0.6);
+    --shadow-pink: rgba(244, 114, 182, 0.4);
+    
+    /* Legacy Dark Mode - Elegant */
     --background: 0 0 7;
     --foreground: 0 0 95;
     
@@ -1334,6 +1396,70 @@ button, .btn, nav {
 .stagger-3 { animation-delay: 0.3s; }
 .stagger-4 { animation-delay: 0.4s; }
 .stagger-5 { animation-delay: 0.5s; }
+
+/* Theme-Aware Utility Classes */
+.bg-theme-primary {
+  background-color: var(--background-primary);
+}
+
+.bg-theme-secondary {
+  background-color: var(--background-secondary);
+}
+
+.bg-theme-tertiary {
+  background-color: var(--background-tertiary);
+}
+
+.bg-surface-primary {
+  background-color: var(--surface-primary);
+}
+
+.bg-surface-secondary {
+  background-color: var(--surface-secondary);
+}
+
+.bg-surface-elevated {
+  background-color: var(--surface-elevated);
+}
+
+.text-theme-primary {
+  color: var(--text-primary);
+}
+
+.text-theme-secondary {
+  color: var(--text-secondary);
+}
+
+.text-theme-tertiary {
+  color: var(--text-tertiary);
+}
+
+.border-theme-light {
+  border-color: var(--border-light);
+}
+
+.border-theme-medium {
+  border-color: var(--border-medium);
+}
+
+.hover\:bg-interactive-hover:hover {
+  background-color: var(--interactive-hover);
+}
+
+.active\:bg-interactive-active:active {
+  background-color: var(--interactive-active);
+}
+
+.focus\:ring-interactive-focus:focus {
+  --tw-ring-color: var(--interactive-focus);
+}
+
+/* Theme transition for smooth switching */
+.theme-transition {
+  transition: background-color 500ms cubic-bezier(0.4, 0, 0.2, 1),
+              color 500ms cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
 
 /* Premium Loading States */
 .loading-shimmer {

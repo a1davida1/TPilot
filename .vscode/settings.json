@@ -19,6 +19,7 @@
         "git status",
         "git pull --rebase origin main",
         "git diff .vscode/settings.json",
-        "git *"
+        "git *",
+        "npm run typecheck 2>&1 | head -50"
     ]
 }
