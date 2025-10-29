@@ -16,15 +16,14 @@ export function getQueueBackend(): IQueue {
     return queueInstance;
   }
 
-  // Check if USE_PG_QUEUE is explicitly set via environment
-  const forceUsePg = process.env.USE_PG_QUEUE === 'true' || env.USE_PG_QUEUE;
-  
-  logger.info(`Queue backend selection: USE_PG_QUEUE=${forceUsePg}, REDIS_URL=${!!env.REDIS_URL}`);
-  
-  // Determine which backend to use
-  const shouldUseRedis = !forceUsePg && env.REDIS_URL;
+  // Check if USE_PG_QUEUE is explicitly set via environment variable
+  // Default to PostgreSQL only if Redis is not available OR explicitly requested
+  const usePgQueue = process.env.USE_PG_QUEUE === 'true' || !env.REDIS_URL;
 
-  if (shouldUseRedis && env.REDIS_URL) {
+  logger.info(`Queue backend selection: USE_PG_QUEUE=${process.env.USE_PG_QUEUE}, REDIS_URL=${!!env.REDIS_URL}, computed=${usePgQueue}`);
+
+  // Use Redis/BullMQ if Redis is available and PG queue not explicitly requested
+  if (env.REDIS_URL && process.env.USE_PG_QUEUE !== 'true') {
     logger.info('🚀 Attempting to use Redis BullMQ queue backend');
     queueInstance = new RedisBullQueue(env.REDIS_URL);
   } else {
