@@ -23,9 +23,9 @@ export class RedisBullQueue implements IQueue {
     logger.info('🚀 Initializing Redis BullMQ Queue backend');
     // Create Redis connection during initialization, not constructor
     this.redis = new IORedis(this.redisUrl, {
-      maxRetriesPerRequest: 3,
-      enableOfflineQueue: true,  // Allow commands to queue while connecting
-      lazyConnect: false,        // Connect immediately
+      maxRetriesPerRequest: null,  // BullMQ requires this to be null
+      enableOfflineQueue: true,    // Allow commands to queue while connecting
+      lazyConnect: false,          // Connect immediately
       retryStrategy: (times) => {
         if (times > 3) {
           logger.error('Redis connection failed after 3 retries');
