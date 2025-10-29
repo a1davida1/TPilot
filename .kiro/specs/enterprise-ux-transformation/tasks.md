@@ -371,7 +371,7 @@ App.tsx
 
 ## Phase 11: Onboarding & Help
 
-- [ ] 11. Create onboarding tour component
+- [x] 11. Create onboarding tour component
   - Create `client/src/components/onboarding/OnboardingTour.tsx`
   - Show welcome modal on first login
   - Guide through: Connect Reddit → Upload Image → Generate Caption → Post
@@ -379,14 +379,14 @@ App.tsx
   - Show "Next Steps" checklist after completion
   - _Requirements: 12.4, 12.5_
 
-- [ ] 11.1 Add contextual tooltips
+- [x] 11.1 Add contextual tooltips
   - Add tooltips to all new features
   - Show on first hover/focus
   - Store "seen" state in localStorage
   - Add "?" icon for help on complex features
   - _Requirements: 12.7_
 
-- [ ] 11.2 Create help menu
+- [x] 11.2 Create help menu
   - Add "Help" option to user menu
   - Link to documentation
   - Add "Replay Tutorial" option
