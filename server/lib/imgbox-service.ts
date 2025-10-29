@@ -415,6 +415,18 @@ export class ImgboxService {
       const fileForm = new FormData();
       fileForm.append('utf8', '✓');
       fileForm.append('authenticity_token', token.token);
+
+      // Imgbox required fields for adult content
+      fileForm.append('content_type', normalizedContentType);
+      fileForm.append('adult', options.nsfw ? '1' : '0');
+      fileForm.append('thumbnail_size', '350c'); // 350px constrained
+
+      // Optional: set gallery expiration (0 = never expire)
+      if (options.expirationDays) {
+        fileForm.append('gallery', options.expirationDays === 0 ? '0' : '1');
+        fileForm.append('gallery_expiry', String(options.expirationDays));
+      }
+
       fileForm.append('files[]', options.buffer, {
         filename,
         contentType: normalizedContentType,
