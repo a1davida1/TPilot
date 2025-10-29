@@ -324,10 +324,137 @@ export const redditPostOutcomes = pgTable("reddit_post_outcomes", {
   title: text("title"),
   upvotes: integer("upvotes").default(0).notNull(),
   views: integer("views").default(0).notNull(),
+  // Advanced analytics columns (added in 0002_analytics_tables)
+  removalReason: text("removal_reason"),
+  removalType: varchar("removal_type", { length: 50 }),
+  redditPostId: varchar("reddit_post_id", { length: 100 }),
+  detectedAt: timestamp("detected_at"),
+  timeUntilRemovalMinutes: integer("time_until_removal_minutes"),
+  commentCount: integer("comment_count").default(0),
+  avgCommentLength: doublePrecision("avg_comment_length"),
+  userReplied: boolean("user_replied").default(false),
+  anonymousProfileId: integer("anonymous_profile_id"),
+  postFlair: varchar("post_flair", { length: 255 }),
 }, (table) => ({
   userIndex: index("reddit_post_outcomes_user_idx").on(table.userId, table.occurredAt),
   statusIndex: index("reddit_post_outcomes_status_idx").on(table.status),
   subredditIndex: index("reddit_post_outcomes_subreddit_idx").on(table.subreddit),
+  redditPostIdIndex: index("idx_post_reddit_id").on(table.redditPostId),
+  removalIndex: index("idx_post_removal").on(table.removalType),
+  userSubredditIndex: index("idx_post_user_subreddit").on(table.userId, table.subreddit, table.occurredAt),
+}));
+
+// ==========================================
+// ADVANCED REDDIT ANALYTICS TABLES
+// ==========================================
+
+export const redditSyncStatus = pgTable("reddit_sync_status", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull().unique(),
+  lastSyncAt: timestamp("last_sync_at"),
+  lastSyncType: varchar("last_sync_type", { length: 20 }),
+  postsSynced: integer("posts_synced").default(0),
+  subredditsFound: integer("subreddits_found").default(0),
+  syncStatus: varchar("sync_status", { length: 20 }).default("never_synced"),
+  syncError: text("sync_error"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userIndex: index("idx_reddit_sync_status_user").on(table.userId),
+  lastSyncIndex: index("idx_reddit_sync_status_last_sync").on(table.lastSyncAt),
+}));
+
+export const subredditMetricsHistory = pgTable("subreddit_metrics_history", {
+  id: serial("id").primaryKey(),
+  subreddit: varchar("subreddit", { length: 100 }).notNull(),
+  members: integer("members").notNull(),
+  activeUsers: integer("active_users"),
+  postsPerDay: doublePrecision("posts_per_day"),
+  avgUpvotes: doublePrecision("avg_upvotes"),
+  recordedAt: timestamp("recorded_at").defaultNow(),
+}, (table) => ({
+  subredditTimeIndex: index("idx_subreddit_metrics_subreddit_time").on(table.subreddit, table.recordedAt),
+  recordedAtIndex: index("idx_subreddit_metrics_recorded_at").on(table.recordedAt),
+}));
+
+export const anonymousCreatorProfiles = pgTable("anonymous_creator_profiles", {
+  id: serial("id").primaryKey(),
+  anonymousId: varchar("anonymous_id", { length: 36 }).notNull().unique(),
+  tier: varchar("tier", { length: 20 }).notNull(),
+  accountAgeDays: integer("account_age_days"),
+  totalPosts: integer("total_posts").default(0),
+  totalUpvotes: integer("total_upvotes").default(0),
+  totalComments: integer("total_comments").default(0),
+  avgUpvotesPerPost: doublePrecision("avg_upvotes_per_post"),
+  successRate: doublePrecision("success_rate"),
+  topSubreddits: jsonb("top_subreddits"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  tierIndex: index("idx_anonymous_profiles_tier").on(table.tier),
+  successRateIndex: index("idx_anonymous_profiles_success_rate").on(table.successRate),
+}));
+
+export const subredditRelationships = pgTable("subreddit_relationships", {
+  id: serial("id").primaryKey(),
+  subredditA: varchar("subreddit_a", { length: 100 }).notNull(),
+  subredditB: varchar("subreddit_b", { length: 100 }).notNull(),
+  relationshipType: varchar("relationship_type", { length: 50 }).notNull(),
+  similarityScore: doublePrecision("similarity_score"),
+  sharedUsersCount: integer("shared_users_count"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  subredditAIndex: index("idx_subreddit_relationships_a").on(table.subredditA),
+  subredditBIndex: index("idx_subreddit_relationships_b").on(table.subredditB),
+  scoreIndex: index("idx_subreddit_relationships_score").on(table.similarityScore),
+  uniqueRelationship: unique("subreddit_relationships_unique").on(table.subredditA, table.subredditB, table.relationshipType),
+}));
+
+export const userSubredditPreferences = pgTable("user_subreddit_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  subreddit: varchar("subreddit", { length: 100 }).notNull(),
+  isFavorite: boolean("is_favorite").default(false),
+  isHidden: boolean("is_hidden").default(false),
+  customNotes: text("custom_notes"),
+  lastPostedAt: timestamp("last_posted_at"),
+  postCount: integer("post_count").default(0),
+  avgUpvotes: doublePrecision("avg_upvotes"),
+  successRate: doublePrecision("success_rate"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userIndex: index("idx_user_subreddit_prefs_user").on(table.userId),
+  subredditIndex: index("idx_user_subreddit_prefs_subreddit").on(table.subreddit),
+  favoriteIndex: index("idx_user_subreddit_prefs_favorite").on(table.userId, table.isFavorite),
+  uniqueUserSubreddit: unique("user_subreddit_preferences_unique").on(table.userId, table.subreddit),
+}));
+
+export const subredditModActivity = pgTable("subreddit_mod_activity", {
+  id: serial("id").primaryKey(),
+  subreddit: varchar("subreddit", { length: 100 }).notNull(),
+  modUsername: varchar("mod_username", { length: 100 }),
+  activityType: varchar("activity_type", { length: 50 }),
+  activityCount: integer("activity_count").default(1),
+  lastActivityAt: timestamp("last_activity_at").defaultNow(),
+  activityLevel: varchar("activity_level", { length: 20 }),
+  recordedAt: timestamp("recorded_at").defaultNow(),
+}, (table) => ({
+  subredditIndex: index("idx_mod_activity_subreddit").on(table.subreddit),
+  lastActivityIndex: index("idx_mod_activity_last_activity").on(table.lastActivityAt),
+}));
+
+export const userRuleViolations = pgTable("user_rule_violations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  subreddit: varchar("subreddit", { length: 100 }).notNull(),
+  ruleCategory: varchar("rule_category", { length: 100 }),
+  violationCount: integer("violation_count").default(1),
+  lastViolationAt: timestamp("last_violation_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIndex: index("idx_user_rule_violations_user").on(table.userId),
+  subredditIndex: index("idx_user_rule_violations_subreddit").on(table.userId, table.subreddit),
 }));
 
 // ==========================================
@@ -1726,3 +1853,153 @@ export type InsertRedditAccountAuditLog = z.infer<typeof insertRedditAuditLogSch
 // Analytics Materialized View Types (Migration 018)
 export type AnalyticsContentPerformanceDaily = typeof analyticsContentPerformanceDaily.$inferSelect;
 export type AnalyticsAiUsageDaily = typeof analyticsAiUsageDaily.$inferSelect;
+// =
+=========================================
+// ADVANCED REDDIT ANALYTICS TABLES
+// Migration: 0002_analytics_tables
+// ==========================================
+
+// Reddit Sync Status
+export const redditSyncStatus = pgTable("reddit_sync_status", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull().unique(),
+  lastSyncAt: timestamp("last_sync_at"),
+  lastSyncType: varchar("last_sync_type", { length: 20 }), // 'quick', 'deep', 'full'
+  postsSynced: integer("posts_synced").default(0),
+  subredditsFound: integer("subreddits_found").default(0),
+  syncStatus: varchar("sync_status", { length: 20 }).default("never_synced"), // 'never_synced', 'syncing', 'completed', 'failed'
+  syncError: text("sync_error"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userIdx: index("idx_reddit_sync_status_user").on(table.userId),
+  lastSyncIdx: index("idx_reddit_sync_status_last_sync").on(table.lastSyncAt),
+}));
+
+// Subreddit Metrics History (for trending detection)
+export const subredditMetricsHistory = pgTable("subreddit_metrics_history", {
+  id: serial("id").primaryKey(),
+  subreddit: varchar("subreddit", { length: 100 }).notNull(),
+  members: integer("members").notNull(),
+  activeUsers: integer("active_users"),
+  postsPerDay: doublePrecision("posts_per_day"),
+  avgUpvotes: doublePrecision("avg_upvotes"),
+  recordedAt: timestamp("recorded_at").defaultNow(),
+}, (table) => ({
+  subredditTimeIdx: index("idx_subreddit_metrics_subreddit_time").on(table.subreddit, table.recordedAt),
+  recordedAtIdx: index("idx_subreddit_metrics_recorded_at").on(table.recordedAt),
+}));
+
+// Anonymous Creator Profiles (GDPR-compliant benchmarking)
+export const anonymousCreatorProfiles = pgTable("anonymous_creator_profiles", {
+  id: serial("id").primaryKey(),
+  anonymousId: varchar("anonymous_id", { length: 36 }).notNull().unique(), // UUID
+  tier: varchar("tier", { length: 20 }).notNull(), // 'free', 'starter', 'pro', 'premium'
+  accountAgeDays: integer("account_age_days"),
+  totalPosts: integer("total_posts").default(0),
+  totalUpvotes: integer("total_upvotes").default(0),
+  totalComments: integer("total_comments").default(0),
+  avgUpvotesPerPost: doublePrecision("avg_upvotes_per_post"),
+  successRate: doublePrecision("success_rate"), // Percentage of posts with >50 upvotes
+  topSubreddits: jsonb("top_subreddits"), // Array of top 5 subreddits
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  tierIdx: index("idx_anonymous_profiles_tier").on(table.tier),
+  successRateIdx: index("idx_anonymous_profiles_success_rate").on(table.successRate),
+}));
+
+// Subreddit Relationships (for crosspost recommendations)
+export const subredditRelationships = pgTable("subreddit_relationships", {
+  id: serial("id").primaryKey(),
+  subredditA: varchar("subreddit_a", { length: 100 }).notNull(),
+  subredditB: varchar("subreddit_b", { length: 100 }).notNull(),
+  relationshipType: varchar("relationship_type", { length: 50 }).notNull(), // 'similar', 'complementary', 'crosspost_target'
+  similarityScore: doublePrecision("similarity_score"), // 0-1 score
+  sharedUsersCount: integer("shared_users_count"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  uniqueRelationship: unique().on(table.subredditA, table.subredditB, table.relationshipType),
+  subredditAIdx: index("idx_subreddit_relationships_a").on(table.subredditA),
+  subredditBIdx: index("idx_subreddit_relationships_b").on(table.subredditB),
+  scoreIdx: index("idx_subreddit_relationships_score").on(table.similarityScore),
+}));
+
+// User Subreddit Preferences
+export const userSubredditPreferences = pgTable("user_subreddit_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  subreddit: varchar("subreddit", { length: 100 }).notNull(),
+  isFavorite: boolean("is_favorite").default(false),
+  isHidden: boolean("is_hidden").default(false),
+  customNotes: text("custom_notes"),
+  lastPostedAt: timestamp("last_posted_at"),
+  postCount: integer("post_count").default(0),
+  avgUpvotes: doublePrecision("avg_upvotes"),
+  successRate: doublePrecision("success_rate"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  uniqueUserSubreddit: unique().on(table.userId, table.subreddit),
+  userIdx: index("idx_user_subreddit_prefs_user").on(table.userId),
+  subredditIdx: index("idx_user_subreddit_prefs_subreddit").on(table.subreddit),
+  favoriteIdx: index("idx_user_subreddit_prefs_favorite").on(table.userId, table.isFavorite),
+}));
+
+// Subreddit Mod Activity
+export const subredditModActivity = pgTable("subreddit_mod_activity", {
+  id: serial("id").primaryKey(),
+  subreddit: varchar("subreddit", { length: 100 }).notNull(),
+  modUsername: varchar("mod_username", { length: 100 }),
+  activityType: varchar("activity_type", { length: 50 }), // 'comment', 'removal', 'sticky', 'lock'
+  activityCount: integer("activity_count").default(1),
+  lastActivityAt: timestamp("last_activity_at").defaultNow(),
+  activityLevel: varchar("activity_level", { length: 20 }), // 'low', 'medium', 'high'
+  recordedAt: timestamp("recorded_at").defaultNow(),
+}, (table) => ({
+  subredditIdx: index("idx_mod_activity_subreddit").on(table.subreddit),
+  lastActivityIdx: index("idx_mod_activity_last_activity").on(table.lastActivityAt),
+}));
+
+// User Rule Violations
+export const userRuleViolations = pgTable("user_rule_violations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  subreddit: varchar("subreddit", { length: 100 }).notNull(),
+  ruleCategory: varchar("rule_category", { length: 100 }), // 'title_length', 'promotional_link', 'karma_requirement', etc.
+  violationCount: integer("violation_count").default(1),
+  lastViolationAt: timestamp("last_violation_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdx: index("idx_user_rule_violations_user").on(table.userId),
+  userSubredditIdx: index("idx_user_rule_violations_subreddit").on(table.userId, table.subreddit),
+}));
+
+// Extended reddit_post_outcomes columns (added via migration)
+// Note: These columns are added to the existing redditPostOutcomes table via ALTER TABLE
+// The table definition above already includes the base columns
+
+// Zod schemas for new tables
+export const insertRedditSyncStatusSchema = createInsertSchema(redditSyncStatus);
+export const insertSubredditMetricsHistorySchema = createInsertSchema(subredditMetricsHistory);
+export const insertAnonymousCreatorProfileSchema = createInsertSchema(anonymousCreatorProfiles);
+export const insertSubredditRelationshipSchema = createInsertSchema(subredditRelationships);
+export const insertUserSubredditPreferenceSchema = createInsertSchema(userSubredditPreferences);
+export const insertSubredditModActivitySchema = createInsertSchema(subredditModActivity);
+export const insertUserRuleViolationSchema = createInsertSchema(userRuleViolations);
+
+// TypeScript types
+export type RedditSyncStatus = typeof redditSyncStatus.$inferSelect;
+export type InsertRedditSyncStatus = typeof redditSyncStatus.$inferInsert;
+export type SubredditMetricsHistory = typeof subredditMetricsHistory.$inferSelect;
+export type InsertSubredditMetricsHistory = typeof subredditMetricsHistory.$inferInsert;
+export type AnonymousCreatorProfile = typeof anonymousCreatorProfiles.$inferSelect;
+export type InsertAnonymousCreatorProfile = typeof anonymousCreatorProfiles.$inferInsert;
+export type SubredditRelationship = typeof subredditRelationships.$inferSelect;
+export type InsertSubredditRelationship = typeof subredditRelationships.$inferInsert;
+export type UserSubredditPreference = typeof userSubredditPreferences.$inferSelect;
+export type InsertUserSubredditPreference = typeof userSubredditPreferences.$inferInsert;
+export type SubredditModActivity = typeof subredditModActivity.$inferSelect;
+export type InsertSubredditModActivity = typeof subredditModActivity.$inferInsert;
+export type UserRuleViolation = typeof userRuleViolations.$inferSelect;
+export type InsertUserRuleViolation = typeof userRuleViolations.$inferInsert;
