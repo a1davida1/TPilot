@@ -1,6 +1,25 @@
 # ThottoPilot
 
-A comprehensive social media content creation platform for adult content creators, featuring AI-powered caption generation, image protection, post scheduling, and multi-platform management across Reddit, Twitter, Instagram, and OnlyFans.
+A modern, full-stack Reddit content management platform for adult content creators.
+
+## 📚 Documentation Index
+
+**New to ThottoPilot? Start here:**
+
+1. **[QUICK_START.md](./QUICK_START.md)** - Get running in 10 minutes
+2. **[AI_ASSISTANT_GUIDE.md](./AI_ASSISTANT_GUIDE.md)** - Complete technical reference for AI assistants
+3. **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Common issues and solutions
+4. **[docs/PLATFORM_OVERVIEW.md](./docs/PLATFORM_OVERVIEW.md)** - Architecture overview
+5. **[docs/API_ENDPOINTS_STATUS.md](./docs/API_ENDPOINTS_STATUS.md)** - API reference
+
+## ✨ Features
+
+- 🤖 **AI-powered caption generation** - Grok-4-Fast for natural NSFW content
+- 📅 **Post scheduling** - Automate your Reddit strategy (Pro: 7 days, Premium: 30 days)
+- 📊 **Analytics dashboard** - Track performance, find best posting times
+- 🎯 **Subreddit recommendations** - AI suggests optimal communities
+- 🔒 **Content protection** - ImageShield watermarking (beta)
+- 🌐 **Multi-platform support** - Reddit now, Instagram/Twitter coming, and multi-platform management across Reddit, Twitter, Instagram, and OnlyFans.
 
 ---
 
