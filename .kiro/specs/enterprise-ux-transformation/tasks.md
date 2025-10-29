@@ -295,7 +295,7 @@ App.tsx
 
 ## Phase 8: Loading States & Empty States
 
-- [ ] 8. Add skeleton loaders to all pages
+- [x] 8. Add skeleton loaders to all pages
   - Use existing `ui/skeleton.tsx` and `ui/loading-states.tsx`
   - Add skeletons to dashboard (match card shapes)
   - Add skeletons to gallery (match image grid)
@@ -303,14 +303,14 @@ App.tsx
   - Replace spinners with skeletons everywhere
   - _Requirements: 11.1, 11.4_
 
-- [ ] 8.1 Create empty state component
+- [x] 8.1 Create empty state component
   - Create `client/src/components/ui/empty-state.tsx`
   - Include illustration, title, description, CTA button
   - Create variants for different contexts (no posts, no images, no data)
   - Add to gallery, schedule queue, analytics
   - _Requirements: 12.1, 12.2, 12.3_
 
-- [ ] 8.2 Add loading indicators to async actions
+- [x] 8.2 Add loading indicators to async actions
   - Show progress bars for uploads (determinate)
   - Show spinners for API calls (indeterminate)
   - Disable buttons during processing
