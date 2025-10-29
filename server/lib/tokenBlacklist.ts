@@ -6,10 +6,13 @@ let redis: Redis | null = null;
 if (process.env.REDIS_URL && process.env.USE_PG_QUEUE !== 'true') {
   try {
     redis = new Redis(process.env.REDIS_URL, {
-      maxRetriesPerRequest: 1,
-      enableOfflineQueue: false,
-      lazyConnect: true,
-      retryStrategy: () => null
+      maxRetriesPerRequest: 3,
+      enableOfflineQueue: true,  // Allow commands to queue while connecting
+      lazyConnect: false,        // Connect immediately on startup
+      retryStrategy: (times) => {
+        if (times > 3) return null; // Stop retrying after 3 attempts
+        return Math.min(times * 50, 2000); // Exponential backoff
+      }
     });
     redis.on('error', () => {
       // Silently handle errors - blacklist will use memory fallback
