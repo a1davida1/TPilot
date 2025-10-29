@@ -787,22 +787,22 @@ export default function QuickPostPage() {
           
           {/* Right Pane - Main Content */}
           <div className="flex-1 min-w-0">
-        <div className="mb-8 text-center">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <div className="p-2 bg-yellow-500 text-white rounded-full">
-              <Zap className="h-6 w-6" />
+            <div className="mb-8 text-center">
+              <div className="inline-flex items-center gap-2 mb-4">
+                <div className="p-2 bg-yellow-500 text-white rounded-full">
+                  <Zap className="h-6 w-6" />
+                </div>
+                <h1 className="text-3xl font-bold">Quick Post</h1>
+              </div>
+              <p className="text-muted-foreground">
+                Upload, generate captions, protect, and post in minutes
+              </p>
             </div>
-            <h1 className="text-3xl font-bold">Quick Post</h1>
-          </div>
-          <p className="text-muted-foreground">
-            Upload, generate captions, protect, and post in minutes
-          </p>
-        </div>
 
-        <Card>
-        <CardContent className="p-6">
-          {!posted ? (
-            <div className="space-y-6">
+            <Card>
+              <CardContent className="p-6">
+                {!posted ? (
+                  <div className="space-y-6">
               <div>
                 <div className="flex items-center gap-2 mb-4">
                   <Badge variant={imageUrl ? 'default' : 'outline'}>

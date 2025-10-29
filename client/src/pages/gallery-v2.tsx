@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { MobileOptimization } from '@/components/mobile-optimization-v2';
 import { StickyRail } from '@/components/ui/sticky-rail';
 import { ImageGallery } from '@/components/image-gallery';
@@ -12,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import {
@@ -52,13 +54,11 @@ export default function GalleryPage() {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [_showDatePicker, _setShowDatePicker] = useState(false);
 
-  // Mock data - replace with real API calls
-  const stats: GalleryStats = {
-    totalImages: 247,
-    protectedImages: 189,
-    totalViews: 12453,
-    storageUsed: '1.2 GB',
-  };
+  // Fetch real gallery stats from API
+  const { data: stats, isLoading: _statsLoading } = useQuery<GalleryStats>({
+    queryKey: ['/api/gallery/stats'],
+    staleTime: 60000, // Cache for 1 minute
+  });
 
   const availableSubreddits = [
     'r/FitAndNatural',
@@ -335,19 +335,19 @@ export default function GalleryPage() {
                     <div className="space-y-3">
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Total Images</span>
-                        <span className="font-semibold">{stats.totalImages}</span>
+                        <span className="font-semibold">{stats?.totalImages || 0}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Protected</span>
-                        <span className="font-semibold">{stats.protectedImages}</span>
+                        <span className="font-semibold">{stats?.protectedImages || 0}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Total Views</span>
-                        <span className="font-semibold">{stats.totalViews.toLocaleString()}</span>
+                        <span className="font-semibold">{(stats?.totalViews || 0).toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Storage Used</span>
-                        <span className="font-semibold">{stats.storageUsed}</span>
+                        <span className="font-semibold">{stats?.storageUsed || '0 MB'}</span>
                       </div>
                     </div>
                   </CardContent>

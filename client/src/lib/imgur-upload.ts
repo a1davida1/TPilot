@@ -112,14 +112,77 @@ export async function getImgurCredentials(): Promise<ImgurCredentials> {
 
   // Check if token is expired
   if (expiresAt && Date.now() >= parseInt(expiresAt, 10)) {
-    // TODO: Implement token refresh flow
-    throw new Error('Imgur token expired. Please reconnect your account.');
+    // Try to refresh the token
+    if (refreshToken) {
+      try {
+        const newTokens = await refreshImgurToken(refreshToken);
+        return {
+          accessToken: newTokens.accessToken,
+          refreshToken: newTokens.refreshToken,
+          expiresAt: newTokens.expiresAt
+        };
+      } catch (error) {
+        console.error('Failed to refresh Imgur token:', error);
+        throw new Error('Imgur token expired. Please reconnect your account.');
+      }
+    } else {
+      throw new Error('Imgur token expired. Please reconnect your account.');
+    }
   }
 
   return {
     accessToken,
     refreshToken: refreshToken ?? undefined,
     expiresAt: expiresAt ? parseInt(expiresAt, 10) : undefined
+  };
+}
+
+/**
+ * Refresh Imgur access token using refresh token
+ */
+async function refreshImgurToken(refreshToken: string): Promise<{
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: number;
+}> {
+  const clientId = import.meta.env.VITE_IMGUR_CLIENT_ID;
+  const clientSecret = import.meta.env.VITE_IMGUR_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new Error('Imgur OAuth credentials not configured');
+  }
+
+  const formData = new URLSearchParams();
+  formData.append('refresh_token', refreshToken);
+  formData.append('client_id', clientId);
+  formData.append('client_secret', clientSecret);
+  formData.append('grant_type', 'refresh_token');
+
+  const response = await fetch('https://api.imgur.com/oauth2/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: formData.toString()
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(`Failed to refresh token: ${error.error || response.statusText}`);
+  }
+
+  const data = await response.json();
+  
+  // Save new tokens
+  const expiresAt = Date.now() + (data.expires_in * 1000);
+  localStorage.setItem('imgur_access_token', data.access_token);
+  localStorage.setItem('imgur_refresh_token', data.refresh_token);
+  localStorage.setItem('imgur_expires_at', expiresAt.toString());
+
+  return {
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token,
+    expiresAt
   };
 }
 
