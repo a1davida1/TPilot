@@ -20,6 +20,7 @@
         "git pull --rebase origin main",
         "git diff .vscode/settings.json",
         "git *",
-        "npm run typecheck 2>&1 | head -50"
+        "npm run typecheck 2>&1 | head -50",
+        "git commit -m \"feat: Add enterprise UX transformation spec and theme system\n\n- Add comprehensive enterprise-ux-transformation spec (requirements, design, tasks)\n- Add advanced-reddit-analytics spec (requirements, design, tasks)\n- Implement Bubblegum Pink and Midnight Rose theme tokens\n- Add theme provider with auto-switching and localStorage persistence\n- Create theme switcher UI component\n- Update platform guide: fix Imgur (primary) / Imgbox (fallback) ordering\n- Complete Phase 1 of UX transformation (Theme System & Design Tokens)\""
     ]
 }
