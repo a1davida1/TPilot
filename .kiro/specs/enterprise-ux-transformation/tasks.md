@@ -321,21 +321,21 @@ App.tsx
 
 ## Phase 9: Error Handling & Recovery
 
-- [ ] 9. Implement error recovery flows
+- [x] 9. Implement error recovery flows
   - Add "Retry" button to all error states
   - Show specific error messages (not generic)
   - Provide recovery instructions
   - Auto-retry with exponential backoff for network errors
   - _Requirements: 11.3, 11.7_
 
-- [ ] 9.1 Add draft auto-save
+- [x] 9.1 Add draft auto-save
   - Save form state to localStorage every 30 seconds
   - Restore draft on page reload
   - Show "Draft saved" indicator
   - Add "Discard draft" option
   - _Requirements: 11.8_
 
-- [ ] 9.2 Implement offline detection
+- [x] 9.2 Implement offline detection
   - Show offline indicator when network lost
   - Queue actions for retry when back online
   - Display "You're offline" banner
