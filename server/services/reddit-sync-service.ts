@@ -432,6 +432,9 @@ export class RedditSyncService {
             over18: info.over18,
             description: info.public_description,
             publicDescription: info.public_description,
+            allowImages: true, // Default assumption, will be updated if rules fetched
+            allowVideos: true, // Default assumption
+            submissionType: 'any', // Default assumption
           },
           userId
         );

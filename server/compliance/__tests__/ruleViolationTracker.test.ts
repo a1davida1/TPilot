@@ -81,11 +81,22 @@ vi.mock('../../storage.js', () => {
         status: record.status,
         reason: record.reason,
         occurredAt: new Date(record.occurredAt),
-        // New required fields
+        // Required fields
         success: record.status === 'completed',
         title: null,
         upvotes: 0,
         views: 0,
+        // Analytics migration fields (0002_analytics_tables)
+        removalReason: null,
+        removalType: null,
+        redditPostId: null,
+        detectedAt: null,
+        timeUntilRemovalMinutes: null,
+        commentCount: 0,
+        avgCommentLength: null,
+        userReplied: false,
+        anonymousProfileId: null,
+        postFlair: null,
       }));
   };
 

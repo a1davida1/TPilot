@@ -405,6 +405,7 @@ export default function BulkCaptionPage() {
           imageUrl={editingImage.url}
           initialCaption={editingImage.caption}
           onSave={handleCaptionSave}
+          onCancel={() => setEditingImageId(null)}
         />
       )}
     </DndContext>

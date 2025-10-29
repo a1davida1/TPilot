@@ -271,7 +271,7 @@ export class HybridRedditClient {
 
       const result = {
         posts,
-        after: currentAfter,
+        after: currentAfter ?? null,
       };
 
       // Cache for 5 minutes

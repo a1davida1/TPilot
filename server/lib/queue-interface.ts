@@ -11,6 +11,13 @@ export interface QueueJobOptions {
   removeOnFail?: number;
 }
 
+export interface Job<T = unknown> {
+  id: string;
+  data: T;
+  attemptsMade?: number;
+  timestamp?: number;
+}
+
 export interface QueueJobHandler<T = unknown> {
   (payload: T, jobId: string): Promise<void>;
 }
@@ -100,6 +107,25 @@ export interface IQueue {
    * Clear queue (optional)
    */
   clearQueue?(queueName: string): Promise<void>;
+
+  /**
+   * Register a worker for processing jobs (optional, alternative to process())
+   */
+  registerWorker?<T = unknown>(
+    queueName: string,
+    handler: (job: Job<T>) => Promise<unknown>,
+    options?: QueueProcessOptions<T>
+  ): Promise<void>;
+
+  /**
+   * Get a specific job by ID (optional)
+   */
+  getJob?<T = unknown>(queueName: string, jobId: string): Promise<Job<T> | null>;
+
+  /**
+   * Cancel/remove a job (optional)
+   */
+  cancelJob?(queueName: string, jobId: string): Promise<void>;
 
   /**
    * Initialize the queue backend

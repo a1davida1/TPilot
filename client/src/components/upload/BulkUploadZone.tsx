@@ -104,7 +104,7 @@ export function BulkUploadZone({
 
       // Auto-generate caption if enabled
       if (autoGenerateCaptions) {
-        generateCaption(imageId, response.asset.url);
+        generateCaption(imageId, imageUrl);
       }
     } catch (error) {
       setUploadedImages((prev) =>
