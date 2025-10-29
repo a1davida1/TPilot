@@ -49,18 +49,17 @@ function incrementUsage(): number {
 }
 
 export async function uploadAnonymousToImgur(
-  buffer: Buffer, 
+  buffer: Buffer,
   filename: string,
   markMature = true
 ): Promise<ImgurUploadResult> {
-  const clientId = process.env.IMGUR_CLIENT_ID;
-  if (!clientId) {
-    throw new Error('IMGUR_CLIENT_ID not configured');
-  }
+  // Use public anonymous Client ID for anonymous uploads
+  // Falls back to env variable if set, otherwise uses public ID
+  const clientId = process.env.IMGUR_CLIENT_ID || '546c25a59c58ad7';
 
   const currentUsage = incrementUsage();
   const rateWarnThreshold = parseInt(process.env.IMGUR_RATE_WARN_THRESHOLD || '1000', 10);
-  
+
   if (currentUsage > rateWarnThreshold) {
     logger.warn('Approaching Imgur daily rate limit', { usage: currentUsage, threshold: rateWarnThreshold });
   }
@@ -70,7 +69,7 @@ export async function uploadAnonymousToImgur(
   form.append('type', 'file');
   form.append('title', filename);
   form.append('disable_audio', 'true');
-  
+
   if (markMature) {
     form.append('mature', 'true'); // Reduce moderation flags for NSFW content
   }
