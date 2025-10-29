@@ -28,13 +28,22 @@ export async function blacklistToken(token: string, ttlSeconds: number): Promise
   if (!redis) return;
   const sig = signatureFromToken(token);
   if (!sig) return;
-  await redis.setex(`bl:${sig}`, ttlSeconds, '1');
+  try {
+    await redis.setex(`bl:${sig}`, ttlSeconds, '1');
+  } catch {
+    // Redis unavailable, token blacklisting disabled
+  }
 }
 
 export async function isTokenBlacklisted(token: string): Promise<boolean> {
   if (!redis) return false;
   const sig = signatureFromToken(token);
   if (!sig) return false;
-  const exists = await redis.exists(`bl:${sig}`);
-  return exists === 1;
+  try {
+    const exists = await redis.exists(`bl:${sig}`);
+    return exists === 1;
+  } catch {
+    // Redis unavailable, assume token is not blacklisted
+    return false;
+  }
 }
