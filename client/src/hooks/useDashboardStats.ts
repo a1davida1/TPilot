@@ -71,26 +71,13 @@ export function useRecentActivity() {
     queryKey: ['dashboard-activity'],
     queryFn: async () => {
       try {
-        return await apiRequest<RecentActivity[]>('GET', '/api/dashboard/activity');
+        const response = await apiRequest<{ recentMedia: RecentActivity[] }>('GET', '/api/dashboard/activity');
+        // API returns { recentMedia: [] }, extract the array
+        return Array.isArray(response?.recentMedia) ? response.recentMedia : [];
       } catch (error) {
         console.error('Failed to fetch activity:', error);
-        // Return mock data as fallback
-        return [
-          {
-            id: '1',
-            type: 'post_scheduled',
-            title: 'New post scheduled',
-            description: 'Scheduled for r/gonewild',
-            timestamp: '2 hours ago',
-          },
-          {
-            id: '2',
-            type: 'caption_generated',
-            title: 'Caption generated',
-            description: 'New caption with 92% engagement score',
-            timestamp: '5 hours ago',
-          },
-        ];
+        // Return empty array as fallback
+        return [];
       }
     },
     staleTime: 30000, // Consider data fresh for 30 seconds
