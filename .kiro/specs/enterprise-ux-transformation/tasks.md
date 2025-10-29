@@ -202,7 +202,7 @@ App.tsx
 
 ## Phase 6: Bulk Upload & Drag-and-Drop Scheduling
 
-- [-] 6. Create bulk upload zone component
+- [x] 6. Create bulk upload zone component
   - Create `client/src/components/upload/BulkUploadZone.tsx`
   - Support drag-and-drop multiple files
   - Show upload progress for each file
@@ -226,7 +226,7 @@ App.tsx
   - Add "Save" and "Regenerate" buttons
   - _Requirements: 13.3_
 
-- [ ] 6.3 Create draggable image component
+- [x] 6.3 Create draggable image component
   - Create `client/src/components/scheduling/DraggableImage.tsx`
   - Use `@dnd-kit/core` for drag-and-drop
   - Show ghost preview while dragging
@@ -234,7 +234,7 @@ App.tsx
   - Disable drag if image not ready
   - _Requirements: 13.4_
 
-- [ ] 6.4 Create calendar drop zone component
+- [x] 6.4 Create calendar drop zone component
   - Create `client/src/components/scheduling/CalendarDropZone.tsx`
   - Extend existing `ui/calendar.tsx` component
   - Highlight valid drop zones on drag
@@ -242,7 +242,7 @@ App.tsx
   - Disable dates beyond tier limit
   - _Requirements: 13.4, 13.6, 13.7_
 
-- [ ] 6.5 Implement schedule modal
+- [x] 6.5 Implement schedule modal
   - Create `client/src/components/scheduling/ScheduleModal.tsx`
   - Open when image dropped on calendar
   - Show subreddit picker with search
@@ -251,7 +251,7 @@ App.tsx
   - Display staggered times (2-hour offset)
   - _Requirements: 13.5_
 
-- [ ] 6.6 Create three-pane bulk captioning page
+- [x] 6.6 Create three-pane bulk captioning page
   - Create or update `client/src/pages/bulk-captioning.tsx`
   - Left pane (20%): Upload zone with progress
   - Center pane (50%): Image library grid
@@ -259,7 +259,7 @@ App.tsx
   - Stack vertically on mobile
   - _Requirements: 13.1, 13.8_
 
-- [ ] 6.7 Add calendar navigation to Schedule dropdown
+- [x] 6.7 Add calendar navigation to Schedule dropdown
   - Update `config/navigation.ts` to include Calendar route
   - Add to Schedule workflow bucket
   - Ensure it appears in navigation dropdowns

@@ -49,8 +49,8 @@ export function CaptionEditor({
   const regenerateCaption = useMutation({
     mutationFn: async () => {
       const response = await authenticatedRequest<{ caption: string }>(
-        'POST',
         '/api/caption/generate',
+        'POST',
         {
           imageUrl,
           platform: 'reddit',
@@ -89,7 +89,7 @@ export function CaptionEditor({
         const response = await authenticatedRequest<{
           warnings?: string[];
           blockers?: string[];
-        }>('POST', '/api/subreddit-lint', {
+        }>('/api/subreddit-lint', 'POST', {
           subreddit,
           title: caption.substring(0, TITLE_MAX_LENGTH),
           caption,

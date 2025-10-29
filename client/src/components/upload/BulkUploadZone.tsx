@@ -74,7 +74,7 @@ export function BulkUploadZone({
 
       const response = await authenticatedRequest<{
         asset: { id: number; url: string };
-      }>('POST', '/api/upload/imgbox', formData);
+      }>('/api/media/upload', 'POST', formData);
 
       clearInterval(progressInterval);
 
@@ -121,8 +121,8 @@ export function BulkUploadZone({
   const generateCaption = async (imageId: string, imageUrl: string): Promise<void> => {
     try {
       const response = await authenticatedRequest<{ caption: string }>(
-        'POST',
         '/api/caption/generate',
+        'POST',
         {
           imageUrl,
           platform: 'reddit',

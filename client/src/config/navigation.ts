@@ -134,6 +134,14 @@ export const workflowBuckets: WorkflowBucket[] = [
         shortcut: '⌘S',
       },
       {
+        key: 'calendar',
+        label: 'Calendar View',
+        href: '/scheduling-calendar',
+        description: 'Visual calendar with drag-and-drop scheduling',
+        icon: CalendarCheck2,
+        proOnly: true,
+      },
+      {
         key: 'queue',
         label: 'Publishing Queue',
         href: '/queue',

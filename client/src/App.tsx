@@ -47,6 +47,7 @@ const PrivacyPolicy = React.lazy(() => import("@/pages/privacy-policy"));
 const QuickPostPage = React.lazy(() => import("@/pages/quick-post"));
 const FlightSchoolPage = React.lazy(() => import("@/pages/flight-school"));
 const GalleryV2Page = React.lazy(() => import("@/pages/gallery-v2"));
+const BulkCaptionPage = React.lazy(() => import("@/pages/bulk-caption"));
 import { RedditCommunities } from "@/components/reddit-communities";
 // Phase 1: Real Analytics Tracking
 import { trackPageView, setUserId, trackFeatureUsage } from "@/lib/analytics-tracker";
@@ -106,7 +107,8 @@ function AuthenticatedRoutes() {
       <Route path="/intelligence" component={IntelligenceInsightsPage} />
       <Route path="/subreddit-insights" component={IntelligenceInsightsPage} />
       <Route path="/gallery" component={GalleryV2Page} />
-      <Route path="/bulk-caption" component={PostSchedulingPage} />
+      <Route path="/bulk-caption" component={BulkCaptionPage} />
+      <Route path="/scheduling-calendar" component={ScheduledPostsPage} />
       <Route path="/campaigns" component={HistoryPage} />
       <Route path="/tax-tracker" component={() => <TaxTracker />} />
       {/* Referral Program - Available to all authenticated users */}

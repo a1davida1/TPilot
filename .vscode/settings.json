@@ -24,6 +24,7 @@
         "git commit -m \"feat: Add enterprise UX transformation spec and theme system\n\n- Add comprehensive enterprise-ux-transformation spec (requirements, design, tasks)\n- Add advanced-reddit-analytics spec (requirements, design, tasks)\n- Implement Bubblegum Pink and Midnight Rose theme tokens\n- Add theme provider with auto-switching and localStorage persistence\n- Create theme switcher UI component\n- Update platform guide: fix Imgur (primary) / Imgbox (fallback) ordering\n- Complete Phase 1 of UX transformation (Theme System & Design Tokens)\"",
         "git log --oneline --all --grep=\"theme\" | head -20",
         "git log --all --oneline --follow -- client/src/components/theme-provider.tsx | head -5",
-        "git show e172b50a --name-status | grep -E \"^[AM]\" | head -20"
+        "git show e172b50a --name-status | grep -E \"^[AM]\" | head -20",
+        "grep *"
     ]
 }
