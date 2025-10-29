@@ -20,6 +20,31 @@
   visibility: hidden !important;
 }
 
+/* Make sr-only visible when focused (for skip links) */
+.sr-only:focus,
+.sr-only:active {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  padding: inherit !important;
+  margin: inherit !important;
+  overflow: visible !important;
+  clip: auto !important;
+  white-space: normal !important;
+  visibility: visible !important;
+}
+
+/* Ensure visible focus rings for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid var(--interactive-focus, #EC4899);
+  outline-offset: 2px;
+}
+
+/* Remove default focus outline but keep for keyboard users */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
 @layer base {
   :root {
     /* Theme System Variables - Bubblegum Pink (Light) */
