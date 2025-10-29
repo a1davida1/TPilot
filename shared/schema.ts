@@ -1853,8 +1853,8 @@ export type InsertRedditAccountAuditLog = z.infer<typeof insertRedditAuditLogSch
 // Analytics Materialized View Types (Migration 018)
 export type AnalyticsContentPerformanceDaily = typeof analyticsContentPerformanceDaily.$inferSelect;
 export type AnalyticsAiUsageDaily = typeof analyticsAiUsageDaily.$inferSelect;
-// =
-=========================================
+
+// ==========================================
 // ADVANCED REDDIT ANALYTICS TABLES
 // Migration: 0002_analytics_tables
 // ==========================================
