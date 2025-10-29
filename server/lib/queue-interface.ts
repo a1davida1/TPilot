@@ -16,6 +16,10 @@ export interface Job<T = unknown> {
   data: T;
   attemptsMade?: number;
   timestamp?: number;
+  status?: string;
+  progress?: number;
+  result?: unknown;
+  error?: Error | string;
 }
 
 export interface QueueJobHandler<T = unknown> {
@@ -31,6 +35,7 @@ export interface QueueFailureStats {
 
 export interface QueueProcessOptions<T = unknown> {
   concurrency?: number;
+  attempts?: number;
   validatePayload?: (payload: unknown) => payload is T;
 }
 

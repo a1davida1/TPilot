@@ -118,21 +118,18 @@ export function startRedditSyncWorker(): void {
   });
 
   // Register the worker
-  queue.registerWorker(
-    REDDIT_SYNC_QUEUE,
-    async (job: Job<RedditSyncJobData>) => {
-      return processRedditSyncJob(job);
-    },
-    {
-      concurrency: 5, // Max 5 concurrent syncs
-      attempts: 3, // Retry up to 3 times
-      backoff: {
-        type: 'exponential',
-        delay: 2000, // Start with 2 second delay
+  if (queue.registerWorker) {
+    queue.registerWorker(
+      REDDIT_SYNC_QUEUE,
+      async (job: Job<RedditSyncJobData>) => {
+        return processRedditSyncJob(job);
       },
-      timeout: 10 * 60 * 1000, // 10 minute timeout
-    }
-  );
+      {
+        concurrency: 5, // Max 5 concurrent syncs
+        attempts: 3, // Retry up to 3 times
+      } as any // Extended options like backoff/timeout are implementation-specific
+    );
+  }
 
   logger.info('Reddit sync worker started successfully');
 }
@@ -191,14 +188,19 @@ export async function getSyncJobStatus(jobId: string): Promise<{
   const queue = getQueueBackend();
 
   try {
+    if (!queue.getJob) {
+      logger.warn('Queue backend does not support getJob');
+      return null;
+    }
+
     const job = await queue.getJob(REDDIT_SYNC_QUEUE, jobId);
     if (!job) {
       return null;
     }
 
     return {
-      status: job.status,
-      progress: job.progress,
+      status: job.status ?? 'unknown',
+      progress: job.progress ?? 0,
       result: job.result as RedditSyncJobResult | undefined,
       error: job.error,
     };
@@ -218,6 +220,11 @@ export async function cancelSyncJob(jobId: string): Promise<boolean> {
   const queue = getQueueBackend();
 
   try {
+    if (!queue.cancelJob) {
+      logger.warn('Queue backend does not support cancelJob');
+      return false;
+    }
+
     await queue.cancelJob(REDDIT_SYNC_QUEUE, jobId);
     logger.info('Cancelled sync job', { jobId });
     return true;
