@@ -24,6 +24,7 @@ logger.info(`[OpenRouter] Default model: ${DEFAULT_MODEL}`);
 export const openrouter = apiKey ? new OpenAI({
   apiKey,
   baseURL,
+  timeout: 10000, // 10 second timeout for caption generation
   defaultHeaders: {
     "HTTP-Referer": site,
     "X-Title": appName,

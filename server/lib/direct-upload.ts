@@ -126,16 +126,10 @@ export class DirectUpload {
 
   /**
    * Try all services until one works
+   * NOTE: Imgur is handled as the primary service in media.ts, so we skip it here
    */
   static async upload(buffer: Buffer, filename?: string): Promise<DirectUploadResult> {
-    // Try Imgur first (most reliable)
-    const imgurResult = await this.uploadToImgur(buffer, filename);
-    if (imgurResult.success) {
-      return imgurResult;
-    }
-    logger.warn('Imgur failed, trying Cloudinary', { error: imgurResult.error });
-
-    // Try Cloudinary
+    // Try Cloudinary (Imgur is already tried in media.ts primary upload path)
     const cloudinaryResult = await this.uploadToCloudinary(buffer, filename);
     if (cloudinaryResult.success) {
       return cloudinaryResult;
@@ -144,7 +138,7 @@ export class DirectUpload {
 
     return {
       success: false,
-      error: 'All direct upload services failed',
+      error: 'Direct upload service (Cloudinary) failed',
     };
   }
 }

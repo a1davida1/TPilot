@@ -439,7 +439,8 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
       `${API_PREFIX}/analytics/events`,     // Exempt visitor analytics tracking from CSRF
       `${API_PREFIX}/media/upload`,         // Exempt media uploads from CSRF
       `${API_PREFIX}/gallery/`,             // Exempt all gallery endpoints from CSRF
-      `${API_PREFIX}/bulk-upload/`          // Exempt bulk upload endpoints from CSRF
+      `${API_PREFIX}/bulk-upload/`,         // Exempt bulk upload endpoints from CSRF
+      `${API_PREFIX}/subreddit-lint`        // Exempt subreddit rule validation from CSRF
     ];
 
     const isExempt = exemptPaths.some((path) => req.path.startsWith(path));
