@@ -121,8 +121,8 @@ export async function getImgurCredentials(): Promise<ImgurCredentials> {
           refreshToken: newTokens.refreshToken,
           expiresAt: newTokens.expiresAt
         };
-      } catch (error) {
-        console.error('Failed to refresh Imgur token:', error);
+      } catch {
+        // Token refresh failed - user needs to reconnect
         throw new Error('Imgur token expired. Please reconnect your account.');
       }
     } else {
