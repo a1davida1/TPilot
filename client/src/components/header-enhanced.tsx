@@ -14,7 +14,6 @@ import {
   Menu,
   X,
   Crown,
-  Bell,
   Search,
   Plus,
   ChevronDown,
@@ -80,30 +79,6 @@ function Breadcrumbs({ path }: BreadcrumbProps) {
         </div>
       ))}
     </div>
-  );
-}
-
-// Notification Bell Component
-interface NotificationBellProps {
-  count?: number;
-  onClick?: () => void;
-}
-
-function NotificationBell({ count = 0, onClick }: NotificationBellProps) {
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      className="relative"
-      onClick={onClick}
-    >
-      <Bell className="h-5 w-5" />
-      {count > 0 && (
-        <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-xs text-destructive-foreground flex items-center justify-center">
-          {count > 9 ? '9+' : count}
-        </span>
-      )}
-    </Button>
   );
 }
 
@@ -182,7 +157,6 @@ export function HeaderEnhanced({ onReplayWalkthrough }: HeaderEnhancedProps) {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [_authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [notificationCount, setNotificationCount] = useState(2);
   const { open: commandPaletteOpen, setOpen: setCommandPaletteOpen } = useCommandPalette();
 
   // Get generation stats (for future use)
@@ -291,13 +265,7 @@ export function HeaderEnhanced({ onReplayWalkthrough }: HeaderEnhancedProps) {
                 <Search className="h-4 w-4" />
               </Button>
 
-              {/* Notifications */}
-              {isAuthenticated && (
-                <NotificationBell 
-                  count={notificationCount} 
-                  onClick={() => setNotificationCount(0)}
-                />
-              )}
+              {/* Notifications - TODO: Implement notification system */}
 
               {/* Create Button with Dropdown Menu */}
               {isAuthenticated && (

@@ -45,7 +45,6 @@ import { RedditNativeUploadPortal } from '@/components/RedditNativeUploadPortal'
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { StatusBanner } from '@/components/ui/status-banner';
-import { StickyRail } from '@/components/ui/sticky-rail';
 import { cn } from '@/lib/utils';
 import type { CaptionObject } from '@shared/types/caption';
 import type { SubredditCommunity } from '@/types/reddit';
@@ -1462,8 +1461,9 @@ export default function QuickPostPage() {
           </ul>
         </CardContent>
       </Card>
+          </div>
         </div>
-      </StickyRail>
+      </div>
     </>
   );
 }
