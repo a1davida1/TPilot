@@ -93,7 +93,7 @@ This plan breaks down the enterprise UX transformation into discrete, manageable
 
 ## Phase 3: Layout Components
 
-- [-] 3. Create TwoPane layout component
+- [x] 3. Create TwoPane layout component
   - Create `client/src/components/layouts/TwoPane.tsx`
   - Implement 40/60 split for left/right panes
   - Add responsive stacking (vertical on <1024px)
@@ -123,14 +123,62 @@ This plan breaks down the enterprise UX transformation into discrete, manageable
   - Ensure content fits in one screen on desktop
   - _Requirements: 7.1, 7.4, 7.5, 7.6_
 
+---> ## Phase 4: Floating Action Button & Command Palette
+
+- [ ] 4. Add keyboard shortcut to existing FAB
+  - Update `client/src/components/ui/floating-action-button.tsx`
+  - Add Cmd+N / Ctrl+N keyboard listener
+  - Open FAB popover on shortcut press
+  - Add tooltip showing "Cmd+N" on hover
+  - _Requirements: 3.4, 3.7_
+
+- [ ] 4.1 Ensure FAB hides on creation pages
+  - Update FAB to check current route
+  - Hide on `/quick-post`, `/bulk-caption`, `/post-scheduling`
+  - Show on all other pages
+  - _Requirements: 3.6_
+
+- [ ] 4.2 Verify Command Palette integration
+  - Ensure `client/src/components/ui/command-palette.tsx` is imported in 
+App.tsx
+  - Test Cmd+K shortcut opens palette
+  - Verify all navigation items appear
+  - Test keyboard navigation (arrows, enter, escape)
+  - _Requirements: 10.1, 10.2, 10.4_
+
 ---
 
+
+
+---
+
+## Phase 4: Floating Action Button & Command Palette
+
+- [x] 4. Add keyboard shortcut to existing FAB
+  - Update `client/src/components/ui/floating-action-button.tsx`
+  - Add Cmd+N / Ctrl+N keyboard listener
+  - Open FAB popover on shortcut press
+  - Add tooltip showing "Cmd+N" on hover
+  - _Requirements: 3.4, 3.7_
+
+- [x] 4.1 Ensure FAB hides on creation pages
+  - Update FAB to check current route
+  - Hide on `/quick-post`, `/bulk-caption`, `/post-scheduling`
+  - Show on all other pages
+  - _Requirements: 3.6_
+
+- [x] 4.2 Verify Command Palette integration
+  - Ensure `client/src/components/ui/command-palette.tsx` is imported in App.tsx
+  - Test Cmd+K shortcut opens palette
+  - Verify all navigation items appear
+  - Test keyboard navigation (arrows, enter, escape)
+  - _Requirements: 10.1, 10.2, 10.4_
 
 ---
 
 ## Phase 5: Status Banner System
 
-- [ ] 5. Integrate status banners across pages
+- [x] 5. Integrate status banners across pages
   - Import existing `client/src/components/ui/status-banner.tsx`
   - Add tier limit banner to dashboard (when 80% quota used)
   - Add cooldown banner when Reddit cooldown active
@@ -138,13 +186,13 @@ This plan breaks down the enterprise UX transformation into discrete, manageable
   - Stack multiple banners vertically
   - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-- [ ] 5.1 Implement banner auto-dismiss
+- [x] 5.1 Implement banner auto-dismiss
   - Add dismiss button to all banners
   - Store dismissed banners in localStorage
   - Don't show again for 24 hours after dismiss
   - _Requirements: 6.5_
 
-- [ ] 5.2 Add banner click actions
+- [x] 5.2 Add banner click actions
   - Make tier limit banner link to `/settings` (upgrade page)
   - Make cooldown banner show countdown timer
   - Make removal banner link to post details
@@ -154,7 +202,7 @@ This plan breaks down the enterprise UX transformation into discrete, manageable
 
 ## Phase 6: Bulk Upload & Drag-and-Drop Scheduling
 
-- [ ] 6. Create bulk upload zone component
+- [-] 6. Create bulk upload zone component
   - Create `client/src/components/upload/BulkUploadZone.tsx`
   - Support drag-and-drop multiple files
   - Show upload progress for each file
@@ -162,7 +210,7 @@ This plan breaks down the enterprise UX transformation into discrete, manageable
   - Auto-generate captions for all images
   - _Requirements: 13.2_
 
-- [ ] 6.1 Create image library grid component
+- [x] 6.1 Create image library grid component
   - Create `client/src/components/scheduling/ImageLibraryGrid.tsx`
   - Display uploaded images in responsive grid (2-4 columns)
   - Add checkbox for multi-select
@@ -170,7 +218,7 @@ This plan breaks down the enterprise UX transformation into discrete, manageable
   - Add "Edit Caption" button on each image
   - _Requirements: 13.2, 13.3_
 
-- [ ] 6.2 Implement inline caption editor
+- [x] 6.2 Implement inline caption editor
   - Create `client/src/components/scheduling/CaptionEditor.tsx`
   - Open inline editor when "Edit Caption" clicked
   - Show character count

@@ -36,6 +36,7 @@ import { ActivitySkeleton } from '@/components/ui/loading-states';
 
 // Custom Components
 import { CaptionLimitBanner, CommandBar } from '@/components/ui/status-banner';
+import { StatusBannerContainer, useStatusBanners } from '@/components/ui/status-banner-container';
 import { FloatingActionButton } from '@/components/ui/floating-action-button';
 import { StickyRail } from '@/components/ui/sticky-rail';
 import { BatchActionsBar, useBatchSelection, BatchCheckbox } from '@/components/ui/batch-actions-bar';
@@ -155,6 +156,12 @@ export function ModernDashboardV2({
   const user = propUser || authUser;
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  
+  // Status banners hook
+  const {
+    createTierLimitBanner,
+    createCooldownBanner,
+  } = useStatusBanners();
   
   // State
   const [showQuickStart, setShowQuickStart] = useState(false);
@@ -346,17 +353,40 @@ export function ModernDashboardV2({
     },
   ];
 
+  // Build status banners array
+  const statusBanners = useMemo(() => {
+    const banners = [];
+    
+    // Tier limit banner (show when 80% quota used)
+    if (captionUsage && (userTier === 'free' || userTier === 'starter')) {
+      const tierLimitBanner = createTierLimitBanner(
+        captionUsage.remaining,
+        captionUsage.limit,
+        userTier
+      );
+      if (tierLimitBanner) {
+        banners.push(tierLimitBanner);
+      }
+    }
+    
+    // Cooldown banner (if cooldown is active)
+    // Note: We'd need to fetch cooldown data from API
+    // For now, this is a placeholder
+    const cooldownSeconds = 0; // TODO: Fetch from API
+    if (cooldownSeconds > 0) {
+      const cooldownBanner = createCooldownBanner(cooldownSeconds);
+      if (cooldownBanner) {
+        banners.push(cooldownBanner);
+      }
+    }
+    
+    return banners;
+  }, [captionUsage, userTier, createTierLimitBanner, createCooldownBanner]);
+
   return (
     <div className="relative min-h-screen bg-background">
       {/* Status Banners */}
-      {(userTier === 'free' || userTier === 'starter') && captionUsage && (
-        <CaptionLimitBanner
-          remaining={captionUsage.remaining}
-          limit={captionUsage.limit}
-          tier={userTier === 'starter' ? 'free' : userTier}
-          onUpgrade={handleUpgrade}
-        />
-      )}
+      <StatusBannerContainer banners={statusBanners} />
       
       <CommandBar
         tier={userTier}
