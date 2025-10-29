@@ -109,14 +109,14 @@ This plan breaks down the enterprise UX transformation into discrete, manageable
   - Support full-width option
   - _Requirements: 7.1, 7.2, 7.3_
 
-- [ ] 3.2 Update Quick Post page to use TwoPane
+- [x] 3.2 Update Quick Post page to use TwoPane
   - Refactor `client/src/pages/quick-post.tsx` to use TwoPane component
   - Move upload/config to left pane
   - Move captions/preview to right pane
   - Ensure mobile stacking works correctly
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [ ] 3.3 Update Dashboard to use DashboardGrid
+- [x] 3.3 Update Dashboard to use DashboardGrid
   - Refactor `client/src/pages/dashboard.tsx` to use DashboardGrid
   - Place Quick Actions in main content (2-column grid)
   - Place stats/alerts in sidebar

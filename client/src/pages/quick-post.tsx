@@ -54,6 +54,7 @@ import {
   trackCaptionChoice,
   trackCaptionShown
 } from '@/lib/caption-telemetry';
+import { TwoPane } from '@/components/layouts/TwoPane';
 
 interface CaptionOption {
   id: 'A' | 'B';
@@ -584,15 +585,15 @@ export default function QuickPostPage() {
         : [];
       const safeSubreddit = subreddit.trim();
       const baseDescription = postUrl
-        ? `Your post is now live: ${postUrl}` 
+        ? `Your post is now live: ${postUrl}`
         : safeSubreddit
-          ? `Your post is now live on r/${safeSubreddit}` 
+          ? `Your post is now live on r/${safeSubreddit}`
           : 'Your post is now live on Reddit';
       const warningSuffix = warnings.length > 0 ? ` Warnings: ${warnings.join(' • ')}` : '';
 
       toast({
         title: result?.message ?? '🎉 Posted successfully!',
-        description: `${baseDescription}${warningSuffix}` 
+        description: `${baseDescription}${warningSuffix}`
       });
     },
     onError: (error: unknown) => {
@@ -740,760 +741,758 @@ export default function QuickPostPage() {
     <>
       {/* Status Banner for Quick Actions */}
       {!posted && imageUrl && (
-        <StatusBanner 
+        <StatusBanner
           message={captionOptions.length > 0 ? "✨ Captions ready! Select one to continue" : "⚡ Upload complete - generating captions..."}
           variant={captionOptions.length > 0 ? "success" : "info"}
         />
       )}
-      
+
       <div className="container mx-auto px-4 py-4 sm:py-8 max-w-7xl">
-        {/* Mobile Progress Bar - Only show on mobile */}
-        <div className="lg:hidden mb-4">
-          <Card className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20">
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between gap-2 text-xs">
-                <div className={cn("flex items-center gap-1", imageUrl && "text-green-600 dark:text-green-400")}>
-                  {imageUrl ? <CheckCircle className="h-3 w-3" /> : <div className="h-3 w-3 rounded-full border-2" />}
-                  <span className="hidden sm:inline">Image</span>
+        <TwoPane
+          leftWidth="30%"
+          sticky={true}
+          leftPane={
+            <div className="p-6 space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold mb-1">Progress</h2>
+                <p className="text-xs text-muted-foreground">Track your workflow</p>
+              </div>
+
+              <div className="space-y-3">
+                <div className={cn(
+                  "flex items-center justify-between p-3 rounded-lg transition-colors",
+                  imageUrl ? "bg-green-50 dark:bg-green-950/20" : "bg-muted/50"
+                )}>
+                  <span className="text-sm font-medium">1. Upload</span>
+                  {imageUrl ? (
+                    <Badge variant="default" className="bg-green-600">✓</Badge>
+                  ) : (
+                    <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30" />
+                  )}
                 </div>
-                <div className={cn("flex items-center gap-1", protectedImageUrl && "text-green-600 dark:text-green-400")}>
-                  {protectedImageUrl ? <CheckCircle className="h-3 w-3" /> : <div className="h-3 w-3 rounded-full border-2" />}
-                  <span className="hidden sm:inline">Protected</span>
+
+                <div className={cn(
+                  "flex items-center justify-between p-3 rounded-lg transition-colors",
+                  protectedImageUrl ? "bg-green-50 dark:bg-green-950/20" : "bg-muted/50"
+                )}>
+                  <span className="text-sm font-medium">2. Protect</span>
+                  {protectedImageUrl ? (
+                    <Badge variant="default" className="bg-green-600">✓</Badge>
+                  ) : (
+                    <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30" />
+                  )}
                 </div>
-                <div className={cn("flex items-center gap-1", confirmedCaptionId && "text-green-600 dark:text-green-400")}>
-                  {confirmedCaptionId ? <CheckCircle className="h-3 w-3" /> : <div className="h-3 w-3 rounded-full border-2" />}
-                  <span className="hidden sm:inline">Caption</span>
+
+                <div className={cn(
+                  "flex items-center justify-between p-3 rounded-lg transition-colors",
+                  confirmedCaptionId ? "bg-green-50 dark:bg-green-950/20" : "bg-muted/50"
+                )}>
+                  <span className="text-sm font-medium">3. Caption</span>
+                  {confirmedCaptionId ? (
+                    <Badge variant="default" className="bg-green-600">✓</Badge>
+                  ) : (
+                    <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30" />
+                  )}
                 </div>
-                <div className={cn("flex items-center gap-1", posted && "text-green-600 dark:text-green-400")}>
-                  {posted ? <CheckCircle className="h-3 w-3" /> : <div className="h-3 w-3 rounded-full border-2" />}
-                  <span className="hidden sm:inline">Posted</span>
+
+                <div className={cn(
+                  "flex items-center justify-between p-3 rounded-lg transition-colors",
+                  posted ? "bg-green-50 dark:bg-green-950/20" : "bg-muted/50"
+                )}>
+                  <span className="text-sm font-medium">4. Post</span>
+                  {posted ? (
+                    <Badge variant="default" className="bg-green-600">✓</Badge>
+                  ) : (
+                    <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30" />
+                  )}
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
 
-        <div className="flex gap-6">
-          {/* Left Pane - Progress Sidebar (Desktop Only) */}
-          <div className="hidden lg:block w-64 flex-shrink-0">
-            <div className="sticky top-20 space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">Progress</CardTitle>
+              <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Zap className="h-4 w-4" />
+                    Quick Post Benefits
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  {imageUrl && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Image</span>
-                      <Badge variant="default">✓</Badge>
+                <CardContent className="pt-0">
+                  <ul className="text-xs space-y-1 text-muted-foreground">
+                    <li>• 24-hour ephemeral storage</li>
+                    <li>• AI voices & promo toggles</li>
+                    <li>• 2 Grok-generated captions</li>
+                    <li>• Auto ImageShield protection</li>
+                    <li>• One-click Reddit posting</li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+          }
+          rightPane={
+            <div className="p-6">
+              <div className="mb-4 sm:mb-8 text-center">
+                <div className="inline-flex items-center gap-2 mb-2 sm:mb-4">
+                  <div className="p-1.5 sm:p-2 bg-yellow-500 text-white rounded-full">
+                    <Zap className="h-5 w-5 sm:h-6 sm:w-6" />
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-bold">Quick Post</h1>
+                </div>
+                <p className="text-sm sm:text-base text-muted-foreground px-4">
+                  Upload, generate captions, protect, and post in minutes
+                </p>
+              </div>
+
+              <Card>
+                <CardContent className="p-4 sm:p-6">
+                  {!posted ? (
+                    <div className="space-y-6">
+                      <div>
+                        <div className="flex items-center gap-2 mb-4">
+                          <Badge variant={imageUrl ? 'default' : 'outline'}>
+                            {imageUrl ? <CheckCircle className="h-3 w-3 mr-1" /> : '1'}
+                          </Badge>
+                          <Label>Upload Image</Label>
+                        </div>
+
+                        {!imageUrl ? (
+                          <RedditNativeUploadPortal onComplete={handleImageUpload} />
+                        ) : (
+                          <div className="flex items-center gap-4">
+                            {sanitizeImageUrl(imageUrl) ? (
+                              <img
+                                src={sanitizeImageUrl(imageUrl) ?? ''}
+                                alt="Uploaded"
+                                className="w-32 h-32 object-cover rounded-lg"
+                              />
+                            ) : (
+                              <div className="w-32 h-32 bg-gray-100 flex items-center justify-center rounded-lg text-sm text-muted-foreground">
+                                Invalid image URL
+                              </div>
+                            )}
+                            <div>
+                              <p className="text-sm text-muted-foreground mb-2">Image stored for Reddit native posting</p>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={startNewPost}
+                              >
+                                Upload Different Image
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {imageUrl && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-4">
+                            <Badge variant="outline">2</Badge>
+                            <Label>Configure Generation Settings</Label>
+                            <Settings2 className="h-4 w-4 text-muted-foreground" />
+                          </div>
+
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="space-y-2">
+                              <Label htmlFor="service">Service</Label>
+                              <Select
+                                value={selectedService}
+                                onValueChange={(value) => {
+                                  const nextService = value as PlatformService;
+                                  setSelectedService(nextService);
+                                  if (imageUrl) {
+                                    runCaptionGeneration(imageUrl, nextService, selectedTone, promotionMode, nsfw);
+                                  }
+                                }}
+                              >
+                                <SelectTrigger id="service">
+                                  <SelectValue placeholder="Select service" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {SERVICE_OPTIONS.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                      <div className="flex flex-col">
+                                        <span className="font-medium">{option.label}</span>
+                                        <span className="text-xs text-muted-foreground">{option.description}</span>
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="tone">Tone</Label>
+                              <Select
+                                value={selectedTone}
+                                onValueChange={(value) => {
+                                  setSelectedTone(value);
+                                  if (imageUrl) {
+                                    runCaptionGeneration(imageUrl, selectedService, value, promotionMode, nsfw);
+                                  }
+                                }}
+                              >
+                                <SelectTrigger id="tone">
+                                  <SelectValue placeholder="Select tone" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {toneOptions.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                      {option.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="flex items-center space-x-3">
+                              <Switch
+                                id="promotion"
+                                checked={promotionEnabled}
+                                onCheckedChange={(checked) => {
+                                  setPromotionEnabled(checked);
+                                  if (imageUrl) {
+                                    runCaptionGeneration(
+                                      imageUrl,
+                                      selectedService,
+                                      selectedTone,
+                                      checked ? 'explicit' : 'none',
+                                      nsfw
+                                    );
+                                  }
+                                }}
+                              />
+                              <Label htmlFor="promotion" className="flex-1">
+                                Include promo CTA
+                                <span className="block text-xs text-muted-foreground">
+                                  Adds a soft plug when enabled
+                                </span>
+                              </Label>
+                            </div>
+
+                            <div className="flex items-center space-x-3">
+                              <Switch
+                                id="nsfw"
+                                checked={nsfw}
+                                onCheckedChange={(checked) => {
+                                  const availableTones = checked ? NSFW_TONES : SFW_TONES;
+                                  const nextTone = availableTones.some((option) => option.value === selectedTone)
+                                    ? selectedTone
+                                    : availableTones[0]?.value ?? selectedTone;
+                                  setNsfw(checked);
+                                  setSelectedTone(nextTone);
+                                  if (imageUrl) {
+                                    runCaptionGeneration(
+                                      imageUrl,
+                                      selectedService,
+                                      nextTone,
+                                      promotionMode,
+                                      checked
+                                    );
+                                  }
+                                }}
+                              />
+                              <Label htmlFor="nsfw" className="flex-1">
+                                Mark caption as NSFW
+                                <span className="block text-xs text-muted-foreground">
+                                  Switch tones & safety filters automatically
+                                </span>
+                              </Label>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {imageUrl && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-4">
+                            <Badge variant={captionOptions.length > 0 ? 'default' : 'outline'}>
+                              {captionOptions.length > 0 ? <CheckCircle className="h-3 w-3 mr-1" /> : '3'}
+                            </Badge>
+                            <Label>Choose Caption</Label>
+                            {generateCaptions.isPending && (
+                              <Loader2 className="h-4 w-4 animate-spin text-purple-500" />
+                            )}
+                          </div>
+
+                          {/* Caption Generation Progress */}
+                          {generateCaptions.isPending && captionProgress > 0 && (
+                            <div className="mb-4">
+                              <ProgressWithLabel
+                                value={captionProgress}
+                                label="Generating captions..."
+                                className="mb-2"
+                              />
+                            </div>
+                          )}
+
+                          {/* Image Protection Progress */}
+                          {protectImage.isPending && protectionProgress > 0 && (
+                            <div className="mb-4">
+                              <ProgressWithLabel
+                                value={protectionProgress}
+                                label="Applying ImageShield protection..."
+                                className="mb-2"
+                              />
+                            </div>
+                          )}
+
+                          {captionOptions.length > 0 ? (
+                            <>
+                              {confirmedCaptionId ? (
+                                <Card className="border-purple-500 bg-purple-50 dark:bg-purple-950/20">
+                                  <CardHeader className="pb-2">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <Badge variant="secondary">Selected</Badge>
+                                        <span className="text-sm text-muted-foreground">Caption {confirmedCaptionId}</span>
+                                      </div>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6"
+                                        onClick={() => {
+                                          setIsEditingCaption(true);
+                                          setCaptionBeingEdited(confirmedCaptionId);
+                                          setEditedCaptionText(selectedCaptionOption?.text || '');
+                                        }}
+                                      >
+                                        <Pencil className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </CardHeader>
+                                  <CardContent>
+                                    {isEditingCaption && captionBeingEdited === confirmedCaptionId ? (
+                                      <div className="space-y-2">
+                                        <Textarea
+                                          value={editedCaptionText}
+                                          onChange={(e) => setEditedCaptionText(e.target.value)}
+                                          className="min-h-[60px] text-sm"
+                                          placeholder="Edit your caption..."
+                                        />
+                                        <div className="flex gap-2">
+                                          <Button
+                                            size="sm"
+                                            onClick={() => {
+                                              const updatedOptions = captionOptions.map(opt =>
+                                                opt.id === confirmedCaptionId ? { ...opt, text: editedCaptionText } : opt
+                                              );
+                                              setCaptionOptions(updatedOptions);
+                                              setIsEditingCaption(false);
+                                              setCaptionBeingEdited(null);
+                                            }}
+                                          >
+                                            <Save className="h-3 w-3 mr-1" />
+                                            Save
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => {
+                                              setIsEditingCaption(false);
+                                              setCaptionBeingEdited(null);
+                                              setEditedCaptionText('');
+                                            }}
+                                          >
+                                            <X className="h-3 w-3 mr-1" />
+                                            Cancel
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <p className="text-sm">{selectedCaptionOption?.text}</p>
+                                    )}
+                                  </CardContent>
+                                </Card>
+                              ) : (
+                                <RadioGroup value={selectedCaption} onValueChange={(value) => setSelectedCaption(value as 'A' | 'B')}>
+                                  <div className="space-y-4">
+                                    {captionOptions.map((option) => (
+                                      <Card
+                                        key={option.id}
+                                        className={cn(
+                                          'cursor-pointer transition-all',
+                                          selectedCaption === option.id && 'border-purple-500 bg-purple-50 dark:bg-purple-950/20'
+                                        )}
+                                        onClick={() => setSelectedCaption(option.id)}
+                                      >
+                                        <CardHeader className="pb-2">
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                              <RadioGroupItem value={option.id} />
+                                              <Badge variant="secondary">{option.style}</Badge>
+                                              <span className="text-xs text-muted-foreground">Caption {option.id}</span>
+                                            </div>
+                                            {selectedCaption === option.id && (
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-6 w-6"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setIsEditingCaption(true);
+                                                  setCaptionBeingEdited(option.id);
+                                                  setEditedCaptionText(option.text);
+                                                }}
+                                              >
+                                                <Pencil className="h-3 w-3" />
+                                              </Button>
+                                            )}
+                                          </div>
+                                        </CardHeader>
+                                        <CardContent>
+                                          {isEditingCaption && captionBeingEdited === option.id ? (
+                                            <div className="space-y-2">
+                                              <Textarea
+                                                value={editedCaptionText}
+                                                onChange={(e) => setEditedCaptionText(e.target.value)}
+                                                className="min-h-[60px] text-sm"
+                                                placeholder="Edit your caption..."
+                                              />
+                                              <div className="flex gap-2">
+                                                <Button
+                                                  size="sm"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const updatedOptions = captionOptions.map(opt =>
+                                                      opt.id === option.id ? { ...opt, text: editedCaptionText } : opt
+                                                    );
+                                                    setCaptionOptions(updatedOptions);
+                                                    setIsEditingCaption(false);
+                                                    setCaptionBeingEdited(null);
+                                                  }}
+                                                >
+                                                  <Save className="h-3 w-3 mr-1" />
+                                                  Save
+                                                </Button>
+                                                <Button
+                                                  size="sm"
+                                                  variant="outline"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setIsEditingCaption(false);
+                                                    setCaptionBeingEdited(null);
+                                                    setEditedCaptionText('');
+                                                  }}
+                                                >
+                                                  <X className="h-3 w-3 mr-1" />
+                                                  Cancel
+                                                </Button>
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            <p className="text-sm">{option.text}</p>
+                                          )}
+                                        </CardContent>
+                                      </Card>
+                                    ))}
+                                  </div>
+                                </RadioGroup>
+                              )}
+
+                              {!confirmedCaptionId && (
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 mt-4">
+                                  <Button
+                                    onClick={handleConfirmCaption}
+                                    disabled={!selectedCaption}
+                                    className="bg-purple-600 hover:bg-purple-700 min-h-[44px]"
+                                  >
+                                    <BadgeCheck className="h-4 w-4 mr-2" />
+                                    Use Selected Caption
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => runCaptionGeneration(imageUrl, selectedService, selectedTone, promotionMode, nsfw)}
+                                    disabled={generateCaptions.isPending}
+                                    className="min-h-[44px]"
+                                  >
+                                    <RefreshCw className="h-3 w-3 mr-1" />
+                                    <span className="hidden sm:inline">Regenerate Captions</span>
+                                    <span className="sm:hidden">Regenerate</span>
+                                  </Button>
+                                </div>
+                              )}
+                            </>
+                          ) : generateCaptions.isPending ? (
+                            <div className="flex items-center justify-center py-8">
+                              <div className="text-center">
+                                <Sparkles className="h-8 w-8 mx-auto mb-2 text-purple-500 animate-pulse" />
+                                <p className="text-sm text-muted-foreground">Generating captions with Grok...</p>
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                      )}
+
+                      {imageUrl && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-4">
+                            <Badge variant={protectedImageUrl ? 'default' : 'outline'}>
+                              {protectedImageUrl ? <CheckCircle className="h-3 w-3 mr-1" /> : '4'}
+                            </Badge>
+                            <Label>ImageShield Protection</Label>
+                            {protectImage.isPending && (
+                              <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                            )}
+                          </div>
+
+                          {protectedImageUrl ? (
+                            <Alert className="border-green-200 bg-green-50 dark:bg-green-950/20">
+                              <Shield className="h-4 w-4 text-green-600" />
+                              <AlertDescription className="text-green-700 dark:text-green-400">
+                                Image protected against reverse search
+                              </AlertDescription>
+                            </Alert>
+                          ) : protectImage.isPending ? (
+                            <Alert>
+                              <Shield className="h-4 w-4 animate-pulse" />
+                              <AlertDescription>Applying protection...</AlertDescription>
+                            </Alert>
+                          ) : null}
+                        </div>
+                      )}
+
+                      {captionOptions.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-4">
+                            <Badge variant="outline">5</Badge>
+                            <Label>Post Details</Label>
+                          </div>
+
+                          {selectedService !== 'reddit' && (
+                            <Alert variant="destructive" className="mb-4">
+                              <AlertTriangle className="h-4 w-4" />
+                              <AlertDescription>
+                                Quick Post currently supports direct Reddit submissions. Use the generated caption for
+                                {selectedServiceDetails ? ` ${selectedServiceDetails.label}` : 'this platform'} manually.
+                              </AlertDescription>
+                            </Alert>
+                          )}
+
+                          <div className="space-y-4">
+                            <div>
+                              <Label htmlFor="subreddit">Subreddit</Label>
+                              {hasCommunityError ? (
+                                <Alert variant="destructive" className="mt-2">
+                                  <AlertDescription>
+                                    Unable to load your saved communities. {communityErrorMessage} You can still type a subreddit manually below.
+                                  </AlertDescription>
+                                </Alert>
+                              ) : null}
+                              <Popover open={communityPickerOpen} onOpenChange={setCommunityPickerOpen}>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={communityPickerOpen}
+                                    className="w-full justify-between mt-1"
+                                    disabled={communitiesLoading || hasCommunityError}
+                                  >
+                                    {communitiesLoading ? (
+                                      'Loading communities...'
+                                    ) : subreddit ? (
+                                      (() => {
+                                        const selected = sortedCommunities.find((community) => community.id.toLowerCase() === subreddit.toLowerCase());
+                                        return selected ? `r/${selected.displayName}` : `r/${subreddit}`;
+                                      })()
+                                    ) : sortedCommunities.length > 0 ? (
+                                      'Select subreddit...'
+                                    ) : (
+                                      'No saved communities yet'
+                                    )}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-full p-0">
+                                  <Command>
+                                    <CommandInput
+                                      placeholder="Search subreddits..."
+                                      disabled={communitiesLoading}
+                                    />
+                                    <CommandEmpty>
+                                      {communitiesLoading
+                                        ? 'Loading communities...'
+                                        : hasCommunityError
+                                          ? 'Communities unavailable. Use the manual input below.'
+                                          : 'No subreddit found.'}
+                                    </CommandEmpty>
+                                    <CommandList>
+                                      {communitiesLoading ? (
+                                        <div className="py-6 text-center text-sm text-muted-foreground">
+                                          <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
+                                          Fetching communities...
+                                        </div>
+                                      ) : (
+                                        <CommandGroup>
+                                          {sortedCommunities.map((community) => (
+                                            <CommandItem
+                                              key={community.id}
+                                              value={community.id}
+                                              onSelect={(currentValue) => {
+                                                setSubreddit(currentValue === subreddit ? '' : currentValue);
+                                                setCommunityPickerOpen(false);
+                                              }}
+                                            >
+                                              <div className="flex items-center justify-between w-full">
+                                                <div className="flex-1">
+                                                  <div className="font-medium">r/{community.displayName}</div>
+                                                  <div className="text-xs text-muted-foreground">
+                                                    {community.members.toLocaleString()} members • {Math.round(community.successProbability ?? 0)}% success
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </CommandItem>
+                                          ))}
+                                        </CommandGroup>
+                                      )}
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
+                              <Input
+                                id="subreddit"
+                                value={subreddit}
+                                onChange={(event) => setSubreddit(event.target.value.replace(/^r\//i, ''))}
+                                onBlur={() => setSubreddit((current) => current.trim().replace(/^r\//i, ''))}
+                                placeholder="Type a subreddit (e.g., gonewild)"
+                                className="mt-3"
+                                autoComplete="off"
+                              />
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                Pick from your saved list or type any subreddit manually.
+                              </p>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                id="nsfw-post"
+                                checked={nsfw}
+                                onCheckedChange={(checked) => setNsfw(checked)}
+                              />
+                              <Label htmlFor="nsfw-post">Mark as NSFW</Label>
+                            </div>
+
+                            {confirmedCaptionId && (
+                              <div className="space-y-3">
+                                {/* Posting Progress */}
+                                {postToReddit.isPending && postingProgress > 0 && (
+                                  <div className="mb-4">
+                                    <ProgressWithLabel
+                                      value={postingProgress}
+                                      label="Posting to Reddit..."
+                                      className="mb-2"
+                                    />
+                                  </div>
+                                )}
+
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                  <Button
+                                    variant="outline"
+                                    onClick={handleValidateSubreddit}
+                                    disabled={subredditLint.isPending}
+                                    className="min-h-[44px] w-full sm:w-auto"
+                                  >
+                                    {subredditLint.isPending ? (
+                                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    ) : (
+                                      <BadgeCheck className="h-4 w-4 mr-2" />
+                                    )}
+                                    <span className="hidden sm:inline">Validate Subreddit Rules</span>
+                                    <span className="sm:hidden">Validate Rules</span>
+                                  </Button>
+
+                                  <Button
+                                    onClick={() => postToReddit.mutate()}
+                                    disabled={!isReadyToPost}
+                                    className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 min-h-[44px] w-full sm:w-auto"
+                                    size="lg"
+                                  >
+                                    {postToReddit.isPending ? (
+                                      <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Posting...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Send className="mr-2 h-4 w-4" />
+                                        Post to Reddit Now
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+
+                                {validationStatus !== 'idle' && (
+                                  <Alert
+                                    variant={validationStatus === 'valid' ? 'default' : validationStatus === 'error' ? 'destructive' : 'default'}
+                                  >
+                                    {validationStatus === 'valid' ? (
+                                      <CheckCircle className="h-4 w-4 text-green-600" />
+                                    ) : validationStatus === 'error' ? (
+                                      <X className="h-4 w-4 text-red-600" />
+                                    ) : (
+                                      <AlertTriangle className="h-4 w-4 text-orange-500" />
+                                    )}
+                                    <AlertDescription className="space-y-2 text-sm">
+                                      {validationStatus === 'valid' && 'Subreddit check passed. You are good to go!'}
+
+                                      {validationStatus === 'error' && validationBlockers.length > 0 && (
+                                        <div className="space-y-1">
+                                          <p className="font-semibold text-red-600">Cannot Post - Requirements Not Met:</p>
+                                          <ul className="list-disc list-inside space-y-1">
+                                            {validationBlockers.map((blocker) => (
+                                              <li key={blocker} className="text-red-800">{blocker}</li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      )}
+
+                                      {validationStatus === 'warning' && validationWarnings.length > 0 && (
+                                        <div className="space-y-1">
+                                          <p className="font-medium text-orange-600">Warnings:</p>
+                                          <ul className="list-disc list-inside space-y-1">
+                                            {validationWarnings.map((warning) => (
+                                              <li key={warning} className="text-orange-800">{warning}</li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      )}
+                                    </AlertDescription>
+                                  </Alert>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {protectedImageUrl && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Protected</span>
-                      <Badge variant="default">✓</Badge>
-                    </div>
-                  )}
-                  {confirmedCaptionId && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Caption</span>
-                      <Badge variant="default">✓</Badge>
-                    </div>
-                  )}
-                  {posted && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Posted</span>
-                      <Badge variant="default">✓</Badge>
+                  ) : (
+                    <div className="text-center py-12">
+                      <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 text-green-600 rounded-full mb-4">
+                        <CheckCircle className="h-8 w-8" />
+                      </div>
+                      <h2 className="text-2xl font-bold mb-2">Posted Successfully!</h2>
+                      <p className="text-muted-foreground mb-6">
+                        Your post is now live on r/{subreddit}
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+                        <Button
+                          variant="outline"
+                          onClick={() => window.open(`https://reddit.com/r/${subreddit}`, '_blank')}
+                          className="min-h-[44px]"
+                        >
+                          View on Reddit
+                        </Button>
+                        <Button onClick={startNewPost} className="min-h-[44px]">
+                          <Plus className="mr-2 h-4 w-4" />
+                          Create Another Post
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </CardContent>
               </Card>
             </div>
-          </div>
-          
-          {/* Right Pane - Main Content */}
-          <div className="flex-1 min-w-0 w-full">
-        <div className="mb-4 sm:mb-8 text-center">
-          <div className="inline-flex items-center gap-2 mb-2 sm:mb-4">
-            <div className="p-1.5 sm:p-2 bg-yellow-500 text-white rounded-full">
-              <Zap className="h-5 w-5 sm:h-6 sm:w-6" />
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Quick Post</h1>
-          </div>
-          <p className="text-sm sm:text-base text-muted-foreground px-4">
-            Upload, generate captions, protect, and post in minutes
-          </p>
-        </div>
-
-        <Card>
-        <CardContent className="p-4 sm:p-6">
-          {!posted ? (
-            <div className="space-y-6">
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <Badge variant={imageUrl ? 'default' : 'outline'}>
-                    {imageUrl ? <CheckCircle className="h-3 w-3 mr-1" /> : '1'}
-                  </Badge>
-                  <Label>Upload Image</Label>
-                </div>
-
-                {!imageUrl ? (
-                  <RedditNativeUploadPortal onComplete={handleImageUpload} />
-                ) : (
-                  <div className="flex items-center gap-4">
-                    {sanitizeImageUrl(imageUrl) ? (
-                      <img
-                        src={sanitizeImageUrl(imageUrl) ?? ''}
-                        alt="Uploaded"
-                        className="w-32 h-32 object-cover rounded-lg"
-                      />
-                    ) : (
-                      <div className="w-32 h-32 bg-gray-100 flex items-center justify-center rounded-lg text-sm text-muted-foreground">
-                        Invalid image URL
-                      </div>
-                    )}
-                    <div>
-                        <p className="text-sm text-muted-foreground mb-2">Image stored for Reddit native posting</p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={startNewPost}
-                      >
-                        Upload Different Image
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {imageUrl && (
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Badge variant="outline">2</Badge>
-                    <Label>Configure Generation Settings</Label>
-                    <Settings2 className="h-4 w-4 text-muted-foreground" />
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="service">Service</Label>
-                      <Select
-                        value={selectedService}
-                        onValueChange={(value) => {
-                          const nextService = value as PlatformService;
-                          setSelectedService(nextService);
-                          if (imageUrl) {
-                            runCaptionGeneration(imageUrl, nextService, selectedTone, promotionMode, nsfw);
-                          }
-                        }}
-                      >
-                        <SelectTrigger id="service">
-                          <SelectValue placeholder="Select service" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {SERVICE_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              <div className="flex flex-col">
-                                <span className="font-medium">{option.label}</span>
-                                <span className="text-xs text-muted-foreground">{option.description}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="tone">Tone</Label>
-                      <Select
-                        value={selectedTone}
-                        onValueChange={(value) => {
-                          setSelectedTone(value);
-                          if (imageUrl) {
-                            runCaptionGeneration(imageUrl, selectedService, value, promotionMode, nsfw);
-                          }
-                        }}
-                      >
-                        <SelectTrigger id="tone">
-                          <SelectValue placeholder="Select tone" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {toneOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="flex items-center space-x-3">
-                      <Switch
-                        id="promotion"
-                        checked={promotionEnabled}
-                        onCheckedChange={(checked) => {
-                          setPromotionEnabled(checked);
-                          if (imageUrl) {
-                            runCaptionGeneration(
-                              imageUrl,
-                              selectedService,
-                              selectedTone,
-                              checked ? 'explicit' : 'none',
-                              nsfw
-                            );
-                          }
-                        }}
-                      />
-                      <Label htmlFor="promotion" className="flex-1">
-                        Include promo CTA
-                        <span className="block text-xs text-muted-foreground">
-                          Adds a soft plug when enabled
-                        </span>
-                      </Label>
-                    </div>
-
-                    <div className="flex items-center space-x-3">
-                      <Switch
-                        id="nsfw"
-                        checked={nsfw}
-                        onCheckedChange={(checked) => {
-                          const availableTones = checked ? NSFW_TONES : SFW_TONES;
-                          const nextTone = availableTones.some((option) => option.value === selectedTone)
-                            ? selectedTone
-                            : availableTones[0]?.value ?? selectedTone;
-                          setNsfw(checked);
-                          setSelectedTone(nextTone);
-                          if (imageUrl) {
-                            runCaptionGeneration(
-                              imageUrl,
-                              selectedService,
-                              nextTone,
-                              promotionMode,
-                              checked
-                            );
-                          }
-                        }}
-                      />
-                      <Label htmlFor="nsfw" className="flex-1">
-                        Mark caption as NSFW
-                        <span className="block text-xs text-muted-foreground">
-                          Switch tones & safety filters automatically
-                        </span>
-                      </Label>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {imageUrl && (
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Badge variant={captionOptions.length > 0 ? 'default' : 'outline'}>
-                      {captionOptions.length > 0 ? <CheckCircle className="h-3 w-3 mr-1" /> : '3'}
-                    </Badge>
-                    <Label>Choose Caption</Label>
-                    {generateCaptions.isPending && (
-                      <Loader2 className="h-4 w-4 animate-spin text-purple-500" />
-                    )}
-                  </div>
-
-                  {/* Caption Generation Progress */}
-                  {generateCaptions.isPending && captionProgress > 0 && (
-                    <div className="mb-4">
-                      <ProgressWithLabel 
-                        value={captionProgress} 
-                        label="Generating captions..."
-                        className="mb-2"
-                      />
-                    </div>
-                  )}
-
-                  {/* Image Protection Progress */}
-                  {protectImage.isPending && protectionProgress > 0 && (
-                    <div className="mb-4">
-                      <ProgressWithLabel 
-                        value={protectionProgress} 
-                        label="Applying ImageShield protection..."
-                        className="mb-2"
-                      />
-                    </div>
-                  )}
-
-                  {captionOptions.length > 0 ? (
-                    <>
-                      {confirmedCaptionId ? (
-                        <Card className="border-purple-500 bg-purple-50 dark:bg-purple-950/20">
-                          <CardHeader className="pb-2">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Badge variant="secondary">Selected</Badge>
-                                <span className="text-sm text-muted-foreground">Caption {confirmedCaptionId}</span>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={() => {
-                                  setIsEditingCaption(true);
-                                  setCaptionBeingEdited(confirmedCaptionId);
-                                  setEditedCaptionText(selectedCaptionOption?.text || '');
-                                }}
-                              >
-                                <Pencil className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </CardHeader>
-                          <CardContent>
-                            {isEditingCaption && captionBeingEdited === confirmedCaptionId ? (
-                              <div className="space-y-2">
-                                <Textarea
-                                  value={editedCaptionText}
-                                  onChange={(e) => setEditedCaptionText(e.target.value)}
-                                  className="min-h-[60px] text-sm"
-                                  placeholder="Edit your caption..."
-                                />
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    onClick={() => {
-                                      const updatedOptions = captionOptions.map(opt => 
-                                        opt.id === confirmedCaptionId ? { ...opt, text: editedCaptionText } : opt
-                                      );
-                                      setCaptionOptions(updatedOptions);
-                                      setIsEditingCaption(false);
-                                      setCaptionBeingEdited(null);
-                                    }}
-                                  >
-                                    <Save className="h-3 w-3 mr-1" />
-                                    Save
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => {
-                                      setIsEditingCaption(false);
-                                      setCaptionBeingEdited(null);
-                                      setEditedCaptionText('');
-                                    }}
-                                  >
-                                    <X className="h-3 w-3 mr-1" />
-                                    Cancel
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <p className="text-sm">{selectedCaptionOption?.text}</p>
-                            )}
-                          </CardContent>
-                        </Card>
-                      ) : (
-                        <RadioGroup value={selectedCaption} onValueChange={(value) => setSelectedCaption(value as 'A' | 'B')}>
-                          <div className="space-y-4">
-                            {captionOptions.map((option) => (
-                              <Card
-                                key={option.id}
-                                className={cn(
-                                  'cursor-pointer transition-all',
-                                  selectedCaption === option.id && 'border-purple-500 bg-purple-50 dark:bg-purple-950/20'
-                                )}
-                                onClick={() => setSelectedCaption(option.id)}
-                              >
-                                <CardHeader className="pb-2">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                      <RadioGroupItem value={option.id} />
-                                      <Badge variant="secondary">{option.style}</Badge>
-                                      <span className="text-xs text-muted-foreground">Caption {option.id}</span>
-                                    </div>
-                                    {selectedCaption === option.id && (
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-6 w-6"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setIsEditingCaption(true);
-                                          setCaptionBeingEdited(option.id);
-                                          setEditedCaptionText(option.text);
-                                        }}
-                                      >
-                                        <Pencil className="h-3 w-3" />
-                                      </Button>
-                                    )}
-                                  </div>
-                                </CardHeader>
-                                <CardContent>
-                                  {isEditingCaption && captionBeingEdited === option.id ? (
-                                    <div className="space-y-2">
-                                      <Textarea
-                                        value={editedCaptionText}
-                                        onChange={(e) => setEditedCaptionText(e.target.value)}
-                                        className="min-h-[60px] text-sm"
-                                        placeholder="Edit your caption..."
-                                      />
-                                      <div className="flex gap-2">
-                                        <Button
-                                          size="sm"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            const updatedOptions = captionOptions.map(opt => 
-                                              opt.id === option.id ? { ...opt, text: editedCaptionText } : opt
-                                            );
-                                            setCaptionOptions(updatedOptions);
-                                            setIsEditingCaption(false);
-                                            setCaptionBeingEdited(null);
-                                          }}
-                                        >
-                                          <Save className="h-3 w-3 mr-1" />
-                                          Save
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setIsEditingCaption(false);
-                                            setCaptionBeingEdited(null);
-                                            setEditedCaptionText('');
-                                          }}
-                                        >
-                                          <X className="h-3 w-3 mr-1" />
-                                          Cancel
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <p className="text-sm">{option.text}</p>
-                                  )}
-                                </CardContent>
-                              </Card>
-                            ))}
-                          </div>
-                        </RadioGroup>
-                      )}
-
-                      {!confirmedCaptionId && (
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 mt-4">
-                          <Button
-                            onClick={handleConfirmCaption}
-                            disabled={!selectedCaption}
-                            className="bg-purple-600 hover:bg-purple-700 min-h-[44px]"
-                          >
-                            <BadgeCheck className="h-4 w-4 mr-2" />
-                            Use Selected Caption
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => runCaptionGeneration(imageUrl, selectedService, selectedTone, promotionMode, nsfw)}
-                            disabled={generateCaptions.isPending}
-                            className="min-h-[44px]"
-                          >
-                            <RefreshCw className="h-3 w-3 mr-1" />
-                            <span className="hidden sm:inline">Regenerate Captions</span>
-                            <span className="sm:hidden">Regenerate</span>
-                          </Button>
-                        </div>
-                      )}
-                    </>
-                  ) : generateCaptions.isPending ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="text-center">
-                        <Sparkles className="h-8 w-8 mx-auto mb-2 text-purple-500 animate-pulse" />
-                        <p className="text-sm text-muted-foreground">Generating captions with Grok...</p>
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              )}
-
-              {imageUrl && (
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Badge variant={protectedImageUrl ? 'default' : 'outline'}>
-                      {protectedImageUrl ? <CheckCircle className="h-3 w-3 mr-1" /> : '4'}
-                    </Badge>
-                    <Label>ImageShield Protection</Label>
-                    {protectImage.isPending && (
-                      <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                    )}
-                  </div>
-
-                  {protectedImageUrl ? (
-                    <Alert className="border-green-200 bg-green-50 dark:bg-green-950/20">
-                      <Shield className="h-4 w-4 text-green-600" />
-                      <AlertDescription className="text-green-700 dark:text-green-400">
-                        Image protected against reverse search
-                      </AlertDescription>
-                    </Alert>
-                  ) : protectImage.isPending ? (
-                    <Alert>
-                      <Shield className="h-4 w-4 animate-pulse" />
-                      <AlertDescription>Applying protection...</AlertDescription>
-                    </Alert>
-                  ) : null}
-                </div>
-              )}
-
-              {captionOptions.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Badge variant="outline">5</Badge>
-                    <Label>Post Details</Label>
-                  </div>
-
-                  {selectedService !== 'reddit' && (
-                    <Alert variant="destructive" className="mb-4">
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertDescription>
-                        Quick Post currently supports direct Reddit submissions. Use the generated caption for
-                        {selectedServiceDetails ? ` ${selectedServiceDetails.label}` : 'this platform'} manually.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="subreddit">Subreddit</Label>
-                      {hasCommunityError ? (
-                        <Alert variant="destructive" className="mt-2">
-                          <AlertDescription>
-                            Unable to load your saved communities. {communityErrorMessage} You can still type a subreddit manually below.
-                          </AlertDescription>
-                        </Alert>
-                      ) : null}
-                      <Popover open={communityPickerOpen} onOpenChange={setCommunityPickerOpen}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            aria-expanded={communityPickerOpen}
-                            className="w-full justify-between mt-1"
-                            disabled={communitiesLoading || hasCommunityError}
-                          >
-                            {communitiesLoading ? (
-                              'Loading communities...'
-                            ) : subreddit ? (
-                              (() => {
-                                const selected = sortedCommunities.find((community) => community.id.toLowerCase() === subreddit.toLowerCase());
-                                return selected ? `r/${selected.displayName}` : `r/${subreddit}`;
-                              })()
-                            ) : sortedCommunities.length > 0 ? (
-                              'Select subreddit...'
-                            ) : (
-                              'No saved communities yet'
-                            )}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-full p-0">
-                          <Command>
-                            <CommandInput
-                              placeholder="Search subreddits..."
-                              disabled={communitiesLoading}
-                            />
-                            <CommandEmpty>
-                              {communitiesLoading
-                                ? 'Loading communities...'
-                                : hasCommunityError
-                                  ? 'Communities unavailable. Use the manual input below.'
-                                  : 'No subreddit found.'}
-                            </CommandEmpty>
-                            <CommandList>
-                              {communitiesLoading ? (
-                                <div className="py-6 text-center text-sm text-muted-foreground">
-                                  <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
-                                  Fetching communities...
-                                </div>
-                              ) : (
-                                <CommandGroup>
-                                  {sortedCommunities.map((community) => (
-                                    <CommandItem
-                                      key={community.id}
-                                      value={community.id}
-                                      onSelect={(currentValue) => {
-                                        setSubreddit(currentValue === subreddit ? '' : currentValue);
-                                        setCommunityPickerOpen(false);
-                                      }}
-                                    >
-                                      <div className="flex items-center justify-between w-full">
-                                        <div className="flex-1">
-                                          <div className="font-medium">r/{community.displayName}</div>
-                                          <div className="text-xs text-muted-foreground">
-                                            {community.members.toLocaleString()} members • {Math.round(community.successProbability ?? 0)}% success
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              )}
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                      <Input
-                        id="subreddit"
-                        value={subreddit}
-                        onChange={(event) => setSubreddit(event.target.value.replace(/^r\//i, ''))}
-                        onBlur={() => setSubreddit((current) => current.trim().replace(/^r\//i, ''))}
-                        placeholder="Type a subreddit (e.g., gonewild)"
-                        className="mt-3"
-                        autoComplete="off"
-                      />
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Pick from your saved list or type any subreddit manually.
-                      </p>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="nsfw-post"
-                        checked={nsfw}
-                        onCheckedChange={(checked) => setNsfw(checked)}
-                      />
-                      <Label htmlFor="nsfw-post">Mark as NSFW</Label>
-                    </div>
-
-                    {confirmedCaptionId && (
-                      <div className="space-y-3">
-                        {/* Posting Progress */}
-                        {postToReddit.isPending && postingProgress > 0 && (
-                          <div className="mb-4">
-                            <ProgressWithLabel 
-                              value={postingProgress} 
-                              label="Posting to Reddit..."
-                              className="mb-2"
-                            />
-                          </div>
-                        )}
-
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                          <Button
-                            variant="outline"
-                            onClick={handleValidateSubreddit}
-                            disabled={subredditLint.isPending}
-                            className="min-h-[44px] w-full sm:w-auto"
-                          >
-                            {subredditLint.isPending ? (
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            ) : (
-                              <BadgeCheck className="h-4 w-4 mr-2" />
-                            )}
-                            <span className="hidden sm:inline">Validate Subreddit Rules</span>
-                            <span className="sm:hidden">Validate Rules</span>
-                          </Button>
-
-                          <Button
-                            onClick={() => postToReddit.mutate()}
-                            disabled={!isReadyToPost}
-                            className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 min-h-[44px] w-full sm:w-auto"
-                            size="lg"
-                          >
-                            {postToReddit.isPending ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Posting...
-                              </>
-                            ) : (
-                              <>
-                                <Send className="mr-2 h-4 w-4" />
-                                Post to Reddit Now
-                              </>
-                            )}
-                          </Button>
-                        </div>
-
-                        {validationStatus !== 'idle' && (
-                          <Alert
-                            variant={validationStatus === 'valid' ? 'default' : validationStatus === 'error' ? 'destructive' : 'default'}
-                          >
-                            {validationStatus === 'valid' ? (
-                              <CheckCircle className="h-4 w-4 text-green-600" />
-                            ) : validationStatus === 'error' ? (
-                              <X className="h-4 w-4 text-red-600" />
-                            ) : (
-                              <AlertTriangle className="h-4 w-4 text-orange-500" />
-                            )}
-                            <AlertDescription className="space-y-2 text-sm">
-                              {validationStatus === 'valid' && 'Subreddit check passed. You are good to go!'}
-
-                              {validationStatus === 'error' && validationBlockers.length > 0 && (
-                                <div className="space-y-1">
-                                  <p className="font-semibold text-red-600">Cannot Post - Requirements Not Met:</p>
-                                  <ul className="list-disc list-inside space-y-1">
-                                    {validationBlockers.map((blocker) => (
-                                      <li key={blocker} className="text-red-800">{blocker}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-
-                              {validationStatus === 'warning' && validationWarnings.length > 0 && (
-                                <div className="space-y-1">
-                                  <p className="font-medium text-orange-600">Warnings:</p>
-                                  <ul className="list-disc list-inside space-y-1">
-                                    {validationWarnings.map((warning) => (
-                                      <li key={warning} className="text-orange-800">{warning}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </AlertDescription>
-                          </Alert>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 text-green-600 rounded-full mb-4">
-                <CheckCircle className="h-8 w-8" />
-              </div>
-              <h2 className="text-2xl font-bold mb-2">Posted Successfully!</h2>
-              <p className="text-muted-foreground mb-6">
-                Your post is now live on r/{subreddit}
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-                <Button
-                  variant="outline"
-                  onClick={() => window.open(`https://reddit.com/r/${subreddit}`, '_blank')}
-                  className="min-h-[44px]"
-                >
-                  View on Reddit
-                </Button>
-                <Button onClick={startNewPost} className="min-h-[44px]">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Another Post
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="mt-6 border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20">
-        <CardHeader>
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Zap className="h-4 w-4" />
-            Quick Post Benefits
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="text-sm space-y-1 text-muted-foreground">
-            <li>• 24-hour ephemeral image storage</li>
-            <li>• Configurable AI voices and promo toggles</li>
-            <li>• 2 AI-generated captions from Grok</li>
-            <li>• Automatic ImageShield protection</li>
-            <li>• One-click posting to Reddit</li>
-          </ul>
-        </CardContent>
-      </Card>
-          </div>
-        </div>
+          }
+        />
       </div>
     </>
   );

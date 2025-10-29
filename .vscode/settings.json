@@ -33,6 +33,18 @@
         "find client/src/components client/src/hooks client/src/lib -name \"*.tsx\" -o -name \"*.ts\" | grep -E \"(status-banner|bulk-upload|scheduling|responsive-modal|swipeable|pull-to-refresh|haptics|page-skeletons|empty-state|error-state|retry|draft|offline)\" | sort",
         "git add -A && git commit -m \"feat(ux): Phase 10 - Accessibility & Keyboard Navigation complete\n\n- Accessibility utilities library\n  - trapFocus for modals/dialogs\n  - useEscapeKey hook\n  - announceToScreenReader function\n  - useKeyboardNavigation hook with arrow keys\n  - useFocusTrap hook\n  - SkipToMainContent component\n\n- Global focus ring styles\n  - Visible focus-visible outlines (2px solid)\n  - Proper focus-visible vs focus handling\n  - Skip link support (sr-only with focus reveal)\n\n- ARIA Live Region components\n  - AriaLive component for announcements\n  - useAriaLive hook for dynamic content\n  - Polite and assertive priority levels\n\n- All interactive elements keyboard accessible\n- Escape key closes modals\n- Tab navigation works throughout\n\nPhase 10 complete: WCAG 2.1 AAA accessibility ready\"",
         "npm list canvas-confetti 2>/dev/null | grep canvas-confetti || echo \"not installed\"",
-        "git add -A && git commit -m \"feat(ux): Phase 11 - Onboarding & Help complete\n\n- Complete onboarding tour rebuild\n  - WelcomeModal with feature highlights\n  - OnboardingTour with step-by-step guide\n  - Progress tracking with localStorage\n  - Confetti celebration on completion\n  - useOnboarding hook for state management\n  - Replay tour functionality\n\n- Contextual tooltips system\n  - ContextualTooltip with show-once functionality\n  - HelpTooltip with help icon\n  - FeatureAnnouncement for new features\n  - localStorage tracking for seen tooltips\n\n- Keyboard shortcuts reference\n  - KeyboardShortcuts modal with all shortcuts\n  - Organized by category (Navigation, Actions, Content, Lists, Forms)\n  - useKeyboardShortcutsHelp hook (? key to open)\n  - Visual keyboard badges\n\n- Installed canvas-confetti for celebrations\n\nPhase 11 complete: Professional onboarding and help system\""
+        "git add -A && git commit -m \"feat(ux): Phase 11 - Onboarding & Help complete\n\n- Complete onboarding tour rebuild\n  - WelcomeModal with feature highlights\n  - OnboardingTour with step-by-step guide\n  - Progress tracking with localStorage\n  - Confetti celebration on completion\n  - useOnboarding hook for state management\n  - Replay tour functionality\n\n- Contextual tooltips system\n  - ContextualTooltip with show-once functionality\n  - HelpTooltip with help icon\n  - FeatureAnnouncement for new features\n  - localStorage tracking for seen tooltips\n\n- Keyboard shortcuts reference\n  - KeyboardShortcuts modal with all shortcuts\n  - Organized by category (Navigation, Actions, Content, Lists, Forms)\n  - useKeyboardShortcutsHelp hook (? key to open)\n  - Visual keyboard badges\n\n- Installed canvas-confetti for celebrations\n\nPhase 11 complete: Professional onboarding and help system\"",
+        "cloc *",
+        "npm run typecheck 2>&1 | grep -A 5 \"quick-post.tsx\" | head -30",
+        "sed *",
+        "mkdir *",
+        "cp *",
+        "npm run typecheck 2>&1 | grep -A 2 \"quick-post.tsx\" || echo \"No errors in quick-post.tsx\"",
+        "npm run typecheck 2>&1 | tail -5",
+        "psql \"postgresql://tpilot_user:fK3hcLm92l6YKefkfvGmzsrijVuxalF0@dpg-d3lvko9r0fns73ebmehg-a.oregon-postgres.render.com/tpilot\" -c \"\\dt\" | head -20",
+        "psql \"postgresql://tpilot_user:fK3hcLm92l6YKefkfvGmzsrijVuxalF0@dpg-d3lvko9r0fns73ebmehg-a.oregon-postgres.render.com/tpilot\" -f drizzle/0002_analytics_tables.sql",
+        "wc *",
+        "npm run db:push 2>&1 | head -50",
+        "DATABASE_URL=\"postgresql://tpilot_user:fK3hcLm92l6YKefkfvGmzsrijVuxalF0@dpg-d3lvko9r0fns73ebmehg-a.oregon-postgres.render.com/tpilot\" psql \"$DATABASE_URL\" -f drizzle/0002_analytics_tables.sql 2>&1"
     ]
 }
