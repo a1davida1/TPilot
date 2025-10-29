@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { HeaderEnhanced } from "@/components/header-enhanced";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
+import { CommandPalette, useCommandPalette } from "@/components/ui/command-palette";
 import { useAuth } from "@/hooks/useAuth";
 import { SEOOptimization, seoConfigs } from "@/components/seo-optimization";
 import { UnifiedLanding } from "@/components/unified-landing";
@@ -220,6 +221,9 @@ function App() {
     trackFeatureUsage('app', 'startup', { timestamp: new Date().toISOString() });
   }, []);
 
+  // Command Palette state
+  const { open: commandPaletteOpen, setOpen: setCommandPaletteOpen } = useCommandPalette();
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -229,6 +233,10 @@ function App() {
               <HeaderEnhanced />
               <Router />
               <FloatingActionButton />
+              <CommandPalette
+                open={commandPaletteOpen}
+                onOpenChange={setCommandPaletteOpen}
+              />
               <FeedbackWidget />
               <Toaster />
             </div>

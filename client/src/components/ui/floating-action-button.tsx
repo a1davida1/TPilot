@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Sparkles, Upload, Shield, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLocation } from 'wouter';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface FABAction {
   id: string;
@@ -18,13 +19,27 @@ interface FloatingActionButtonProps {
   hideOnPaths?: string[];
 }
 
-export function FloatingActionButton({ 
+export function FloatingActionButton({
   className,
-  hideOnPaths = [] 
+  hideOnPaths = ['/quick-post', '/bulk-caption', '/post-scheduling']
 }: FloatingActionButtonProps) {
   const [open, setOpen] = useState(false);
   const [, setLocation] = useLocation();
   const [currentPath] = useLocation();
+
+  // Keyboard shortcut: Cmd+N / Ctrl+N
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Cmd+N (Mac) or Ctrl+N (Windows/Linux)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+        e.preventDefault(); // Prevent browser's default "New Window"
+        setOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Hide FAB on specific paths
   if (hideOnPaths.some(path => currentPath.startsWith(path))) {
@@ -78,34 +93,48 @@ export function FloatingActionButton({
     },
   ];
 
+  // Detect OS for keyboard shortcut hint
+  const isMac = typeof navigator !== 'undefined' && navigator.userAgent.includes('Mac');
+  const shortcutHint = isMac ? '⌘N' : 'Ctrl+N';
+
   return (
     <>
       {/* Main FAB */}
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <button
-            className={cn(
-              'fixed bottom-6 right-6 z-50',
-              'h-14 w-14 rounded-full',
-              'bg-gradient-to-r from-purple-600 to-pink-600',
-              'shadow-lg shadow-purple-600/30',
-              'flex items-center justify-center',
-              'transition-all duration-200',
-              'hover:scale-110 hover:shadow-xl hover:shadow-purple-600/40',
-              'focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2',
-              'group',
-              className
-            )}
-            aria-label="Quick actions"
-          >
-            <Plus 
-              className={cn(
-                'h-6 w-6 text-white transition-transform duration-200',
-                open && 'rotate-45'
-              )} 
-            />
-          </button>
-        </PopoverTrigger>
+      <TooltipProvider>
+        <Popover open={open} onOpenChange={setOpen}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <PopoverTrigger asChild>
+                <button
+                  className={cn(
+                    'fixed bottom-6 right-6 z-50',
+                    'h-14 w-14 rounded-full',
+                    'bg-gradient-to-r from-purple-600 to-pink-600',
+                    'shadow-lg shadow-purple-600/30',
+                    'flex items-center justify-center',
+                    'transition-all duration-200',
+                    'hover:scale-110 hover:shadow-xl hover:shadow-purple-600/40',
+                    'focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2',
+                    'group',
+                    className
+                  )}
+                  aria-label="Quick actions"
+                >
+                  <Plus
+                    className={cn(
+                      'h-6 w-6 text-white transition-transform duration-200',
+                      open && 'rotate-45'
+                    )}
+                  />
+                </button>
+              </PopoverTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="left" sideOffset={8}>
+              <p className="text-sm">
+                Quick Actions <kbd className="ml-2 text-xs bg-white/20 px-1.5 py-0.5 rounded">{shortcutHint}</kbd>
+              </p>
+            </TooltipContent>
+          </Tooltip>
 
         <PopoverContent 
           align="end" 
@@ -143,6 +172,7 @@ export function FloatingActionButton({
           </div>
         </PopoverContent>
       </Popover>
+      </TooltipProvider>
     </>
   );
 }
