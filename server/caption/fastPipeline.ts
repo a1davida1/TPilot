@@ -143,8 +143,9 @@ Write like you're texting someone during/after the moment.
 [
   {
     "caption": "...",  // The actual caption text
-    "alt": "...",      // Brief feeling: "Me feeling so good" NOT "Woman on bed"
+    "alt": "...",      // Brief feeling (20+ chars): "Me feeling so fucking good right now" NOT "Woman on bed"
     "hashtags": [...], // 3-5 specific to scene (if relevant)
+    "cta": "...",      // Call to action (2+ chars): "check my profile", "dm me", "link in bio"
     "mood": "...",     // 1-word: horny/teasing/confident/intimate/etc
     "style": "...",    // teasing/confident/intimate/bratty/direct
     "safety_level": "${nsfw ? 'explicit' : 'suggestive'}"
@@ -366,16 +367,18 @@ export function getFallbackCaptions(platform: CaptionPlatform, nsfw: boolean): z
     ? [
         {
           caption: 'Can\'t stop thinking about you 💦',
-          alt: 'Feeling excited',
+          alt: 'Me feeling excited and turned on right now',
           hashtags: ['#NSFW'],
+          cta: 'check my profile',
           mood: 'horny',
           style: 'teasing',
           safety_level: 'explicit' as const,
         },
         {
           caption: 'So wet rn',
-          alt: 'Turned on',
+          alt: 'Me feeling so turned on thinking about you',
           hashtags: ['#NSFWContent'],
+          cta: 'dm me',
           mood: 'needy',
           style: 'direct',
           safety_level: 'explicit' as const,
@@ -384,16 +387,18 @@ export function getFallbackCaptions(platform: CaptionPlatform, nsfw: boolean): z
     : [
         {
           caption: 'Feeling myself today 😏',
-          alt: 'Confident mood',
+          alt: 'Me in a confident and playful mood today',
           hashtags: ['#Mood'],
+          cta: 'link in bio',
           mood: 'confident',
           style: 'teasing',
           safety_level: 'suggestive' as const,
         },
         {
           caption: 'New vibe, who dis?',
-          alt: 'New look',
+          alt: 'Me showing off my new look and feeling good',
           hashtags: ['#NewPost'],
+          cta: 'check my profile',
           mood: 'playful',
           style: 'confident',
           safety_level: 'safe' as const,
