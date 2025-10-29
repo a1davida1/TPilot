@@ -1369,6 +1369,7 @@ export default function RedditPostingPage() {
                         id="image"
                         type="file"
                         accept="image/*"
+                        multiple
                         onChange={handleImageSelect}
                         className="cursor-pointer"
                         data-testid="input-image-upload"
