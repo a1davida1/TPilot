@@ -25,6 +25,7 @@
         "git log --oneline --all --grep=\"theme\" | head -20",
         "git log --all --oneline --follow -- client/src/components/theme-provider.tsx | head -5",
         "git show e172b50a --name-status | grep -E \"^[AM]\" | head -20",
-        "grep *"
+        "grep *",
+        "git commit -m \"feat(ux): Phase 5 & 6 - Status banners, bulk upload, drag-and-drop scheduling\n\n- Phase 5: Status Banner System\n  - StatusBannerContainer with auto-dismiss (24h localStorage)\n  - useStatusBanners hook for tier limits, cooldowns, post removals\n  - Integrated into dashboard with tier limit warnings\n\n- Phase 6: Bulk Upload & Drag-and-Drop (5/7 complete)\n  - BulkUploadZone: Multi-file upload with progress tracking\n  - ImageLibraryGrid: Responsive grid with multi-select\n  - CaptionEditor: Inline editing with subreddit validation\n  - DraggableImage: @dnd-kit drag-and-drop component\n  - CalendarDropZone: Calendar with tier limits and drop zones\n  - ScheduleModal: Complete scheduling UI with subreddit picker\n\nAll components TypeScript strict-mode compliant, production-ready\""
     ]
 }

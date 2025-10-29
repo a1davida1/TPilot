@@ -73,12 +73,17 @@ export function BulkUploadZone({
       }, 200);
 
       const response = await authenticatedRequest<{
-        asset: { id: number; url: string };
+        asset: { 
+          id: number; 
+          signedUrl: string;
+          downloadUrl: string;
+        };
       }>('/api/media/upload', 'POST', formData);
 
       clearInterval(progressInterval);
 
-      if (!response.asset?.url) {
+      const imageUrl = response.asset?.signedUrl || response.asset?.downloadUrl;
+      if (!imageUrl) {
         throw new Error('Upload failed: No URL returned');
       }
 
@@ -88,7 +93,7 @@ export function BulkUploadZone({
           img.id === imageId
             ? {
                 ...img,
-                url: response.asset.url,
+                url: imageUrl,
                 assetId: response.asset.id,
                 status: 'success',
                 progress: 100,

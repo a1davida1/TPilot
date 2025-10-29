@@ -30,12 +30,12 @@ interface ScheduleModalProps {
 }
 
 interface ScheduleData {
-  imageId: string;
+  subreddit: string;
+  title: string;
   imageUrl: string;
-  caption: string;
-  subreddits: string[];
-  scheduledFor: Date;
+  scheduledFor: string; // ISO datetime
   nsfw: boolean;
+  caption?: string;
 }
 
 const OPTIMAL_TIMES = [
@@ -78,13 +78,18 @@ export function ScheduleModal({
   );
 
   const scheduleMutation = useMutation({
-    mutationFn: async (data: ScheduleData) => {
-      return await authenticatedRequest('/api/scheduled-posts', 'POST', data);
+    mutationFn: async (scheduleRequests: ScheduleData[]) => {
+      // Create multiple scheduled posts (one per subreddit)
+      const promises = scheduleRequests.map((data) =>
+        authenticatedRequest('/api/scheduled-posts', 'POST', data)
+      );
+      return await Promise.all(promises);
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      const count = variables.length;
       toast({
-        title: 'Post scheduled',
-        description: `Scheduled for ${format(selectedDate, 'MMM d, yyyy')} at ${selectedTime}`,
+        title: 'Posts scheduled',
+        description: `${count} post${count > 1 ? 's' : ''} scheduled for ${format(selectedDate, 'MMM d, yyyy')} at ${selectedTime}`,
       });
       onClose();
     },
@@ -118,19 +123,28 @@ export function ScheduleModal({
 
     const timeToUse = customTime || selectedTime;
     const [hours, minutes] = timeToUse.split(':').map(Number);
-    const scheduledDateTime = new Date(selectedDate);
-    scheduledDateTime.setHours(hours, minutes, 0, 0);
+    
+    // Create schedule requests for each subreddit with staggered times
+    const scheduleRequests: ScheduleData[] = selectedSubreddits.map((subreddit, index) => {
+      const scheduledDateTime = new Date(selectedDate);
+      scheduledDateTime.setHours(hours, minutes, 0, 0);
+      
+      // Stagger by 10 minutes for each additional subreddit
+      if (index > 0) {
+        scheduledDateTime.setMinutes(scheduledDateTime.getMinutes() + (index * 10));
+      }
 
-    const scheduleData: ScheduleData = {
-      imageId: image.id,
-      imageUrl: image.url,
-      caption: image.caption,
-      subreddits: selectedSubreddits,
-      scheduledFor: scheduledDateTime,
-      nsfw,
-    };
+      return {
+        subreddit,
+        title: image.caption || 'Untitled',
+        imageUrl: image.url,
+        scheduledFor: scheduledDateTime.toISOString(),
+        nsfw,
+        caption: image.caption,
+      };
+    });
 
-    scheduleMutation.mutate(scheduleData);
+    scheduleMutation.mutate(scheduleRequests);
   };
 
   const toggleSubreddit = (subreddit: string) => {
