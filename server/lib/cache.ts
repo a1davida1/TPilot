@@ -16,8 +16,8 @@ if (process.env.REDIS_URL) {
   try {
     redis = new Redis(process.env.REDIS_URL, {
       maxRetriesPerRequest: 3,
-      enableOfflineQueue: false,
-      lazyConnect: true,
+      enableOfflineQueue: true,  // Allow commands to queue while connecting
+      lazyConnect: false,        // Connect immediately on startup
       retryStrategy: (times) => {
         if (times > 3) {
           logger.warn('Redis connection failed after 3 retries, disabling cache');

@@ -53,10 +53,13 @@ let downloadRedisClient: Redis | null = null;
 if (env.REDIS_URL && process.env.USE_PG_QUEUE !== 'true') {
   try {
     downloadRedisClient = new Redis(env.REDIS_URL, {
-      maxRetriesPerRequest: 1,
-      enableOfflineQueue: false,
-      lazyConnect: true,
-      retryStrategy: () => null
+      maxRetriesPerRequest: 3,
+      enableOfflineQueue: true,  // Allow commands to queue while connecting
+      lazyConnect: false,        // Connect immediately on startup
+      retryStrategy: (times) => {
+        if (times > 3) return null; // Stop retrying after 3 attempts
+        return Math.min(times * 50, 2000); // Exponential backoff
+      }
     });
     downloadRedisClient.on('error', () => {
       // Silently handle errors - will use memory fallback

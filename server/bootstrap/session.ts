@@ -102,16 +102,16 @@ export function createSessionMiddleware(): ReturnType<typeof session> {
   } else if (redisUrl && !usePgQueue) {
     logger.info(`Session store: Redis URL found, USE_PG_QUEUE=${usePgQueue}`);
     const redisClient = new Redis(redisUrl, {
-      lazyConnect: true,
-      maxRetriesPerRequest: 1,
+      lazyConnect: false,        // Connect immediately on startup
+      maxRetriesPerRequest: 3,   // Increased retries for better reliability
       enableAutoPipelining: true,
-      enableOfflineQueue: false,
+      enableOfflineQueue: true,  // Allow commands to queue while connecting
       retryStrategy: (times) => {
-        if (times > 1) {
+        if (times > 3) {
           logger.warn('Redis connection failed for sessions, will use fallback');
           return null;
         }
-        return 100;
+        return Math.min(times * 50, 2000); // Exponential backoff
       },
     });
 
