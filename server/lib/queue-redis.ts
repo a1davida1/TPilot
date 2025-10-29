@@ -20,20 +20,21 @@ export class RedisBullQueue implements IQueue {
   }
 
   async initialize(): Promise<void> {
-    logger.error('🚀 Initializing Redis BullMQ Queue backend');
+    logger.info('🚀 Initializing Redis BullMQ Queue backend');
     // Create Redis connection during initialization, not constructor
     this.redis = new IORedis(this.redisUrl, {
       maxRetriesPerRequest: 3,
-      enableOfflineQueue: false,
+      enableOfflineQueue: true,  // Allow commands to queue while connecting
+      lazyConnect: false,        // Connect immediately
       retryStrategy: (times) => {
         if (times > 3) {
           logger.error('Redis connection failed after 3 retries');
           return null; // Stop retrying
         }
-        return Math.min(times * 50, 500);
+        return Math.min(times * 50, 2000); // Exponential backoff
       }
     });
-    
+
     // Test Redis connection
     await this.redis.ping();
   }
@@ -55,7 +56,7 @@ export class RedisBullQueue implements IQueue {
     if (this.redis) {
       await this.redis.quit();
     }
-    logger.error('📦 Redis BullMQ Queue backend closed');
+    logger.info('📦 Redis BullMQ Queue backend closed');
   }
 
   async enqueue<T = unknown>(
@@ -110,7 +111,7 @@ export class RedisBullQueue implements IQueue {
 
     // Handle worker events
     worker.on('completed', (job) => {
-      logger.error(`✅ Job ${job.id} completed in queue ${queueName}`);
+      logger.info(`✅ Job ${job.id} completed in queue ${queueName}`);
     });
 
     worker.on('failed', (job, err) => {
