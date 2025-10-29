@@ -746,10 +746,36 @@ export default function QuickPostPage() {
         />
       )}
       
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="container mx-auto px-4 py-4 sm:py-8 max-w-7xl">
+        {/* Mobile Progress Bar - Only show on mobile */}
+        <div className="lg:hidden mb-4">
+          <Card className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <div className={cn("flex items-center gap-1", imageUrl && "text-green-600 dark:text-green-400")}>
+                  {imageUrl ? <CheckCircle className="h-3 w-3" /> : <div className="h-3 w-3 rounded-full border-2" />}
+                  <span className="hidden sm:inline">Image</span>
+                </div>
+                <div className={cn("flex items-center gap-1", protectedImageUrl && "text-green-600 dark:text-green-400")}>
+                  {protectedImageUrl ? <CheckCircle className="h-3 w-3" /> : <div className="h-3 w-3 rounded-full border-2" />}
+                  <span className="hidden sm:inline">Protected</span>
+                </div>
+                <div className={cn("flex items-center gap-1", confirmedCaptionId && "text-green-600 dark:text-green-400")}>
+                  {confirmedCaptionId ? <CheckCircle className="h-3 w-3" /> : <div className="h-3 w-3 rounded-full border-2" />}
+                  <span className="hidden sm:inline">Caption</span>
+                </div>
+                <div className={cn("flex items-center gap-1", posted && "text-green-600 dark:text-green-400")}>
+                  {posted ? <CheckCircle className="h-3 w-3" /> : <div className="h-3 w-3 rounded-full border-2" />}
+                  <span className="hidden sm:inline">Posted</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         <div className="flex gap-6">
-          {/* Left Pane - Progress Sidebar */}
-          <div className="w-64 flex-shrink-0">
+          {/* Left Pane - Progress Sidebar (Desktop Only) */}
+          <div className="hidden lg:block w-64 flex-shrink-0">
             <div className="sticky top-20 space-y-4">
               <Card>
                 <CardHeader>
@@ -786,23 +812,23 @@ export default function QuickPostPage() {
           </div>
           
           {/* Right Pane - Main Content */}
-          <div className="flex-1 min-w-0">
-            <div className="mb-8 text-center">
-              <div className="inline-flex items-center gap-2 mb-4">
-                <div className="p-2 bg-yellow-500 text-white rounded-full">
-                  <Zap className="h-6 w-6" />
-                </div>
-                <h1 className="text-3xl font-bold">Quick Post</h1>
-              </div>
-              <p className="text-muted-foreground">
-                Upload, generate captions, protect, and post in minutes
-              </p>
+          <div className="flex-1 min-w-0 w-full">
+        <div className="mb-4 sm:mb-8 text-center">
+          <div className="inline-flex items-center gap-2 mb-2 sm:mb-4">
+            <div className="p-1.5 sm:p-2 bg-yellow-500 text-white rounded-full">
+              <Zap className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
+            <h1 className="text-2xl sm:text-3xl font-bold">Quick Post</h1>
+          </div>
+          <p className="text-sm sm:text-base text-muted-foreground px-4">
+            Upload, generate captions, protect, and post in minutes
+          </p>
+        </div>
 
-            <Card>
-              <CardContent className="p-6">
-                {!posted ? (
-                  <div className="space-y-6">
+        <Card>
+        <CardContent className="p-4 sm:p-6">
+          {!posted ? (
+            <div className="space-y-6">
               <div>
                 <div className="flex items-center gap-2 mb-4">
                   <Badge variant={imageUrl ? 'default' : 'outline'}>
@@ -848,7 +874,7 @@ export default function QuickPostPage() {
                     <Settings2 className="h-4 w-4 text-muted-foreground" />
                   </div>
 
-                  <div className="grid gap-4 md:grid-cols-2">
+                  <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="service">Service</Label>
                       <Select
@@ -1147,11 +1173,11 @@ export default function QuickPostPage() {
                       )}
 
                       {!confirmedCaptionId && (
-                        <div className="flex items-center gap-3 mt-4">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 mt-4">
                           <Button
                             onClick={handleConfirmCaption}
                             disabled={!selectedCaption}
-                            className="bg-purple-600 hover:bg-purple-700"
+                            className="bg-purple-600 hover:bg-purple-700 min-h-[44px]"
                           >
                             <BadgeCheck className="h-4 w-4 mr-2" />
                             Use Selected Caption
@@ -1161,9 +1187,11 @@ export default function QuickPostPage() {
                             size="sm"
                             onClick={() => runCaptionGeneration(imageUrl, selectedService, selectedTone, promotionMode, nsfw)}
                             disabled={generateCaptions.isPending}
+                            className="min-h-[44px]"
                           >
                             <RefreshCw className="h-3 w-3 mr-1" />
-                            Regenerate Captions
+                            <span className="hidden sm:inline">Regenerate Captions</span>
+                            <span className="sm:hidden">Regenerate</span>
                           </Button>
                         </div>
                       )}
@@ -1340,24 +1368,26 @@ export default function QuickPostPage() {
                           </div>
                         )}
 
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                           <Button
                             variant="outline"
                             onClick={handleValidateSubreddit}
                             disabled={subredditLint.isPending}
+                            className="min-h-[44px] w-full sm:w-auto"
                           >
                             {subredditLint.isPending ? (
                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                             ) : (
                               <BadgeCheck className="h-4 w-4 mr-2" />
                             )}
-                            Validate Subreddit Rules
+                            <span className="hidden sm:inline">Validate Subreddit Rules</span>
+                            <span className="sm:hidden">Validate Rules</span>
                           </Button>
 
                           <Button
                             onClick={() => postToReddit.mutate()}
                             disabled={!isReadyToPost}
-                            className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600"
+                            className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 min-h-[44px] w-full sm:w-auto"
                             size="lg"
                           >
                             {postToReddit.isPending ? (
@@ -1427,14 +1457,15 @@ export default function QuickPostPage() {
               <p className="text-muted-foreground mb-6">
                 Your post is now live on r/{subreddit}
               </p>
-              <div className="flex gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
                 <Button
                   variant="outline"
                   onClick={() => window.open(`https://reddit.com/r/${subreddit}`, '_blank')}
+                  className="min-h-[44px]"
                 >
                   View on Reddit
                 </Button>
-                <Button onClick={startNewPost}>
+                <Button onClick={startNewPost} className="min-h-[44px]">
                   <Plus className="mr-2 h-4 w-4" />
                   Create Another Post
                 </Button>

@@ -3,5 +3,18 @@
     "typescript.tsserver.web.projectWideIntellisense.enabled": true,
     "editor.fontSize": 66,
     "editor.codeLensFontSize": 20,
-    "editor.inlayHints.fontSize": 10
+    "editor.inlayHints.fontSize": 10,
+    "kiroAgent.configureMCP": "Disabled",
+    "kiroAgent.autoApprove": {
+        "commands": [
+            "npm*"
+        ]
+    },
+    "kiroAgent.trustedCommands": [
+        "npm *",
+        "find *",
+        "npm run lint 2>&1 | head -50",
+        "npm run build 2>&1 | head -100",
+        "npm run typecheck 2>&1 | head -150"
+    ]
 }
