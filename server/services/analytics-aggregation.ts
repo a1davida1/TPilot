@@ -184,52 +184,11 @@ export async function aggregateAiUsageForDay(targetDate: Date): Promise<void> {
 
     logger.info(`🤖 Found ${userGenerations.size} users with AI usage to aggregate`);
 
-    // Insert/Update analytics records
-    for (const [userId, count] of userGenerations.entries()) {
-      // Check if record exists
-      const existing = await db
-        .select()
-        .from(analyticsAiUsageDaily)
-        .where(
-          and(
-            eq(analyticsAiUsageDaily.userId, userId),
-            eq(analyticsAiUsageDaily.day, startOfDay.toISOString().split('T')[0])
-          )
-        )
-        .limit(1);
+    // Refresh the materialized view (analytics_ai_usage_daily is a view, not a table)
+    // The view automatically aggregates data from ai_generations table
+    await db.execute(sql`REFRESH MATERIALIZED VIEW CONCURRENTLY analytics_ai_usage_daily`);
 
-      // For now, we'll use a simple model breakdown
-      // In the future, we can track actual model usage from API calls
-      const modelBreakdown = [
-        { model: 'grok-4-fast', count: Math.floor(count * 0.8) },
-        { model: 'openai-fallback', count: Math.floor(count * 0.2) }
-      ];
-
-      const data = {
-        userId,
-        day: startOfDay.toISOString().split('T')[0],
-        generationCount: count,
-        modelBreakdown: modelBreakdown,
-      };
-
-      if (existing.length > 0) {
-        // Update existing record
-        await db
-          .update(analyticsAiUsageDaily)
-          .set(data)
-          .where(
-            and(
-              eq(analyticsAiUsageDaily.userId, userId),
-              eq(analyticsAiUsageDaily.day, startOfDay.toISOString().split('T')[0])
-            )
-          );
-      } else {
-        // Insert new record
-        await db.insert(analyticsAiUsageDaily).values(data);
-      }
-    }
-
-    logger.info('✅ AI usage aggregation complete', {
+    logger.info('✅ AI usage aggregation complete - materialized view refreshed', {
       usersProcessed: userGenerations.size,
       totalGenerations: Array.from(userGenerations.values()).reduce((a, b) => a + b, 0)
     });
