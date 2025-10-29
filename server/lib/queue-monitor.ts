@@ -43,7 +43,7 @@ export class QueueMonitor {
   async startMonitoring(intervalMs: number = 30000) { // 30 seconds default
     if (this.monitoring) return;
 
-    logger.error('🔍 Starting queue monitoring...');
+    logger.info('🔍 Starting queue monitoring...');
     this.monitoring = true;
 
     // Initial collection
@@ -58,13 +58,13 @@ export class QueueMonitor {
       }
     }, intervalMs);
 
-    logger.error(`✅ Queue monitoring started (interval: ${intervalMs}ms)`);
+    logger.info(`✅ Queue monitoring started (interval: ${intervalMs}ms)`);
   }
 
   stopMonitoring() {
     if (!this.monitoring) return;
 
-    logger.error('🛑 Stopping queue monitoring...');
+    logger.info('🛑 Stopping queue monitoring...');
     this.monitoring = false;
 
     if (this.intervalId) {
@@ -72,7 +72,7 @@ export class QueueMonitor {
       this.intervalId = undefined;
     }
 
-    logger.error('✅ Queue monitoring stopped');
+    logger.info('✅ Queue monitoring stopped');
   }
 
   private async collectMetrics() {
