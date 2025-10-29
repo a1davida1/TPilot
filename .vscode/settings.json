@@ -15,6 +15,10 @@
         "find *",
         "npm run lint 2>&1 | head -50",
         "npm run build 2>&1 | head -100",
-        "npm run typecheck 2>&1 | head -150"
+        "npm run typecheck 2>&1 | head -150",
+        "git status",
+        "git pull --rebase origin main",
+        "git diff .vscode/settings.json",
+        "git *"
     ]
 }
