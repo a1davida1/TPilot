@@ -25,6 +25,7 @@ interface CommunityOutcomeRow {
 export interface CaptionPersonalizationContext {
   promptLines: string[];
   bannedWords: string[];
+  successfulTitlePatterns?: string[];
 }
 
 function sanitizePromptValue(value: string): string {
@@ -123,6 +124,39 @@ function normalizeSubreddit(value: string | null | undefined): string | undefine
   return trimmed.startsWith('r/') ? trimmed.slice(2) : trimmed;
 }
 
+/**
+ * Analyzes successful post titles to identify patterns
+ * Returns example titles from high-performing posts
+ */
+function extractSuccessfulTitlePatterns(posts: Array<{ title: string | null; upvotes: number | null; success: boolean | null }>): string[] {
+  if (!Array.isArray(posts) || posts.length === 0) {
+    return [];
+  }
+
+  // Filter for successful posts with titles and upvotes
+  const successfulPosts = posts
+    .filter(post =>
+      post.success === true &&
+      post.title &&
+      typeof post.title === 'string' &&
+      post.title.trim().length > 0 &&
+      typeof post.upvotes === 'number' &&
+      post.upvotes > 10 // Only consider posts with meaningful engagement
+    )
+    .map(post => ({
+      title: sanitizePromptValue(post.title!),
+      upvotes: post.upvotes as number
+    }))
+    .sort((a, b) => b.upvotes - a.upvotes); // Sort by upvotes descending
+
+  if (successfulPosts.length === 0) {
+    return [];
+  }
+
+  // Return top 5 successful titles as examples
+  return successfulPosts.slice(0, 5).map(post => post.title);
+}
+
 function buildCommunityLines(rows: CommunityOutcomeRow[], defaultSubreddit?: string | null): string[] {
   if (!Array.isArray(rows) || rows.length === 0) {
     const normalizedDefault = normalizeSubreddit(defaultSubreddit ?? undefined);
@@ -213,6 +247,18 @@ export async function loadCaptionPersonalizationContext(userId: number): Promise
       .groupBy(redditPostOutcomes.subreddit)
       .limit(20);
 
+    // Fetch successful posts with titles for pattern analysis
+    const successfulPosts = await db
+      .select({
+        title: redditPostOutcomes.title,
+        upvotes: redditPostOutcomes.upvotes,
+        success: redditPostOutcomes.success,
+      })
+      .from(redditPostOutcomes)
+      .where(eq(redditPostOutcomes.userId, userId))
+      .orderBy(sql`${redditPostOutcomes.upvotes} DESC`)
+      .limit(50); // Get top 50 posts to analyze
+
     const promptLines: string[] = [];
 
     if (preferenceRecord) {
@@ -244,6 +290,13 @@ export async function loadCaptionPersonalizationContext(userId: number): Promise
       promptLines.push(bannedLine);
     }
 
+    // Extract successful title patterns
+    const titlePatterns = extractSuccessfulTitlePatterns(successfulPosts);
+    if (titlePatterns.length > 0) {
+      const patternsLine = `SUCCESSFUL_TITLE_EXAMPLES: Your best-performing titles were: "${titlePatterns.join('", "')}" - Consider similar structure, length, and tone.`;
+      promptLines.push(patternsLine);
+    }
+
     const uniquePromptLines = Array.from(new Set(promptLines.map(line => sanitizePromptValue(line)))).filter(
       (line): line is string => line.length > 0,
     );
@@ -255,6 +308,7 @@ export async function loadCaptionPersonalizationContext(userId: number): Promise
     return {
       promptLines: uniquePromptLines,
       bannedWords,
+      successfulTitlePatterns: titlePatterns.length > 0 ? titlePatterns : undefined,
     };
   } catch (error) {
     logger.warn('Failed to load caption personalization context', { userId, error });
