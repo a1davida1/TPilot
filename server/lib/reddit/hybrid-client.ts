@@ -123,7 +123,8 @@ export class HybridRedditClient {
 
           if (!token) {
             // Refresh token via Snoowrap
-            await this.snoowrap.getMe().catch(() => void 0);
+            // @ts-expect-error TS1062 false positive - circular dependency in snoowrap types
+            await this.snoowrap.getMe();
             token = this.snoowrap.accessToken;
 
             // Cache for 55 minutes (tokens expire in 1 hour)
@@ -408,22 +409,24 @@ export class HybridRedditClient {
 
       if (options.url) {
         // Link post
+        // @ts-expect-error TS1062 false positive - circular dependency in snoowrap types
         submission = await this.snoowrap.submitLink({
           subredditName: options.subreddit,
           title: options.title,
           url: options.url,
           nsfw: options.nsfw,
           spoiler: options.spoiler,
-        }).catch((err) => { throw err; });
+        });
       } else {
         // Text post
+        // @ts-expect-error TS1062 false positive - circular dependency in snoowrap types
         submission = await this.snoowrap.submitSelfpost({
           subredditName: options.subreddit,
           title: options.title,
           text: options.text || '',
           nsfw: options.nsfw,
           spoiler: options.spoiler,
-        }).catch((err) => { throw err; });
+        });
       }
 
       // Apply flair if specified
@@ -479,7 +482,8 @@ export class HybridRedditClient {
    */
   async testConnection(): Promise<boolean> {
     try {
-      await this.snoowrap.getMe().catch(() => void 0);
+      // @ts-expect-error TS1062 false positive - circular dependency in snoowrap types
+      await this.snoowrap.getMe();
       return true;
     } catch (error) {
       logger.error('Reddit connection test failed', {
