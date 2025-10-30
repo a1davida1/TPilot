@@ -206,8 +206,9 @@ export function IntelligenceInsightsPage() {
   const { data: subreddits } = useQuery({
     queryKey: ['reddit-communities'],
     queryFn: async () => {
-      const response = await apiRequest<{ success: boolean; data: Array<{ id: string; name: string; displayName: string }> }>('/api/reddit/communities');
-      return response.data;
+      // API returns array directly, not wrapped in {success, data}
+      const response = await apiRequest<Array<{ id: string; name: string; displayName: string }>>('/api/reddit/communities');
+      return response;
     },
     enabled: !!user
   });
