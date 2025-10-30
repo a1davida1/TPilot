@@ -88,6 +88,7 @@ export interface MediaAssetWithUrl {
   signedUrl?: string;
   downloadUrl?: string;
   downloadToken?: string;
+  thumbnailUrl?: string;
   createdAt: Date;
 }
 

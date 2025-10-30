@@ -568,7 +568,8 @@ import { scheduledPostsRouter } from "./routes/scheduled-posts.js";
 import { captionAnalyticsRouter } from "./routes/caption-analytics.js";
 import { registerSocialMediaRoutes } from "./social-media-routes.js";
 import analyticsPerformanceRouter from "./routes/analytics-performance.js";
-
+import { intelligenceRouter } from "./routes/intelligence.js";
+import intelligenceLevel2Router from "./routes/intelligence-level2.js";
 
 // Core dependencies
 import multer from 'multer';
@@ -1472,15 +1473,10 @@ export async function registerRoutes(app: Express, apiPrefix: string = API_PREFI
   // Register Caption Analytics Routes (for A/B testing and performance tracking)
   app.use('/api/caption-analytics', captionAnalyticsRouter);
 
-  // Register Enhanced Performance Analytics Routes (real-time metrics with DB queries)
-  app.use('/api/analytics', analyticsPerformanceRouter);
-
-  // Register Intelligence Routes (for AI-powered insights)
-  const { intelligenceRouter } = await import('./routes/intelligence.js');
+  // Register Intelligence Routes (Level 1 - Title analysis, cadence, recommendations)
   app.use('/api/intelligence', intelligenceRouter);
 
-  // Register Level 2 Intelligence Routes (hot posts analysis, community health)
-  const intelligenceLevel2Router = (await import('./routes/intelligence-level2.js')).default;
+  // Register Intelligence Level 2 Routes (Hot posts analysis, community health)
   app.use('/api/intelligence-level2', intelligenceLevel2Router);
 
   // Register Health Monitor Routes (for account/community health tracking)

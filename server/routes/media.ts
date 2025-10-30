@@ -10,6 +10,9 @@ import { DirectUpload } from '../lib/direct-upload.js';
 import { WorkingUpload } from '../lib/working-upload.js';
 import { logger } from '../bootstrap/logger.js';
 import multer from 'multer';
+import { db } from '../database.js';
+import { userStorageAssets } from '@shared/schema';
+import { eq, desc } from 'drizzle-orm';
 
 const router = express.Router();
 
@@ -57,10 +60,38 @@ router.get('/', authenticateToken(true), async (req: AuthRequest, res) => {
     }
 
     const limit = parseInt(req.query.limit as string) || 50;
-    const assets = await MediaManager.getUserAssets(req.user.id, limit);
-    
-    logger.info(`Retrieved ${assets.length} media assets for user ${req.user.id}`);
-    res.json(assets);
+
+    // Fetch from both mediaAssets (local/S3) and userStorageAssets (external URLs)
+    const [localAssets, externalAssets] = await Promise.all([
+      MediaManager.getUserAssets(req.user.id, limit),
+      db.select()
+        .from(userStorageAssets)
+        .where(eq(userStorageAssets.userId, req.user.id))
+        .orderBy(desc(userStorageAssets.createdAt))
+        .limit(limit)
+    ]);
+
+    // Transform external assets to match frontend schema
+    const transformedExternalAssets = externalAssets.map((asset: typeof userStorageAssets.$inferSelect) => ({
+      id: asset.id,
+      userId: asset.userId,
+      filename: asset.sourceFilename || 'unknown',
+      bytes: asset.fileSize || 0,
+      mime: asset.mimeType || 'image/jpeg',
+      signedUrl: asset.url,
+      downloadUrl: asset.url,
+      thumbnailUrl: (asset.metadata as any)?.thumbnailUrl || asset.url,
+      provider: asset.provider,
+      createdAt: asset.createdAt,
+    }));
+
+    // Merge and sort by createdAt descending
+    const allAssets = [...localAssets, ...transformedExternalAssets]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, limit);
+
+    logger.info(`Retrieved ${allAssets.length} media assets for user ${req.user.id} (${localAssets.length} local, ${externalAssets.length} external)`);
+    res.json(allAssets);
   } catch (error) {
     logger.error('Failed to get user media assets:', error);
     res.status(500).json({ message: 'Failed to retrieve media assets' });
@@ -266,11 +297,33 @@ router.post('/upload', uploadLimiter, authenticateToken(true), upload.single('fi
     // Clean up temp file immediately
     await fs.unlink(req.file.path).catch(() => {});
 
+    // Save to database for gallery persistence
+    const [savedAsset] = await db.insert(userStorageAssets).values({
+      userId: req.user.id,
+      provider: provider,
+      url: imageUrl!,
+      deleteHash: null, // Could extract from Imgur result if available
+      sourceFilename: req.file.originalname,
+      fileSize: buffer.length,
+      mimeType: req.file.mimetype,
+      metadata: {
+        thumbnailUrl: thumbnailUrl,
+        uploadedVia: 'media-upload-endpoint'
+      }
+    }).returning();
+
+    logger.info('Upload saved to database', {
+      assetId: savedAsset.id,
+      userId: req.user.id,
+      provider: provider,
+      url: imageUrl
+    });
+
     // Return response in format compatible with existing frontend
     res.json({
       message: 'File uploaded successfully',
       asset: {
-        id: Date.now(), // Temporary ID for frontend compatibility
+        id: savedAsset.id, // Use real database ID
         userId: req.user.id,
         filename: req.file.originalname,
         bytes: buffer.length,
@@ -279,7 +332,7 @@ router.post('/upload', uploadLimiter, authenticateToken(true), upload.single('fi
         downloadUrl: imageUrl,
         thumbnailUrl: thumbnailUrl,
         provider: provider,
-        createdAt: new Date(),
+        createdAt: savedAsset.createdAt,
       }
     });
   } catch (error) {
