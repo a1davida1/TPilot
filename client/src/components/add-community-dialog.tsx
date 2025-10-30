@@ -62,7 +62,7 @@ export function AddCommunityDialog({ onCommunityAdded, trigger }: AddCommunityDi
       setSubredditName('');
       onCommunityAdded?.();
     },
-    onError: (error: any) => {
+    onError: (error: Error | { message?: string }) => {
       const message = error?.message || 'Failed to look up subreddit';
       toast({
         title: 'Error',

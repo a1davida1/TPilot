@@ -97,30 +97,23 @@ export default function BulkCaptionPage() {
   };
 
   // Handle schedule confirmation
-  const handleSchedule = (scheduleData: any) => {
-    // Create scheduled posts for each subreddit
-    scheduleData.subreddits.forEach((subreddit: string, index: number) => {
-      const scheduledFor = new Date(scheduleData.scheduledFor);
-      // Stagger posts by 10 minutes
-      scheduledFor.setMinutes(scheduledFor.getMinutes() + index * 10);
+  const handleSchedule = (scheduleData: { subreddit: string; scheduledFor: string; title: string; nsfw: boolean; imageUrl: string; caption?: string }) => {
+    // Create scheduled post
+    const newPost: ScheduledPost = {
+      id: `${Date.now()}`,
+      imageUrl: scheduleData.imageUrl,
+      subreddit: scheduleData.subreddit,
+      scheduledFor: new Date(scheduleData.scheduledFor),
+    };
 
-      const newPost: ScheduledPost = {
-        id: `${Date.now()}-${index}`,
-        imageUrl: scheduleData.imageUrl,
-        subreddit,
-        scheduledFor,
-      };
-
-      setScheduledPosts((prev) => [...prev, newPost]);
-    });
-
+    setScheduledPosts((prev) => [...prev, newPost]);
     setScheduleModalOpen(false);
     setActiveImage(null);
     setSelectedDate(null);
 
     toast({
-      title: 'Posts scheduled',
-      description: `${scheduleData.subreddits.length} post${scheduleData.subreddits.length > 1 ? 's' : ''} scheduled successfully`,
+      title: 'Post scheduled',
+      description: 'Post scheduled successfully',
     });
   };
 

@@ -12,9 +12,9 @@ interface BatchAction {
   disabled?: boolean;
 }
 
-interface BatchActionsBarProps {
+interface BatchActionsBarProps<T = unknown> {
   selectedCount: number;
-  selectedItems?: any[];
+  selectedItems?: T[];
   actions?: BatchAction[];
   onClearSelection: () => void;
   className?: string;

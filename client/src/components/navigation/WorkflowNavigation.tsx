@@ -30,9 +30,10 @@ export function WorkflowNavigation() {
   const [location, setLocation] = useLocation();
 
   // Build access context for filtering
+  const userTier = user?.tier || 'free';
   const accessContext: AccessContext = {
     isAuthenticated,
-    tier: (user?.tier || 'free') as any,
+    tier: (userTier === 'free' || userTier === 'pro' || userTier === 'premium' || userTier === 'admin') ? userTier : 'free',
     isAdmin: Boolean(user?.isAdmin || user?.role === 'admin'),
   };
 

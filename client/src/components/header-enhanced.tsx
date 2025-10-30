@@ -186,7 +186,7 @@ export function HeaderEnhanced({ onReplayWalkthrough }: HeaderEnhancedProps) {
   // Filter workflow buckets based on access
   const accessContext: AccessContext = {
     isAuthenticated,
-    tier: userTier as any,
+    tier: (userTier === 'free' || userTier === 'pro' || userTier === 'premium' || userTier === 'admin') ? userTier : null,
     isAdmin,
   };
   

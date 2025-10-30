@@ -118,16 +118,18 @@ export function TwoPaneCreator({ className }: TwoPaneCreatorProps) {
       formData.append('tone', selectedTone.value);
       formData.append('tags', JSON.stringify(tags));
 
-      const data = await apiRequest<unknown>('POST', '/api/caption/generate', formData);
+      type CaptionItem = { id?: string; caption?: string; text?: string; style?: string; label?: string; confidence?: number };
+      type CaptionResponse = { topVariants?: CaptionItem[]; captions?: CaptionItem[]; final?: CaptionItem };
+      const data = await apiRequest<CaptionResponse>('POST', '/api/caption/generate', formData);
       return data;
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data) => {
       const caption = data.topVariants?.[0] || data.captions?.[0] || data.final;
       if (caption) {
         setGeneratedCaption({
           id: caption.id || Math.random().toString(),
-          text: caption.caption || caption.text,
-          style: caption.style || caption.label,
+          text: caption.caption || caption.text || '',
+          style: (caption.style || caption.label) as string | undefined,
           confidence: caption.confidence,
         });
       }

@@ -73,33 +73,39 @@ export function BulkUploadZone({
       }, 200);
 
       const response = await authenticatedRequest<{
-        asset: { 
-          id: number; 
+        asset: {
+          id: number;
           signedUrl: string;
           downloadUrl: string;
+          thumbnailUrl?: string;
         };
       }>('/api/media/upload', 'POST', formData);
 
       clearInterval(progressInterval);
 
-      const imageUrl = response.asset?.signedUrl || response.asset?.downloadUrl;
+      const imageUrl = response.asset?.thumbnailUrl || response.asset?.signedUrl || response.asset?.downloadUrl;
       if (!imageUrl) {
         throw new Error('Upload failed: No URL returned');
       }
 
-      // Update with success
+      // Update with success - CRITICAL: Replace blob URL with actual hosted URL
       setUploadedImages((prev) =>
-        prev.map((img) =>
-          img.id === imageId
-            ? {
-                ...img,
-                url: imageUrl,
-                assetId: response.asset.id,
-                status: 'success',
-                progress: 100,
-              }
-            : img
-        )
+        prev.map((img) => {
+          if (img.id === imageId) {
+            // Revoke old blob URL to free memory
+            if (img.url.startsWith('blob:')) {
+              URL.revokeObjectURL(img.url);
+            }
+            return {
+              ...img,
+              url: imageUrl, // Replace blob URL with real hosted URL
+              assetId: response.asset.id,
+              status: 'success',
+              progress: 100,
+            };
+          }
+          return img;
+        })
       );
 
       // Auto-generate caption if enabled
