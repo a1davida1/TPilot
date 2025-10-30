@@ -206,17 +206,31 @@ function sanitizeImageUrl(url: string): string | null {
 
     // Define explicit allowed hosts for images.
     const allowedHosts = [
-      'catbox.moe',
+      // Imgur (primary)
       'imgur.com',
       'i.imgur.com',
+      // Catbox
+      'catbox.moe',
+      'files.catbox.moe',
+      // Imgbox
+      'imgbox.com',
+      'i.imgbox.com',
+      // PostImages
+      'postimages.org',
+      'i.postimg.cc',
+      // Uguu (WorkingUpload)
+      'uguu.se',
+      'o.uguu.se',
+      // Discord
       'discord.com',
       'cdn.discordapp.com',
       'discordapp.com',
+      // Reddit
       'reddit.com',
       'www.reddit.com',
       'redditmedia.com',
-      'i.redd.it'
-      // Add additional trusted hosts as needed
+      'i.redd.it',
+      'preview.redd.it'
     ];
 
     // Only allow http(s) URLs and whitelisted hosts (exact or valid subdomain).
