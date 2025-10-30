@@ -218,9 +218,15 @@ function sanitizeImageUrl(url: string): string | null {
       // PostImages
       'postimages.org',
       'i.postimg.cc',
-      // Uguu (WorkingUpload)
+      // Uguu (WorkingUpload) - includes all subdomains
       'uguu.se',
       'o.uguu.se',
+      'd.uguu.se',
+      'a.uguu.se',
+      // Other WorkingUpload services
+      'file.io',
+      '0x0.st',
+      'litterbox.catbox.moe',
       // Discord
       'discord.com',
       'cdn.discordapp.com',
