@@ -479,7 +479,7 @@ export class HybridRedditClient {
    */
   async testConnection(): Promise<boolean> {
     try {
-      await this.snoowrap.getMe();
+      await this.snoowrap.getMe().catch(() => void 0);
       return true;
     } catch (error) {
       logger.error('Reddit connection test failed', {
