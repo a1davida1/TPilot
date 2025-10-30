@@ -26,9 +26,12 @@ import {
   Minus,
   Loader2,
   Lightbulb,
-  Award
+  Award,
+  RefreshCw,
+  Database
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 interface TitleAnalysis {
   sampleSize: number;
@@ -193,8 +196,11 @@ interface CommunityHealth {
 
 export function IntelligenceInsightsPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedSubreddit, setSelectedSubreddit] = useState<string>('');
   const [activeTab, setActiveTab] = useState('title');
+  const [syncingDeep, setSyncingDeep] = useState(false);
+  const [syncingFull, setSyncingFull] = useState(false);
 
   // Fetch user's subreddits
   const { data: subreddits } = useQuery({
@@ -241,9 +247,81 @@ export function IntelligenceInsightsPage() {
     enabled: !!selectedSubreddit
   });
 
+  // Fetch sync status
+  const { data: syncStatus, refetch: refetchSyncStatus } = useQuery({
+    queryKey: ['reddit-sync-status'],
+    queryFn: async () => apiRequest<{ lastSyncAt: string | null; postCount: number; subredditCount: number }>('/api/reddit/sync/status'),
+    enabled: !!user
+  });
+
   // Check tier access
   const hasPro = user?.tier === 'pro' || user?.tier === 'premium';
-  const _hasPremium = user?.tier === 'premium';
+  const hasPremium = user?.tier === 'premium';
+
+  // Sync handlers
+  const handleDeepSync = async () => {
+    if (!hasPro) {
+      toast({
+        title: 'Pro Tier Required',
+        description: 'Deep sync requires Pro or Premium tier',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setSyncingDeep(true);
+    try {
+      const response = await apiRequest<{ message: string; jobId: string; estimatedTime: string }>('/api/reddit/sync/deep', 'POST', {});
+      toast({
+        title: 'Deep Sync Started',
+        description: `${response.message}. Estimated time: ${response.estimatedTime}`,
+      });
+      // Refetch status after a delay
+      setTimeout(() => {
+        refetchSyncStatus();
+      }, 3000);
+    } catch (error) {
+      toast({
+        title: 'Sync Failed',
+        description: error instanceof Error ? error.message : 'Failed to start sync',
+        variant: 'destructive'
+      });
+    } finally {
+      setSyncingDeep(false);
+    }
+  };
+
+  const handleFullSync = async () => {
+    if (!hasPremium) {
+      toast({
+        title: 'Premium Tier Required',
+        description: 'Full sync requires Premium tier',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setSyncingFull(true);
+    try {
+      const response = await apiRequest<{ message: string; jobId: string; estimatedTime: string }>('/api/reddit/sync/full', 'POST', {});
+      toast({
+        title: 'Full Sync Started',
+        description: `${response.message}. Estimated time: ${response.estimatedTime}`,
+      });
+      // Refetch status after a delay
+      setTimeout(() => {
+        refetchSyncStatus();
+      }, 3000);
+    } catch (error) {
+      toast({
+        title: 'Sync Failed',
+        description: error instanceof Error ? error.message : 'Failed to start sync',
+        variant: 'destructive'
+      });
+    } finally {
+      setSyncingFull(false);
+    }
+  };
 
   if (!hasPro) {
     return (
@@ -292,6 +370,96 @@ export function IntelligenceInsightsPage() {
           Data-driven insights to optimize your posting strategy and grow your audience
         </p>
       </div>
+
+      {/* Reddit Data Sync */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Reddit Data Sync
+          </CardTitle>
+          <CardDescription>
+            Sync your Reddit posting history for better analytics
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600">
+                {syncStatus?.postCount || 0}
+              </div>
+              <div className="text-sm text-gray-600">Posts Synced</div>
+            </div>
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <div className="text-2xl font-bold text-green-600">
+                {syncStatus?.subredditCount || 0}
+              </div>
+              <div className="text-sm text-gray-600">Subreddits Found</div>
+            </div>
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <div className="text-sm text-gray-600">Last Sync</div>
+              <div className="text-sm font-medium">
+                {syncStatus?.lastSyncAt
+                  ? new Date(syncStatus.lastSyncAt).toLocaleDateString()
+                  : 'Never'}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={handleDeepSync}
+              disabled={!hasPro || syncingDeep}
+              variant="default"
+            >
+              {syncingDeep ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Deep Sync (500 posts)
+                </>
+              )}
+            </Button>
+
+            <Button
+              onClick={handleFullSync}
+              disabled={!hasPremium || syncingFull}
+              variant="outline"
+            >
+              {syncingFull ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <Database className="mr-2 h-4 w-4" />
+                  Full Sync (1000 posts)
+                </>
+              )}
+            </Button>
+
+            <div className="ml-auto flex items-center gap-2 text-sm text-gray-500">
+              {!hasPro && (
+                <Badge variant="secondary">Pro Required</Badge>
+              )}
+              {hasPro && !hasPremium && (
+                <Badge variant="secondary">Premium for Full Sync</Badge>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-4 text-sm text-gray-600">
+            <p>• <strong>Deep Sync:</strong> 500 posts, all subreddits (~2-3 min, Pro+)</p>
+            <p>• <strong>Full Sync:</strong> 1000 posts, complete history (~5-10 min, Premium only)</p>
+            <p className="mt-2 text-xs">Note: Quick sync (100 posts) runs automatically when you connect your Reddit account.</p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Subreddit Selector */}
       <Card className="mb-6">
