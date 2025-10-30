@@ -25,7 +25,7 @@ export default function HistoryPage() {
   const {
     selectedItems,
     selectedCount,
-    toggleSelection,
+    toggleSelection: _toggleSelection,
     clearSelection,
   } = useBatchSelection<{ id: string }>();
 

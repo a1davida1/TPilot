@@ -41,7 +41,7 @@ export function sanitizeSingleLine(value: string): string {
 
 export function sanitizeMultiline(value: string): string {
   const withoutControl = value.replace(CLEAN_SINGLE_LINE, '');
-  return withoutControl.replace(/\s+/gu, (segment, offset, full) => {
+  return withoutControl.replace(/\s+/gu, (segment, _offset, _full) => {
     if (segment.includes('\n')) {
       return segment.replace(/\s*\n\s*/gu, '\n');
     }

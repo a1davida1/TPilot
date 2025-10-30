@@ -50,7 +50,7 @@ export function ScheduleModal({
   onClose,
   image,
   selectedDate,
-  onSchedule,
+  onSchedule: _onSchedule,
 }: ScheduleModalProps) {
   const [selectedSubreddits, setSelectedSubreddits] = useState<string[]>([]);
   const [selectedTime, setSelectedTime] = useState('14:00');

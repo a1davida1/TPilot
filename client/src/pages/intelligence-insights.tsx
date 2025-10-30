@@ -243,7 +243,7 @@ export function IntelligenceInsightsPage() {
 
   // Check tier access
   const hasPro = user?.tier === 'pro' || user?.tier === 'premium';
-  const hasPremium = user?.tier === 'premium';
+  const _hasPremium = user?.tier === 'premium';
 
   if (!hasPro) {
     return (

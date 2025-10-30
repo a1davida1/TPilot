@@ -104,7 +104,7 @@ export function OnboardingTour({ onComplete, onDismiss }: OnboardingTourProps) {
     }
   };
 
-  const handleStepComplete = (stepId: string) => {
+  const _handleStepComplete = (stepId: string) => {
     setCompletedSteps((prev) => new Set([...prev, stepId]));
     
     // If this is the last step, trigger celebration

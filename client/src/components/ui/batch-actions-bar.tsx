@@ -22,7 +22,7 @@ interface BatchActionsBarProps {
 
 export function BatchActionsBar({
   selectedCount,
-  selectedItems = [],
+  selectedItems: _selectedItems = [],
   actions,
   onClearSelection,
   className,

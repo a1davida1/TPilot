@@ -210,7 +210,7 @@ function CalendarDay({
     },
   });
 
-  const handleDrop = (image: UploadedImage) => {
+  const _handleDrop = (image: UploadedImage) => {
     if (!disabled) {
       onDrop(date, image);
     }

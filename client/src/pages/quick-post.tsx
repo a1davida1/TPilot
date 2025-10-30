@@ -89,12 +89,12 @@ interface RedditPostSuccessResponse {
   warnings?: string[];
 }
 
-interface RedditPostErrorResponse {
-  error?: string;
-  message?: string;
-  reason?: string;
-  reasons?: string[];
-}
+// interface RedditPostErrorResponse {
+//   error?: string;
+//   message?: string;
+//   reason?: string;
+//   reasons?: string[];
+// }
 
 interface SubredditLintResponse {
   ok: boolean;

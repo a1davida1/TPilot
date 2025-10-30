@@ -87,7 +87,7 @@ const expenseCategories: { value: string; label: string; icon: React.ComponentTy
 // Main Tax Tracker Component
 export function TaxTracker() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedQuarter, setSelectedQuarter] = useState(Math.ceil((new Date().getMonth() + 1) / 3));
+  const [selectedQuarter, _setSelectedQuarter] = useState(Math.ceil((new Date().getMonth() + 1) / 3));
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [newExpense, setNewExpense] = useState<Partial<Expense>>({
     category: 'software',
@@ -95,7 +95,7 @@ export function TaxTracker() {
   });
 
   // Fetch tax data
-  const { data: taxSummary, isLoading: summaryLoading } = useQuery<TaxSummary>({
+  const { data: taxSummary, isLoading: _summaryLoading } = useQuery<TaxSummary>({
     queryKey: ['/api/tax/summary', selectedYear],
   });
 

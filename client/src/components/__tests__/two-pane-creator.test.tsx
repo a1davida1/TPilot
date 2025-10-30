@@ -148,8 +148,8 @@ describe('TwoPaneCreator', () => {
   it('allows editing generated caption', async () => {
     render(<TwoPaneCreator />, { wrapper });
     
-    // Mock a generated caption
-    const mockCaption = { text: 'Test caption', style: 'playful' };
+    // TODO: Mock a generated caption and test editing
+    // const mockCaption = { text: 'Test caption', style: 'playful' };
     
     // Would need to mock the generation process and then test editing
     // This is a placeholder for the test logic

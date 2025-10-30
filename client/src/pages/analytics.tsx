@@ -79,7 +79,7 @@ export default function AnalyticsPage() {
   const isPremium = tierLevel >= TIER_ACCESS.premium;
 
   // Fetch analytics data based on tier
-  const { data: analytics, isLoading, error } = useQuery<AnalyticsData>({
+  const { data: analytics, isLoading, error: _error } = useQuery<AnalyticsData>({
     queryKey: ['/api/analytics', timeRange, userTier],
     queryFn: async () => {
       return await apiRequest<AnalyticsData>('GET', `/api/analytics?range=${timeRange}&tier=${userTier}`);

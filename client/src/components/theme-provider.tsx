@@ -31,7 +31,7 @@ const ThemeProviderContext = createContext<ThemeProviderState>(initialState)
 const isTheme = (value: string): value is ThemeName => 
   value === "bubblegum-pink" || value === "midnight-rose" || value === "system"
 
-const getSystemPreference = (): "bubblegum-pink" | "midnight-rose" => {
+const _getSystemPreference = (): "bubblegum-pink" | "midnight-rose" => {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
     return "bubblegum-pink"
   }

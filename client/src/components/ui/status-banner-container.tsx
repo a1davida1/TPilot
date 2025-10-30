@@ -58,7 +58,7 @@ function dismissBanner(id: string): void {
   }
 }
 
-function isBannerDismissed(id: string): boolean {
+function _isBannerDismissed(id: string): boolean {
   const dismissed = getDismissedBanners();
   return dismissed.some((item) => item.id === id);
 }
@@ -109,7 +109,7 @@ export function useStatusBanners() {
   const createTierLimitBanner = (
     remaining: number,
     limit: number,
-    tier: string
+    _tier: string
   ): BannerConfig | null => {
     // Show when 80% quota used (20% remaining)
     const percentRemaining = (remaining / limit) * 100;

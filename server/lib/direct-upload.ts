@@ -19,7 +19,7 @@ export class DirectUpload {
   /**
    * Upload to Imgur anonymously (no account needed)
    */
-  static async uploadToImgur(buffer: Buffer, filename?: string): Promise<DirectUploadResult> {
+  static async uploadToImgur(buffer: Buffer, _filename?: string): Promise<DirectUploadResult> {
     try {
       const form = new FormData();
       form.append('image', buffer.toString('base64'));
@@ -27,6 +27,7 @@ export class DirectUpload {
       
       const response = await fetch('https://api.imgur.com/3/image', {
         method: 'POST',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         body: form as any,
         headers: {
           ...form.getHeaders(),
@@ -82,7 +83,7 @@ export class DirectUpload {
   /**
    * Upload to Cloudinary (free tier, no account association)
    */
-  static async uploadToCloudinary(buffer: Buffer, filename?: string): Promise<DirectUploadResult> {
+  static async uploadToCloudinary(buffer: Buffer, _filename?: string): Promise<DirectUploadResult> {
     try {
       const CLOUD_NAME = 'demo'; // Cloudinary demo cloud
       const UPLOAD_PRESET = 'ml_default'; // Public preset
@@ -93,11 +94,12 @@ export class DirectUpload {
       
       const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
         method: 'POST',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         body: form as any,
         headers: form.getHeaders(),
       });
 
-      const data = await response.json() as any;
+      const data = await response.json() as { secure_url?: string; error?: { message?: string } };
       
       if (data.secure_url) {
         logger.info('Cloudinary upload successful', { url: data.secure_url });
