@@ -1149,7 +1149,7 @@ router.get('/posting-cadence/:subreddit', authenticateToken(true), async (req: A
 
     const gapAnalysis = Object.entries(gapBuckets)
       .filter(([, data]) => data.gaps.length > 0)
-      .map(([key, data]) => {
+      .map(([_key, data]) => {
         const avgEng = data.engagements.reduce((sum, e) => sum + e, 0) / data.engagements.length;
         return {
           range: data.label,
@@ -1450,7 +1450,7 @@ router.get('/title-analysis/:subreddit', authenticateToken(true), async (req: Au
 
     const lengthAnalysis = Object.entries(lengthBuckets)
       .filter(([, data]) => data.posts > 0)
-      .map(([key, data]) => ({
+      .map(([_key, data]) => ({
         range: data.range,
         posts: data.posts,
         avgEngagement: Math.round(data.totalEngagement / data.posts),

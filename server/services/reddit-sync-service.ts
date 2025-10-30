@@ -468,13 +468,13 @@ export class RedditSyncService {
   ): Promise<void> {
     try {
       // Check which posts already exist
-      const existingPostIds = new Set<string>();
+      const _existingPostIds = new Set<string>();
       
       // Query in batches to avoid overwhelming the database
       const batchSize = 100;
       for (let i = 0; i < posts.length; i += batchSize) {
         const batch = posts.slice(i, i + batchSize);
-        const postIds = batch.map((p) => p.id);
+        const _postIds = batch.map((p) => p.id);
 
         // Note: We'll need to add reddit_post_id column first (Task 3.3)
         // For now, we'll insert all posts and handle duplicates later

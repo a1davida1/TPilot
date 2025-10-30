@@ -96,10 +96,17 @@ export class HybridRedditClient {
     this.redditUsername = redditUsername;
 
     // Initialize Snoowrap for OAuth + writes
+    const clientId = process.env.REDDIT_CLIENT_ID;
+    const clientSecret = process.env.REDDIT_CLIENT_SECRET;
+    
+    if (!clientId || !clientSecret) {
+      throw new Error('REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET must be set');
+    }
+    
     this.snoowrap = new Snoowrap({
       userAgent: 'ThottoPilot/1.0.0 (Advanced Reddit Analytics)',
-      clientId: process.env.REDDIT_CLIENT_ID!,
-      clientSecret: process.env.REDDIT_CLIENT_SECRET!,
+      clientId,
+      clientSecret,
       accessToken,
       refreshToken,
     });

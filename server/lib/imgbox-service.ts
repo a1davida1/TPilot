@@ -42,7 +42,7 @@ interface ImgboxApiResponse {
 const IMGBOX_BASE_URL = 'https://imgbox.com';
 const IMGBOX_UPLOAD_URL = 'https://imgbox.com/upload/process';  // Updated endpoint
 const IMGBOX_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
-const IMGBOX_ACCEPT = 'application/json, text/javascript, */*;q=0.01';
+const _IMGBOX_ACCEPT = 'application/json, text/javascript, */*;q=0.01';
 const TOKEN_TTL_MS = 5 * 60 * 1000; // Cache token for 5 minutes
 const MAX_RETRIES = 3;
 const RETRY_BASE_DELAY_MS = 250;
@@ -62,7 +62,7 @@ function joinSetCookie(headers: Headers): string {
   return cookies.join('; ');
 }
 
-function sanitizeFilename(filename: string | undefined): string {
+function _sanitizeFilename(filename: string | undefined): string {
   if (!filename) {
     return `upload-${Date.now()}.jpg`;
   }

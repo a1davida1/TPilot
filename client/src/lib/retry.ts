@@ -52,7 +52,8 @@ export async function retryWithBackoff<T>(
     }
   }
 
-  throw lastError!;
+  // This should never happen (loop always assigns lastError)
+  throw new Error('Retry failed with no error captured');
 }
 
 /**

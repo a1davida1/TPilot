@@ -130,7 +130,7 @@ export class SchedulerJobWorker {
       const [scheduledPost] = await db
         .select()
         .from(scheduledPosts)
-        .where(eq(scheduledPosts.id, job.scheduledPostId!))
+        .where(eq(scheduledPosts.id, job.scheduledPostId))
         .limit(1);
 
       if (!scheduledPost) {

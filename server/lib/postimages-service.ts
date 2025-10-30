@@ -155,7 +155,7 @@ export class PostImagesService {
               deleteUrl: data.delete_url,
             };
           }
-        } catch (e) {
+        } catch (_e) {
           logger.error('PostImages response not JSONP or JSON:', {
             responsePreview: text.substring(0, 200),
           });

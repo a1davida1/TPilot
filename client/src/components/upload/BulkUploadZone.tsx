@@ -59,7 +59,7 @@ export function BulkUploadZone({
       );
 
       const formData = new FormData();
-      formData.append('image', file);
+      formData.append('file', file); // Backend expects 'file' field name
 
       // Simulate progress updates
       const progressInterval = setInterval(() => {
