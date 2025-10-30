@@ -1,12 +1,15 @@
 # ThottoPilot AI Assistant Guide
-*Complete Reference for AI Code Assistants (Claude, GPT, etc.)*
-*Last Updated: October 29, 2025*
+
+> Complete Reference for AI Code Assistants (Claude, GPT, etc.)
+>
+> Last Updated: October 29, 2025
 
 ---
 
 ## 🎯 **Platform Purpose**
 
 ThottoPilot is a **professional content management platform** for adult content creators to manage their Reddit presence with:
+
 - Legal compliance (2257, DMCA)
 - AI-powered content generation (captions, titles)
 - Scheduled posting automation
@@ -40,7 +43,7 @@ ThottoPilot is a **professional content management platform** for adult content 
 
 ### **Hybrid Full-Stack Application**
 
-```
+```text
 ┌─────────────────────────────────────────────┐
 │           CLIENT (PORT 5173 DEV)            │
 │  React + Wouter (SPA) + React Query         │
@@ -65,9 +68,10 @@ ThottoPilot is a **professional content management platform** for adult content 
 │    - Users, posts, captions, analytics      │
 │    - Drizzle ORM for queries                │
 └─────────────────────────────────────────────┘
-```
+```text
 
 ### **Why This Architecture?**
+
 - **Express Backend:** Mature, stable, excellent for REST APIs
 - **React Frontend:** Component-based, rich ecosystem
 - **Wouter Routing:** Lightweight (1.2KB), fast client-side routing
@@ -79,6 +83,7 @@ ThottoPilot is a **professional content management platform** for adult content 
 ## 🛠️ **Tech Stack**
 
 ### **Frontend**
+
 - **Framework:** React 18 + TypeScript
 - **Routing:** Wouter (NOT React Router)
 - **State Management:** React Query (TanStack Query v5)
@@ -89,6 +94,7 @@ ThottoPilot is a **professional content management platform** for adult content 
 - **Build Tool:** Vite
 
 ### **Backend**
+
 - **Runtime:** Node.js 20+
 - **Framework:** Express.js
 - **Language:** TypeScript
@@ -100,12 +106,14 @@ ThottoPilot is a **professional content management platform** for adult content 
 - **Validation:** Zod
 
 ### **External APIs**
+
 - **AI Generation:** OpenRouter API (Grok-4-Fast primary)
 - **Image Storage:** Imgur API (OAuth 2.0)
 - **Reddit:** Reddit OAuth API
 - **Payments:** Stripe (primary), CCBill (future)
 
 ### **DevOps**
+
 - **Deployment:** Render.com
 - **Database:** Render PostgreSQL
 - **Redis:** Valkey (Render - Redis-compatible)
@@ -116,7 +124,7 @@ ThottoPilot is a **professional content management platform** for adult content 
 
 ## 📁 **Project Structure**
 
-```
+```text
 TPilot/
 ├── client/              # Frontend React app
 │   ├── src/
@@ -153,6 +161,7 @@ TPilot/
 └── prompts/             # AI system prompts
     ├── nsfw-system.txt  # NSFW caption generation
     └── sfw-system.txt   # SFW caption generation
+
 ```
 
 ---
@@ -162,6 +171,7 @@ TPilot/
 ### **🚨 CRITICAL - ALWAYS FOLLOW**
 
 #### **1. TypeScript Strictness**
+
 ```typescript
 // ✅ GOOD
 interface User {
@@ -174,6 +184,7 @@ const user: any = {};
 ```
 
 #### **2. No Local Image Storage**
+
 ```typescript
 // ❌ ILLEGAL - Never store images locally
 fs.writeFile('uploads/image.jpg', buffer)
@@ -185,6 +196,7 @@ await uploadToImgur(imageUrl)
 **Why:** Adult content legal compliance (2257 regulations)
 
 #### **3. AI Model Usage**
+
 ```typescript
 // ✅ PRIMARY - Always use OpenRouter first
 import { pipeline } from './lib/openrouter-pipeline';
@@ -196,6 +208,7 @@ import { pipeline } from './lib/openrouter-pipeline';
 **Primary Model:** `x-ai/grok-4-fast` (uncensored, fast)
 
 #### **4. Database Migrations**
+
 ```bash
 # ✅ CORRECT ORDER
 1. Create migration SQL file
@@ -210,6 +223,7 @@ import { pipeline } from './lib/openrouter-pipeline';
 ```
 
 #### **5. Environment Variables**
+
 ```bash
 # REQUIRED for Render deployment
 NODE_ENV=production
@@ -227,6 +241,7 @@ OPENROUTER_API_KEY=sk-or-...
 ### **Key Tables**
 
 #### **users**
+
 ```typescript
 {
   id: serial primary key
@@ -241,6 +256,7 @@ OPENROUTER_API_KEY=sk-or-...
 ```
 
 #### **mediaAssets**
+
 ```typescript
 {
   id: serial primary key
@@ -253,6 +269,7 @@ OPENROUTER_API_KEY=sk-or-...
 ```
 
 #### **redditPostOutcomes**
+
 ```typescript
 {
   id: serial primary key
@@ -267,6 +284,7 @@ OPENROUTER_API_KEY=sk-or-...
 ```
 
 #### **scheduledPosts**
+
 ```typescript
 {
   id: serial primary key
@@ -281,6 +299,7 @@ OPENROUTER_API_KEY=sk-or-...
 ```
 
 ### **Schema Location**
+
 `/shared/schema.ts` - Drizzle ORM schema definitions
 
 ---
@@ -288,6 +307,7 @@ OPENROUTER_API_KEY=sk-or-...
 ## 🔌 **API Patterns**
 
 ### **Standard API Response Format**
+
 ```typescript
 // Success
 { data: T, success: true }
@@ -297,6 +317,7 @@ OPENROUTER_API_KEY=sk-or-...
 ```
 
 ### **Authentication Middleware**
+
 ```typescript
 import { authenticateToken } from '../middleware/auth';
 
@@ -308,6 +329,7 @@ router.get('/public', authenticateToken(false), handler);
 ```
 
 ### **API Route Structure**
+
 ```typescript
 // /server/routes/example.ts
 import { Router } from 'express';
@@ -330,6 +352,7 @@ export { router as exampleRouter };
 ```
 
 ### **Registering Routes**
+
 ```typescript
 // /server/routes.ts
 import { exampleRouter } from './routes/example.js';
@@ -341,6 +364,7 @@ app.use('/api/example', exampleRouter);
 ## 🎨 **Frontend Patterns**
 
 ### **Page Component Template**
+
 ```typescript
 // /client/src/pages/example.tsx
 import { useQuery } from '@tanstack/react-query';
@@ -369,6 +393,7 @@ export default function ExamplePage() {
 ```
 
 ### **React Query Pattern**
+
 ```typescript
 // Fetch data
 const { data, isLoading, error } = useQuery({
@@ -389,6 +414,7 @@ const mutation = useMutation({
 ```
 
 ### **Routing with Wouter**
+
 ```typescript
 import { useLocation } from 'wouter';
 
@@ -410,6 +436,7 @@ setLocation('/dashboard');
 ## 💎 **Tier System**
 
 ### **Access Control Pattern**
+
 ```typescript
 // Check tier
 const hasPro = ['pro', 'premium'].includes(user?.tier);
@@ -422,6 +449,7 @@ if (!hasPro && requestedScheduleDate > 7) {
 ```
 
 ### **Tier Limits**
+
 | Feature | Free | Starter | Pro | Premium |
 |---------|------|---------|-----|---------|
 | Posts/day | 3 | ∞ | ∞ | ∞ |
@@ -431,6 +459,7 @@ if (!hasPro && requestedScheduleDate > 7) {
 | Bulk operations | ❌ | ❌ | 10 | ∞ |
 
 ### **Implementation**
+
 ```typescript
 // /server/middleware/tier-check.ts
 export function requireTier(minTier: Tier) {
@@ -451,6 +480,7 @@ router.post('/schedule', requireTier('pro'), handler);
 ## 🌐 **External Services**
 
 ### **OpenRouter (AI Generation)**
+
 ```typescript
 // /server/lib/openrouter-pipeline.ts
 import { pipeline } from './openrouter-pipeline';
@@ -464,11 +494,13 @@ const result = await pipeline({
 ```
 
 **Models:**
+
 - Primary: `x-ai/grok-4-fast`
 - Vision fallback: `opengvlab/internvl3-78b`
 - Last resort: `google/gemini-2.0-flash-exp` (censors NSFW)
 
 ### **Imgur (Image Storage)**
+
 ```typescript
 // /client/src/lib/imgur-upload.ts
 const { url, deleteHash } = await uploadToImgur(file);
@@ -478,6 +510,7 @@ const creds = await getImgurCredentials();
 ```
 
 **OAuth Flow:**
+
 1. User clicks "Connect Imgur"
 2. Redirects to Imgur auth
 3. Callback receives access + refresh tokens
@@ -485,6 +518,7 @@ const creds = await getImgurCredentials();
 5. Auto-refresh on expiry
 
 ### **Reddit API**
+
 ```typescript
 // /server/lib/reddit-api.ts
 await postToReddit({
@@ -496,6 +530,7 @@ await postToReddit({
 ```
 
 **Rate Limits:**
+
 - 60 requests per minute per OAuth token
 - Handled automatically in rate limiter middleware
 
@@ -504,6 +539,7 @@ await postToReddit({
 ## 🔄 **Development Workflow**
 
 ### **Setup**
+
 ```bash
 # Install dependencies
 npm install
@@ -522,6 +558,7 @@ npm run dev
 ```
 
 ### **Development**
+
 ```bash
 # Dev mode (hot reload)
 npm run dev
@@ -534,6 +571,7 @@ cd server && npm run dev
 ```
 
 ### **Before Committing**
+
 ```bash
 # Run all checks
 npx tsc --noEmit  # Must have 0 errors
@@ -545,6 +583,7 @@ npm run build     # Must succeed
 ```
 
 ### **Common Commands**
+
 ```bash
 # Database operations
 npx drizzle-kit generate  # Create migration
@@ -564,6 +603,7 @@ npm start                 # Production mode
 ## 🧪 **Testing Strategy**
 
 ### **Unit Tests**
+
 ```typescript
 // vitest.config.ts configured
 import { describe, it, expect } from 'vitest';
@@ -577,6 +617,7 @@ describe('Component', () => {
 ```
 
 ### **API Testing**
+
 ```bash
 # Use Postman or curl
 curl -X POST http://localhost:5000/api/caption/generate \
@@ -586,6 +627,7 @@ curl -X POST http://localhost:5000/api/caption/generate \
 ```
 
 ### **E2E Tests**
+
 Location: `/e2e/*.spec.ts` (Playwright)
 
 ```bash
@@ -599,16 +641,19 @@ npm run test:e2e
 ### **Render Configuration**
 
 **Build Command:**
+
 ```bash
 npm ci && npm run build
 ```
 
 **Start Command:**
+
 ```bash
 npm start
 ```
 
 **Environment Variables (CRITICAL):**
+
 ```bash
 NODE_ENV=production
 RENDER=true
@@ -624,6 +669,7 @@ STRIPE_SECRET_KEY=...
 ```
 
 ### **Database Migration on Render**
+
 ```bash
 # 1. Run migration locally first
 npx drizzle-kit generate
@@ -640,6 +686,7 @@ git push
 ```
 
 ### **Monitoring**
+
 - Check Render logs: `https://dashboard.render.com`
 - Health check: `GET /api/health`
 - Queue dashboard: `/admin/queues` (requires admin)
@@ -649,18 +696,21 @@ git push
 ## ⚠️ **Known Issues & TODOs**
 
 ### **Current Issues**
+
 1. **ImageShield disabled** - Being developed for beta
 2. **Console.log statements** - 449 instances need cleanup
 3. **Sentry DSN missing** - Error tracking not active
 4. **Test coverage low** - Many tests commented out
 
 ### **Quick Wins**
+
 - [ ] Add Sentry DSN for error tracking
 - [ ] Remove console.log statements
 - [ ] Add loading skeletons to all pages
 - [ ] Implement proper error boundaries
 
 ### **Medium Priority**
+
 - [ ] Enable ImageShield protection
 - [ ] Add PDF export for analytics
 - [ ] Implement notification system
@@ -671,6 +721,7 @@ git push
 ## 🗺️ **Future Roadmap**
 
 ### **Phase 1: Beta Launch (Current)**
+
 - ✅ Core posting functionality
 - ✅ Caption generation
 - ✅ Post scheduling
@@ -678,6 +729,7 @@ git push
 - ⏳ ImageShield (in progress)
 
 ### **Phase 2: Growth Features (Q1 2025)**
+
 - Advanced analytics (A/B testing)
 - Subreddit intelligence (trend detection)
 - Multi-account support
@@ -685,6 +737,7 @@ git push
 - API access for Premium users
 
 ### **Phase 3: Platform Expansion (Q2 2025)**
+
 - Instagram integration
 - Twitter/X integration
 - TikTok integration
@@ -692,6 +745,7 @@ git push
 - White-label options
 
 ### **Phase 4: Enterprise (Q3 2025)**
+
 - Agency dashboard
 - Client management
 - Branded reporting
@@ -765,6 +819,7 @@ npm run queue:clean           # Clean failed jobs
 ## 📞 **Need Help?**
 
 ### **Documentation Hierarchy**
+
 1. **This file** - AI Assistant Guide (comprehensive)
 2. `/docs/PLATFORM_OVERVIEW.md` - Platform architecture
 3. `/docs/API_ENDPOINTS_STATUS.md` - API reference
@@ -772,6 +827,7 @@ npm run queue:clean           # Clean failed jobs
 5. Code comments - Inline documentation
 
 ### **Key Files to Know**
+
 - `/server/routes.ts` - All API routes registered here
 - `/client/src/App.tsx` - Main React app
 - `/shared/schema.ts` - Database schema

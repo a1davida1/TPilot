@@ -67,7 +67,7 @@ npx drizzle-kit push
 npm run dev
 ```
 
-Visit: http://localhost:5173
+Visit: <http://localhost:5173>
 
 **Need more details?** See [QUICK_START.md](./QUICK_START.md)
 
@@ -76,6 +76,7 @@ Visit: http://localhost:5173
 ## 📖 Usage
 
 ### Development
+
 ```bash
 npm run dev              # Start dev server
 npm run build            # Build for production
@@ -85,12 +86,14 @@ npm run lint            # Check linting
 ```
 
 ### Database
+
 ```bash
 npx drizzle-kit push     # Update schema
 npx drizzle-kit studio   # Open DB GUI
 ```
 
 ### Production
+
 ```bash
 npm run build            # Build
 npm start               # Start server
@@ -102,7 +105,7 @@ npm start               # Start server
 
 ## 🎯 Project Structure
 
-```
+```text
 TPilot/
 ├── client/              # React frontend
 │   ├── src/
@@ -126,6 +129,7 @@ TPilot/
 ## 🔑 Key Environment Variables
 
 **Required:**
+
 ```bash
 DATABASE_URL=postgresql://...
 JWT_SECRET=random-32-char-string
@@ -134,6 +138,7 @@ OPENROUTER_API_KEY=sk-or-v1-...
 ```
 
 **Optional but recommended:**
+
 ```bash
 IMGUR_CLIENT_ID=...
 IMGUR_CLIENT_SECRET=...

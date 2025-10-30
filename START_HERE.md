@@ -1,10 +1,10 @@
 # 🎯 START HERE - ThottoPilot Documentation Index
 
-*Last Updated: October 29, 2025*
+> Last Updated: October 29, 2025
 
 ---
 
-## 👋 Welcome!
+## 👋 Welcome
 
 This is your entry point to ThottoPilot's comprehensive documentation suite.
 
@@ -17,12 +17,15 @@ This is your entry point to ThottoPilot's comprehensive documentation suite.
 **YOU ARE HERE** ← This is for you!
 
 ### **📖 Primary Resource:**
+
 **[HANDOFF_SUMMARY.md](./HANDOFF_SUMMARY.md)** - Start here for complete overview
 
 ### **📚 Complete Technical Reference:**
+
 **[AI_ASSISTANT_GUIDE.md](./AI_ASSISTANT_GUIDE.md)** - Your bible (100+ pages)
 
 ### **🔧 When You Need:**
+
 - **Quick setup:** [QUICK_START.md](./QUICK_START.md)
 - **Fix issues:** [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
 - **Architecture:** [docs/PLATFORM_OVERVIEW.md](./docs/PLATFORM_OVERVIEW.md)
@@ -33,11 +36,13 @@ This is your entry point to ThottoPilot's comprehensive documentation suite.
 ## 👨‍💻 **For Human Developers**
 
 ### **🚀 Getting Started:**
+
 1. **[README_NEW.md](./README_NEW.md)** - Quick overview
 2. **[QUICK_START.md](./QUICK_START.md)** - Get running in 10 min
 3. **[docs/PLATFORM_OVERVIEW.md](./docs/PLATFORM_OVERVIEW.md)** - Understand architecture
 
 ### **📖 Day-to-Day:**
+
 - **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Fix common issues
 - **[AI_ASSISTANT_GUIDE.md](./AI_ASSISTANT_GUIDE.md)** - Technical patterns
 - **.env.example** - Environment configuration
@@ -70,12 +75,14 @@ This is your entry point to ThottoPilot's comprehensive documentation suite.
 ## ⚡ **Quick Reference**
 
 ### **One Command to Rule Them All:**
+
 ```bash
 # Start development server
 npm run dev
 ```
 
 ### **Before Committing:**
+
 ```bash
 npx tsc --noEmit  # MUST pass
 npm run lint      # MUST pass  
@@ -83,6 +90,7 @@ npm run build     # MUST succeed
 ```
 
 ### **Common Commands:**
+
 ```bash
 # Development
 npm run dev              # Start dev server
@@ -102,7 +110,8 @@ npm start               # Start server
 ## 🎯 **Quick Start Paths**
 
 ### **Path 1: AI Assistant Starting Fresh**
-```
+
+```text
 1. Read HANDOFF_SUMMARY.md (10 min)
 2. Skim AI_ASSISTANT_GUIDE.md (focus on Core Principles)
 3. Clone repo and run `npm run dev`
@@ -111,7 +120,8 @@ npm start               # Start server
 ```
 
 ### **Path 2: Human Developer First Day**
-```
+
+```text
 1. Read README_NEW.md (5 min)
 2. Follow QUICK_START.md (10 min)
 3. Explore docs/PLATFORM_OVERVIEW.md (15 min)
@@ -120,7 +130,8 @@ npm start               # Start server
 ```
 
 ### **Path 3: Fixing a Specific Issue**
-```
+
+```text
 1. Check TROUBLESHOOTING.md first
 2. If not found, search AI_ASSISTANT_GUIDE.md
 3. Still stuck? Read relevant docs/ file
@@ -132,7 +143,9 @@ npm start               # Start server
 ## 🔑 **Key Information**
 
 ### **What is ThottoPilot?**
+
 Reddit content management platform for adult content creators with:
+
 - AI caption generation (OpenRouter/Grok)
 - Post scheduling (7-30 days)
 - Analytics & recommendations
@@ -140,6 +153,7 @@ Reddit content management platform for adult content creators with:
 - Multi-tier system
 
 ### **Tech Stack:**
+
 - **Frontend:** React + TypeScript + Wouter + React Query
 - **Backend:** Express + TypeScript + Drizzle ORM
 - **Database:** PostgreSQL
@@ -148,6 +162,7 @@ Reddit content management platform for adult content creators with:
 - **Deploy:** Render.com
 
 ### **Critical Rules:**
+
 1. ❌ No `any` types in TypeScript
 2. ❌ No local image storage (legal compliance)
 3. ✅ Always use OpenRouter for AI
@@ -172,6 +187,7 @@ Reddit content management platform for adult content creators with:
 
 **Q: Which doc should I read first?**  
 A: Role dependent:
+
 - AI Assistant → [HANDOFF_SUMMARY.md](./HANDOFF_SUMMARY.md)
 - Developer → [QUICK_START.md](./QUICK_START.md)
 
@@ -223,17 +239,20 @@ Unlike typical documentation:
 ## 🚀 **Ready to Start?**
 
 ### **For AI Assistants:**
+
 → Read [HANDOFF_SUMMARY.md](./HANDOFF_SUMMARY.md) now
 
 ### **For Developers:**
+
 → Follow [QUICK_START.md](./QUICK_START.md) now
 
 ### **For Reference:**
+
 → Bookmark [AI_ASSISTANT_GUIDE.md](./AI_ASSISTANT_GUIDE.md)
 
 ---
 
-**Welcome to ThottoPilot! Let's build something great. 🚀**
+## Welcome to ThottoPilot! Let's build something great. 🚀
 
 ---
 

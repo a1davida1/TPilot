@@ -1,5 +1,6 @@
 # ThottoPilot Quick Start Guide
-*Get up and running in 10 minutes*
+
+> Get up and running in 10 minutes
 
 ## Prerequisites
 
@@ -28,6 +29,7 @@ nano .env
 ```
 
 **Required Variables:**
+
 ```bash
 # Database
 DATABASE_URL="postgresql://user:pass@localhost:5432/thottopilot"
@@ -66,11 +68,11 @@ npm run seed:communities
 npm run dev
 ```
 
-Visit: http://localhost:5173
+Visit: <http://localhost:5173>
 
 ## Step 5: Create Test Account (2 min)
 
-1. Go to http://localhost:5173
+1. Go to <http://localhost:5173>
 2. Click "Sign Up"
 3. Create account with email/password
 4. You're in!
@@ -80,20 +82,24 @@ Visit: http://localhost:5173
 ## Common Issues
 
 ### "Cannot connect to database"
+
 - Check PostgreSQL is running: `pg_isready`
 - Verify DATABASE_URL in .env
 - Ensure database exists: `psql -l`
 
 ### "Redis connection failed"
+
 - Start Redis: `redis-server`
 - Or comment out queue in development
 
 ### "Port 5173 already in use"
+
 - Kill the process: `lsof -ti:5173 | xargs kill -9`
 
 ### "OpenRouter API error"
+
 - Verify OPENROUTER_API_KEY in .env
-- Check account has credits: https://openrouter.ai/credits
+- Check account has credits: <https://openrouter.ai/credits>
 
 ---
 

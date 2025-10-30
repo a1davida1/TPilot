@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { ZodError, z } from 'zod';
-import { eq } from 'drizzle-orm';
 
 import { db } from '@server/db';
 import {

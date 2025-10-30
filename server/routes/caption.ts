@@ -1,6 +1,6 @@
 import { Router, type Response } from 'express';
 import { pipeline, OpenRouterError } from '../caption/openrouterPipeline';
-import { fastPipeline, FastPipelineError, getFallbackCaptions } from '../caption/fastPipeline';
+import { fastPipeline, FastPipelineError } from '../caption/fastPipeline';
 import { loadCaptionPersonalizationContext } from '../caption/personalization-context';
 import { storage } from '../storage';
 import { authenticateToken, type AuthRequest } from '../middleware/auth';

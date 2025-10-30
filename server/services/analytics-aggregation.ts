@@ -7,13 +7,11 @@
 import { db } from '../db.js';
 import {
   analyticsContentPerformanceDaily,
-  analyticsAiUsageDaily,
   redditPostOutcomes,
-  scheduledPosts,
   captionVariants,
   contentGenerations,
 } from '@shared/schema';
-import { and, eq, gte, lte, sql, desc } from 'drizzle-orm';
+import { and, eq, gte, lte, sql } from 'drizzle-orm';
 import { logger } from '../bootstrap/logger.js';
 
 /**

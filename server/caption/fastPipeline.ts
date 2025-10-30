@@ -21,7 +21,7 @@ import {
   isOpenRouterEnabled,
   GROK_4_FAST,
 } from '../lib/openrouter-client.js';
-import { CaptionItem, platformChecks } from './schema.js';
+import { CaptionItem } from './schema.js';
 import type { CaptionPersonalizationContext } from './personalization-context.js';
 
 export class FastPipelineError extends Error {

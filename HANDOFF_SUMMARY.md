@@ -1,6 +1,6 @@
 # ThottoPilot - Complete Handoff Package for AI Assistants
 
-*Created: October 29, 2025*
+> Created: October 29, 2025
 
 ---
 
@@ -86,21 +86,25 @@ npm run build     # MUST succeed
 ## ⚡ **Critical Rules (Always Follow)**
 
 ### **1. TypeScript Strictness**
+
 - ❌ Never use `any`
 - ❌ Never use non-null assertions (`!`)
 - ✅ Always define interfaces
 - ✅ Use type guards for safety
 
 ### **2. No Local Image Storage**
+
 - ❌ Never `fs.writeFile()` for images
 - ✅ Always use Imgur/Catbox APIs
 - **Why:** Legal compliance (2257 regulations)
 
 ### **3. AI Model Priority**
+
 - ✅ PRIMARY: OpenRouter (Grok-4-Fast)
 - ❌ AVOID: Gemini (censors adult content)
 
 ### **4. Database Migrations**
+
 ```bash
 # ✅ CORRECT ORDER:
 1. Create migration SQL
@@ -114,6 +118,7 @@ npm run build     # MUST succeed
 ```
 
 ### **5. Environment Variables**
+
 ```bash
 # REQUIRED for Render:
 RENDER=true
@@ -153,6 +158,7 @@ DATABASE_URL=postgresql://...  # NO ?ssl=true!
 ## 🔍 **Common Patterns**
 
 ### **API Endpoint Pattern**
+
 ```typescript
 import { Router } from 'express';
 import { authenticateToken, type AuthRequest } from '../middleware/auth';
@@ -174,6 +180,7 @@ export { router as featureRouter };
 ```
 
 ### **React Page Pattern**
+
 ```typescript
 import { useQuery } from '@tanstack/react-query';
 
@@ -195,6 +202,7 @@ export default function FeaturePage() {
 ```
 
 ### **Tier Check Pattern**
+
 ```typescript
 const hasPro = ['pro', 'premium'].includes(user?.tier);
 
@@ -208,6 +216,7 @@ if (!hasPro) {
 ## 🚨 **Red Flags to Watch For**
 
 ### **Code smells:**
+
 - `any` types anywhere
 - `console.log()` (use `logger` instead)
 - Hardcoded credentials
@@ -217,6 +226,7 @@ if (!hasPro) {
 - Using Gemini for NSFW content
 
 ### **Architecture violations:**
+
 - Querying DB from frontend
 - Business logic in route handlers
 - Missing tier checks on paid features
@@ -248,6 +258,7 @@ if (!hasPro) {
 ## 📊 **Current Status**
 
 ### **✅ Production Ready:**
+
 - Core posting functionality
 - Caption generation (OpenRouter)
 - Post scheduling
@@ -257,11 +268,13 @@ if (!hasPro) {
 - Tier system
 
 ### **⏳ In Progress:**
+
 - ImageShield (beta)
 - Advanced analytics
 - Multi-account support
 
 ### **❌ Known Issues:**
+
 - 449 console.log statements need cleanup
 - Sentry DSN not configured (no error tracking)
 - Some tests commented out
@@ -290,19 +303,21 @@ Before claiming a task is "done":
 ## 🔗 **External Resources**
 
 ### **Key APIs Used:**
-- **OpenRouter:** https://openrouter.ai/docs
-- **Imgur:** https://apidocs.imgur.com/
-- **Reddit:** https://www.reddit.com/dev/api
-- **Stripe:** https://stripe.com/docs/api
-- **Drizzle ORM:** https://orm.drizzle.team/docs
+
+- **OpenRouter:** <https://openrouter.ai/docs>
+- **Imgur:** <https://apidocs.imgur.com/>
+- **Reddit:** <https://www.reddit.com/dev/api>
+- **Stripe:** <https://stripe.com/docs/api>
+- **Drizzle ORM:** <https://orm.drizzle.team/docs>
 
 ### **Technologies:**
-- **React:** https://react.dev/
-- **Express:** https://expressjs.com/
-- **Wouter:** https://github.com/molefrog/wouter
-- **React Query:** https://tanstack.com/query/latest
-- **Bull:** https://github.com/OptimalBits/bull
-- **shadcn/ui:** https://ui.shadcn.com/
+
+- **React:** <https://react.dev/>
+- **Express:** <https://expressjs.com/>
+- **Wouter:** <https://github.com/molefrog/wouter>
+- **React Query:** <https://tanstack.com/query/latest>
+- **Bull:** <https://github.com/OptimalBits/bull>
+- **shadcn/ui:** <https://ui.shadcn.com/>
 
 ---
 
@@ -317,6 +332,7 @@ Before claiming a task is "done":
 5. **Document decisions** - Update docs for architecture changes
 
 ### **Response structure:**
+
 ```markdown
 ## 🎯 Goal
 [What we're doing]
@@ -341,11 +357,13 @@ Before claiming a task is "done":
 ### **Local → Staging → Production**
 
 1. **Develop locally:**
+
    ```bash
    npm run dev
    ```
 
 2. **Test thoroughly:**
+
    ```bash
    npm run build
    npm test
@@ -353,12 +371,14 @@ Before claiming a task is "done":
    ```
 
 3. **Commit with clear message:**
+
    ```bash
    git add .
    git commit -m "feat: add feature X"
    ```
 
 4. **Push to trigger CI:**
+
    ```bash
    git push origin main
    ```
@@ -366,6 +386,7 @@ Before claiming a task is "done":
 5. **Render auto-deploys** (if configured)
 
 ### **Manual deployment:**
+
 ```bash
 ./scripts/build-production.sh
 npm start
@@ -385,6 +406,7 @@ npm start
 6. **Ask user** - When truly stuck
 
 ### **Don't guess:**
+
 - Read files instead of assuming
 - Check schema before accessing DB
 - Verify API exists before calling it
@@ -423,7 +445,7 @@ npm start
 
 ---
 
-**Welcome to ThottoPilot development! 🚀**
+## Welcome to ThottoPilot development! 🚀
 
 **Your job:** Build features that help adult content creators succeed on Reddit while maintaining legal compliance and code quality.
 

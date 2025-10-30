@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { X, ArrowRight, CheckCircle, Sparkles, Upload, Wand2, Send, Calendar } from 'lucide-react';
+import { X, ArrowRight, CheckCircle, Sparkles, Upload, Wand2, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useLocation } from 'wouter';
 

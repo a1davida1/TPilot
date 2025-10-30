@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { HelpCircle, X } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';
-import { Button } from './button';
 import { cn } from '@/lib/utils';
 
 interface ContextualTooltipProps {

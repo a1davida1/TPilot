@@ -35,7 +35,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ActivitySkeleton } from '@/components/ui/loading-states';
 
 // Custom Components
-import { CaptionLimitBanner, CommandBar } from '@/components/ui/status-banner';
+import { CommandBar } from '@/components/ui/status-banner';
 import { StatusBannerContainer, useStatusBanners } from '@/components/ui/status-banner-container';
 import { FloatingActionButton } from '@/components/ui/floating-action-button';
 import { StickyRail } from '@/components/ui/sticky-rail';

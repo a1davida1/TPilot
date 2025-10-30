@@ -10,7 +10,7 @@
 
 import { db } from '../db.js';
 import { redditPostOutcomes, redditCommunities, users } from '@shared/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { logger } from '../bootstrap/logger.js';
 import { HybridRedditClient, type RedditPost } from '../lib/reddit/hybrid-client.js';
 import { upsertCommunity } from './reddit-community-manager.js';

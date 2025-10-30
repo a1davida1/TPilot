@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { X, Clock, TrendingUp, Calendar as CalendarIcon, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { useMutation, useQuery } from '@tanstack/react-query';

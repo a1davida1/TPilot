@@ -1,4 +1,4 @@
-import { Router, type Request, type Response, type Express } from 'express';
+import { type Request, type Response, type Express } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
@@ -6,7 +6,6 @@ import { authenticateToken, type AuthRequest } from './middleware/auth.js';
 import { storage } from './storage.js';
 import { MediaManager } from './lib/media.js';
 import { logger } from './bootstrap/logger.js';
-import { pool } from './db.js';
 import { applyImageShieldToBuffer, protectionPresets } from './images/imageShield.js';
 import { buildUploadUrl } from './lib/uploads.js';
 import { type Expense, type ExpenseCategory, type InsertExpense } from '@shared/schema';
