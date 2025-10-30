@@ -199,10 +199,10 @@ export async function getSyncJobStatus(jobId: string): Promise<{
     }
 
     return {
-      status: job.status ?? 'unknown',
+      status: (job.status as 'pending' | 'failed' | 'completed' | 'processing') ?? 'pending',
       progress: job.progress ?? 0,
       result: job.result as RedditSyncJobResult | undefined,
-      error: job.error,
+      error: job.error instanceof Error ? job.error.message : job.error,
     };
   } catch (error) {
     logger.error('Failed to get sync job status', {

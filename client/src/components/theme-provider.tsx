@@ -161,7 +161,7 @@ export function ThemeProvider({
     forcedTheme ?? (initialTheme === "system" ? getTimeBasedTheme() : initialTheme)
   )
   const [themeConfig, setThemeConfig] = React.useState<ThemeConfig>(
-    resolvedTheme === "midnight-rose" ? midnightRoseTheme : bubblegumPinkTheme
+    (resolvedTheme === "midnight-rose" ? midnightRoseTheme : bubblegumPinkTheme) as ThemeConfig
   )
 
   const setTheme = React.useCallback(
@@ -189,7 +189,7 @@ export function ThemeProvider({
   React.useEffect(() => {
     const resolved = forcedTheme ?? (theme === "system" ? getTimeBasedTheme() : theme)
     setResolvedTheme(resolved)
-    setThemeConfig(resolved === "midnight-rose" ? midnightRoseTheme : bubblegumPinkTheme)
+    setThemeConfig((resolved === "midnight-rose" ? midnightRoseTheme : bubblegumPinkTheme) as ThemeConfig)
   }, [theme, forcedTheme])
 
   React.useEffect(() => {
@@ -211,7 +211,7 @@ export function ThemeProvider({
     const handleChange = (event: MediaQueryListEvent) => {
       const newTheme = event.matches ? "midnight-rose" : "bubblegum-pink"
       setResolvedTheme(newTheme)
-      setThemeConfig(newTheme === "midnight-rose" ? midnightRoseTheme : bubblegumPinkTheme)
+      setThemeConfig((newTheme === "midnight-rose" ? midnightRoseTheme : bubblegumPinkTheme) as ThemeConfig)
     }
 
     if (typeof mediaQuery.addEventListener === "function") {
@@ -231,7 +231,7 @@ export function ThemeProvider({
       const newTheme = getTimeBasedTheme()
       if (newTheme !== resolvedTheme) {
         setResolvedTheme(newTheme)
-        setThemeConfig(newTheme === "midnight-rose" ? midnightRoseTheme : bubblegumPinkTheme)
+        setThemeConfig((newTheme === "midnight-rose" ? midnightRoseTheme : bubblegumPinkTheme) as ThemeConfig)
       }
     }
 
