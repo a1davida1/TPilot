@@ -1,6 +1,7 @@
 import { AlertTriangle, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 interface StatusBannerProps {
   show?: boolean;
@@ -196,8 +197,13 @@ export function CommandBar({
       'sticky top-[64px] z-40 border-b bg-gradient-to-r from-purple-50/90 via-pink-50/90 to-blue-50/90 px-4 py-2 backdrop-blur-sm dark:from-purple-950/30 dark:via-pink-950/30 dark:to-blue-950/30',
       className
     )}>
-      <div className="mx-auto flex max-w-7xl items-center gap-3 text-xs">
-        {items}
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-3">
+          {items}
+        </div>
+        <div className="flex items-center">
+          <ThemeToggle />
+        </div>
       </div>
     </div>
   );
