@@ -19,6 +19,7 @@ import passport from 'passport';
 import { createSessionMiddleware } from './bootstrap/session.js';
 import { Sentry } from './bootstrap/sentry.js';
 import { API_PREFIX } from './lib/api-prefix.js';
+import { startRedditSyncWorker } from './jobs/reddit-sync-worker.js';
 
 export interface CreateAppOptions {
   startQueue?: boolean;
@@ -472,6 +473,14 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
 
     if (shouldStartQueue) {
       await startQueue();
+
+      // Start Reddit sync worker
+      try {
+        startRedditSyncWorker();
+        logger.info('Reddit sync worker initialized successfully');
+      } catch (error) {
+        logger.error('Failed to start Reddit sync worker:', error);
+      }
     } else if (startQueueOption) {
       logger.info(
         'Queue startup skipped: provide REDIS_URL or DATABASE_URL environment variables to enable background workers.'

@@ -20,6 +20,8 @@ import { logger } from './bootstrap/logger.js';
 import { recordPostOutcome, summarizeRemovalReasons } from './compliance/ruleViolationTracker.js';
 import { redditIntelligenceService } from './services/reddit-intelligence.js';
 import { RedditNativeUploadService } from './services/reddit-native-upload.js';
+import { queueRedditSync, getRedditSyncStatus } from './jobs/reddit-sync-worker.js';
+import { RedditSyncService } from './services/reddit-sync-service.js';
 
 interface RedditProfile {
   username: string;
@@ -381,10 +383,32 @@ export function registerRedditRoutes(app: Express) {
         }
       } catch (err) {
         // Don't fail OAuth if community import fails
-        logger.warn('Failed to import user communities', { 
-          userId, 
-          error: err instanceof Error ? err.message : String(err) 
+        logger.warn('Failed to import user communities', {
+          userId,
+          error: err instanceof Error ? err.message : String(err)
         });
+      }
+
+      // Trigger automatic quick sync for new connections
+      if (stateIntent === 'account-link') {
+        try {
+          const jobId = await queueRedditSync(
+            userId,
+            profile.username,
+            'quick'
+          );
+          logger.info('Automatic quick sync queued after Reddit connection', {
+            userId,
+            username: profile.username,
+            jobId
+          });
+        } catch (syncError) {
+          // Don't fail OAuth if sync queueing fails
+          logger.warn('Failed to queue automatic sync', {
+            userId,
+            error: syncError instanceof Error ? syncError.message : String(syncError)
+          });
+        }
       }
 
       // Success redirect to dashboard
@@ -1306,6 +1330,228 @@ export function registerRedditRoutes(app: Express) {
       res.json({ success: true });
     } catch (_e) {
       res.status(500).json({ error: 'Failed to delete community' });
+    }
+  });
+
+  // ============================================================================
+  // Reddit Sync Endpoints
+  // ============================================================================
+
+  /**
+   * POST /api/reddit/sync/quick
+   * Quick sync: 100 posts, top 10 subreddits (~30 seconds)
+   * Available to all authenticated users
+   */
+  app.post('/api/reddit/sync/quick', authenticateToken(true), async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user!.id;
+
+      // Get Reddit username from active account
+      const [account] = await db
+        .select()
+        .from(creatorAccounts)
+        .where(
+          and(
+            eq(creatorAccounts.userId, userId),
+            eq(creatorAccounts.platform, 'reddit'),
+            eq(creatorAccounts.isActive, true)
+          )
+        );
+
+      if (!account || !account.platformUsername) {
+        return res.status(400).json({
+          error: 'No active Reddit account found. Please connect your Reddit account first.'
+        });
+      }
+
+      // Queue the sync job
+      const jobId = await queueRedditSync(
+        userId,
+        account.platformUsername,
+        'quick'
+      );
+
+      logger.info('Quick sync queued', {
+        userId,
+        username: account.platformUsername,
+        jobId
+      });
+
+      res.json({
+        message: 'Quick sync started',
+        jobId,
+        estimatedTime: '30 seconds',
+        syncType: 'quick'
+      });
+    } catch (error) {
+      logger.error('Failed to start quick sync:', error);
+      res.status(500).json({ error: 'Failed to start sync' });
+    }
+  });
+
+  /**
+   * POST /api/reddit/sync/deep
+   * Deep sync: 500 posts, all subreddits (~2-3 minutes)
+   * Available to Pro+ users
+   */
+  app.post('/api/reddit/sync/deep', authenticateToken(true), async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      const userTier = req.user?.tier || 'free';
+
+      // Check tier access
+      if (userTier === 'free' || userTier === 'starter') {
+        return res.status(403).json({
+          error: 'Deep sync requires Pro or Premium tier',
+          requiredTier: 'pro'
+        });
+      }
+
+      // Get Reddit username from active account
+      const [account] = await db
+        .select()
+        .from(creatorAccounts)
+        .where(
+          and(
+            eq(creatorAccounts.userId, userId),
+            eq(creatorAccounts.platform, 'reddit'),
+            eq(creatorAccounts.isActive, true)
+          )
+        );
+
+      if (!account || !account.platformUsername) {
+        return res.status(400).json({
+          error: 'No active Reddit account found. Please connect your Reddit account first.'
+        });
+      }
+
+      // Queue the sync job
+      const jobId = await queueRedditSync(
+        userId,
+        account.platformUsername,
+        'deep'
+      );
+
+      logger.info('Deep sync queued', {
+        userId,
+        username: account.platformUsername,
+        jobId
+      });
+
+      res.json({
+        message: 'Deep sync started',
+        jobId,
+        estimatedTime: '2-3 minutes',
+        syncType: 'deep'
+      });
+    } catch (error) {
+      logger.error('Failed to start deep sync:', error);
+      res.status(500).json({ error: 'Failed to start sync' });
+    }
+  });
+
+  /**
+   * POST /api/reddit/sync/full
+   * Full sync: 1000 posts, all subreddits (~5-10 minutes)
+   * Premium tier only
+   */
+  app.post('/api/reddit/sync/full', authenticateToken(true), async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      const userTier = req.user?.tier || 'free';
+
+      // Check tier access
+      if (userTier !== 'premium') {
+        return res.status(403).json({
+          error: 'Full sync requires Premium tier',
+          requiredTier: 'premium'
+        });
+      }
+
+      // Get Reddit username from active account
+      const [account] = await db
+        .select()
+        .from(creatorAccounts)
+        .where(
+          and(
+            eq(creatorAccounts.userId, userId),
+            eq(creatorAccounts.platform, 'reddit'),
+            eq(creatorAccounts.isActive, true)
+          )
+        );
+
+      if (!account || !account.platformUsername) {
+        return res.status(400).json({
+          error: 'No active Reddit account found. Please connect your Reddit account first.'
+        });
+      }
+
+      // Queue the sync job
+      const jobId = await queueRedditSync(
+        userId,
+        account.platformUsername,
+        'full'
+      );
+
+      logger.info('Full sync queued', {
+        userId,
+        username: account.platformUsername,
+        jobId
+      });
+
+      res.json({
+        message: 'Full sync started',
+        jobId,
+        estimatedTime: '5-10 minutes',
+        syncType: 'full'
+      });
+    } catch (error) {
+      logger.error('Failed to start full sync:', error);
+      res.status(500).json({ error: 'Failed to start sync' });
+    }
+  });
+
+  /**
+   * GET /api/reddit/sync/status
+   * Get sync status for the current user
+   */
+  app.get('/api/reddit/sync/status', authenticateToken(true), async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user!.id;
+
+      // Get last sync status
+      const lastSync = await RedditSyncService.getLastSyncStatus(userId);
+
+      res.json(lastSync || {
+        lastSyncAt: null,
+        postCount: 0,
+        subredditCount: 0
+      });
+    } catch (error) {
+      logger.error('Failed to get sync status:', error);
+      res.status(500).json({ error: 'Failed to get sync status' });
+    }
+  });
+
+  /**
+   * GET /api/reddit/sync/job/:jobId
+   * Get status of a specific sync job
+   */
+  app.get('/api/reddit/sync/job/:jobId', authenticateToken(true), async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      const jobId = req.params.jobId;
+
+      const status = await getRedditSyncStatus(jobId);
+
+      if (!status) {
+        return res.status(404).json({ error: 'Job not found' });
+      }
+
+      res.json(status);
+    } catch (error) {
+      logger.error('Failed to get job status:', error);
+      res.status(500).json({ error: 'Failed to get job status' });
     }
   });
 }
