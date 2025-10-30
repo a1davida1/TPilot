@@ -242,7 +242,7 @@ function sanitizeImageUrl(url: string): string | null {
     // Only allow http(s) URLs and whitelisted hosts (exact or valid subdomain).
     if (
       (parsed.protocol === "https:" || parsed.protocol === "http:") &&
-      allowedHosts.some(h => parsed.hostname === h)
+      allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith('.' + h))
     ) {
       return url;
     }
