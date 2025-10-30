@@ -192,12 +192,14 @@ export class MediaManager {
       response.downloadUrl = env.S3_PUBLIC_CDN_DOMAIN
         ? `${env.S3_PUBLIC_CDN_DOMAIN}/${asset.key}`
         : undefined;
+      response.thumbnailUrl = signedUrl; // Use same URL for thumbnail
     } else {
       const token = await this.generateLocalDownloadToken(asset);
       const downloadPath = buildUploadUrl(token);
       response.signedUrl = downloadPath;
       response.downloadUrl = downloadPath;
       response.downloadToken = token;
+      response.thumbnailUrl = downloadPath; // Use same URL for thumbnail
     }
 
     return response;
