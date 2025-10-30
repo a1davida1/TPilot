@@ -159,6 +159,7 @@ export const mediaAssetResponseSchema = z
     createdAt: isoDateInputSchema,
     signedUrl: z.unknown().optional(),
     downloadUrl: z.unknown().optional(),
+    thumbnailUrl: z.unknown().optional(),
     isProtected: z.unknown().optional(),
     protectionLevel: z.unknown().optional(),
     lastRepostedAt: isoDateInputSchema
@@ -177,6 +178,7 @@ export const mediaAssetResponseSchema = z
       createdAt: toIsoString(raw.createdAt ?? null),
       signedUrl: sanitizeUrl(raw.signedUrl),
       downloadUrl: sanitizeUrl(raw.downloadUrl),
+      thumbnailUrl: sanitizeUrl(raw.thumbnailUrl),
       isProtected: protectionLevel ? true : coerceBoolean(raw.isProtected),
       protectionLevel,
       lastRepostedAt: raw.lastRepostedAt ? toIsoString(raw.lastRepostedAt) : undefined

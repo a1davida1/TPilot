@@ -98,7 +98,7 @@ export function ImgboxUploadPortal({
 
   const finishUpload = useCallback(
     (asset: MediaAssetResponse) => {
-      const rawUrl = asset.signedUrl ?? asset.downloadUrl;
+      const rawUrl = asset.thumbnailUrl ?? asset.signedUrl ?? asset.downloadUrl;
       const imageUrl = toAbsoluteUrl(rawUrl);
       if (!imageUrl) {
         throw new Error('Upload succeeded but no accessible URL was returned.');

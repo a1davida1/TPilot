@@ -20,7 +20,7 @@ import { logger } from './bootstrap/logger.js';
 import { recordPostOutcome, summarizeRemovalReasons } from './compliance/ruleViolationTracker.js';
 import { redditIntelligenceService } from './services/reddit-intelligence.js';
 import { RedditNativeUploadService } from './services/reddit-native-upload.js';
-import { queueRedditSync, getRedditSyncStatus } from './jobs/reddit-sync-worker.js';
+import { queueRedditSync, getSyncJobStatus } from './jobs/reddit-sync-worker.js';
 import { RedditSyncService } from './services/reddit-sync-service.js';
 
 interface RedditProfile {
@@ -1542,7 +1542,7 @@ export function registerRedditRoutes(app: Express) {
       const userId = req.user!.id;
       const jobId = req.params.jobId;
 
-      const status = await getRedditSyncStatus(jobId);
+      const status = await getSyncJobStatus(jobId);
 
       if (!status) {
         return res.status(404).json({ error: 'Job not found' });

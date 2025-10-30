@@ -8,7 +8,7 @@ export interface CaptionObject {
   mood?: string;
   style?: string;
   cta?: string;
-  safety_level?: 'normal' | 'spicy_safe' | 'unsafe';
+  safety_level?: 'normal' | 'spicy_safe' | 'unsafe' | 'needs_review' | 'explicit';
   titles?: string[];
 }
 
@@ -47,7 +47,7 @@ export const captionObjectSchema = z.object({
   mood: z.string().optional(),
   style: z.string().optional(),
   cta: z.string().optional(),
-  safety_level: z.enum(['normal', 'spicy_safe', 'unsafe']).optional(),
+  safety_level: z.enum(['normal', 'spicy_safe', 'unsafe', 'needs_review', 'explicit']).optional(),
   titles: z.array(z.string()).min(1).optional(),
 });
 

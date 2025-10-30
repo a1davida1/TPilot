@@ -10,7 +10,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: USE_PG_QUEUE
-        value: true
+        value: false
       # Database
       - key: DATABASE_URL
         fromDatabase:
@@ -63,7 +63,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: USE_PG_QUEUE
-        value: true
+        value: false
       # Database
       - key: DATABASE_URL
         fromDatabase:
