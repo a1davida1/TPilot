@@ -844,3 +844,69 @@ npm run queue:clean           # Clean failed jobs
 - `/tax-tracker` - Tax tracking for creators
 - `/referral` - Referral program
 - `/pro-perks` - Pro tier benefits
+
+
+## Automated Quality Hooks
+
+ThottoPilot uses Kiro agent hooks to automatically validate code quality and integration. These hooks run on file creation/save events to catch issues early.
+
+### Integration Validation Hooks
+
+**New File Integration Validator** (`.kiro/hooks/new-file-integration-validator.kiro.hook`)
+- **Triggers:** When new `.ts` or `.tsx` files are created
+- **Validates:** TypeScript compliance, component registration, API endpoint registration, service integration, documentation
+- **Purpose:** Ensures new files are immediately integrated into the app, prevents orphaned code
+- **Checks:** Routing registration, import usage, API connections, tier access, error handling
+
+**Component Integration Checker** (`.kiro/hooks/component-integration-checker.kiro.hook`)
+- **Triggers:** When React components (`.tsx`) are saved
+- **Validates:** Component usage, API integration (useQuery/useMutation), authentication (useAuth), UI/UX standards
+- **Purpose:** Catches unused components, missing error handling, improper API calls
+- **Checks:** Is component imported? Has loading states? Has error handling? Follows shadcn/ui patterns?
+
+**API Integration Validator** (`.kiro/hooks/api-integration-validator.kiro.hook`)
+- **Triggers:** When API routes, services, or hooks are saved
+- **Validates:** Route registration in `server/routes.ts`, frontend-backend connection, type safety, authentication
+- **Purpose:** Ensures full-stack API integration, prevents 404 errors
+- **Checks:** Backend registered? Frontend calls it? Types match? Auth configured?
+
+### Quality Assurance Hooks
+
+- **TypeScript Error Checker** - Catches strict mode violations (no `any`, no `!`)
+- **Tier Access Validator** - Ensures consistent tier-based access control
+- **Database Schema Validator** - Validates schema changes
+- **Code Quality Analyzer** - General code quality checks
+- **Performance Profiler** - Checks performance-critical files
+- **Test File Generator** - Suggests test file creation
+- **Source to Docs Sync** - Updates documentation when code changes
+
+### Hook Benefits
+
+1. **Prevents Orphaned Code** - No unused components, unregistered routes, or forgotten integrations
+2. **Enforces Patterns** - Consistent API patterns, component structure, error handling
+3. **Catches Issues Early** - TypeScript errors, missing integrations, incomplete implementations
+4. **Reduces Review Time** - Code is pre-validated, patterns enforced, documentation updated
+5. **Onboards Developers** - Hooks teach patterns, provide examples, show integration points
+
+### Hook Workflow Example
+
+```
+Developer creates: client/src/components/NewWidget.tsx
+  ↓
+new-file-integration-validator triggers
+  ↓
+Agent checks: TypeScript ✓, Structure ✓, Imported? ✗
+  ↓
+Agent reports: "Component not integrated. Add to dashboard.tsx"
+Provides exact code to add
+  ↓
+Developer adds import and usage
+  ↓
+component-integration-checker triggers
+  ↓
+Agent verifies: Used ✓, Loading states ✓, Error handling ✓
+  ↓
+✅ Component fully integrated!
+```
+
+See `.kiro/hooks/README.md` for full documentation and configuration.

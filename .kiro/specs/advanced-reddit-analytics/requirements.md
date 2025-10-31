@@ -4,65 +4,422 @@
 
 This specification defines an advanced Reddit analytics system for ThottoPilot that provides content creators with actionable insights, predictive intelligence, and competitive analysis. The system builds upon the existing analytics foundation to deliver Pro and Premium tier features including subreddit discovery intelligence, optimal posting time recommendations, content performance predictions, and competitor benchmarking.
 
-## Implementation Complexity & Time Estimates
+## Glossary
 
-### Core Analytics Requirements
+- **Analytics System**: The collection of backend services, APIs, and frontend components that aggregate, analyze, and present Reddit performance data to users
+- **System**: Refers to the ThottoPilot Analytics System throughout this document
+- **User**: A content creator using ThottoPilot (Free, Starter, Pro, or Premium tier)
+- **Subreddit**: A Reddit community where users post content
+- **Post Outcome**: A record of a Reddit post's performance including upvotes, views, comments, and removal status
+- **Health Score**: A composite metric (0-100) evaluating subreddit performance based on success rate, engagement, and removal rate
+- **Performance Prediction**: An algorithmic forecast of post success based on historical data and content attributes
+- **Removal Tracking**: Automated detection and logging of posts removed by moderators or spam filters
+- **Engagement Rate**: The ratio of user interactions (upvotes + comments) to total views
+- **Success Rate**: The percentage of posts that achieve positive engagement (not removed, upvotes > 1)
+- **Mod Activity Level**: Classification of moderator activity frequency (high, moderate, low, unknown)
+- **Trending Subreddit**: A community experiencing significant growth in members or activity
+- **Compatibility Score**: A metric (0-100) indicating how well a subreddit matches a user's content style
+- **Quick Sync**: Automatic import of user's last 100 Reddit posts and top 10 subreddits (~30 seconds)
+- **Deep Sync**: Optional import of user's last 500 Reddit posts and all subreddits (~2-3 minutes)
+- **Validation**: Automated checking of post content against subreddit rules before submission
 
-| Requirement | Manual Dev | AI-Assisted | Difficulty | Cost |
-|-------------|-----------|-------------|------------|------|
-| **Req 1**: Enhanced Dashboard | 0h (done) | 0h (done) | ✅ Trivial | $0 |
-| **Req 2**: Subreddit Intelligence | 12-16h | 6-8h | 🟡 Medium | $0 |
-| **Req 3**: Posting Time Recommendations | 12-16h | 6-8h | 🟡 Medium | $0 |
-| **Req 4**: Performance Predictions | 24-32h | 12-16h | 🔴 Hard | $0 (local GPU) |
-| **Req 5**: Trend Detection & Alerts | 18-24h | 10-12h | 🟠 Medium-Hard | $0 |
-| **Req 6**: Competitor Benchmarking | 28-36h | 14-18h | 🔴 Hard | $0 |
-| **Req 7**: Advanced Filtering | 4-6h | 2-3h | 🟢 Easy | $0 |
-| **Req 8**: Export & Reporting | 6-8h | 3-4h | 🟢 Easy | $0 |
-| **Req 9**: Real-time Updates | 0h (done) | 0h (done) | ✅ Trivial | $0 |
-| **Req 10**: Mobile Optimization | 10-14h | 5-7h | 🟡 Medium | $0 |
+## Requirements
 
-**Total Core Requirements**: 114-152h manual → 58-76h AI-assisted (50% time savings)
+### Requirement 0: Reddit Post History Synchronization (Foundation)
 
-### GPU-Accelerated ML Enhancement Features
+**User Story:** As a content creator, I want my Reddit posting history automatically synced when I connect my account, so that I can immediately see analytics without manual data entry.
 
-These optional features leverage your RTX 4090 for advanced machine learning capabilities:
+#### Acceptance Criteria
 
-| Feature | Manual Dev | AI-Assisted | GPU Benefit | Monthly Cost |
-|---------|-----------|-------------|-------------|--------------|
-| **ML-1**: Image Content Analysis | 32-40h | 16-20h | 🚀 10x faster inference | $0 (local) vs $50-150 (cloud) |
-| **ML-2**: NSFW Content Classification | 24-32h | 12-16h | 🚀 Real-time processing | $0 (local) vs $30-80 (cloud) |
-| **ML-3**: Caption Quality Scoring | 20-28h | 10-14h | 🚀 Batch processing | $0 (local) vs $20-60 (cloud) |
-| **ML-4**: Viral Content Prediction | 36-48h | 18-24h | 🚀 Complex model training | $0 (local) vs $100-300 (cloud) |
-| **ML-5**: Automated A/B Testing | 28-36h | 14-18h | 🚀 Multi-variant analysis | $0 (local) vs $40-120 (cloud) |
+1. WHEN a User connects their Reddit account via OAuth, THE System SHALL initiate a Quick Sync that fetches the User's last 100 posts within 30 seconds
+2. WHEN Quick Sync completes, THE System SHALL extract the top 10 most-posted subreddits and add them to the User's subreddit library
+3. WHEN Quick Sync completes, THE System SHALL backfill the `reddit_post_outcomes` table with historical post data including title, upvotes, views, and timestamp
+4. WHEN Quick Sync completes, THE System SHALL display a success message showing the number of posts synced and subreddits discovered
+5. WHERE a User opts for Deep Sync, THE System SHALL fetch the User's last 500 posts and all subreddits within 3 minutes
+6. WHEN Deep Sync is running, THE System SHALL display real-time progress updates showing posts synced and subreddits discovered
+7. WHEN any sync completes, THE System SHALL schedule ongoing sync jobs to check for new posts every 15 minutes
+8. IF a subreddit does not exist in the `reddit_communities` table, THE System SHALL fetch subreddit metadata from Reddit API and insert it with `discovery_source` set to 'user_history'
 
-**Total ML Features**: 140-184h manual → 70-92h AI-assisted + **$240-710/month cloud cost savings**
+### Requirement 1: Post Removal Detection and Tracking
 
-### Quick Win Features (Weekend Projects)
+**User Story:** As a content creator, I want automatic detection of removed posts with reasons, so that I can learn from mistakes and avoid future removals.
 
-These features provide immediate value with minimal implementation time:
+#### Acceptance Criteria
 
-| Feature | Manual Dev | AI-Assisted | Value | Cost |
-|---------|-----------|-------------|-------|------|
-| **QW-1**: Mod Detection & Safe Posting | 4-6h | 2-3h | 🔥 High | $0 |
-| **QW-2**: Post Removal Tracker | 3-4h | 1.5-2h | 🔥 High | $0 |
-| **QW-3**: Enhanced Rule Validator | 5-7h | 2.5-3.5h | 🔥 High | $0 |
-| **QW-4**: Success Rate Dashboard Widget | 2-3h | 1-1.5h | 🔥 Medium | $0 |
-| **QW-5**: Best Time Badge System | 3-4h | 1.5-2h | 🔥 Medium | $0 |
-| **QW-6**: Subreddit Health Score | 3-5h | 1.5-2.5h | 🔥 Very High | $0 |
-| **QW-7**: Post Performance Predictor | 4-6h | 2-3h | 🔥 Very High | $0 |
-| **QW-8**: Smart Subreddit Recommendations | 5-7h | 2.5-3.5h | 🔥 Very High | $0 |
-| **QW-9**: Engagement Heatmap | 3-4h | 1.5-2h | 🔥 High | $0 |
-| **QW-10**: Quick Stats Comparison | 2-3h | 1-1.5h | 🔥 High | $0 |
+1. WHEN a User's post is created, THE System SHALL store the Reddit post ID in the `reddit_post_outcomes` table for tracking
+2. WHEN the removal detection cron job runs hourly, THE System SHALL check the status of all posts from the last 7 days via Reddit API
+3. IF a post is detected as removed, THE System SHALL update the `reddit_post_outcomes` record with `status` set to 'removed', `removal_type`, `removal_reason`, and `time_until_removal_minutes`
+4. WHEN a post removal is detected, THE System SHALL parse the removal reason from moderator messages, automod comments, or post flair changes
+5. WHEN a User has 3 or more removals in the same subreddit within 7 days, THE System SHALL generate an alert suggesting rule review
+6. WHEN a User views their removal history, THE System SHALL display a list of removed posts with subreddit, title, reason, and time until removal
+7. WHEN displaying removal patterns, THE System SHALL group removals by subreddit and show common reasons with occurrence counts
+8. WHEN a post is removed, THE System SHALL immediately recalculate the User's success rate for that subreddit
 
-**Total Quick Wins**: 36-49h manual → 18-24.5h AI-assisted (complete all 10 in 2-3 weekends!)
+### Requirement 2: Subreddit Health Scoring
+
+**User Story:** As a content creator, I want a single health score for each subreddit showing how well it works for me, so that I can quickly identify my best and worst performing communities.
+
+#### Acceptance Criteria
+
+1. WHEN a User views their subreddit list, THE System SHALL calculate and display a Health Score (0-100) for each subreddit based on success rate (40%), engagement (30%), and inverse removal rate (30%)
+2. WHEN a Health Score is above 80, THE System SHALL display it with a green badge labeled "Excellent"
+3. WHEN a Health Score is between 50-80, THE System SHALL display it with a yellow badge labeled "Good"
+4. WHEN a Health Score is below 50, THE System SHALL display it with a red badge labeled "Needs Attention"
+5. WHEN a User clicks on a Health Score, THE System SHALL display a breakdown showing the three score components with their weighted contributions
+6. WHEN calculating Health Score, THE System SHALL normalize engagement by comparing average upvotes to a baseline of 200 upvotes
+7. WHEN a subreddit has fewer than 5 posts, THE System SHALL display "Insufficient Data" instead of a Health Score
+8. WHEN Health Scores are displayed, THE System SHALL include a trend indicator (improving/stable/declining) based on recent vs previous period comparison
+
+### Requirement 3: Rule-Based Performance Prediction
+
+**User Story:** As a content creator, I want a quick prediction of how my post will perform before I publish it, so that I can decide whether to post now or optimize first.
+
+#### Acceptance Criteria
+
+1. WHEN a User enters a title and selects a subreddit, THE System SHALL calculate a Performance Prediction score (0-100) within 500 milliseconds
+2. WHEN the prediction score is 80 or above, THE System SHALL classify the prediction as "Viral" with high confidence
+3. WHEN the prediction score is 65-79, THE System SHALL classify the prediction as "High" with medium confidence
+4. WHEN the prediction score is 45-64, THE System SHALL classify the prediction as "Medium" with medium confidence
+5. WHEN the prediction score is below 45, THE System SHALL classify the prediction as "Low" with low confidence
+6. WHEN generating predictions, THE System SHALL factor in title length (±15 points), posting time optimality (±20 points), subreddit health (±25 points), and user success rate (±20 points)
+7. WHEN the prediction is "Low" or "Medium", THE System SHALL provide up to 5 specific suggestions for improvement
+8. WHEN insufficient historical data exists for a subreddit, THE System SHALL display "Not enough data - post to build your profile" instead of a prediction
+
+### Requirement 4: Moderator Activity Detection
+
+**User Story:** As a content creator, I want to know if moderators are active before I post, so that I can avoid posting during high-moderation periods and reduce removal risk.
+
+#### Acceptance Criteria
+
+1. WHEN a User selects a subreddit for posting, THE System SHALL display the current Mod Activity Level (high, moderate, low, unknown)
+2. WHEN Mod Activity Level is "high", THE System SHALL display a warning badge stating "High mod activity - posts may be reviewed more strictly"
+3. WHEN the mod activity cron job runs every 6 hours, THE System SHALL fetch recent moderator actions from Reddit API and update the `subreddit_mod_activity` table
+4. WHEN calculating Mod Activity Level, THE System SHALL classify as "high" if more than 10 mod actions per day, "moderate" if 3-10 actions, and "low" if fewer than 3 actions
+5. WHEN a User hovers over the Mod Activity indicator, THE System SHALL display the last known mod action timestamp and typical response time
+6. WHEN posting during high-risk periods, THE System SHALL offer to delay the post to a safer time window
+7. IF a subreddit has removed the User's posts in the past, THE System SHALL display a "Caution" indicator with removal count
+
+### Requirement 5: Enhanced Rule Validation with Personal History
+
+**User Story:** As a content creator, I want automatic validation of my post against subreddit rules with personalized warnings based on my history, so that I can catch violations before posting.
+
+#### Acceptance Criteria
+
+1. WHEN a User selects a subreddit, THE System SHALL fetch and display the top 5 most important rules from the `reddit_communities.rules` JSONB column
+2. WHEN a User enters a title, THE System SHALL validate title length against subreddit requirements within 500 milliseconds and display warnings for violations
+3. WHEN validating content, THE System SHALL check eligibility rules (karma, account age, verification), content rules (title, links, NSFW), and posting limits (frequency, cooldown)
+4. IF the User has previously violated a specific rule in this subreddit, THE System SHALL highlight that rule with a red border and display the violation count
+5. WHEN all validations pass and risk score is below 30, THE System SHALL display a green "Ready to post" indicator
+6. WHEN validations pass but risk score is 30 or above, THE System SHALL display a yellow "Proceed with caution" indicator with the risk percentage
+7. WHEN validation errors are detected, THE System SHALL display them as blocking issues that prevent post submission
+8. WHEN validation warnings are detected, THE System SHALL display them as non-blocking concerns that allow post submission
+
+### Requirement 6: Smart Subreddit Recommendations
+
+**User Story:** As a content creator, I want personalized subreddit recommendations based on my content and success patterns, so that I can discover new communities to grow my audience.
+
+#### Acceptance Criteria
+
+1. WHEN a User views the subreddit discovery page, THE System SHALL display 5-10 recommended subreddits ranked by Compatibility Score (0-100)
+2. WHEN displaying recommendations, THE System SHALL show the reason for each recommendation (e.g., "Similar to r/gonewild where you have 85% success rate")
+3. WHEN calculating Compatibility Score, THE System SHALL factor in category match (30 points), size similarity (20 points), requirement eligibility (20 points), competition level (15 points), and growth trend (15 points)
+4. WHEN a User has posted to fewer than 3 subreddits, THE System SHALL recommend popular starter subreddits for their content type
+5. IF a recommended subreddit has strict rules that the User may not meet, THE System SHALL display a warning badge with key requirements
+6. WHEN a User dismisses a recommendation, THE System SHALL not show it again and store the dismissal in the database
+7. WHEN displaying recommendations, THE System SHALL include estimated success rate, member count, and competition level for each subreddit
+8. WHEN a User clicks "Add to My Subreddits", THE System SHALL add the subreddit to the User's library with `discovery_source` set to 'recommendation'
+
+### Requirement 7: Engagement Heatmap Visualization
+
+**User Story:** As a content creator, I want a visual heatmap showing when my posts get the most engagement, so that I can easily identify the best posting times at a glance.
+
+#### Acceptance Criteria
+
+1. WHEN a User views the analytics dashboard, THE System SHALL display a 7x24 heatmap grid showing engagement by day of week (rows) and hour (columns)
+2. WHEN a heatmap cell has engagement in the top 25% percentile, THE System SHALL color it dark green
+3. WHEN a heatmap cell has engagement in the bottom 25% percentile, THE System SHALL color it light red
+4. WHEN a User hovers over a heatmap cell, THE System SHALL display a tooltip with exact metrics including post count, average upvotes, and success rate
+5. WHEN a User clicks on a heatmap cell, THE System SHALL filter the analytics view to show only posts from that day and hour combination
+6. WHEN generating heatmap data, THE System SHALL aggregate posts from the last 90 days grouped by day of week and hour of day
+7. WHEN a time slot has zero posts, THE System SHALL display it in light gray with no engagement value
+8. WHEN the heatmap loads, THE System SHALL display a color legend showing the mapping from engagement levels to colors
+
+### Requirement 8: Performance Comparison Across Time Periods
+
+**User Story:** As a content creator, I want to quickly compare my performance across different time periods, so that I can see if my strategy improvements are working.
+
+#### Acceptance Criteria
+
+1. WHEN a User views the analytics dashboard, THE System SHALL display a comparison widget showing current period metrics vs previous period metrics
+2. WHEN a metric has improved, THE System SHALL display it in green with an up arrow and the percentage increase
+3. WHEN a metric has declined, THE System SHALL display it in red with a down arrow and the percentage decrease
+4. WHEN a metric is unchanged, THE System SHALL display it in gray with a horizontal line indicator
+5. WHEN comparing periods, THE System SHALL calculate metrics for total posts, success rate, average upvotes, average views, and unique subreddits
+6. WHEN a User selects a custom time range, THE System SHALL automatically compare it to the equivalent previous period of the same duration
+7. WHEN the overall trend is improving (majority of metrics up), THE System SHALL display a green "Improving" badge
+8. WHEN the overall trend is declining (majority of metrics down), THE System SHALL display a red "Declining" badge
+
+### Requirement 9: Success Rate Dashboard Widget
+
+**User Story:** As a content creator, I want a prominent success rate indicator on my dashboard, so that I can quickly see how well my posting strategy is working.
+
+#### Acceptance Criteria
+
+1. WHEN a User views the dashboard, THE System SHALL display a large success rate percentage calculated as (successful posts / total posts) * 100
+2. WHEN the success rate is above 80%, THE System SHALL display it in green with a "Great job!" message
+3. WHEN the success rate is between 50-80%, THE System SHALL display it in yellow with improvement tips
+4. WHEN the success rate is below 50%, THE System SHALL display it in red with a "Review strategy" warning
+5. WHEN a User clicks the success rate widget, THE System SHALL navigate to detailed analytics showing success rates broken down by subreddit
+6. WHEN calculating success rate, THE System SHALL consider a post successful if it has `success = true` in the `reddit_post_outcomes` table
+7. WHEN the User has fewer than 5 total posts, THE System SHALL display "Build your profile" instead of a success rate
+8. WHEN displaying the success rate, THE System SHALL include a trend indicator showing change from the previous period
+
+### Requirement 10: Posting Time Badge System
+
+**User Story:** As a content creator, I want visual badges showing optimal posting times, so that I can quickly identify good posting windows without analyzing charts.
+
+#### Acceptance Criteria
+
+1. WHEN a User schedules a post, THE System SHALL display time slot badges for morning (6-12), afternoon (12-18), evening (18-24), and night (0-6)
+2. WHEN a time slot has average engagement in the top 25% percentile, THE System SHALL display a green "Best time" badge
+3. WHEN a time slot has average engagement in the 25-75% percentile range, THE System SHALL display a yellow "Good time" badge
+4. WHEN a time slot has average engagement in the bottom 25% percentile, THE System SHALL display a red "Avoid" badge
+5. WHEN insufficient data exists for a time slot (fewer than 3 posts), THE System SHALL display a gray "Unknown" badge
+6. WHEN calculating time slot performance, THE System SHALL aggregate engagement data from the last 90 days
+7. WHEN a User hovers over a time badge, THE System SHALL display a tooltip with the average upvotes and post count for that time slot
+8. WHEN displaying time badges, THE System SHALL update them dynamically when the User changes the selected subreddit
+
+### Requirement 11: Subreddit Intelligence Dashboard
+
+**User Story:** As a Pro tier content creator, I want detailed performance metrics and insights for each subreddit I post to, so that I can identify which communities work best for my content and optimize my posting strategy.
+
+#### Acceptance Criteria
+
+1. WHEN a User views the subreddit intelligence page, THE System SHALL display a ranked list of subreddits ordered by engagement rate
+2. WHEN displaying subreddit performance, THE System SHALL show total posts, average upvotes, average views, success rate percentage, and engagement rate for each subreddit
+3. WHEN a subreddit has at least 5 posts, THE System SHALL calculate and display a performance trend indicator (improving, stable, declining) based on recent vs previous period comparison
+4. WHEN a User clicks on a subreddit, THE System SHALL display detailed metrics including best posting times, content type performance, and rule compliance history
+5. WHEN displaying subreddit intelligence, THE System SHALL show the last post timestamp and days since last post for each subreddit
+6. WHEN a subreddit shows declining performance, THE System SHALL display a warning badge with suggested actions
+7. WHEN calculating engagement rate, THE System SHALL use the formula: (upvotes + comments) / views * 100
+8. WHEN a User has posted to more than 10 subreddits, THE System SHALL paginate the list with 10 subreddits per page
+
+### Requirement 12: Optimal Posting Time Recommendations
+
+**User Story:** As a content creator, I want data-driven recommendations for the best times to post to each subreddit, so that I can maximize engagement and reach.
+
+#### Acceptance Criteria
+
+1. WHEN a User views posting time recommendations, THE System SHALL display the top 3 optimal time windows ranked by average engagement
+2. WHEN displaying time recommendations, THE System SHALL show the day of week, hour range, average upvotes, post count, and confidence level (high/medium/low)
+3. WHEN a time window has more than 20 historical posts, THE System SHALL assign it a "high" confidence level
+4. WHEN a time window has 10-20 historical posts, THE System SHALL assign it a "medium" confidence level
+5. WHEN a time window has fewer than 10 historical posts, THE System SHALL assign it a "low" confidence level
+6. WHEN calculating optimal times, THE System SHALL account for the User's timezone from their profile settings
+7. WHEN a User selects a specific subreddit filter, THE System SHALL show posting time recommendations specific to that subreddit
+8. WHEN displaying recommendations, THE System SHALL include reasoning text (e.g., "Based on 45 posts, avg 120 upvotes")
+
+### Requirement 13: Trend Detection and Alerts
+
+**User Story:** As a content creator, I want automatic detection of performance trends and proactive alerts, so that I can respond quickly to changes in my posting effectiveness.
+
+#### Acceptance Criteria
+
+1. WHEN the trend detection cron job runs daily, THE System SHALL analyze engagement rate changes by comparing the last 7 days to the previous 7 days
+2. IF engagement rate decreases by more than 20%, THE System SHALL generate a "critical" alert
+3. IF engagement rate decreases by 10-20%, THE System SHALL generate a "warning" alert
+4. IF engagement rate increases by more than 20%, THE System SHALL generate an "info" alert celebrating the improvement
+5. WHEN a User views the alerts center, THE System SHALL display unread alerts with severity indicators (critical/warning/info)
+6. WHEN an alert is generated, THE System SHALL store it in the `analytics_alerts` table with user_id, alert_type, severity, message, and created_at
+7. WHEN a User dismisses an alert, THE System SHALL mark it as read in the database
+8. WHEN critical alerts are generated, THE System SHALL send an email notification to the User if email notifications are enabled
+
+### Requirement 14: Advanced Analytics Filtering
+
+**User Story:** As a power user, I want advanced filtering options for my analytics data, so that I can perform deep analysis and answer specific questions about my performance.
+
+#### Acceptance Criteria
+
+1. WHEN a User views the analytics dashboard, THE System SHALL display filter controls for subreddit, date range, performance tier, and status
+2. WHEN a User selects multiple subreddits, THE System SHALL filter all analytics data to show only posts from those subreddits
+3. WHEN a User selects a date range, THE System SHALL update all metrics and charts to reflect only data from that period
+4. WHEN a User filters by performance tier (viral/high/medium/low), THE System SHALL show only posts matching that classification
+5. WHEN a User filters by status (success/removed/all), THE System SHALL show only posts with that status
+6. WHEN filters are applied, THE System SHALL display active filter badges that can be clicked to remove individual filters
+7. WHEN a User clicks "Clear all filters", THE System SHALL reset all filters to their default values
+8. WHEN filters are changed, THE System SHALL persist them in URL query parameters for shareable links
+
+### Requirement 15: Analytics Export and Reporting
+
+**User Story:** As a Pro tier content creator, I want to export my analytics data in various formats, so that I can perform external analysis or share reports with collaborators.
+
+#### Acceptance Criteria
+
+1. WHEN a Pro or Premium User clicks the export button, THE System SHALL display export format options (CSV, JSON)
+2. WHEN a Premium User clicks the export button, THE System SHALL additionally display a PDF report option
+3. WHEN a User selects CSV export, THE System SHALL generate a CSV file containing all filtered analytics data within 5 seconds
+4. WHEN a User selects JSON export, THE System SHALL generate a JSON file with structured analytics data including metadata
+5. WHEN a Premium User selects PDF export, THE System SHALL generate a formatted PDF report including charts, metrics, and insights within 10 seconds
+6. WHEN an export is generated, THE System SHALL automatically download the file to the User's device
+7. WHEN exporting data, THE System SHALL respect the currently applied filters and date range
+8. WHEN generating PDF reports, THE System SHALL include the User's username, export date, and time period covered
+
+### Requirement 16: Trending Subreddit Discovery
+
+**User Story:** As a content creator, I want to discover trending and rising subreddits that match my content style, so that I can find new growth opportunities before they become saturated.
+
+#### Acceptance Criteria
+
+1. WHEN a User views the trending subreddits page, THE System SHALL display subreddits classified as "hot" (>20% growth in 30 days), "rising" (5-20% growth with low competition), or "hidden gems" (steady growth, under 50k members)
+2. WHEN displaying trending subreddits, THE System SHALL show member growth percentage, current member count, opportunity score (0-100), and reason for trending
+3. WHEN calculating opportunity score, THE System SHALL factor in growth rate (40%), competition level (30%), and compatibility with User's content (30%)
+4. WHEN the metrics tracking cron job runs daily, THE System SHALL snapshot subreddit metrics (members, active_users, posts_per_day) into the `subreddit_metrics_history` table
+5. WHEN a User clicks on a trending subreddit, THE System SHALL display detailed growth charts and posting guidelines
+6. WHEN a trending subreddit matches the User's successful categories, THE System SHALL display a "High compatibility" badge
+7. WHEN a User adds a trending subreddit to their library, THE System SHALL set `discovery_source` to 'trending'
+8. WHEN displaying trending subreddits, THE System SHALL sort them by opportunity score in descending order
+
+### Requirement 17: Comment Engagement Tracking
+
+**User Story:** As a content creator, I want to track comment engagement on my posts, so that I can understand which content sparks conversation and identify posts needing responses.
+
+#### Acceptance Criteria
+
+1. WHEN the sync service fetches post data, THE System SHALL retrieve comment count, average comment length, and whether the User replied for each post
+2. WHEN displaying post analytics, THE System SHALL show comment count, comment-to-upvote ratio, and user reply status
+3. WHEN a post has a comment-to-upvote ratio above 0.1, THE System SHALL classify it as "high discussion" and display a badge
+4. WHEN a post has comments but the User has not replied, THE System SHALL display a "Response needed" indicator
+5. WHEN calculating engagement metrics, THE System SHALL include comment count in the engagement score formula
+6. WHEN a User views subreddit intelligence, THE System SHALL show average comments per post for that subreddit
+7. WHEN the System detects a post with new comments where the User hasn't replied, THE System SHALL add it to the "Needs Response" queue
+8. WHEN displaying the "Needs Response" queue, THE System SHALL sort posts by comment count descending
+
+### Requirement 18: Shadowban and Spam Filter Detection
+
+**User Story:** As a content creator, I want automatic detection of shadowbans and spam filtering, so that I don't waste time posting to subreddits where my content is invisible.
+
+#### Acceptance Criteria
+
+1. WHEN a post receives zero engagement (0 upvotes, 0 comments) for more than 1 hour after posting, THE System SHALL flag it for shadowban detection
+2. WHEN checking for shadowbans, THE System SHALL query the Reddit API to verify if the post is visible to other users
+3. IF a post is removed or marked as spam by Reddit, THE System SHALL update the post status to 'shadowbanned' or 'spam_filtered'
+4. WHEN a User has 2 or more consecutive posts flagged as shadowbanned in the same subreddit, THE System SHALL generate a critical alert
+5. WHEN displaying shadowban alerts, THE System SHALL recommend actions (contact mods, verify email, build karma in other subreddits)
+6. WHEN a shadowban is detected, THE System SHALL update the subreddit's Health Score to reflect the increased risk
+7. WHEN a User views subreddit details, THE System SHALL display shadowban history and spam filter incidents
+8. WHEN calculating posting recommendations, THE System SHALL deprioritize subreddits where the User has been shadowbanned
+
+### Requirement 19: Crosspost Opportunity Finder
+
+**User Story:** As a Premium tier content creator, I want automated identification of crosspost opportunities for my successful posts, so that I can maximize reach without manual searching.
+
+#### Acceptance Criteria
+
+1. WHEN a post achieves more than 100 upvotes and is less than 7 days old, THE System SHALL identify it as a crosspost candidate
+2. WHEN identifying crosspost opportunities, THE System SHALL find related subreddits from the `subreddit_relationships` table
+3. WHEN displaying crosspost opportunities, THE System SHALL suggest optimal timing (6-24 hours after original post) to avoid spam detection
+4. WHEN generating crosspost suggestions, THE System SHALL create 2-3 title variations using the AI service to match different audience styles
+5. WHEN a User views crosspost opportunities, THE System SHALL display estimated reach, success probability, and target subreddit compatibility
+6. WHEN a User schedules a crosspost, THE System SHALL automatically set the scheduled time to the suggested optimal window
+7. WHEN calculating crosspost success probability, THE System SHALL factor in the User's success rate in the target subreddit and content similarity
+8. WHEN displaying opportunities, THE System SHALL filter out subreddits where the User has already posted the same content
+
+### Requirement 20: Karma Velocity Tracking
+
+**User Story:** As a content creator, I want real-time tracking of my post's karma velocity, so that I can predict final performance and decide whether to delete and repost underperforming content.
+
+#### Acceptance Criteria
+
+1. WHEN a post is created, THE System SHALL take karma snapshots at 15 minutes, 1 hour, 3 hours, 6 hours, and 24 hours after posting
+2. WHEN displaying karma velocity, THE System SHALL show upvotes per hour for each snapshot interval
+3. WHEN a post's 1-hour velocity is below the User's average for that subreddit, THE System SHALL display a "Underperforming" warning
+4. WHEN a post's velocity exceeds 2x the User's average, THE System SHALL display a "Trending" badge
+5. WHEN comparing velocity to historical data, THE System SHALL predict final upvote count with a confidence interval
+6. WHEN a post is significantly underperforming (velocity < 50% of average), THE System SHALL suggest considering deletion and reposting
+7. WHEN storing velocity snapshots, THE System SHALL insert records into the `post_velocity_snapshots` table with post_id, snapshot_at, upvotes, and velocity_score
+8. WHEN displaying velocity charts, THE System SHALL overlay the User's average velocity curve for comparison
+
+## Requirements Summary
+
+### Foundation (Build First)
+- **Requirement 0**: Reddit Post History Synchronization - Provides data foundation for all analytics features
+
+### Quick Wins (High Impact, Low Effort)
+- **Requirement 1**: Post Removal Detection and Tracking
+- **Requirement 2**: Subreddit Health Scoring
+- **Requirement 3**: Rule-Based Performance Prediction
+- **Requirement 4**: Moderator Activity Detection
+- **Requirement 5**: Enhanced Rule Validation with Personal History
+- **Requirement 6**: Smart Subreddit Recommendations
+- **Requirement 7**: Engagement Heatmap Visualization
+- **Requirement 8**: Performance Comparison Across Time Periods
+- **Requirement 9**: Success Rate Dashboard Widget
+- **Requirement 10**: Posting Time Badge System
+
+### Core Analytics (Medium Effort, High Value)
+- **Requirement 11**: Subreddit Intelligence Dashboard
+- **Requirement 12**: Optimal Posting Time Recommendations
+- **Requirement 13**: Trend Detection and Alerts
+- **Requirement 14**: Advanced Analytics Filtering
+- **Requirement 15**: Analytics Export and Reporting
+- **Requirement 16**: Trending Subreddit Discovery
+
+### Intelligence Features (Higher Effort, Premium Value)
+- **Requirement 17**: Comment Engagement Tracking
+- **Requirement 18**: Shadowban and Spam Filter Detection
+- **Requirement 19**: Crosspost Opportunity Finder (Premium)
+- **Requirement 20**: Karma Velocity Tracking
+
+## Implementation Priority
+
+### Phase -1: Foundation (Day 1, 4-6h)
+- Requirement 0: Reddit Post History Synchronization
+
+### Phase 0: Quick Wins (2-3 weekends, 18-24.5h)
+- Requirements 1-10: All Quick Win features
+
+### Phase 1: Core Analytics (2-3 weeks, 30-40h)
+- Requirements 11-16: Subreddit intelligence, filtering, exports, trending
+
+### Phase 2: Intelligence Layer (2-3 weeks, 20-28h)
+- Requirements 17-20: Comment tracking, shadowban detection, crossposting, velocity
+
+## Tier Access Requirements
+
+### Free Tier
+- No analytics access (upgrade prompt shown)
+
+### Starter Tier  
+- No analytics access (upgrade prompt shown)
+
+### Pro Tier
+- Requirements 0-18: All foundation, quick wins, core analytics, and basic intelligence features
+- Excludes: Crosspost Opportunity Finder (Requirement 19)
+
+### Premium Tier
+- Requirements 0-20: All features including crosspost opportunities
+- Additional: PDF export, extended data retention, API access
+
+## Success Metrics
+
+### User Engagement
+- 80%+ of users connect Reddit within 24h of signup
+- 60%+ of Pro users view analytics weekly
+- 40%+ increase in 30-day retention for analytics users
+
+### Feature Adoption
+- 70%+ of users complete Quick Sync on first connection
+- 30%+ opt for Deep Sync within first week
+- 50%+ of Pro users use performance predictions before posting
+
+### Business Impact
+- 20%+ conversion rate from Free to Pro for analytics access
+- 15%+ improvement in user post success rates
+- 25%+ reduction in post removals for active analytics users
 
 ---
 
-## User Impact Rankings & Priority Matrix
-
-### Quick Wins - Ranked by Impact
-
-| Rank | Feature | Impact Score | Reasoning | Build Priority |
+**Note:** Detailed implementation specifications, database schemas, API designs, and technical architecture are documented in the design.md file. This requirements document focuses on WHAT the system must do, not HOW it will be implemented.
 |------|---------|--------------|-----------|----------------|
 | 🥇 1 | **QW-6**: Subreddit Health Score | ⭐⭐⭐⭐⭐ 95/100 | Single metric answers "where should I post?" - drives all decisions | **CRITICAL** |
 | 🥈 2 | **QW-7**: Performance Predictor | ⭐⭐⭐⭐⭐ 92/100 | Prevents wasted posts, builds confidence, immediate ROI | **CRITICAL** |

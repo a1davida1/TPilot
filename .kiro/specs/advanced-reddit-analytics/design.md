@@ -4,6 +4,12 @@
 
 This document defines the technical architecture, data models, APIs, and implementation strategy for ThottoPilot's advanced Reddit analytics system - the most comprehensive Reddit analytics platform for content creators.
 
+**Requirements Coverage:** This design implements all 21 requirements (Req 0-20) from the requirements document, organized into 4 implementation phases:
+- **Phase -1 (Foundation):** Requirement 0 - Reddit Post History Synchronization
+- **Phase 0 (Quick Wins):** Requirements 1-10 - High-impact, low-effort features
+- **Phase 1 (Core Analytics):** Requirements 11-16 - Comprehensive analytics platform
+- **Phase 2 (Intelligence Layer):** Requirements 17-20 - Advanced intelligence features
+
 ## Architecture Overview
 
 ### System Architecture
@@ -321,6 +327,31 @@ CREATE TABLE user_rule_violations (
   occurred_at TIMESTAMP DEFAULT NOW(),
   INDEX idx_user_subreddit (user_id, subreddit)
 );
+
+-- Karma velocity snapshots (Requirement 20)
+CREATE TABLE post_velocity_snapshots (
+  id SERIAL PRIMARY KEY,
+  post_id INTEGER REFERENCES reddit_post_outcomes(id),
+  snapshot_at VARCHAR(10) NOT NULL, -- '15min', '1hr', '3hr', '6hr', '24hr'
+  upvotes INTEGER NOT NULL,
+  comments INTEGER DEFAULT 0,
+  velocity_score FLOAT NOT NULL, -- upvotes per hour
+  created_at TIMESTAMP DEFAULT NOW(),
+  INDEX idx_post_velocity (post_id, snapshot_at)
+);
+
+-- Analytics alerts (Requirement 13)
+CREATE TABLE analytics_alerts (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id),
+  alert_type VARCHAR(50) NOT NULL, -- 'trend_decline', 'trend_improve', 'shadowban', 'removal_pattern'
+  severity VARCHAR(20) NOT NULL, -- 'info', 'warning', 'critical'
+  message TEXT NOT NULL,
+  metadata JSONB, -- Additional context
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT NOW(),
+  INDEX idx_user_alerts (user_id, is_read, created_at DESC)
+);
 ```
 
 ### Schema Extensions
@@ -467,6 +498,62 @@ interface SubredditRecommendation {
   memberCount: number;
   competitionLevel: 'low' | 'medium' | 'high';
   warnings: string[];
+}
+
+// GET /api/analytics/comment-engagement
+// Returns: Comment engagement metrics and posts needing responses
+interface CommentEngagementResponse {
+  totalComments: number;
+  avgCommentsPerPost: number;
+  avgCommentToUpvoteRatio: number;
+  highDiscussionPosts: Post[];
+  needsResponsePosts: Post[];
+  responseRate: number;
+}
+
+// GET /api/analytics/shadowban-check/:postId
+// Returns: Shadowban detection results
+interface ShadowbanCheckResponse {
+  isShadowbanned: boolean;
+  reason: string;
+  recommendations: string[];
+  subredditHistory: {
+    subreddit: string;
+    shadowbanCount: number;
+    lastIncident: Date;
+  }[];
+}
+
+// GET /api/analytics/crosspost-opportunities
+// Returns: Crosspost opportunities for successful posts (Premium only)
+interface CrosspostOpportunity {
+  originalPost: Post;
+  targetSubreddits: string[];
+  suggestedTiming: Date;
+  titleVariations: string[];
+  estimatedReach: number;
+  successProbability: number;
+}
+
+// POST /api/analytics/schedule-crosspost
+// Body: { originalPostId, targetSubreddit, title, scheduledTime }
+// Returns: Scheduled crosspost confirmation
+
+// GET /api/analytics/karma-velocity/:postId
+// Returns: Karma velocity tracking and predictions
+interface KarmaVelocityResponse {
+  snapshots: VelocitySnapshot[];
+  prediction: {
+    predictedUpvotes: number;
+    confidence: 'low' | 'medium' | 'high';
+    currentVelocity: number;
+  };
+  status: 'underperforming' | 'normal' | 'trending';
+  recommendation: string;
+  comparisonToAverage: {
+    userAverage: number;
+    percentDifference: number;
+  };
 }
 ```
 
@@ -1590,6 +1677,1092 @@ export function sentryErrorHandler(
 
 
 
+## Core Analytics Features (Phase 1)
+
+### Trend Detection and Alerts (Requirement 13)
+
+**Purpose:** Automatically detect performance trends and send proactive alerts to users
+
+**Implementation:**
+
+```typescript
+// server/services/trend-detection-service.ts
+export class TrendDetectionService {
+  async detectTrends(userId: number): Promise<TrendAlert[]> {
+    const alerts: TrendAlert[] = [];
+    
+    // Compare last 7 days to previous 7 days
+    const currentPeriod = await this.getEngagementMetrics(userId, 7);
+    const previousPeriod = await this.getEngagementMetrics(userId, 14, 7);
+    
+    const engagementChange = ((currentPeriod.avgEngagement - previousPeriod.avgEngagement) / previousPeriod.avgEngagement) * 100;
+    
+    // Critical decline (>20% drop)
+    if (engagementChange < -20) {
+      alerts.push({
+        type: 'trend_decline',
+        severity: 'critical',
+        message: `Your engagement has dropped ${Math.abs(engagementChange).toFixed(1)}% in the last week`,
+        metadata: {
+          currentEngagement: currentPeriod.avgEngagement,
+          previousEngagement: previousPeriod.avgEngagement,
+          change: engagementChange
+        }
+      });
+    }
+    // Warning decline (10-20% drop)
+    else if (engagementChange < -10) {
+      alerts.push({
+        type: 'trend_decline',
+        severity: 'warning',
+        message: `Your engagement has decreased ${Math.abs(engagementChange).toFixed(1)}% recently`,
+        metadata: {
+          currentEngagement: currentPeriod.avgEngagement,
+          previousEngagement: previousPeriod.avgEngagement,
+          change: engagementChange
+        }
+      });
+    }
+    // Improvement (>20% increase)
+    else if (engagementChange > 20) {
+      alerts.push({
+        type: 'trend_improve',
+        severity: 'info',
+        message: `Great work! Your engagement is up ${engagementChange.toFixed(1)}% 🎉`,
+        metadata: {
+          currentEngagement: currentPeriod.avgEngagement,
+          previousEngagement: previousPeriod.avgEngagement,
+          change: engagementChange
+        }
+      });
+    }
+    
+    // Check for removal patterns
+    const removalAlerts = await this.detectRemovalPatterns(userId);
+    alerts.push(...removalAlerts);
+    
+    // Check for shadowban patterns
+    const shadowbanAlerts = await this.detectShadowbanPatterns(userId);
+    alerts.push(...shadowbanAlerts);
+    
+    // Store alerts in database
+    for (const alert of alerts) {
+      await db.insert(analyticsAlerts).values({
+        userId,
+        alertType: alert.type,
+        severity: alert.severity,
+        message: alert.message,
+        metadata: alert.metadata,
+        isRead: false
+      });
+    }
+    
+    // Send email for critical alerts
+    const criticalAlerts = alerts.filter(a => a.severity === 'critical');
+    if (criticalAlerts.length > 0) {
+      await this.sendAlertEmail(userId, criticalAlerts);
+    }
+    
+    return alerts;
+  }
+  
+  private async getEngagementMetrics(
+    userId: number,
+    daysBack: number,
+    offset: number = 0
+  ): Promise<EngagementMetrics> {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - (daysBack + offset));
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() - offset);
+    
+    const posts = await db.select()
+      .from(redditPostOutcomes)
+      .where(
+        and(
+          eq(redditPostOutcomes.userId, userId),
+          gte(redditPostOutcomes.occurredAt, startDate),
+          lte(redditPostOutcomes.occurredAt, endDate)
+        )
+      );
+    
+    const totalEngagement = posts.reduce((sum, p) => sum + (p.upvotes || 0) + (p.commentCount || 0), 0);
+    const avgEngagement = posts.length > 0 ? totalEngagement / posts.length : 0;
+    
+    return {
+      totalPosts: posts.length,
+      avgEngagement,
+      totalUpvotes: posts.reduce((sum, p) => sum + (p.upvotes || 0), 0),
+      totalComments: posts.reduce((sum, p) => sum + (p.commentCount || 0), 0)
+    };
+  }
+  
+  private async detectRemovalPatterns(userId: number): Promise<TrendAlert[]> {
+    const alerts: TrendAlert[] = [];
+    
+    // Get removals by subreddit in last 7 days
+    const removals = await db.select()
+      .from(redditPostOutcomes)
+      .where(
+        and(
+          eq(redditPostOutcomes.userId, userId),
+          isNotNull(redditPostOutcomes.removalType),
+          gte(redditPostOutcomes.occurredAt, sql`NOW() - INTERVAL '7 days'`)
+        )
+      );
+    
+    // Group by subreddit
+    const removalsBySubreddit = removals.reduce((acc, post) => {
+      acc[post.subreddit] = (acc[post.subreddit] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    // Alert if 3+ removals in same subreddit
+    for (const [subreddit, count] of Object.entries(removalsBySubreddit)) {
+      if (count >= 3) {
+        alerts.push({
+          type: 'removal_pattern',
+          severity: 'warning',
+          message: `${count} posts removed from r/${subreddit} this week. Review subreddit rules.`,
+          metadata: { subreddit, removalCount: count }
+        });
+      }
+    }
+    
+    return alerts;
+  }
+  
+  private async detectShadowbanPatterns(userId: number): Promise<TrendAlert[]> {
+    const alerts: TrendAlert[] = [];
+    
+    // Get shadowbanned posts in last 7 days
+    const shadowbans = await db.select()
+      .from(redditPostOutcomes)
+      .where(
+        and(
+          eq(redditPostOutcomes.userId, userId),
+          eq(redditPostOutcomes.removalType, 'shadowban'),
+          gte(redditPostOutcomes.occurredAt, sql`NOW() - INTERVAL '7 days'`)
+        )
+      );
+    
+    // Group by subreddit
+    const shadowbansBySubreddit = shadowbans.reduce((acc, post) => {
+      acc[post.subreddit] = (acc[post.subreddit] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    // Alert if 2+ consecutive shadowbans in same subreddit
+    for (const [subreddit, count] of Object.entries(shadowbansBySubreddit)) {
+      if (count >= 2) {
+        alerts.push({
+          type: 'shadowban',
+          severity: 'critical',
+          message: `Possible shadowban in r/${subreddit}. Contact moderators.`,
+          metadata: { subreddit, shadowbanCount: count }
+        });
+      }
+    }
+    
+    return alerts;
+  }
+}
+```
+
+**Cron Job:**
+
+```typescript
+// server/jobs/trend-detection-worker.ts
+const worker = new Worker('trend-detection', async (job) => {
+  const { userId } = job.data;
+  const service = new TrendDetectionService();
+  
+  const alerts = await service.detectTrends(userId);
+  
+  logger.info('Trend detection complete', { userId, alertCount: alerts.length });
+  
+  return { alertCount: alerts.length };
+}, { connection: redis });
+
+// Schedule daily trend detection for all active users
+export async function scheduleDailyTrendDetection() {
+  const activeUsers = await db.select()
+    .from(users)
+    .where(
+      and(
+        inArray(users.tier, ['pro', 'premium']),
+        isNotNull(users.redditAccessToken)
+      )
+    );
+  
+  for (const user of activeUsers) {
+    await trendQueue.add('trend-detection', { userId: user.id }, {
+      repeat: { cron: '0 9 * * *' } // Daily at 9 AM
+    });
+  }
+}
+```
+
+**API Endpoints:**
+
+```typescript
+// GET /api/analytics/alerts
+interface AlertsResponse {
+  unreadCount: number;
+  alerts: TrendAlert[];
+}
+
+// POST /api/analytics/alerts/:id/dismiss
+// Marks alert as read
+
+// GET /api/analytics/alerts/settings
+// Returns user's alert preferences
+
+// PUT /api/analytics/alerts/settings
+// Updates alert preferences (email notifications, severity threshold)
+```
+
+---
+
+### Advanced Analytics Filtering (Requirement 14)
+
+**Purpose:** Enable power users to perform deep analysis with flexible filtering
+
+**Implementation:**
+
+```typescript
+// server/services/analytics-filter-service.ts
+export class AnalyticsFilterService {
+  async applyFilters(userId: number, filters: AnalyticsFilters): Promise<FilteredAnalytics> {
+    let query = db.select()
+      .from(redditPostOutcomes)
+      .where(eq(redditPostOutcomes.userId, userId));
+    
+    // Subreddit filter
+    if (filters.subreddits && filters.subreddits.length > 0) {
+      query = query.where(inArray(redditPostOutcomes.subreddit, filters.subreddits));
+    }
+    
+    // Date range filter
+    if (filters.startDate) {
+      query = query.where(gte(redditPostOutcomes.occurredAt, filters.startDate));
+    }
+    if (filters.endDate) {
+      query = query.where(lte(redditPostOutcomes.occurredAt, filters.endDate));
+    }
+    
+    // Performance tier filter
+    if (filters.performanceTier) {
+      const tierRanges = {
+        viral: { min: 200, max: Infinity },
+        high: { min: 100, max: 199 },
+        medium: { min: 20, max: 99 },
+        low: { min: 0, max: 19 }
+      };
+      
+      const range = tierRanges[filters.performanceTier];
+      query = query.where(
+        and(
+          gte(redditPostOutcomes.upvotes, range.min),
+          range.max !== Infinity ? lte(redditPostOutcomes.upvotes, range.max) : undefined
+        )
+      );
+    }
+    
+    // Status filter
+    if (filters.status === 'success') {
+      query = query.where(eq(redditPostOutcomes.success, true));
+    } else if (filters.status === 'removed') {
+      query = query.where(isNotNull(redditPostOutcomes.removalType));
+    }
+    
+    const posts = await query;
+    
+    // Calculate filtered metrics
+    const metrics = {
+      totalPosts: posts.length,
+      successRate: posts.filter(p => p.success).length / posts.length,
+      avgUpvotes: posts.reduce((sum, p) => sum + (p.upvotes || 0), 0) / posts.length,
+      avgViews: posts.reduce((sum, p) => sum + (p.views || 0), 0) / posts.length,
+      uniqueSubreddits: new Set(posts.map(p => p.subreddit)).size
+    };
+    
+    return {
+      posts,
+      metrics,
+      appliedFilters: filters
+    };
+  }
+}
+```
+
+**Frontend Component:**
+
+```typescript
+// client/src/components/analytics/AnalyticsFilters.tsx
+export function AnalyticsFilters({ onFilterChange }: AnalyticsFiltersProps) {
+  const [filters, setFilters] = useState<AnalyticsFilters>({
+    subreddits: [],
+    startDate: null,
+    endDate: null,
+    performanceTier: null,
+    status: 'all'
+  });
+  
+  const handleFilterChange = (key: string, value: any) => {
+    const newFilters = { ...filters, [key]: value };
+    setFilters(newFilters);
+    onFilterChange(newFilters);
+  };
+  
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Filters</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Subreddit multi-select */}
+        <div>
+          <Label>Subreddits</Label>
+          <MultiSelect
+            options={subreddits}
+            value={filters.subreddits}
+            onChange={(value) => handleFilterChange('subreddits', value)}
+          />
+        </div>
+        
+        {/* Date range picker */}
+        <div>
+          <Label>Date Range</Label>
+          <DateRangePicker
+            startDate={filters.startDate}
+            endDate={filters.endDate}
+            onChange={(start, end) => {
+              handleFilterChange('startDate', start);
+              handleFilterChange('endDate', end);
+            }}
+          />
+        </div>
+        
+        {/* Performance tier */}
+        <div>
+          <Label>Performance</Label>
+          <Select
+            value={filters.performanceTier || 'all'}
+            onValueChange={(value) => handleFilterChange('performanceTier', value === 'all' ? null : value)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="viral">Viral (200+)</SelectItem>
+              <SelectItem value="high">High (100-199)</SelectItem>
+              <SelectItem value="medium">Medium (20-99)</SelectItem>
+              <SelectItem value="low">Low (0-19)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        {/* Status filter */}
+        <div>
+          <Label>Status</Label>
+          <Select
+            value={filters.status}
+            onValueChange={(value) => handleFilterChange('status', value)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="success">Successful</SelectItem>
+              <SelectItem value="removed">Removed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        {/* Active filters badges */}
+        {Object.entries(filters).some(([k, v]) => v && (Array.isArray(v) ? v.length > 0 : true)) && (
+          <div className="flex flex-wrap gap-2">
+            {filters.subreddits.map(sub => (
+              <Badge key={sub} variant="secondary">
+                {sub}
+                <X className="ml-1 h-3 w-3 cursor-pointer" onClick={() => {
+                  handleFilterChange('subreddits', filters.subreddits.filter(s => s !== sub));
+                }} />
+              </Badge>
+            ))}
+            <Button variant="ghost" size="sm" onClick={() => {
+              setFilters({
+                subreddits: [],
+                startDate: null,
+                endDate: null,
+                performanceTier: null,
+                status: 'all'
+              });
+              onFilterChange({});
+            }}>
+              Clear all
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+---
+
+### Analytics Export and Reporting (Requirement 15)
+
+**Purpose:** Allow Pro/Premium users to export analytics data for external analysis
+
+**Implementation:**
+
+```typescript
+// server/services/export-service.ts
+import { stringify } from 'csv-stringify/sync';
+import PDFDocument from 'pdfkit';
+
+export class ExportService {
+  async exportCSV(userId: number, filters: AnalyticsFilters): Promise<string> {
+    const filterService = new AnalyticsFilterService();
+    const { posts } = await filterService.applyFilters(userId, filters);
+    
+    const csvData = posts.map(post => ({
+      date: post.occurredAt.toISOString(),
+      subreddit: post.subreddit,
+      title: post.title,
+      upvotes: post.upvotes,
+      views: post.views,
+      comments: post.commentCount,
+      success: post.success,
+      removed: post.removalType ? 'Yes' : 'No',
+      removalReason: post.removalReason || ''
+    }));
+    
+    return stringify(csvData, { header: true });
+  }
+  
+  async exportJSON(userId: number, filters: AnalyticsFilters): Promise<object> {
+    const filterService = new AnalyticsFilterService();
+    const data = await filterService.applyFilters(userId, filters);
+    
+    return {
+      exportedAt: new Date().toISOString(),
+      userId,
+      filters,
+      metrics: data.metrics,
+      posts: data.posts
+    };
+  }
+  
+  async exportPDF(userId: number, filters: AnalyticsFilters): Promise<Buffer> {
+    const filterService = new AnalyticsFilterService();
+    const { posts, metrics } = await filterService.applyFilters(userId, filters);
+    
+    const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument();
+      const chunks: Buffer[] = [];
+      
+      doc.on('data', chunk => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+      
+      // Header
+      doc.fontSize(20).text('Analytics Report', { align: 'center' });
+      doc.fontSize(12).text(`User: ${user[0].username}`, { align: 'center' });
+      doc.fontSize(10).text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' });
+      doc.moveDown();
+      
+      // Metrics summary
+      doc.fontSize(16).text('Summary Metrics');
+      doc.fontSize(12);
+      doc.text(`Total Posts: ${metrics.totalPosts}`);
+      doc.text(`Success Rate: ${(metrics.successRate * 100).toFixed(1)}%`);
+      doc.text(`Avg Upvotes: ${metrics.avgUpvotes.toFixed(1)}`);
+      doc.text(`Avg Views: ${metrics.avgViews.toFixed(1)}`);
+      doc.text(`Unique Subreddits: ${metrics.uniqueSubreddits}`);
+      doc.moveDown();
+      
+      // Top posts table
+      doc.fontSize(16).text('Top Posts');
+      doc.fontSize(10);
+      const topPosts = posts.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0)).slice(0, 10);
+      topPosts.forEach((post, i) => {
+        doc.text(`${i + 1}. r/${post.subreddit} - ${post.upvotes} upvotes`);
+        doc.text(`   ${post.title}`, { indent: 20 });
+      });
+      
+      doc.end();
+    });
+  }
+}
+```
+
+**API Endpoints:**
+
+```typescript
+// POST /api/analytics/export/csv
+// Returns CSV file download
+
+// POST /api/analytics/export/json
+// Returns JSON file download
+
+// POST /api/analytics/export/pdf (Premium only)
+// Returns PDF report download
+```
+
+---
+
+### Trending Subreddit Discovery (Requirement 16)
+
+**Purpose:** Help users discover growing subreddits before they become saturated
+
+**Implementation:**
+
+```typescript
+// server/services/trending-service.ts
+export class TrendingService {
+  async identifyTrendingSubreddits(userId: number): Promise<TrendingSubreddit[]> {
+    const subreddits = await db.select().from(redditCommunities);
+    const trending: TrendingSubreddit[] = [];
+    
+    for (const sub of subreddits) {
+      const history = await this.getSubredditHistory(sub.name, 30);
+      if (history.length < 2) continue;
+      
+      const oldest = history[0];
+      const newest = history[history.length - 1];
+      const memberGrowth = ((newest.members - oldest.members) / oldest.members) * 100;
+      
+      let trendType: 'hot' | 'rising' | 'hidden_gem' | null = null;
+      
+      // Hot: >20% growth in 30 days
+      if (memberGrowth > 20) {
+        trendType = 'hot';
+      }
+      // Rising: 5-20% growth with low competition
+      else if (memberGrowth > 5 && memberGrowth <= 20 && sub.competitionLevel === 'low') {
+        trendType = 'rising';
+      }
+      // Hidden gems: steady growth, under 50k members
+      else if (memberGrowth > 2 && sub.members < 50000) {
+        trendType = 'hidden_gem';
+      }
+      
+      if (trendType) {
+        const opportunityScore = this.calculateOpportunityScore(sub, memberGrowth);
+        const compatibilityScore = await this.calculateCompatibility(userId, sub);
+        
+        trending.push({
+          subreddit: sub.name,
+          trendType,
+          memberGrowth,
+          currentMembers: sub.members,
+          opportunityScore,
+          compatibilityScore,
+          reason: this.generateTrendReason(trendType, memberGrowth, sub)
+        });
+      }
+    }
+    
+    return trending.sort((a, b) => b.opportunityScore - a.opportunityScore);
+  }
+  
+  private calculateOpportunityScore(sub: RedditCommunity, growth: number): number {
+    // Growth rate: 40%
+    const growthScore = Math.min(growth / 50, 1) * 40;
+    
+    // Competition level: 30%
+    const competitionScore = sub.competitionLevel === 'low' ? 30 : sub.competitionLevel === 'medium' ? 15 : 0;
+    
+    // Size (prefer medium-sized): 30%
+    const sizeScore = sub.members > 10000 && sub.members < 100000 ? 30 : 15;
+    
+    return Math.round(growthScore + competitionScore + sizeScore);
+  }
+  
+  private generateTrendReason(type: string, growth: number, sub: RedditCommunity): string {
+    if (type === 'hot') {
+      return `Growing ${growth.toFixed(1)}% in last 30 days - high momentum`;
+    } else if (type === 'rising') {
+      return `Steady ${growth.toFixed(1)}% growth with low competition`;
+    } else {
+      return `Hidden gem with ${sub.members.toLocaleString()} members and ${growth.toFixed(1)}% growth`;
+    }
+  }
+}
+```
+
+**Cron Job:**
+
+```typescript
+// server/jobs/metrics-tracking-worker.ts
+const worker = new Worker('metrics-tracking', async (job) => {
+  const subreddits = await db.select().from(redditCommunities);
+  
+  for (const sub of subreddits) {
+    const reddit = await getHybridClient();
+    const subredditData = await reddit.getSubredditInfo(sub.name);
+    
+    await db.insert(subredditMetricsHistory).values({
+      subreddit: sub.name,
+      members: subredditData.subscribers,
+      activeUsers: subredditData.active_user_count,
+      postsPerDay: await calculatePostsPerDay(sub.name),
+      avgUpvotes: await calculateAvgUpvotes(sub.name)
+    });
+  }
+  
+  logger.info('Metrics tracking complete', { subredditCount: subreddits.length });
+}, { connection: redis });
+
+// Schedule daily at midnight
+export function scheduleDailyMetricsTracking() {
+  metricsQueue.add('metrics-tracking', {}, {
+    repeat: { cron: '0 0 * * *' }
+  });
+}
+```
+
+---
+
+## Intelligence Layer Features (Phase 2)
+
+### Comment Engagement Tracking (Requirement 17)
+
+**Purpose:** Track comment engagement to identify high-discussion posts and posts needing responses
+
+**Implementation:**
+
+```typescript
+// server/services/comment-engagement-service.ts
+export class CommentEngagementService {
+  async trackCommentEngagement(userId: number): Promise<CommentEngagementMetrics> {
+    const posts = await db.select()
+      .from(redditPostOutcomes)
+      .where(eq(redditPostOutcomes.userId, userId))
+      .orderBy(desc(redditPostOutcomes.occurredAt))
+      .limit(100);
+    
+    const metrics = {
+      totalComments: 0,
+      avgCommentsPerPost: 0,
+      highDiscussionPosts: [] as Post[],
+      needsResponsePosts: [] as Post[],
+      responseRate: 0
+    };
+    
+    for (const post of posts) {
+      metrics.totalComments += post.commentCount || 0;
+      
+      // High discussion: comment-to-upvote ratio > 0.1
+      const ratio = (post.commentCount || 0) / (post.upvotes || 1);
+      if (ratio > 0.1) {
+        metrics.highDiscussionPosts.push(post);
+      }
+      
+      // Needs response: has comments but user hasn't replied
+      if ((post.commentCount || 0) > 0 && !post.userReplied) {
+        metrics.needsResponsePosts.push(post);
+      }
+    }
+    
+    metrics.avgCommentsPerPost = metrics.totalComments / posts.length;
+    metrics.responseRate = posts.filter(p => p.userReplied).length / posts.length;
+    
+    return metrics;
+  }
+  
+  async updateCommentData(postId: number): Promise<void> {
+    const post = await db.select()
+      .from(redditPostOutcomes)
+      .where(eq(redditPostOutcomes.id, postId))
+      .limit(1);
+    
+    if (!post[0]?.redditPostId) return;
+    
+    const reddit = await getHybridClient(post[0].userId);
+    const submission = await reddit.getSubmission(post[0].redditPostId);
+    
+    const comments = await submission.comments.fetchAll();
+    const userComments = comments.filter(c => c.author.name === post[0].redditUsername);
+    
+    await db.update(redditPostOutcomes)
+      .set({
+        commentCount: comments.length,
+        avgCommentLength: comments.reduce((sum, c) => sum + c.body.length, 0) / comments.length,
+        userReplied: userComments.length > 0
+      })
+      .where(eq(redditPostOutcomes.id, postId));
+  }
+}
+```
+
+**API Endpoints:**
+
+```typescript
+// GET /api/analytics/comment-engagement
+interface CommentEngagementResponse {
+  totalComments: number;
+  avgCommentsPerPost: number;
+  highDiscussionPosts: Post[];
+  needsResponsePosts: Post[];
+  responseRate: number;
+}
+
+// GET /api/analytics/comment-engagement/stats
+interface CommentStatsResponse {
+  avgCommentToUpvoteRatio: number;
+  topDiscussionPosts: Post[];
+  responseQueueCount: number;
+}
+```
+
+---
+
+### Shadowban and Spam Filter Detection (Requirement 18)
+
+**Purpose:** Detect when users are shadowbanned or spam-filtered to prevent wasted posting efforts
+
+**Implementation:**
+
+```typescript
+// server/services/shadowban-detection-service.ts
+export class ShadowbanDetectionService {
+  async detectShadowban(postId: number): Promise<ShadowbanResult> {
+    const post = await db.select()
+      .from(redditPostOutcomes)
+      .where(eq(redditPostOutcomes.id, postId))
+      .limit(1);
+    
+    if (!post[0]?.redditPostId) {
+      return { isShadowbanned: false, reason: 'No Reddit post ID' };
+    }
+    
+    const reddit = await getHybridClient(post[0].userId);
+    const submission = await reddit.getSubmission(post[0].redditPostId);
+    
+    // Check if post is removed or marked as spam
+    const isRemoved = submission.removed || submission.spam;
+    
+    // Check for zero engagement after 1 hour
+    const postAge = Date.now() - (submission.created_utc * 1000);
+    const hasZeroEngagement = submission.score === 1 && submission.num_comments === 0;
+    const isOlderThan1Hour = postAge > 3600000;
+    
+    const isShadowbanned = isRemoved || (hasZeroEngagement && isOlderThan1Hour);
+    
+    if (isShadowbanned) {
+      await db.update(redditPostOutcomes)
+        .set({
+          status: isRemoved ? 'spam_filtered' : 'shadowbanned',
+          removalType: isRemoved ? 'spam' : 'shadowban',
+          detectedAt: new Date()
+        })
+        .where(eq(redditPostOutcomes.id, postId));
+      
+      // Check for consecutive shadowbans
+      const recentShadowbans = await this.getRecentShadowbans(
+        post[0].userId,
+        post[0].subreddit
+      );
+      
+      if (recentShadowbans >= 2) {
+        await this.generateShadowbanAlert(post[0].userId, post[0].subreddit);
+      }
+    }
+    
+    return {
+      isShadowbanned,
+      reason: isRemoved ? 'Spam filtered by Reddit' : 'Zero engagement after 1 hour',
+      recommendations: this.getShadowbanRecommendations(post[0].subreddit)
+    };
+  }
+  
+  private getShadowbanRecommendations(subreddit: string): string[] {
+    return [
+      'Contact subreddit moderators to verify your account status',
+      'Verify your email address on Reddit',
+      'Build karma in other subreddits before posting here',
+      'Review and follow all subreddit rules carefully',
+      'Avoid posting too frequently to this subreddit'
+    ];
+  }
+}
+```
+
+**Cron Job:**
+
+```typescript
+// server/jobs/shadowban-detection-worker.ts
+const worker = new Worker('shadowban-detection', async (job) => {
+  const { postId } = job.data;
+  const service = new ShadowbanDetectionService();
+  
+  const result = await service.detectShadowban(postId);
+  
+  if (result.isShadowbanned) {
+    logger.warn('Shadowban detected', { postId, reason: result.reason });
+  }
+  
+  return result;
+}, { connection: redis });
+
+// Schedule checks for posts 1 hour after creation
+export async function scheduleShadowbanCheck(postId: number, createdAt: Date) {
+  const checkTime = new Date(createdAt.getTime() + 3600000); // 1 hour later
+  
+  await shadowbanQueue.add('shadowban-detection', { postId }, {
+    delay: checkTime.getTime() - Date.now()
+  });
+}
+```
+
+---
+
+### Crosspost Opportunity Finder (Requirement 19)
+
+**Purpose:** Identify successful posts that can be crossposted to related subreddits for maximum reach
+
+**Implementation:**
+
+```typescript
+// server/services/crosspost-service.ts
+export class CrosspostService {
+  async findCrosspostOpportunities(userId: number): Promise<CrosspostOpportunity[]> {
+    // Find successful posts (>100 upvotes, <7 days old)
+    const candidates = await db.select()
+      .from(redditPostOutcomes)
+      .where(
+        and(
+          eq(redditPostOutcomes.userId, userId),
+          gt(redditPostOutcomes.upvotes, 100),
+          gt(redditPostOutcomes.occurredAt, sql`NOW() - INTERVAL '7 days'`)
+        )
+      );
+    
+    const opportunities: CrosspostOpportunity[] = [];
+    
+    for (const post of candidates) {
+      // Find related subreddits
+      const relatedSubs = await db.select()
+        .from(subredditRelationships)
+        .where(eq(subredditRelationships.sourceSubreddit, post.subreddit))
+        .orderBy(desc(subredditRelationships.relationshipStrength))
+        .limit(5);
+      
+      // Filter out subreddits where user already posted this content
+      const alreadyPosted = await this.checkAlreadyPosted(userId, post.title);
+      const targetSubs = relatedSubs.filter(s => !alreadyPosted.includes(s.relatedSubreddit));
+      
+      if (targetSubs.length > 0) {
+        // Generate title variations using AI
+        const titleVariations = await this.generateTitleVariations(post.title, targetSubs);
+        
+        // Calculate optimal timing (6-24 hours after original)
+        const suggestedTime = new Date(post.occurredAt.getTime() + (12 * 3600000));
+        
+        opportunities.push({
+          originalPost: post,
+          targetSubreddits: targetSubs.map(s => s.relatedSubreddit),
+          suggestedTiming: suggestedTime,
+          titleVariations,
+          estimatedReach: this.calculateEstimatedReach(targetSubs),
+          successProbability: await this.calculateSuccessProbability(userId, targetSubs)
+        });
+      }
+    }
+    
+    return opportunities.sort((a, b) => b.estimatedReach - a.estimatedReach);
+  }
+  
+  private async generateTitleVariations(
+    originalTitle: string,
+    targetSubs: SubredditRelationship[]
+  ): Promise<string[]> {
+    const variations: string[] = [originalTitle];
+    
+    // Use AI to generate 2-3 variations tailored to different audiences
+    for (const sub of targetSubs.slice(0, 2)) {
+      const prompt = `Rewrite this Reddit post title for r/${sub.relatedSubreddit}: "${originalTitle}". Keep it engaging and appropriate for that community.`;
+      
+      const variation = await generateText({
+        prompt,
+        model: GROK_4_FAST,
+        maxTokens: 100
+      });
+      
+      variations.push(variation.trim());
+    }
+    
+    return variations;
+  }
+}
+```
+
+**API Endpoints:**
+
+```typescript
+// GET /api/analytics/crosspost-opportunities
+interface CrosspostOpportunity {
+  originalPost: Post;
+  targetSubreddits: string[];
+  suggestedTiming: Date;
+  titleVariations: string[];
+  estimatedReach: number;
+  successProbability: number;
+}
+
+// POST /api/analytics/schedule-crosspost
+interface ScheduleCrosspostRequest {
+  originalPostId: number;
+  targetSubreddit: string;
+  title: string;
+  scheduledTime: Date;
+}
+```
+
+---
+
+### Karma Velocity Tracking (Requirement 20)
+
+**Purpose:** Track early karma velocity to predict final performance and enable real-time optimization
+
+**Implementation:**
+
+```typescript
+// server/services/karma-velocity-service.ts
+export class KarmaVelocityService {
+  private readonly SNAPSHOT_INTERVALS = [
+    { name: '15min', minutes: 15 },
+    { name: '1hr', minutes: 60 },
+    { name: '3hr', minutes: 180 },
+    { name: '6hr', minutes: 360 },
+    { name: '24hr', minutes: 1440 }
+  ];
+  
+  async scheduleVelocitySnapshots(postId: number, createdAt: Date): Promise<void> {
+    for (const interval of this.SNAPSHOT_INTERVALS) {
+      const snapshotTime = new Date(createdAt.getTime() + (interval.minutes * 60000));
+      
+      await velocityQueue.add('velocity-snapshot', { postId, interval: interval.name }, {
+        delay: snapshotTime.getTime() - Date.now()
+      });
+    }
+  }
+  
+  async takeVelocitySnapshot(postId: number, interval: string): Promise<VelocitySnapshot> {
+    const post = await db.select()
+      .from(redditPostOutcomes)
+      .where(eq(redditPostOutcomes.id, postId))
+      .limit(1);
+    
+    if (!post[0]?.redditPostId) {
+      throw new Error('Post not found or missing Reddit ID');
+    }
+    
+    const reddit = await getHybridClient(post[0].userId);
+    const submission = await reddit.getSubmission(post[0].redditPostId);
+    
+    const upvotes = submission.score;
+    const comments = submission.num_comments;
+    const postAge = (Date.now() - (submission.created_utc * 1000)) / 3600000; // hours
+    const velocityScore = upvotes / postAge; // upvotes per hour
+    
+    const snapshot = await db.insert(postVelocitySnapshots).values({
+      postId,
+      snapshotAt: interval,
+      upvotes,
+      comments,
+      velocityScore,
+      createdAt: new Date()
+    }).returning();
+    
+    // Compare to user's average velocity
+    const avgVelocity = await this.getUserAverageVelocity(
+      post[0].userId,
+      post[0].subreddit,
+      interval
+    );
+    
+    // Generate alerts if underperforming
+    if (velocityScore < avgVelocity * 0.5) {
+      await this.generateUnderperformanceAlert(postId, velocityScore, avgVelocity);
+    } else if (velocityScore > avgVelocity * 2) {
+      await this.generateTrendingAlert(postId, velocityScore, avgVelocity);
+    }
+    
+    return snapshot[0];
+  }
+  
+  async predictFinalUpvotes(postId: number): Promise<VelocityPrediction> {
+    const snapshots = await db.select()
+      .from(postVelocitySnapshots)
+      .where(eq(postVelocitySnapshots.postId, postId))
+      .orderBy(asc(postVelocitySnapshots.createdAt));
+    
+    if (snapshots.length < 2) {
+      return { predictedUpvotes: null, confidence: 'low' };
+    }
+    
+    // Use early velocity to predict final count
+    const earlyVelocity = snapshots[0].velocityScore;
+    const currentVelocity = snapshots[snapshots.length - 1].velocityScore;
+    
+    // Simple linear extrapolation (can be improved with ML)
+    const decayFactor = currentVelocity / earlyVelocity;
+    const predictedUpvotes = Math.round(currentVelocity * 24 * decayFactor);
+    
+    const confidence = snapshots.length >= 3 ? 'high' : 'medium';
+    
+    return {
+      predictedUpvotes,
+      confidence,
+      currentVelocity,
+      snapshots
+    };
+  }
+}
+```
+
+**Database Schema:**
+
+```sql
+CREATE TABLE post_velocity_snapshots (
+  id SERIAL PRIMARY KEY,
+  post_id INTEGER REFERENCES reddit_post_outcomes(id),
+  snapshot_at VARCHAR(10), -- '15min', '1hr', '3hr', '6hr', '24hr'
+  upvotes INTEGER NOT NULL,
+  comments INTEGER DEFAULT 0,
+  velocity_score FLOAT NOT NULL, -- upvotes per hour
+  created_at TIMESTAMP DEFAULT NOW(),
+  INDEX idx_post_velocity (post_id, snapshot_at)
+);
+```
+
+**API Endpoints:**
+
+```typescript
+// GET /api/analytics/karma-velocity/:postId
+interface KarmaVelocityResponse {
+  snapshots: VelocitySnapshot[];
+  prediction: VelocityPrediction;
+  status: 'underperforming' | 'normal' | 'trending';
+  recommendation: string;
+}
+
+// GET /api/analytics/velocity-chart/:postId
+// Returns data for velocity chart visualization
+```
+
+---
+
 ## Implementation Phases
 
 ### Phase -1: Foundation (Day 1, 6-9h)
@@ -1631,121 +2804,167 @@ export function sentryErrorHandler(
 
 ---
 
-### Phase 1: Core Analytics (2-3 weeks, 16-21h)
+### Phase 1: Core Analytics (2-3 weeks, 30-40h)
 
 **Goal:** Build comprehensive analytics platform
 
 **Tasks:**
-1. Req 2: Subreddit Intelligence - 6-8h
-2. Req 3: Posting Time Recommendations - 6-8h
-3. Req 7: Advanced Filtering - 2-3h
-4. Req 8: Export & Reporting - 3-4h
+1. Req 11: Subreddit Intelligence Dashboard - 6-8h
+2. Req 12: Optimal Posting Time Recommendations - 6-8h
+3. Req 13: Trend Detection & Alerts - 10-12h
+4. Req 14: Advanced Analytics Filtering - 2-3h
+5. Req 15: Analytics Export & Reporting - 3-4h
+6. Req 16: Trending Subreddit Discovery - 3-4h
 
 **Deliverables:**
-- ✅ Deep subreddit insights
-- ✅ Optimal posting times
-- ✅ Power user filtering
-- ✅ CSV/PDF exports
+- ✅ Deep subreddit intelligence with performance metrics
+- ✅ Data-driven posting time recommendations
+- ✅ Automated trend detection and proactive alerts
+- ✅ Power user filtering capabilities
+- ✅ CSV/JSON/PDF exports (PDF Premium only)
+- ✅ Trending subreddit discovery engine
 
 ---
 
-### Phase 2: Intelligence Layer (2-3 weeks, 14-18h)
+### Phase 2: Intelligence Layer (2-3 weeks, 20-28h)
 
-**Goal:** Proactive insights and alerts
+**Goal:** Advanced intelligence features and Premium differentiation
 
 **Tasks:**
-1. Req 5: Trend Detection & Alerts - 10-12h
-2. MISSING-3: Crosspost Finder - 4-6h
+1. Req 17: Comment Engagement Tracking - 3-4h
+2. Req 18: Shadowban & Spam Filter Detection - 4-5h
+3. Req 19: Crosspost Opportunity Finder (Premium) - 5-6h
+4. Req 20: Karma Velocity Tracking - 2-3h
 
 **Deliverables:**
-- ✅ Automated trend alerts
-- ✅ Crosspost opportunities
+- ✅ Comment engagement metrics and response tracking
+- ✅ Shadowban detection and alerts
+- ✅ Automated crosspost opportunity identification (Premium)
+- ✅ Real-time karma velocity tracking and predictions
 - ✅ User retention features
 
 ---
 
-### Phase 3: Premium Features (3-4 weeks, 16-22h)
+### Phase 3: Security & Polish (1 week, 8-11h)
 
-**Goal:** Premium tier differentiation
-
-**Tasks:**
-1. Req 4: ML Performance Predictions - 12-16h
-2. MISSING-2: Shadowban Detection - 4-5h
-3. MISSING-4: Karma Velocity Tracker - 2-3h
-
-**Deliverables:**
-- ✅ ML-powered predictions
-- ✅ Shadowban detection
-- ✅ Real-time velocity tracking
-
----
-
-### Phase 4: Security & Polish (1 week, 8-11h)
-
-**Goal:** Production hardening
+**Goal:** Production hardening and security
 
 **Tasks:**
-1. SECURITY-1: Token Encryption & Rate Limiting - 3-4h
-2. MISSING-5: Saturation Monitor - 3-4h
-3. MISSING-6: Flair Analysis - 3-4h
+1. Token Encryption & Rate Limiting - 3-4h
+2. GDPR Compliance (anonymization, data export) - 3-4h
+3. Performance Optimizations (indexes, caching) - 2-3h
 
 **Deliverables:**
-- ✅ Encrypted Reddit tokens
-- ✅ Rate limiting per user
+- ✅ Encrypted Reddit tokens (AES-256-GCM)
+- ✅ Rate limiting per user (100 req/min)
+- ✅ GDPR-compliant data handling
+- ✅ Optimized database queries
 - ✅ Production-ready security
 
 ---
 
-### Phase 5: ML & Advanced (6-8 weeks, 70-92h) - Optional
+### Phase 4: ML & Advanced (Optional, 6-8 weeks, 70-92h)
 
-**Goal:** GPU-accelerated features and advanced analytics
+**Goal:** GPU-accelerated features and competitive moat
 
 **Tasks:**
-1. ML-2: NSFW Classification - 12-16h
-2. ML-4: Viral Content Prediction - 18-24h
-3. ML-1: Image Content Analysis - 16-20h
-4. ML-3: Caption Quality Scoring - 10-14h
-5. Req 6: Competitor Benchmarking - 14-18h
-6. Req 10: Mobile Optimization - 5-7h
+1. ML-powered performance predictions (beyond rule-based) - 18-24h
+2. NSFW content classification - 12-16h
+3. Image content analysis - 16-20h
+4. Caption quality scoring - 10-14h
+5. Competitor benchmarking - 14-18h
 
 **Deliverables:**
 - ✅ GPU-powered ML features
-- ✅ Competitive moat
-- ✅ $240-710/month cost savings
+- ✅ Advanced competitive intelligence
+- ✅ Significant cost savings ($240-710/month)
 
 ---
 
 ## Success Metrics
 
 ### Technical Metrics
-- Quick sync: <30s (target: 10s)
-- Deep sync: <3min (target: 2min)
+- Quick sync: <30s (target: 10s) - Requirement 0
+- Deep sync: <3min (target: 2min) - Requirement 0
+- Performance prediction: <500ms - Requirement 3
 - API latency: <200ms p95
 - Cache hit rate: >70%
 - Database query time: <100ms p95
+- Heatmap generation: <1s - Requirement 7
 
-### User Metrics
-- 80%+ users connect Reddit within 24h
-- 60%+ users view analytics weekly
-- 40%+ users opt into deep sync
-- 15-25% increase in post success rate
-- 40%+ increase in 30-day retention
-- 20%+ upgrade to Pro/Premium for analytics
+### User Engagement Metrics (from Requirements)
+- 80%+ of users connect Reddit within 24h of signup - Requirement 0
+- 60%+ of Pro users view analytics weekly - Requirements 11-16
+- 40%+ increase in 30-day retention for analytics users - Requirements 13, 17-20
+- 70%+ of users complete Quick Sync on first connection - Requirement 0
+- 30%+ opt for Deep Sync within first week - Requirement 0
+- 50%+ of Pro users use performance predictions before posting - Requirement 3
 
-### Business Metrics
+### Feature Adoption Metrics
+- 70%+ of users view health scores within first week - Requirement 2
+- 40%+ of users act on removal tracking insights - Requirement 1
+- 25%+ of users use subreddit recommendations - Requirement 6
+- 15%+ of Premium users use crosspost finder - Requirement 19
+- 30%+ of users respond to trend alerts - Requirement 13
+
+### Business Impact Metrics (from Requirements)
+- 20%+ conversion rate from Free to Pro for analytics access
+- 15%+ improvement in user post success rates
+- 25%+ reduction in post removals for active analytics users
 - $90/mo infrastructure cost for 1K MAU
 - 12-18 month competitive lead
-- #1 in feature completeness (33 features vs 5-10 competitors)
-- #1 in creator focus (adult content niche)
+- #1 in feature completeness (21 core features vs 5-10 competitors)
+
+---
+
+## Requirements Mapping
+
+This design document addresses all 21 requirements from the requirements.md file:
+
+### Foundation (Phase -1)
+- **Requirement 0:** Reddit Post History Synchronization → HybridRedditClient + RedditSyncService (Quick/Deep/Full sync)
+
+### Quick Wins (Phase 0)
+- **Requirement 1:** Post Removal Detection → RemovalDetectionWorker + RemovalTrackerService
+- **Requirement 2:** Subreddit Health Scoring → SubredditHealthService (0-100 score with breakdown)
+- **Requirement 3:** Rule-Based Performance Prediction → PredictionService (weighted scoring algorithm)
+- **Requirement 4:** Moderator Activity Detection → ModActivityService + cron job
+- **Requirement 5:** Enhanced Rule Validation → RuleValidatorService (personal history integration)
+- **Requirement 6:** Smart Subreddit Recommendations → RecommendationService (compatibility scoring)
+- **Requirement 7:** Engagement Heatmap → HeatmapService (7x24 grid visualization)
+- **Requirement 8:** Performance Comparison → Time period comparison in analytics API
+- **Requirement 9:** Success Rate Widget → Success rate calculation API + dashboard widget
+- **Requirement 10:** Posting Time Badges → Time slot performance badges
+
+### Core Analytics (Phase 1)
+- **Requirement 11:** Subreddit Intelligence Dashboard → SubredditIntelligenceService (detailed metrics per subreddit)
+- **Requirement 12:** Optimal Posting Time Recommendations → Posting time analysis with confidence levels
+- **Requirement 13:** Trend Detection & Alerts → TrendDetectionService + daily cron job + email notifications
+- **Requirement 14:** Advanced Analytics Filtering → AnalyticsFilterService (multi-dimensional filtering)
+- **Requirement 15:** Analytics Export & Reporting → ExportService (CSV/JSON/PDF formats)
+- **Requirement 16:** Trending Subreddit Discovery → TrendingService (hot/rising/hidden gems classification)
+
+### Intelligence Layer (Phase 2)
+- **Requirement 17:** Comment Engagement Tracking → CommentEngagementService (response tracking + high-discussion detection)
+- **Requirement 18:** Shadowban & Spam Filter Detection → ShadowbanDetectionService (zero-engagement detection + alerts)
+- **Requirement 19:** Crosspost Opportunity Finder → CrosspostService (Premium feature, AI title variations)
+- **Requirement 20:** Karma Velocity Tracking → KarmaVelocityService (5 snapshot intervals + predictions)
+
+### Additional Design Elements
+- **Security:** Token encryption (AES-256-GCM), rate limiting, GDPR compliance
+- **Performance:** Materialized views, Redis caching, partial indexes, query optimization
+- **Monitoring:** Winston logging, Sentry error tracking, health checks, metrics collection
+- **Testing:** Unit tests, integration tests, E2E tests with Playwright
+- **Deployment:** Render.com configuration, scaling strategy, environment variables
 
 ---
 
 ## Next Steps
 
-1. ✅ Requirements approved
-2. ✅ Design document complete
+1. ✅ Requirements approved (21 requirements defined)
+2. ✅ Design document complete (all requirements mapped)
 3. 🔄 Create tasks.md with implementation checklist
-4. 🔄 Begin Phase -1 (Foundation)
+4. 🔄 Begin Phase -1 (Foundation - Requirement 0)
 
-**This design document is now complete and ready for implementation.**
+**This design document is now complete and ready for implementation. All 21 requirements from requirements.md are fully addressed with technical specifications, API designs, database schemas, and implementation strategies.**
 
