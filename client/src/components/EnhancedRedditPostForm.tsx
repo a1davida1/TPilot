@@ -73,6 +73,16 @@ export function EnhancedRedditPostForm({ mode = 'immediate', onSuccess, defaultV
   const [selectedCaption, setSelectedCaption] = useState<string>('');
   const [useAiCaption, setUseAiCaption] = useState(true);
 
+  // Optimal time suggestions state
+  const [showOptimalTimes, setShowOptimalTimes] = useState(false);
+  const [optimalTimes, setOptimalTimes] = useState<Array<{
+    day: string;
+    hour: number;
+    score: number;
+    avgEngagement: number;
+    successRate: number;
+  }>>([]);
+
   // Generate AI captions for images
   const generateCaptions = useMutation({
     mutationFn: async (imageUrl: string) => {
@@ -98,6 +108,35 @@ export function EnhancedRedditPostForm({ mode = 'immediate', onSuccess, defaultV
         variant: 'destructive'
       });
       setUseAiCaption(false);
+    }
+  });
+
+  // Fetch optimal posting times
+  const fetchOptimalTimes = useMutation({
+    mutationFn: async (subreddit: string) => {
+      const response = await apiRequest('GET', `/api/intelligence/optimal-times/${subreddit}`);
+      return response as unknown as Array<{
+        day: string;
+        hour: number;
+        score: number;
+        avgEngagement: number;
+        successRate: number;
+      }>;
+    },
+    onSuccess: (data) => {
+      setOptimalTimes(data);
+      setShowOptimalTimes(true);
+      toast({
+        title: 'Optimal times loaded',
+        description: `Found ${data.length} recommended posting times`,
+      });
+    },
+    onError: (_error) => {
+      toast({
+        title: 'Could not load optimal times',
+        description: 'This feature requires Pro tier or synced Reddit history',
+        variant: 'destructive'
+      });
     }
   });
 
@@ -152,11 +191,43 @@ export function EnhancedRedditPostForm({ mode = 'immediate', onSuccess, defaultV
   // Handle image upload
   const handleImageUpload = (result: { imageUrl: string; assetId?: number }) => {
     setImageUrl(result.imageUrl);
-    
+
     // Auto-generate captions if enabled
     if (useAiCaption) {
       generateCaptions.mutate(result.imageUrl);
     }
+  };
+
+  // Apply optimal time suggestion
+  const applyOptimalTime = (day: string, hour: number) => {
+    const now = new Date();
+    const currentDay = now.getDay(); // 0 = Sunday, 6 = Saturday
+
+    // Map day name to day number
+    const dayMap: Record<string, number> = {
+      'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3,
+      'Thursday': 4, 'Friday': 5, 'Saturday': 6
+    };
+    const targetDay = dayMap[day.trim()] ?? currentDay;
+
+    // Calculate days until target day
+    let daysUntil = targetDay - currentDay;
+    if (daysUntil <= 0) daysUntil += 7; // Next occurrence of this day
+
+    // Create target date
+    const targetDate = new Date(now);
+    targetDate.setDate(now.getDate() + daysUntil);
+    targetDate.setHours(hour, 0, 0, 0);
+
+    // Format for datetime-local input
+    const formattedTime = format(targetDate, "yyyy-MM-dd'T'HH:mm");
+    setScheduledTime(formattedTime);
+    setShowOptimalTimes(false);
+
+    toast({
+      title: 'Optimal time applied',
+      description: `Scheduled for ${day} at ${hour}:00`,
+    });
   };
 
   // Handle form submission
@@ -412,8 +483,27 @@ export function EnhancedRedditPostForm({ mode = 'immediate', onSuccess, defaultV
 
           {/* Scheduling (only for scheduled mode) */}
           {mode === 'scheduled' && (
-            <div>
-              <Label htmlFor="schedule">Schedule Time</Label>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="schedule">Schedule Time</Label>
+                {subreddit && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fetchOptimalTimes.mutate(subreddit)}
+                    disabled={fetchOptimalTimes.isPending}
+                  >
+                    {fetchOptimalTimes.isPending ? (
+                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                    ) : (
+                      <Sparkles className="h-3 w-3 mr-1" />
+                    )}
+                    Suggest Best Times
+                  </Button>
+                )}
+              </div>
+
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 <Input
@@ -424,9 +514,36 @@ export function EnhancedRedditPostForm({ mode = 'immediate', onSuccess, defaultV
                   min={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
                 />
               </div>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground">
                 {scheduledTime && `Will post at ${format(new Date(scheduledTime), 'PPp')}`}
               </p>
+
+              {/* Optimal time suggestions */}
+              {showOptimalTimes && optimalTimes.length > 0 && (
+                <div className="border rounded-lg p-3 space-y-2 bg-muted/30">
+                  <p className="text-sm font-medium">Recommended times based on your history:</p>
+                  <div className="space-y-1">
+                    {optimalTimes.map((time, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => applyOptimalTime(time.day, time.hour)}
+                        className="w-full text-left px-3 py-2 rounded-md hover:bg-muted transition-colors flex items-center justify-between text-sm"
+                      >
+                        <span className="font-medium">
+                          {time.day} at {time.hour}:00
+                        </span>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Badge variant="secondary" className="text-xs">
+                            Score: {time.score}
+                          </Badge>
+                          <span>{time.successRate}% success</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
