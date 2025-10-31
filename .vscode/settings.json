@@ -48,6 +48,8 @@
         "DATABASE_URL=\"postgresql://tpilot_user:fK3hcLm92l6YKefkfvGmzsrijVuxalF0@dpg-d3lvko9r0fns73ebmehg-a.oregon-postgres.render.com/tpilot\" psql \"$DATABASE_URL\" -f drizzle/0002_analytics_tables.sql 2>&1",
         "npm run build 2>&1 | grep -i \"bulk-caption\\|error\" | head -20",
         "npm run typecheck 2>&1 | tail -3",
-        "git diff bundle-report.html | head -50"
+        "git diff bundle-report.html | head -50",
+        "npx tsc --noEmit 2>&1 | grep \"shared/schema.ts\" | head -20",
+        "psql $DATABASE_URL -c \"\\dt reddit_sync_status\" 2>&1 | head -20"
     ]
 }

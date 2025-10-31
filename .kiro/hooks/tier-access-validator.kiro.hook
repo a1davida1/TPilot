@@ -1,0 +1,21 @@
+{
+  "enabled": true,
+  "name": "Tier Access Validator",
+  "description": "Validates that API routes implement proper tier-based access control for premium features like scheduling, analytics, and bulk operations",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "server/routes/*.ts",
+      "server/routes/*.js",
+      "server/api/**/*.ts",
+      "server/api/**/*.js",
+      "app/api/**/*.ts",
+      "app/api/**/*.tsx"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Analyze the modified API route files for proper tier access control:\n\n**Check for these premium features that MUST have tier validation:**\n- Scheduling (requires Pro/Premium)\n- Analytics endpoints (requires Pro/Premium)\n- Bulk operations (requires Pro/Premium)\n- Advanced Reddit features (requires Pro/Premium)\n- API access (requires Premium)\n\n**Tier Limits to Enforce:**\n- Free: 3 posts/day, 5 captions/day, NO scheduling\n- Starter: Unlimited posts, 50 captions/day, NO scheduling\n- Pro: 7-day scheduling, 500 captions/day, basic analytics\n- Premium: 30-day scheduling, unlimited everything, API access\n\n**For each route, verify:**\n1. Does it use `requireTier()` middleware or manual tier checks?\n2. Are the tier restrictions correct for the feature?\n3. Is there proper error messaging for tier upgrades?\n4. Are rate limits appropriate for the tier?\n\n**Output format:**\n- ✅ Routes with proper tier validation\n- ⚠️ Routes missing tier checks (with severity: CRITICAL/HIGH/MEDIUM)\n- 💡 Suggested tier middleware to add\n- 📝 Code examples showing the fix\n\nExample fix:\n```typescript\n// ❌ Missing tier check\nrouter.post('/schedule', authenticateToken(true), handler);\n\n// ✅ Proper tier validation\nrouter.post('/schedule', authenticateToken(true), requireTier('pro'), handler);\n```\n\n**Check for common patterns:**\n- Scheduling routes without tier checks\n- Analytics routes accessible to free users\n- Bulk operation endpoints without limits\n- Premium API endpoints without validation"
+  }
+}

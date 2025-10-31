@@ -1,0 +1,27 @@
+{
+  "enabled": true,
+  "name": "Test File Generator",
+  "description": "Detects when new source files are created without test files and generates appropriate test file templates",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "client/src/components/**/*.tsx",
+      "client/src/components/**/*.jsx",
+      "client/src/pages/**/*.tsx",
+      "client/src/pages/**/*.jsx",
+      "client/src/hooks/**/*.ts",
+      "client/src/hooks/**/*.tsx",
+      "server/routes/**/*.ts",
+      "server/routes/**/*.js",
+      "server/services/**/*.ts",
+      "server/services/**/*.js",
+      "server/lib/**/*.ts",
+      "server/lib/**/*.js"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Check if the modified/created files have corresponding test files. If not, generate test file templates:\n\n**Test File Patterns:**\n- Components: `component.tsx` → `component.test.tsx` (same directory or `tests/` subdirectory)\n- Hooks: `useHook.ts` → `useHook.test.ts`\n- API Routes: `server/routes/feature.ts` → `tests/routes/feature.test.ts`\n- Services: `server/services/service.ts` → `tests/unit/server/services/service.test.ts`\n- Utilities: `lib/util.ts` → `lib/util.test.ts`\n\n**For each file missing tests:**\n\n1. **Determine test type:**\n   - React components → Component test with React Testing Library\n   - Hooks → Hook test with @testing-library/react-hooks\n   - API routes → Integration test with supertest\n   - Services/utilities → Unit test with vitest\n\n2. **Generate appropriate template:**\n\n**React Component Test Template:**\n```typescript\nimport { describe, it, expect } from 'vitest';\nimport { render, screen } from '@testing-library/react';\nimport { ComponentName } from './ComponentName';\n\ndescribe('ComponentName', () => {\n  it('renders correctly', () => {\n    render(<ComponentName />);\n    expect(screen.getByText('expected text')).toBeInTheDocument();\n  });\n\n  it('handles user interaction', async () => {\n    // TODO: Add interaction tests\n  });\n});\n```\n\n**API Route Test Template:**\n```typescript\nimport { describe, it, expect, beforeEach } from 'vitest';\nimport request from 'supertest';\nimport { app } from '../../server/app';\n\ndescribe('POST /api/endpoint', () => {\n  beforeEach(async () => {\n    // Setup test data\n  });\n\n  it('returns 200 with valid data', async () => {\n    const response = await request(app)\n      .post('/api/endpoint')\n      .send({ data: 'test' })\n      .expect(200);\n    \n    expect(response.body).toHaveProperty('success', true);\n  });\n\n  it('returns 401 without authentication', async () => {\n    await request(app)\n      .post('/api/endpoint')\n      .expect(401);\n  });\n});\n```\n\n**Service/Utility Test Template:**\n```typescript\nimport { describe, it, expect, vi } from 'vitest';\nimport { functionName } from './module';\n\ndescribe('functionName', () => {\n  it('handles valid input', () => {\n    const result = functionName('input');\n    expect(result).toBe('expected');\n  });\n\n  it('handles edge cases', () => {\n    expect(() => functionName(null)).toThrow();\n  });\n});\n```\n\n**Output format:**\n- 📝 List files missing tests\n- 🎯 Suggested test file path\n- 📄 Complete test template to create\n- ✅ Files that already have tests\n\nCreate the test file with appropriate template based on file type."
+  }
+}

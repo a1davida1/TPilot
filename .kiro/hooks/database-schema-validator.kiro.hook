@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Database Schema Validator",
+  "description": "Validates database schema changes for breaking changes, missing migrations, and potential data loss before deployment",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "shared/schema.ts"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Analyze the database schema changes for safety and migration requirements:\n\n**CRITICAL CHECKS:**\n\n1. **Breaking Changes (DANGEROUS):**\n   - Removed columns (data loss!)\n   - Changed column types (may break existing data)\n   - Removed tables (catastrophic data loss!)\n   - Changed primary keys or foreign keys\n   - Removed NOT NULL constraints without defaults\n\n2. **Migration Requirements:**\n   - New columns need default values or nullable\n   - New tables need proper indexes\n   - Foreign key relationships are valid\n   - Unique constraints won't conflict with existing data\n\n3. **Performance Impact:**\n   - Missing indexes on foreign keys\n   - Missing indexes on frequently queried columns\n   - Large text columns without proper indexing\n   - Inefficient data types (e.g., TEXT instead of VARCHAR)\n\n4. **Data Integrity:**\n   - Foreign key constraints are properly defined\n   - Cascade rules are appropriate (CASCADE vs RESTRICT)\n   - Unique constraints are necessary\n   - Check constraints are valid\n\n**DEPLOYMENT ORDER (CRITICAL):**\n```bash\n# ✅ CORRECT ORDER\n1. Create migration SQL file\n2. Run migration on database FIRST\n3. Update schema.ts\n4. Deploy code\n\n# ❌ WRONG ORDER (breaks production!)\n1. Update schema.ts\n2. Deploy code (auth breaks immediately)\n```\n\n**Output format:**\n- 🚨 BREAKING CHANGES: Must handle carefully\n- ⚠️ MIGRATION NEEDED: Steps to create migration\n- 💡 OPTIMIZATION: Performance improvements\n- ✅ SAFE CHANGES: No migration needed\n\n**For breaking changes, provide:**\n- Data migration script\n- Rollback plan\n- Testing checklist\n- Deployment instructions"
+  }
+}

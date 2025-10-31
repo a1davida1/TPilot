@@ -1,0 +1,31 @@
+{
+  "enabled": true,
+  "name": "Code Quality Analyzer",
+  "description": "Monitors source code files for changes and provides suggestions for code quality improvements including code smells, design patterns, best practices, readability, maintainability, and performance optimizations",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "client/src/**/*.{ts",
+      "tsx",
+      "js",
+      "jsx}",
+      "server/**/*.{ts",
+      "js}",
+      "app/**/*.{ts",
+      "tsx",
+      "js",
+      "jsx}",
+      "shared/**/*.{ts",
+      "js}",
+      "tests/**/*.{ts",
+      "tsx",
+      "js",
+      "jsx}"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Analyze the modified code files for potential improvements. Focus on:\n\n1. **Code Smells**: Identify long functions, duplicated code, complex conditionals, large classes, and other anti-patterns\n2. **Design Patterns**: Suggest appropriate design patterns that could improve the code structure\n3. **Best Practices**: Check for TypeScript strict mode compliance (no `any`, no non-null assertions), proper error handling, consistent naming conventions\n4. **Readability**: Look for unclear variable names, missing comments for complex logic, inconsistent formatting\n5. **Maintainability**: Identify tightly coupled code, missing type definitions, lack of modularity\n6. **Performance**: Spot unnecessary re-renders, inefficient algorithms, missing memoization, redundant API calls\n\nFor each issue found:\n- Explain WHY it's a problem\n- Provide a SPECIFIC code example showing the improvement\n- Rate the priority (High/Medium/Low)\n- Ensure suggestions maintain existing functionality\n\nFollow the project's TypeScript standards:\n- NO `any` types\n- NO non-null assertions (`!`)\n- Explicit return types on functions\n- Proper error handling with try/catch\n\nFormat your response as actionable suggestions that can be implemented immediately."
+  }
+}

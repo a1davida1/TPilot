@@ -1,0 +1,29 @@
+{
+  "enabled": true,
+  "name": "Source Code Documentation Sync",
+  "description": "Monitors all TypeScript source files, configuration files, and schema definitions. When changes are detected, prompts the agent to review and update relevant documentation in README.md or the /docs folder to keep documentation in sync with code changes.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*.ts",
+      "**/*.tsx",
+      "**/*.js",
+      "**/*.jsx",
+      "shared/schema.ts",
+      "server/**/*.ts",
+      "client/src/**/*.tsx",
+      "client/src/**/*.ts",
+      "app/**/*.tsx",
+      "app/**/*.ts",
+      "package.json",
+      "tsconfig.json",
+      "vite.config.js",
+      "drizzle.config.ts"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Source code files have been modified. Review the changes and update the relevant documentation:\n\n1. Check if README.md needs updates for:\n   - New features or API changes\n   - Updated setup instructions\n   - Changed dependencies or requirements\n\n2. Check if /docs folder needs updates for:\n   - Architecture changes (PLATFORM_OVERVIEW.md, structure.md)\n   - New API endpoints or routes (API_ENDPOINTS_STATUS.md)\n   - Updated tech stack (tech.md)\n   - Changed database schema (if shared/schema.ts modified)\n   - New deployment requirements (DEPLOYMENT_CHECKLIST.md)\n\n3. Ensure documentation accurately reflects:\n   - Current file structure\n   - API patterns and conventions\n   - Configuration requirements\n   - Development workflow\n\nPlease review the changed files and update documentation accordingly. Be specific about what changed and what docs need updating."
+  }
+}

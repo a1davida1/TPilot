@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "name": "TypeScript Error Checker",
+  "description": "Runs TypeScript compiler checks on modified files to catch type errors, missing types, and strict mode violations instantly",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*.ts",
+      "**/*.tsx"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Run TypeScript type checking on the modified files and report any errors:\n\n**Check for these TypeScript issues:**\n\n1. **Strict Mode Violations (CRITICAL):**\n   - `any` types (forbidden in this project)\n   - Non-null assertions `!` (forbidden)\n   - Implicit any parameters\n   - Missing return types on functions\n   - Unsafe type assertions\n\n2. **Type Errors:**\n   - Type mismatches\n   - Missing properties\n   - Incorrect function signatures\n   - Invalid generic constraints\n   - Incompatible types in assignments\n\n3. **Import/Export Issues:**\n   - Missing imports\n   - Circular dependencies\n   - Incorrect module paths\n   - Type-only imports not marked\n\n**Project TypeScript Rules:**\n- ❌ NO `any` types - Use explicit interfaces or `unknown`\n- ❌ NO non-null assertions (`!`) - Use optional chaining or `??`\n- ✅ All functions must have explicit return types\n- ✅ All parameters must be typed\n- ✅ Strict mode enabled\n\n**Output format:**\n```\n🔴 ERRORS (must fix):\n  file.ts:42:10 - error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'\n\n🟡 WARNINGS (should fix):\n  file.ts:15:5 - warning: Function missing return type annotation\n\n✅ TYPE CHECK PASSED\n```\n\n**For each error provide:**\n- File path and line number\n- Error message\n- Code snippet showing the issue\n- Suggested fix with corrected code\n- Explanation of why it's wrong"
+  }
+}

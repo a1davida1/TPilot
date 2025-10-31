@@ -1,0 +1,19 @@
+{
+  "enabled": true,
+  "name": "Performance Profiler",
+  "description": "Analyzes React components for performance issues like missing memoization, expensive re-renders, and inefficient patterns",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "client/src/components/**/*.tsx",
+      "client/src/components/**/*.jsx",
+      "client/src/pages/**/*.tsx",
+      "client/src/pages/**/*.jsx"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Analyze the modified React components for performance issues:\n\n**Check for these common performance problems:**\n\n1. **Missing Memoization:**\n   - Large objects/arrays created in render\n   - Inline function definitions passed as props\n   - Expensive calculations without useMemo\n   - Missing useCallback for event handlers\n\n2. **Unnecessary Re-renders:**\n   - Components without React.memo when appropriate\n   - Props that change on every render\n   - Context values that aren't memoized\n   - Large component trees without optimization\n\n3. **Inefficient Patterns:**\n   - Array methods in render (map/filter/reduce on large arrays)\n   - Conditional rendering with expensive components\n   - Missing virtualization for long lists\n   - Synchronous operations blocking render\n\n4. **React Query Issues:**\n   - Missing staleTime causing excessive refetches\n   - No query key dependencies\n   - Enabled queries that should be conditional\n   - Missing error/loading states\n\n5. **State Management:**\n   - Too many useState calls (should use useReducer)\n   - State updates causing cascading re-renders\n   - Derived state that should be computed\n\n**Output format:**\n- 🔴 CRITICAL: Issues causing major performance problems\n- 🟡 MEDIUM: Optimizations that would help\n- 🟢 LOW: Nice-to-have improvements\n- ✅ Well-optimized patterns found\n\n**For each issue provide:**\n- Line number and code snippet\n- Why it's a problem\n- Specific fix with code example\n- Expected performance improvement\n\nExample:\n```typescript\n// ❌ Creates new function on every render\n<Button onClick={() => handleClick(id)}>Click</Button>\n\n// ✅ Memoized callback\nconst handleButtonClick = useCallback(() => handleClick(id), [id]);\n<Button onClick={handleButtonClick}>Click</Button>\n```"
+  }
+}
