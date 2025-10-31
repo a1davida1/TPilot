@@ -189,6 +189,38 @@ OPENROUTER_API_KEY=sk-or-...
 
 **Schema Location:** `/shared/schema.ts` - Drizzle ORM schema definitions (single source of truth)
 
+## Key Services
+
+### Analytics Services
+
+**PredictionService** (`server/services/prediction-service.ts`)
+- Rule-based post performance prediction (QW-7)
+- Weighted scoring algorithm:
+  - Title quality: 15% (length, emojis, questions, caps)
+  - Posting time: 20% (historical performance + general patterns)
+  - Subreddit health: 35% (success rate, engagement, removal rate)
+  - User success: 30% (historical performance in subreddit)
+- Classifications: low (<45), medium (45-64), high (65-79), viral (80+)
+- Confidence levels: low/medium/high based on data availability
+- Generates actionable suggestions for improvement
+- **Status:** Service complete, API endpoint complete, UI component complete
+- **TODO:** Integrate into quick-post.tsx (task 12.4)
+- Used by: Quick Post, Scheduling pages (Pro/Premium only)
+
+**SubredditHealthService** (`server/services/subreddit-health-service.ts`)
+- Calculates health scores (0-100) for user's subreddits (QW-6)
+- Weighted scoring algorithm:
+  - Success rate: 40% (successful posts / total posts)
+  - Engagement: 30% (normalized upvotes + views)
+  - Removal rate inverted: 30% (100% - removal rate)
+- Status classifications: excellent (85+), healthy (70-84), watch (50-69), risky (<50)
+- Trend detection: comparing recent vs previous period (improving/stable/declining)
+- Provides detailed breakdown of score components
+- Metrics tracked: total posts, successful posts, removed posts, avg upvotes, avg views
+- **Status:** Service complete, API endpoints complete
+- **TODO:** Create UI component (SubredditHealthBadge), integrate into navigation
+- Used by: Analytics dashboard, Subreddit selection (Pro/Premium only)
+
 ## API Patterns
 
 ### Standard API Response Format
@@ -241,6 +273,112 @@ app.use('/api/example', exampleRouter);
 ```
 
 **Note:** Both Express (`/server/routes/`) and Next.js (`/app/api/`) API routes coexist. Express is primary.
+
+### Analytics API Endpoints
+
+**POST /api/analytics/predict-performance** (QW-7)
+Predict post performance before posting.
+
+**Auth Required:** Yes (Pro/Premium tier)
+
+**Request Body:**
+```typescript
+{
+  subreddit: string;
+  title: string;
+  scheduledTime?: string; // ISO date, defaults to now
+}
+```
+
+**Response:**
+```typescript
+{
+  level: 'low' | 'medium' | 'high' | 'viral';
+  score: number; // 0-100
+  confidence: 'low' | 'medium' | 'high';
+  suggestions: string[]; // Max 5 actionable tips
+  factors: {
+    titleScore: number;      // 0-100
+    timingScore: number;     // 0-100
+    subredditHealthScore: number; // 0-100
+    userSuccessScore: number;     // 0-100
+  };
+}
+```
+
+**Example:**
+```bash
+curl -X POST http://localhost:5000/api/analytics/predict-performance \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subreddit": "gonewild",
+    "title": "Feeling cute today 😊",
+    "scheduledTime": "2025-10-31T19:00:00Z"
+  }'
+```
+
+**GET /api/analytics/subreddit-health** (QW-6)
+Get health scores for all user's subreddits.
+
+**Auth Required:** Yes (Pro/Premium tier)
+
+**Query Parameters:**
+```typescript
+{
+  daysBack?: number; // Default: 30
+}
+```
+
+**Response:**
+```typescript
+{
+  healthScores: Array<{
+    subreddit: string;
+    healthScore: number; // 0-100
+    status: 'excellent' | 'healthy' | 'watch' | 'risky';
+    breakdown: {
+      successRate: number;      // 0-100
+      successScore: number;     // Weighted (0-40)
+      engagementRate: number;   // 0-100
+      engagementScore: number;  // Weighted (0-30)
+      removalRate: number;      // 0-100
+      removalScore: number;     // Weighted (0-30)
+    };
+    metrics: {
+      totalPosts: number;
+      successfulPosts: number;
+      removedPosts: number;
+      avgUpvotes: number;
+      avgViews: number;
+    };
+    trend: 'improving' | 'stable' | 'declining' | 'unknown';
+  }>;
+}
+```
+
+**GET /api/analytics/subreddit-health/:subreddit** (QW-6)
+Get health score for a specific subreddit.
+
+**Auth Required:** Yes (Pro/Premium tier)
+
+**Query Parameters:**
+```typescript
+{
+  daysBack?: number; // Default: 30
+}
+```
+
+**Response:** Same as single health object from array above.
+
+**Example:**
+```bash
+curl -X GET "http://localhost:5000/api/analytics/subreddit-health?daysBack=30" \
+  -H "Authorization: Bearer $TOKEN"
+
+curl -X GET "http://localhost:5000/api/analytics/subreddit-health/gonewild?daysBack=30" \
+  -H "Authorization: Bearer $TOKEN"
+```
 
 ## Frontend Patterns
 
@@ -634,4 +772,6 @@ npm run queue:clean           # Clean failed jobs
 - `/server/caption/openrouterPipeline.ts` - Caption generation
 - `/server/services/reddit-native-upload.ts` - Reddit CDN upload service
 - `/server/lib/imgbox-service.ts` - Imgbox fallback service
+- `/server/services/prediction-service.ts` - Post performance prediction (QW-7)
+- `/server/services/subreddit-health-service.ts` - Subreddit health scoring (QW-6)
 - `/server/jobs/` - Bull queue workers

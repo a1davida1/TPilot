@@ -376,3 +376,218 @@ analyticsRouter.get("/reddit-stats", authenticateToken(true), async (req: AuthRe
 });
 
 export { analyticsRouter, loadLandingMetrics };
+// QW-7: 
+Post Performance Predictor
+import { predictionService } from '../services/prediction-service.js';
+
+analyticsRouter.post('/predict-performance', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Check tier access (Pro or Premium required)
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!user || !['pro', 'premium'].includes(user.tier)) {
+      return res.status(403).json({
+        error: 'Performance prediction requires Pro or Premium tier',
+        requiredTier: 'pro'
+      });
+    }
+
+    const { subreddit, title, scheduledTime } = req.body;
+
+    if (!subreddit || !title) {
+      return res.status(400).json({ error: 'Missing required fields: subreddit, title' });
+    }
+
+    const prediction = await predictionService.predictPerformance({
+      userId,
+      subreddit,
+      title,
+      scheduledTime: scheduledTime ? new Date(scheduledTime) : new Date()
+    });
+
+    res.json(prediction);
+  } catch (error) {
+    logger.error('Failed to predict performance', { error });
+    res.status(500).json({ error: 'Failed to predict performance' });
+  }
+});
+
+// QW-8: Smart Subreddit Recommendations
+import { recommendationService } from '../services/recommendation-service.js';
+
+analyticsRouter.get('/subreddit-recommendations', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Check tier access (Pro or Premium required)
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!user || !['pro', 'premium'].includes(user.tier)) {
+      return res.status(403).json({
+        error: 'Subreddit recommendations require Pro or Premium tier',
+        requiredTier: 'pro'
+      });
+    }
+
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const recommendations = await recommendationService.generateRecommendations(userId, limit);
+
+    res.json({ recommendations });
+  } catch (error) {
+    logger.error('Failed to get subreddit recommendations', { error });
+    res.status(500).json({ error: 'Failed to get subreddit recommendations' });
+  }
+});
+
+// QW-6: Subreddit Health Score
+import { subredditHealthService } from '../services/subreddit-health-service.js';
+
+analyticsRouter.get('/subreddit-health', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Check tier access (Pro or Premium required)
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!user || !['pro', 'premium'].includes(user.tier)) {
+      return res.status(403).json({
+        error: 'Subreddit health scores require Pro or Premium tier',
+        requiredTier: 'pro'
+      });
+    }
+
+    const daysBack = parseInt(req.query.daysBack as string) || 30;
+    const healthScores = await subredditHealthService.calculateAllHealth(userId, daysBack);
+
+    res.json({ healthScores });
+  } catch (error) {
+    logger.error('Failed to get subreddit health', { error });
+    res.status(500).json({ error: 'Failed to get subreddit health' });
+  }
+});
+
+analyticsRouter.get('/subreddit-health/:subreddit', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Check tier access (Pro or Premium required)
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!user || !['pro', 'premium'].includes(user.tier)) {
+      return res.status(403).json({
+        error: 'Subreddit health scores require Pro or Premium tier',
+        requiredTier: 'pro'
+      });
+    }
+
+    const { subreddit } = req.params;
+    const daysBack = parseInt(req.query.daysBack as string) || 30;
+
+    const health = await subredditHealthService.calculateHealth(userId, subreddit, daysBack);
+
+    res.json(health);
+  } catch (error) {
+    logger.error('Failed to get subreddit health', { error });
+    res.status(500).json({ error: 'Failed to get subreddit health' });
+  }
+});
+
+// QW-2: Post Removal Tracker
+import { removalTrackerService } from '../services/removal-tracker-service.js';
+
+analyticsRouter.get('/removal-history', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Check tier access (Pro or Premium required)
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!user || !['pro', 'premium'].includes(user.tier)) {
+      return res.status(403).json({
+        error: 'Removal tracking requires Pro or Premium tier',
+        requiredTier: 'pro'
+      });
+    }
+
+    const limit = parseInt(req.query.limit as string) || 50;
+    const daysBack = parseInt(req.query.daysBack as string) || 90;
+
+    const history = await removalTrackerService.getRemovalHistory(userId, limit, daysBack);
+
+    res.json({ removals: history });
+  } catch (error) {
+    logger.error('Failed to get removal history', { error });
+    res.status(500).json({ error: 'Failed to get removal history' });
+  }
+});
+
+analyticsRouter.get('/removal-stats', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Check tier access (Pro or Premium required)
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!user || !['pro', 'premium'].includes(user.tier)) {
+      return res.status(403).json({
+        error: 'Removal statistics require Pro or Premium tier',
+        requiredTier: 'pro'
+      });
+    }
+
+    const daysBack = parseInt(req.query.daysBack as string) || 90;
+
+    const stats = await removalTrackerService.getRemovalStats(userId, daysBack);
+
+    res.json(stats);
+  } catch (error) {
+    logger.error('Failed to get removal stats', { error });
+    res.status(500).json({ error: 'Failed to get removal stats' });
+  }
+});
+
+// QW-3: Enhanced Rule Validator
+import { ruleValidatorService } from '../services/rule-validator-service.js';
+
+analyticsRouter.post('/validate-post', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { subreddit, title, content, flair } = req.body;
+
+    if (!subreddit || !title) {
+      return res.status(400).json({ error: 'Missing required fields: subreddit, title' });
+    }
+
+    const validation = await ruleValidatorService.validatePost(
+      userId,
+      subreddit,
+      title,
+      content,
+      flair
+    );
+
+    res.json(validation);
+  } catch (error) {
+    logger.error('Failed to validate post', { error });
+    res.status(500).json({ error: 'Failed to validate post' });
+  }
+});

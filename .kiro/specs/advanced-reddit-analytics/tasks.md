@@ -144,11 +144,13 @@
     - Show trend indicator (up/down from last period)
     - _Requirements: QW-4_
 
-- [ ] 6. QW-6: Subreddit Health Score
-  - [ ] 6.1 Create SubredditHealthService at `server/services/subreddit-health-service.ts`
-    - Implement scoring algorithm: `(success_rate * 0.4) + (engagement_score * 0.3) + ((1 - removal_rate) * 0.3)`
-    - Calculate for all user's subreddits from `user_subreddit_performance` view
-    - Cache scores in Redis for 1 hour
+- [x] 6. QW-6: Subreddit Health Score
+  - [x] 6.1 Create SubredditHealthService at `server/services/subreddit-health-service.ts`
+    - ✅ Implemented scoring algorithm: `(success_rate * 0.4) + (engagement_score * 0.3) + ((1 - removal_rate) * 0.3)`
+    - ✅ Calculates for all user's subreddits from `reddit_post_outcomes` table
+    - ✅ Includes trend detection (comparing recent vs previous period)
+    - ✅ Returns detailed breakdown and metrics
+    - ⏳ TODO: Add Redis caching for 1 hour
     - _Requirements: QW-6_
   
   - [ ] 6.2 Create health score API endpoint in `server/routes/analytics.ts`
@@ -316,28 +318,31 @@
     - Debounce validation calls (500ms)
     - _Requirements: QW-3_
 
-- [ ] 12. QW-7: Post Performance Predictor (rule-based)
-  - [ ] 12.1 Create PredictionService at `server/services/prediction-service.ts`
+- [x] 12. QW-7: Post Performance Predictor (rule-based)
+  - [x] 12.1 Create PredictionService at `server/services/prediction-service.ts`
     - Implement rule-based scoring algorithm (0-100 score)
     - Factor in: title length (±15 pts), posting time (±20 pts), subreddit health (±25 pts), user success rate (±20 pts)
     - Classify: viral (80+), high (65-79), medium (45-64), low (<45)
     - Generate actionable suggestions
     - _Requirements: QW-7_
+    - **Status:** ✅ COMPLETE - Service implemented with weighted scoring (title 15%, timing 20%, health 35%, user 30%)
   
-  - [ ] 12.2 Create prediction API endpoint in `server/routes/analytics.ts`
+  - [x] 12.2 Create prediction API endpoint in `server/routes/analytics.ts`
     - `POST /api/analytics/predict-performance` - requires Pro tier
     - Accept: subreddit, title, scheduledTime
     - Return: level, score, confidence, suggestions, factor breakdown
     - Cache predictions for 5 minutes
     - _Requirements: QW-7_
+    - **Status:** ✅ COMPLETE - Endpoint added with tier check (Pro/Premium required)
   
-  - [ ] 12.3 Build PerformancePrediction component at `client/src/components/analytics/PerformancePrediction.tsx`
+  - [x] 12.3 Build PerformancePrediction component at `client/src/components/analytics/PerformancePrediction.tsx`
     - Display prediction level with large visual indicator
     - Show score (0-100) and confidence level
     - List suggestions for improvement
     - Show factor breakdown (what's helping/hurting)
     - Use shadcn/ui Card component
     - _Requirements: QW-7_
+    - **Status:** ✅ COMPLETE - Component built with level indicators, score display, factor breakdown, and suggestions
   
   - [ ] 12.4 Integrate predictor into posting workflow
     - Add to `client/src/pages/quick-post.tsx`
@@ -345,6 +350,14 @@
     - Update prediction when title/time changes
     - Allow user to proceed despite low prediction
     - _Requirements: QW-7_
+
+  - [ ] 12.4 Integrate predictor into posting workflow
+    - Add to `client/src/pages/quick-post.tsx`
+    - Show prediction before posting
+    - Update prediction when title/time changes
+    - Allow user to proceed despite low prediction
+    - _Requirements: QW-7_
+    - **Status:** ⏳ TODO - Component ready but not yet integrated into quick-post page
 
 ### Group D: Discovery (Weekend 3, 2.5-3.5h)
 

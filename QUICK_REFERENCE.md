@@ -268,5 +268,36 @@ npm run lint      # MUST pass (0 new errors)
 
 ---
 
-**Last Updated:** October 19, 2025  
+## 🆕 Recent Additions
+
+### Post Performance Predictor (QW-7)
+**Service:** `server/services/prediction-service.ts`  
+**API:** `POST /api/analytics/predict-performance` (Pro/Premium)  
+**Component:** `client/src/components/analytics/PerformancePrediction.tsx`  
+**Status:** ✅ Backend complete, ⏳ UI integration pending
+
+Predicts post performance (0-100 score) based on:
+- Title quality (15%)
+- Posting time (20%)
+- Subreddit health (35%)
+- User success rate (30%)
+
+Returns: level (low/medium/high/viral), confidence, suggestions, factor breakdown
+
+### Subreddit Health Score (QW-6)
+**Service:** `server/services/subreddit-health-service.ts`  
+**API:** `GET /api/analytics/subreddit-health` (Pro/Premium)  
+**Component:** `client/src/components/analytics/SubredditHealthBadge.tsx` (pending)  
+**Status:** ✅ Backend complete, ⏳ UI component pending
+
+Calculates health scores (0-100) for subreddits based on:
+- Success rate (40%)
+- Engagement (30%)
+- Removal rate inverted (30%)
+
+Returns: healthScore, status (excellent/healthy/watch/risky), breakdown, metrics, trend
+
+---
+
+**Last Updated:** October 31, 2025  
 **Full Reference:** `/PLATFORM_MASTER_REFERENCE.md`
