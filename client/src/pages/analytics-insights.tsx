@@ -8,14 +8,19 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { TrendingUp, AlertTriangle, Shield } from 'lucide-react';
+import { TrendingUp, AlertTriangle, Shield, MessageSquare } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { SubredditHealthBadge } from '@/components/analytics/SubredditHealthBadge';
 import { RemovalHistory } from '@/components/analytics/RemovalHistory';
+import { CommentEngagement } from '@/components/analytics/CommentEngagement';
 import { Skeleton } from '@/components/ui/skeleton';
+
+// Performance: Extract repeated classNames to constants
+const HEALTH_CARD_CLASSES = "border rounded-lg p-4 hover:bg-accent/50 transition-colors";
+const METRICS_GRID_CLASSES = "grid grid-cols-4 gap-4 text-sm";
 
 interface SubredditHealth {
   subreddit: string;
@@ -103,7 +108,7 @@ export default function AnalyticsInsights() {
       </div>
 
       <Tabs defaultValue="health" className="space-y-6">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-md grid-cols-3">
           <TabsTrigger value="health">
             <Shield className="h-4 w-4 mr-2" />
             Health Scores
@@ -111,6 +116,10 @@ export default function AnalyticsInsights() {
           <TabsTrigger value="removals">
             <AlertTriangle className="h-4 w-4 mr-2" />
             Removals
+          </TabsTrigger>
+          <TabsTrigger value="engagement">
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Engagement
           </TabsTrigger>
         </TabsList>
 
@@ -142,7 +151,7 @@ export default function AnalyticsInsights() {
                   {healthData.healthScores.map((health) => (
                     <div
                       key={health.subreddit}
-                      className="border rounded-lg p-4 hover:bg-accent/50 transition-colors"
+                      className={HEALTH_CARD_CLASSES}
                     >
                       {/* Header */}
                       <div className="flex items-center justify-between mb-3">
@@ -163,7 +172,7 @@ export default function AnalyticsInsights() {
                       </div>
 
                       {/* Metrics Grid */}
-                      <div className="grid grid-cols-4 gap-4 text-sm">
+                      <div className={METRICS_GRID_CLASSES}>
                         <div>
                           <div className="text-muted-foreground">Success Rate</div>
                           <div className="font-medium">
@@ -270,6 +279,11 @@ export default function AnalyticsInsights() {
         {/* Removals Tab */}
         <TabsContent value="removals" className="space-y-6">
           <RemovalHistory />
+        </TabsContent>
+
+        {/* Engagement Tab - Performance: Only render when tab is active */}
+        <TabsContent value="engagement" className="space-y-6">
+          <CommentEngagement />
         </TabsContent>
       </Tabs>
     </div>

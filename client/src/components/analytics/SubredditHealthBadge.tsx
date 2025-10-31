@@ -4,6 +4,7 @@
  * Displays health score with color coding and detailed breakdown
  */
 
+import { memo, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import {
   Tooltip,
@@ -60,7 +61,13 @@ const trendIcons = {
   unknown: <AlertCircle className="h-3 w-3 text-gray-400" />,
 };
 
-export function SubredditHealthBadge({
+const SIZE_CLASSES = {
+  sm: 'text-xs px-2 py-0.5',
+  md: 'text-sm px-2.5 py-0.5',
+  lg: 'text-base px-3 py-1',
+} as const;
+
+export const SubredditHealthBadge = memo(function SubredditHealthBadge({
   score,
   status,
   breakdown,
@@ -70,27 +77,35 @@ export function SubredditHealthBadge({
 }: SubredditHealthBadgeProps) {
   const config = statusConfig[status];
 
-  const sizeClasses = {
-    sm: 'text-xs px-2 py-0.5',
-    md: 'text-sm px-2.5 py-0.5',
-    lg: 'text-base px-3 py-1',
-  };
+  // Memoize formatted breakdown values to avoid recalculating toFixed() on every render
+  const formattedBreakdown = useMemo(() => {
+    if (!breakdown) return null;
+    return {
+      successScore: breakdown.successScore.toFixed(1),
+      engagementScore: breakdown.engagementScore.toFixed(1),
+      removalScore: breakdown.removalScore.toFixed(1),
+    };
+  }, [breakdown]);
 
-  const badge = (
-    <Badge
-      variant="secondary"
-      className={cn(config.color, sizeClasses[size], 'font-medium')}
-    >
-      <span className="mr-1">{config.icon}</span>
-      {score}
-      {showLabel && <span className="ml-1">{config.label}</span>}
-      {trend && trend !== 'unknown' && (
-        <span className="ml-1">{trendIcons[trend]}</span>
-      )}
-    </Badge>
+  // Memoize badge JSX to prevent recreation on every render
+  const badge = useMemo(
+    () => (
+      <Badge
+        variant="secondary"
+        className={cn(config.color, SIZE_CLASSES[size], 'font-medium')}
+      >
+        <span className="mr-1">{config.icon}</span>
+        {score}
+        {showLabel && <span className="ml-1">{config.label}</span>}
+        {trend && trend !== 'unknown' && (
+          <span className="ml-1">{trendIcons[trend]}</span>
+        )}
+      </Badge>
+    ),
+    [config.color, config.icon, config.label, score, showLabel, size, trend]
   );
 
-  if (!breakdown) {
+  if (!breakdown || !formattedBreakdown) {
     return badge;
   }
 
@@ -110,7 +125,7 @@ export function SubredditHealthBadge({
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{breakdown.successRate}%</span>
                   <span className="text-muted-foreground">
-                    ({breakdown.successScore.toFixed(1)}/40 pts)
+                    ({formattedBreakdown.successScore}/40 pts)
                   </span>
                 </div>
               </div>
@@ -120,7 +135,7 @@ export function SubredditHealthBadge({
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{breakdown.engagementRate}%</span>
                   <span className="text-muted-foreground">
-                    ({breakdown.engagementScore.toFixed(1)}/30 pts)
+                    ({formattedBreakdown.engagementScore}/30 pts)
                   </span>
                 </div>
               </div>
@@ -130,7 +145,7 @@ export function SubredditHealthBadge({
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{breakdown.removalRate}%</span>
                   <span className="text-muted-foreground">
-                    ({breakdown.removalScore.toFixed(1)}/30 pts)
+                    ({formattedBreakdown.removalScore}/30 pts)
                   </span>
                 </div>
               </div>
@@ -151,4 +166,4 @@ export function SubredditHealthBadge({
       </Tooltip>
     </TooltipProvider>
   );
-}
+});

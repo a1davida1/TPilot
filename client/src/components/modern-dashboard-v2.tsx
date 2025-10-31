@@ -42,6 +42,7 @@ import { StickyRail } from '@/components/ui/sticky-rail';
 import { BatchActionsBar, useBatchSelection, BatchCheckbox } from '@/components/ui/batch-actions-bar';
 import { QuickStartModal } from '@/components/dashboard-quick-start';
 import { useDashboardStats, useRecentActivity } from '@/hooks/useDashboardStats';
+import { SuccessRateWidget } from '@/components/dashboard/SuccessRateWidget';
 import { cn } from '@/lib/utils';
 
 // Types
@@ -526,7 +527,15 @@ export function ModernDashboardV2({
             </div>
 
             {/* Stats Grid */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+              {/* Success Rate Widget - First position */}
+              {(userTier === 'pro' || userTier === 'premium' || userTier === 'admin') && (
+                <SuccessRateWidget 
+                  daysBack={30} 
+                  onClick={() => setLocation('/analytics')}
+                />
+              )}
+              
               {statCards.map((stat) => (
                 <Card key={stat.label}>
                   <CardContent className="p-6">

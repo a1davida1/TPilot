@@ -27,8 +27,14 @@ client/src/
 │   └── tests/           # Component tests
 ├── pages/               # Route pages (Wouter)
 │   ├── dashboard.tsx
+│   ├── quick-post.tsx
+│   ├── bulk-caption.tsx
 │   ├── scheduling.tsx
 │   ├── analytics.tsx
+│   ├── analytics-insights.tsx    # Advanced analytics (QW-6: Health scores, removals)
+│   ├── subreddit-discovery.tsx   # Subreddit discovery (QW-8: Recommendations)
+│   ├── performance-analytics.tsx
+│   ├── intelligence-insights.tsx
 │   └── tax-tracker.tsx
 ├── hooks/               # Custom React hooks
 │   ├── useAuth.ts

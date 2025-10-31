@@ -172,6 +172,22 @@ export const workflowBuckets: WorkflowBucket[] = [
         shortcut: '⌘A',
       },
       {
+        key: 'discover',
+        label: 'Subreddit Discovery',
+        href: '/discover',
+        description: 'Find best subreddits and predict performance',
+        icon: Sparkles,
+        proOnly: true,
+      },
+      {
+        key: 'insights',
+        label: 'Analytics Insights',
+        href: '/analytics/insights',
+        description: 'Health scores, removals, and engagement tracking',
+        icon: ShieldCheck,
+        proOnly: true,
+      },
+      {
         key: 'performance',
         label: 'Performance Insights',
         href: '/performance',

@@ -208,9 +208,12 @@ OPENROUTER_API_KEY=sk-or-...
 - Also updates engagement metrics (upvotes, comments) for live posts
 - Rate limited to 60 requests/minute (Reddit API limit)
 - Processes 5 posts concurrently
-- **Status:** Worker complete and running, initialized in app.ts
-- **TODO:** Create API endpoint and UI component for viewing removal history
-- Used by: Analytics dashboard (Pro/Premium only)
+- **Status:** COMPLETE - Worker, API, and UI all implemented
+- **API Endpoints:**
+  - `GET /api/analytics/removal-history` - Get removal history
+  - `GET /api/analytics/removal-stats` - Get comprehensive stats
+- **UI Component:** `RemovalHistory.tsx` integrated into analytics dashboard
+- Used by: Analytics dashboard "Removals" tab (Pro/Premium only)
 
 **RemovalSchedulerWorker** (`server/jobs/removal-detection-worker.ts`)
 - Schedules hourly removal checks via cron pattern: `0 * * * *`
@@ -799,7 +802,7 @@ npm run queue:clean           # Clean failed jobs
 ## Key Files Reference
 - `/server/routes.ts` - All Express API routes registered here
 - `/app/api/` - Next.js API routes (secondary)
-- `/client/src/App.tsx` - Main React SPA
+- `/client/src/App.tsx` - Main React SPA with route definitions
 - `/server/app.ts` - Express app initialization, worker startup
 - `/shared/schema.ts` - Database schema (single source of truth)
 - `/server/lib/openrouter-client.ts` - AI client
@@ -811,3 +814,33 @@ npm run queue:clean           # Clean failed jobs
 - `/server/jobs/` - Bull queue workers
   - `/server/jobs/reddit-sync-worker.ts` - Reddit post history sync
   - `/server/jobs/removal-detection-worker.ts` - Post removal detection (QW-2)
+
+## Frontend Pages (client/src/pages/)
+**Analytics & Insights:**
+- `/analytics` - Main analytics dashboard
+- `/analytics/insights` - Advanced analytics insights (QW-6: Health scores, removals, engagement)
+- `/performance` - Performance analytics
+- `/intelligence` - Intelligence insights
+- `/subreddit-insights` - Subreddit-specific insights
+
+**Discovery:**
+- `/discover` - Subreddit discovery page (QW-8: Smart recommendations, performance prediction)
+- `/reddit/communities` - Browse 180+ Reddit communities
+
+**Content Creation:**
+- `/quick-post` - One-click posting workflow
+- `/bulk-caption` - Bulk image upload and captioning
+- `/caption-generator` - AI caption generation
+- `/gallery` - Image gallery (v2)
+
+**Scheduling:**
+- `/post-scheduling` - Schedule posts
+- `/scheduled-posts` - View scheduled posts
+- `/scheduling-calendar` - Calendar view
+
+**Other:**
+- `/dashboard` - Main dashboard
+- `/settings` - User settings
+- `/tax-tracker` - Tax tracking for creators
+- `/referral` - Referral program
+- `/pro-perks` - Pro tier benefits

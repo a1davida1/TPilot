@@ -4,6 +4,7 @@
  * Displays comment engagement metrics and highlights posts needing responses
  */
 
+import { memo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MessageSquare, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +13,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+
+// Performance: Extract repeated classNames
+const ENGAGEMENT_CARD_CLASSES = "border rounded-lg p-4 hover:bg-accent/50 transition-colors";
+const STATS_CARD_CLASSES = "p-4 border rounded-lg";
 
 interface CommentEngagementMetrics {
   postId: number;
@@ -61,7 +66,7 @@ const qualityConfig = {
   },
 };
 
-export function CommentEngagement() {
+export const CommentEngagement = memo(function CommentEngagement() {
   const { data, isLoading, error } = useQuery<CommentEngagementStats>({
     queryKey: ['comment-engagement-stats'],
     queryFn: async () => {
@@ -127,22 +132,22 @@ export function CommentEngagement() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-4 border rounded-lg">
+            <div className={STATS_CARD_CLASSES}>
               <div className="text-2xl font-bold">{data.totalComments}</div>
               <div className="text-sm text-muted-foreground">Total Comments</div>
             </div>
 
-            <div className="p-4 border rounded-lg">
+            <div className={STATS_CARD_CLASSES}>
               <div className="text-2xl font-bold">{data.avgCommentsPerPost}</div>
               <div className="text-sm text-muted-foreground">Avg per Post</div>
             </div>
 
-            <div className="p-4 border rounded-lg">
+            <div className={STATS_CARD_CLASSES}>
               <div className="text-2xl font-bold">{data.avgCommentToUpvoteRatio}%</div>
               <div className="text-sm text-muted-foreground">Comment/Upvote Ratio</div>
             </div>
 
-            <div className="p-4 border rounded-lg">
+            <div className={STATS_CARD_CLASSES}>
               <div className="text-2xl font-bold">{data.responseRate}%</div>
               <div className="text-sm text-muted-foreground">Response Rate</div>
               <Progress value={data.responseRate} className="mt-2" />
@@ -186,7 +191,7 @@ export function CommentEngagement() {
               {data.postsNeedingResponse.map((post) => (
                 <div
                   key={post.postId}
-                  className="border rounded-lg p-4 hover:bg-accent/50 transition-colors"
+                  className={ENGAGEMENT_CARD_CLASSES}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
@@ -236,7 +241,7 @@ export function CommentEngagement() {
                 return (
                   <div
                     key={post.postId}
-                    className="border rounded-lg p-4 hover:bg-accent/50 transition-colors"
+                    className={ENGAGEMENT_CARD_CLASSES}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
@@ -319,4 +324,4 @@ export function CommentEngagement() {
       </Card>
     </div>
   );
-}
+});

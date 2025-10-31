@@ -151,24 +151,12 @@ export class RecommendationService {
         existingSubreddits.map((s) => s.subreddit.toLowerCase())
       );
 
-      // Find similar subreddits
-      let query = db
-        .select()
-        .from(redditCommunities)
-        .where(
-          and(
-            // Exclude subreddits user has already posted to
-            ne(
-              redditCommunities.id,
-              sql`ANY(${successfulSubreddits.map((s) => s.toLowerCase())})`
-            )
-          )
-        )
-        .limit(50);
+      // Build query conditions
+      const conditions: any[] = [];
 
       // Filter by category if available
       if (categories.length > 0) {
-        query = query.where(
+        conditions.push(
           inArray(
             redditCommunities.category,
             categories.filter((c): c is string => c !== null)
@@ -178,8 +166,15 @@ export class RecommendationService {
 
       // Filter by NSFW if user posts NSFW content
       if (over18) {
-        query = query.where(eq(redditCommunities.over18, true));
+        conditions.push(eq(redditCommunities.over18, true));
       }
+
+      // Find similar subreddits
+      const query = db
+        .select()
+        .from(redditCommunities)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .limit(50);
 
       const candidates = await query;
 
@@ -243,8 +238,9 @@ export class RecommendationService {
     }
 
     // Rules similarity (+10 points)
-    if (subreddit.allowImages && subreddit.allowVideos) {
-      score += 10; // Flexible posting rules
+    // Check if subreddit allows flexible content types via rules
+    if (subreddit.rules?.content) {
+      score += 10; // Has content rules defined
     }
 
     // Verification not required (+5 points)

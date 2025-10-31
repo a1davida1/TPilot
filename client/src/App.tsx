@@ -48,6 +48,8 @@ const QuickPostPage = React.lazy(() => import("@/pages/quick-post"));
 const FlightSchoolPage = React.lazy(() => import("@/pages/flight-school"));
 const GalleryV2Page = React.lazy(() => import("@/pages/gallery-v2"));
 const BulkCaptionPage = React.lazy(() => import("@/pages/bulk-caption"));
+const SubredditDiscoveryPage = React.lazy(() => import("@/pages/subreddit-discovery"));
+const AnalyticsInsightsPage = React.lazy(() => import("@/pages/analytics-insights"));
 import { RedditCommunities } from "@/components/reddit-communities";
 // Phase 1: Real Analytics Tracking
 import { trackPageView, setUserId, trackFeatureUsage } from "@/lib/analytics-tracker";
@@ -103,6 +105,8 @@ function AuthenticatedRoutes() {
       <Route path="/scheduled-posts" component={ScheduledPostsPage} />
       <Route path="/flight-school" component={FlightSchoolPage} />
       <Route path="/analytics" component={AnalyticsPage} />
+      <Route path="/analytics/insights" component={AnalyticsInsightsPage} />
+      <Route path="/discover" component={SubredditDiscoveryPage} />
       <Route path="/performance" component={PerformanceAnalyticsPage} />
       <Route path="/intelligence" component={IntelligenceInsightsPage} />
       <Route path="/subreddit-insights" component={IntelligenceInsightsPage} />

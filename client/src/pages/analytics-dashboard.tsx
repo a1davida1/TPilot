@@ -10,6 +10,9 @@ import {
   LineChart, Line, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
+import { RemovalHistory } from '@/components/analytics/RemovalHistory';
+import { SubredditHealthBadge } from '@/components/analytics/SubredditHealthBadge';
+import { useQuery } from '@tanstack/react-query';
 
 interface AnalyticsData {
   overview: {
@@ -49,6 +52,34 @@ export function AnalyticsDashboard() {
   const { user } = useAuth();
 
   const hasAccess = user?.tier && ['pro', 'premium', 'admin'].includes(user.tier);
+
+  // Fetch health scores for all subreddits
+  const { data: healthScoresData } = useQuery<{
+    healthScores: Array<{
+      subreddit: string;
+      healthScore: number;
+      status: 'excellent' | 'healthy' | 'watch' | 'risky';
+      breakdown: {
+        successRate: number;
+        successScore: number;
+        engagementRate: number;
+        engagementScore: number;
+        removalRate: number;
+        removalScore: number;
+      };
+      trend: 'improving' | 'stable' | 'declining' | 'unknown';
+    }>;
+  }>({
+    queryKey: ['/api/analytics/subreddit-health'],
+    enabled: hasAccess,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
+  // Create a map of subreddit health scores for quick lookup
+  const healthScoresMap = new Map();
+  healthScoresData?.healthScores?.forEach((health) => {
+    healthScoresMap.set(health.subreddit.toLowerCase(), health);
+  });
 
   useEffect(() => {
     if (hasAccess) {
@@ -199,6 +230,7 @@ export function AnalyticsDashboard() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="subreddits">Subreddits</TabsTrigger>
           <TabsTrigger value="posts">Top Posts</TabsTrigger>
+          <TabsTrigger value="removals">Removals</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -253,21 +285,36 @@ export function AnalyticsDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {analyticsData.topSubreddits.map((sub, index) => (
-                  <div key={sub.name} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="text-2xl font-bold text-gray-400">#{index + 1}</div>
-                      <div>
-                        <div className="font-medium">r/{sub.name}</div>
-                        <div className="text-sm text-gray-600">{sub.posts} posts</div>
+                {analyticsData.topSubreddits.map((sub, index) => {
+                  const healthData = healthScoresMap.get(sub.name.toLowerCase());
+                  return (
+                    <div key={sub.name} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="text-2xl font-bold text-gray-400">#{index + 1}</div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">r/{sub.name}</span>
+                            {healthData && (
+                              <SubredditHealthBadge
+                                score={healthData.healthScore}
+                                status={healthData.status}
+                                breakdown={healthData.breakdown}
+                                trend={healthData.trend}
+                                showLabel={false}
+                                size="sm"
+                              />
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-600">{sub.posts} posts</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-semibold">{sub.engagement}%</div>
+                        <div className="text-sm text-gray-600">engagement</div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-lg font-semibold">{sub.engagement}%</div>
-                      <div className="text-sm text-gray-600">engagement</div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -310,6 +357,10 @@ export function AnalyticsDashboard() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="removals" className="space-y-4">
+          <RemovalHistory />
         </TabsContent>
       </Tabs>
     </div>

@@ -376,8 +376,8 @@ analyticsRouter.get("/reddit-stats", authenticateToken(true), async (req: AuthRe
 });
 
 export { analyticsRouter, loadLandingMetrics };
-// QW-7: 
-Post Performance Predictor
+
+// QW-7: Post Performance Predictor
 import { predictionService } from '../services/prediction-service.js';
 
 analyticsRouter.post('/predict-performance', authenticateToken(true), async (req: AuthRequest, res: Response) => {
@@ -647,5 +647,131 @@ analyticsRouter.get('/comment-engagement/stats', authenticateToken(true), async 
   } catch (error) {
     logger.error('Failed to get comment engagement stats', { error });
     res.status(500).json({ error: 'Failed to get comment engagement stats' });
+  }
+});
+
+// QW-4: Success Rate Dashboard Widget
+analyticsRouter.get('/success-rate', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const daysBack = parseInt(req.query.daysBack as string) || 30;
+    const startDate = new Date();
+    startDate.setDate(startDate.setDate() - daysBack);
+
+    // Get current period stats
+    const currentStats = await db
+      .select({
+        totalPosts: sql<number>`COUNT(*)::int`,
+        successfulPosts: sql<number>`COUNT(CASE WHEN ${redditPostOutcomes.success} = true THEN 1 END)::int`,
+      })
+      .from(redditPostOutcomes)
+      .where(
+        and(
+          eq(redditPostOutcomes.userId, userId),
+          gte(redditPostOutcomes.occurredAt, startDate)
+        )
+      );
+
+    const { totalPosts, successfulPosts } = currentStats[0] || { totalPosts: 0, successfulPosts: 0 };
+    const successRate = totalPosts > 0 ? (successfulPosts / totalPosts) * 100 : 0;
+
+    // Get previous period for trend
+    const previousStart = new Date();
+    previousStart.setDate(previousStart.getDate() - (daysBack * 2));
+    const previousEnd = new Date();
+    previousEnd.setDate(previousEnd.getDate() - daysBack);
+
+    const previousStats = await db
+      .select({
+        totalPosts: sql<number>`COUNT(*)::int`,
+        successfulPosts: sql<number>`COUNT(CASE WHEN ${redditPostOutcomes.success} = true THEN 1 END)::int`,
+      })
+      .from(redditPostOutcomes)
+      .where(
+        and(
+          eq(redditPostOutcomes.userId, userId),
+          gte(redditPostOutcomes.occurredAt, previousStart),
+          sql`${redditPostOutcomes.occurredAt} < ${previousEnd}`
+        )
+      );
+
+    const previousTotal = previousStats[0]?.totalPosts || 0;
+    const previousSuccessful = previousStats[0]?.successfulPosts || 0;
+    const previousRate = previousTotal > 0 ? (previousSuccessful / previousTotal) * 100 : 0;
+
+    const trend = previousRate > 0 ? Math.round(((successRate - previousRate) / previousRate) * 100) : 0;
+
+    res.json({
+      successRate: Math.round(successRate * 10) / 10,
+      totalPosts,
+      successfulPosts,
+      trend,
+    });
+  } catch (error) {
+    logger.error('Failed to get success rate', { error });
+    res.status(500).json({ error: 'Failed to get success rate' });
+  }
+});
+
+// QW-9: Engagement Heatmap
+import { heatmapService } from '../services/heatmap-service.js';
+
+analyticsRouter.get('/engagement-heatmap', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Check tier access (Pro or Premium required)
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!user || !['pro', 'premium'].includes(user.tier)) {
+      return res.status(403).json({
+        error: 'Engagement heatmap requires Pro or Premium tier',
+        requiredTier: 'pro'
+      });
+    }
+
+    const subreddit = req.query.subreddit as string | undefined;
+    const daysBack = parseInt(req.query.daysBack as string) || 90;
+
+    const heatmap = await heatmapService.generateHeatmap(userId, subreddit, daysBack);
+
+    res.json({ heatmap });
+  } catch (error) {
+    logger.error('Failed to get engagement heatmap', { error });
+    res.status(500).json({ error: 'Failed to get engagement heatmap' });
+  }
+});
+
+analyticsRouter.get('/best-posting-times', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Check tier access (Pro or Premium required)
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!user || !['pro', 'premium'].includes(user.tier)) {
+      return res.status(403).json({
+        error: 'Best posting times require Pro or Premium tier',
+        requiredTier: 'pro'
+      });
+    }
+
+    const subreddit = req.query.subreddit as string | undefined;
+    const daysBack = parseInt(req.query.daysBack as string) || 90;
+
+    const bestTimes = await heatmapService.getBestTimes(userId, subreddit, daysBack);
+
+    res.json({ bestTimes });
+  } catch (error) {
+    logger.error('Failed to get best posting times', { error });
+    res.status(500).json({ error: 'Failed to get best posting times' });
   }
 });

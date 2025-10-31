@@ -50,6 +50,25 @@ async function bootstrap(): Promise<void> {
     const createAppTime = Date.now() - startTime;
     logger.info(`[HEALTH] Express app created successfully in ${createAppTime}ms`);
 
+    // Initialize background workers
+    logger.info('[HEALTH] Starting background workers...');
+    try {
+      const { 
+        createRemovalDetectionWorker, 
+        createRemovalSchedulerWorker, 
+        scheduleRemovalChecks 
+      } = await import('./jobs/removal-detection-worker.js');
+      
+      createRemovalDetectionWorker();
+      createRemovalSchedulerWorker();
+      await scheduleRemovalChecks();
+      
+      logger.info('[HEALTH] ✅ Background workers started successfully');
+    } catch (workerError) {
+      logger.warn('[HEALTH] ⚠️ Failed to start background workers (non-fatal):', workerError);
+      // Don't fail startup if workers fail - they're non-critical
+    }
+
     // Use dynamic port selection to avoid collisions
     const defaultPort = process.env.NODE_ENV === 'production' ? 3005 : 3005;
     const port = Number.parseInt(process.env.PORT ?? String(defaultPort), 10);

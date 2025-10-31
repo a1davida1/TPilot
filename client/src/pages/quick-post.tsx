@@ -55,6 +55,8 @@ import {
   trackCaptionShown
 } from '@/lib/caption-telemetry';
 import { TwoPane } from '@/components/layouts/TwoPane';
+import { PerformancePrediction } from '@/components/analytics/PerformancePrediction';
+import { SubredditHealthBadge } from '@/components/analytics/SubredditHealthBadge';
 
 interface CaptionOption {
   id: 'A' | 'B';
@@ -295,6 +297,38 @@ export default function QuickPostPage() {
     queryKey: ['/api/reddit/communities'],
     retry: 1
   });
+
+  // Fetch health scores for all subreddits (Pro/Premium only)
+  const { data: healthScoresData } = useQuery<{
+    healthScores: Array<{
+      subreddit: string;
+      healthScore: number;
+      status: 'excellent' | 'healthy' | 'watch' | 'risky';
+      breakdown: {
+        successRate: number;
+        successScore: number;
+        engagementRate: number;
+        engagementScore: number;
+        removalRate: number;
+        removalScore: number;
+      };
+      trend: 'improving' | 'stable' | 'declining' | 'unknown';
+    }>;
+  }>({
+    queryKey: ['/api/analytics/subreddit-health'],
+    retry: 1,
+    enabled: communities.length > 0, // Only fetch if we have communities
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
+  // Create a map of subreddit health scores for quick lookup
+  const healthScoresMap = useMemo(() => {
+    const map = new Map();
+    healthScoresData?.healthScores?.forEach((health) => {
+      map.set(health.subreddit.toLowerCase(), health);
+    });
+    return map;
+  }, [healthScoresData]);
 
   // Sort communities by success probability for easy selection
   const sortedCommunities = useMemo(() => {
@@ -1271,6 +1305,23 @@ export default function QuickPostPage() {
                         </div>
                       )}
 
+                      {/* Performance Prediction - Show after caption is confirmed */}
+                      {confirmedCaptionId && selectedCaptionOption && subreddit && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-4">
+                            <Badge variant="outline">
+                              <Sparkles className="h-3 w-3 mr-1" />
+                            </Badge>
+                            <Label>Performance Prediction</Label>
+                          </div>
+                          <PerformancePrediction
+                            subreddit={subreddit}
+                            title={selectedCaptionOption.text}
+                            scheduledTime={new Date()}
+                          />
+                        </div>
+                      )}
+
                       {captionOptions.length > 0 && (
                         <div>
                           <div className="flex items-center gap-2 mb-4">
@@ -1307,18 +1358,35 @@ export default function QuickPostPage() {
                                     className="w-full justify-between mt-1"
                                     disabled={communitiesLoading || hasCommunityError}
                                   >
-                                    {communitiesLoading ? (
-                                      'Loading communities...'
-                                    ) : subreddit ? (
-                                      (() => {
-                                        const selected = sortedCommunities.find((community) => community.id.toLowerCase() === subreddit.toLowerCase());
-                                        return selected ? `r/${selected.displayName}` : `r/${subreddit}`;
-                                      })()
-                                    ) : sortedCommunities.length > 0 ? (
-                                      'Select subreddit...'
-                                    ) : (
-                                      'No saved communities yet'
-                                    )}
+                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                      {communitiesLoading ? (
+                                        'Loading communities...'
+                                      ) : subreddit ? (
+                                        (() => {
+                                          const selected = sortedCommunities.find((community) => community.id.toLowerCase() === subreddit.toLowerCase());
+                                          const healthData = healthScoresMap.get(subreddit.toLowerCase());
+                                          return (
+                                            <>
+                                              <span className="truncate">{selected ? `r/${selected.displayName}` : `r/${subreddit}`}</span>
+                                              {healthData && (
+                                                <SubredditHealthBadge
+                                                  score={healthData.healthScore}
+                                                  status={healthData.status}
+                                                  breakdown={healthData.breakdown}
+                                                  trend={healthData.trend}
+                                                  showLabel={false}
+                                                  size="sm"
+                                                />
+                                              )}
+                                            </>
+                                          );
+                                        })()
+                                      ) : sortedCommunities.length > 0 ? (
+                                        'Select subreddit...'
+                                      ) : (
+                                        'No saved communities yet'
+                                      )}
+                                    </div>
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                   </Button>
                                 </PopoverTrigger>
@@ -1343,25 +1411,38 @@ export default function QuickPostPage() {
                                         </div>
                                       ) : (
                                         <CommandGroup>
-                                          {sortedCommunities.map((community) => (
-                                            <CommandItem
-                                              key={community.id}
-                                              value={community.id}
-                                              onSelect={(currentValue) => {
-                                                setSubreddit(currentValue === subreddit ? '' : currentValue);
-                                                setCommunityPickerOpen(false);
-                                              }}
-                                            >
-                                              <div className="flex items-center justify-between w-full">
-                                                <div className="flex-1">
-                                                  <div className="font-medium">r/{community.displayName}</div>
-                                                  <div className="text-xs text-muted-foreground">
-                                                    {community.members.toLocaleString()} members • {Math.round(community.successProbability ?? 0)}% success
+                                          {sortedCommunities.map((community) => {
+                                            const healthData = healthScoresMap.get(community.id.toLowerCase());
+                                            return (
+                                              <CommandItem
+                                                key={community.id}
+                                                value={community.id}
+                                                onSelect={(currentValue) => {
+                                                  setSubreddit(currentValue === subreddit ? '' : currentValue);
+                                                  setCommunityPickerOpen(false);
+                                                }}
+                                              >
+                                                <div className="flex items-center justify-between w-full gap-2">
+                                                  <div className="flex-1 min-w-0">
+                                                    <div className="font-medium">r/{community.displayName}</div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                      {community.members.toLocaleString()} members • {Math.round(community.successProbability ?? 0)}% success
+                                                    </div>
                                                   </div>
+                                                  {healthData && (
+                                                    <SubredditHealthBadge
+                                                      score={healthData.healthScore}
+                                                      status={healthData.status}
+                                                      breakdown={healthData.breakdown}
+                                                      trend={healthData.trend}
+                                                      showLabel={false}
+                                                      size="sm"
+                                                    />
+                                                  )}
                                                 </div>
-                                              </div>
-                                            </CommandItem>
-                                          ))}
+                                              </CommandItem>
+                                            );
+                                          })}
                                         </CommandGroup>
                                       )}
                                     </CommandList>
