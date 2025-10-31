@@ -95,14 +95,16 @@
 
 ### Group A: Data Foundation (Weekend 1 Morning, 4-5h)
 
-- [ ] 4. QW-2: Post Removal Tracker
-  - [ ] 4.1 Create removal detection cron job at `server/jobs/removal-detection-worker.ts`
-    - Check post status every hour using HybridRedditClient
-    - Parse removal reasons from Reddit API
-    - Update `reddit_post_outcomes` table with removal data
-    - Calculate `time_until_removal_minutes`
-    - Use existing Bull queue infrastructure
+- [x] 4. QW-2: Post Removal Tracker
+  - [x] 4.1 Create removal detection cron job at `server/jobs/removal-detection-worker.ts`
+    - ✅ Check post status every hour using HybridRedditClient
+    - ✅ Parse removal reasons from Reddit API
+    - ✅ Update `reddit_post_outcomes` table with removal data
+    - ✅ Calculate `time_until_removal_minutes`
+    - ✅ Use existing Bull queue infrastructure
+    - ✅ Integrated into `server/app.ts` - workers start automatically
     - _Requirements: QW-2_
+    - **Status:** COMPLETE - Workers initialized in app.ts, checks run hourly
   
   - [ ] 4.2 Create removal history API endpoint in `server/routes/analytics.ts`
     - `GET /api/analytics/removal-history` - requires Pro tier

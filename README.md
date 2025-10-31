@@ -80,8 +80,12 @@ A modern, full-stack Reddit content management platform for adult content creato
 - **Frontend**: React 18 + Vite for hot reloading
 - **Backend**: Express.js with TypeScript 
 - **Database**: Drizzle ORM with PostgreSQL
-- **Queue System**: PostgreSQL-backed with Redis fallback
-- **AI Services**: Google Gemini (primary) + OpenAI (fallback)
+- **Queue System**: Bull + Valkey/Redis for background jobs
+- **AI Services**: OpenRouter (Grok-4-Fast primary) + Gemini (fallback)
+- **Background Workers**: Auto-start with queue system
+  - Reddit sync worker (post history synchronization)
+  - Removal detection worker (hourly post removal checks)
+  - Scheduled post processor
 
 ### Key Commands
 

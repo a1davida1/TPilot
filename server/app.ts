@@ -20,6 +20,11 @@ import { createSessionMiddleware } from './bootstrap/session.js';
 import { Sentry } from './bootstrap/sentry.js';
 import { API_PREFIX } from './lib/api-prefix.js';
 import { startRedditSyncWorker } from './jobs/reddit-sync-worker.js';
+import { 
+  createRemovalDetectionWorker, 
+  createRemovalSchedulerWorker,
+  scheduleRemovalChecks 
+} from './jobs/removal-detection-worker.js';
 
 export interface CreateAppOptions {
   startQueue?: boolean;
@@ -480,6 +485,16 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
         logger.info('Reddit sync worker initialized successfully');
       } catch (error) {
         logger.error('Failed to start Reddit sync worker:', error);
+      }
+
+      // Start removal detection workers
+      try {
+        createRemovalDetectionWorker();
+        createRemovalSchedulerWorker();
+        await scheduleRemovalChecks();
+        logger.info('Removal detection workers initialized successfully');
+      } catch (error) {
+        logger.error('Failed to start removal detection workers:', error);
       }
     } else if (startQueueOption) {
       logger.info(

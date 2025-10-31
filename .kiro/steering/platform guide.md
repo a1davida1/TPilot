@@ -191,6 +191,34 @@ OPENROUTER_API_KEY=sk-or-...
 
 ## Key Services
 
+### Background Workers
+
+**RemovalDetectionWorker** (`server/jobs/removal-detection-worker.ts`)
+- Automatically detects when Reddit posts are removed (QW-2)
+- Runs hourly to check posts from last 7 days
+- Uses HybridRedditClient to fetch post status from Reddit API
+- Detects removal types: moderator, automod_filtered, spam, unknown
+- Extracts removal reasons from mod notes when available
+- Updates `reddit_post_outcomes` table with:
+  - `removalType`: Type of removal (moderator, spam, etc.)
+  - `removalReason`: Extracted reason text
+  - `detectedAt`: When removal was detected
+  - `timeUntilRemovalMinutes`: Time from post to removal
+  - `status`: Set to 'removed'
+- Also updates engagement metrics (upvotes, comments) for live posts
+- Rate limited to 60 requests/minute (Reddit API limit)
+- Processes 5 posts concurrently
+- **Status:** Worker complete and running, initialized in app.ts
+- **TODO:** Create API endpoint and UI component for viewing removal history
+- Used by: Analytics dashboard (Pro/Premium only)
+
+**RemovalSchedulerWorker** (`server/jobs/removal-detection-worker.ts`)
+- Schedules hourly removal checks via cron pattern: `0 * * * *`
+- Queues up to 100 posts per hour for removal checking
+- Only checks posts that haven't been checked yet (removalType IS NULL)
+- Automatically started when queue system initializes
+- **Status:** Worker complete and running
+
 ### Analytics Services
 
 **PredictionService** (`server/services/prediction-service.ts`)
@@ -608,6 +636,11 @@ npx drizzle-kit studio    # Open DB GUI
 # Queue monitoring
 npm run queue:ui          # Bull dashboard
 
+# Background workers (auto-start with queue)
+# - Reddit sync worker (syncs user post history)
+# - Removal detection worker (checks for removed posts)
+# - Removal scheduler worker (queues hourly checks)
+
 # Deployment
 ./scripts/build-production.sh
 npm start                 # Production mode
@@ -767,6 +800,7 @@ npm run queue:clean           # Clean failed jobs
 - `/server/routes.ts` - All Express API routes registered here
 - `/app/api/` - Next.js API routes (secondary)
 - `/client/src/App.tsx` - Main React SPA
+- `/server/app.ts` - Express app initialization, worker startup
 - `/shared/schema.ts` - Database schema (single source of truth)
 - `/server/lib/openrouter-client.ts` - AI client
 - `/server/caption/openrouterPipeline.ts` - Caption generation
@@ -775,3 +809,5 @@ npm run queue:clean           # Clean failed jobs
 - `/server/services/prediction-service.ts` - Post performance prediction (QW-7)
 - `/server/services/subreddit-health-service.ts` - Subreddit health scoring (QW-6)
 - `/server/jobs/` - Bull queue workers
+  - `/server/jobs/reddit-sync-worker.ts` - Reddit post history sync
+  - `/server/jobs/removal-detection-worker.ts` - Post removal detection (QW-2)
