@@ -352,6 +352,71 @@ router.post('/upload', uploadLimiter, authenticateToken(true), upload.single('fi
   }
 });
 
+// POST /api/media/save-url - Save external URL to gallery
+router.post('/save-url', authenticateToken(true), async (req: AuthRequest, res) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const { url, provider } = req.body;
+
+    if (!url || typeof url !== 'string') {
+      return res.status(400).json({ message: 'URL is required' });
+    }
+
+    // Basic URL validation
+    try {
+      new URL(url);
+    } catch {
+      return res.status(400).json({ message: 'Invalid URL format' });
+    }
+
+    // Extract filename from URL
+    const urlObj = new URL(url);
+    const pathParts = urlObj.pathname.split('/');
+    const filename = pathParts[pathParts.length - 1] || 'external-image';
+
+    // Save to database
+    const [savedAsset] = await db.insert(userStorageAssets).values({
+      userId: req.user.id,
+      provider: provider || 'external',
+      url: url,
+      deleteHash: null,
+      sourceFilename: filename,
+      fileSize: null,
+      mimeType: null,
+      metadata: {
+        uploadedVia: 'paste-url'
+      }
+    }).returning();
+
+    logger.info('External URL saved to gallery', {
+      assetId: savedAsset.id,
+      userId: req.user.id,
+      provider: provider || 'external',
+      url: url
+    });
+
+    res.json({
+      message: 'URL saved to gallery successfully',
+      asset: {
+        id: savedAsset.id,
+        userId: req.user.id,
+        filename: filename,
+        signedUrl: url,
+        downloadUrl: url,
+        thumbnailUrl: url,
+        provider: provider || 'external',
+        createdAt: savedAsset.createdAt,
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to save external URL:', error);
+    res.status(500).json({ message: 'Failed to save URL to gallery' });
+  }
+});
+
 // GET /api/media/:id - Get specific media asset
 router.get('/:id', authenticateToken(true), async (req: AuthRequest, res) => {
   try {

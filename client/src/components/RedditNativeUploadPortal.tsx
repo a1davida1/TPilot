@@ -208,7 +208,7 @@ export function ImgboxUploadPortal({
     [acceptedMimeLabels, finishUpload, toast],
   );
 
-  const handleExternalSubmit = useCallback(() => {
+  const handleExternalSubmit = useCallback(async () => {
     const sanitized = sanitizeUrl(externalUrl);
     if (!sanitized) {
       toast({
@@ -223,8 +223,21 @@ export function ImgboxUploadPortal({
     setPreviewUrl(absoluteUrl);
     onComplete({ imageUrl: absoluteUrl, provider: 'external' });
     trackUpload({ provider: 'external', success: true });
-    toast({ title: 'URL accepted', description: 'We will pull this image directly when posting to Reddit.' });
-  }, [externalUrl, onComplete, toast]);
+
+    // Save URL to gallery database for persistence
+    try {
+      await authenticatedRequest('/api/media/save-url', 'POST', {
+        url: absoluteUrl,
+        provider: 'external'
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/media'] });
+    } catch (error) {
+      // Non-blocking: Don't fail the workflow if gallery save fails
+      console.warn('Failed to save URL to gallery:', error);
+    }
+
+    toast({ title: 'URL accepted', description: 'Image added to gallery and ready for posting.' });
+  }, [externalUrl, onComplete, toast, queryClient]);
 
   const handleDrag = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
