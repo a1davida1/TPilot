@@ -476,6 +476,64 @@ export class HybridRedditClient {
   }
 
   /**
+   * Get a specific post by ID
+   * 
+   * Used for removal detection and post status checking
+   */
+  async getPost(postId: string): Promise<{
+    id: string;
+    removed: boolean;
+    spam: boolean;
+    removed_by_category: string | null;
+    score: number;
+    num_comments: number;
+    mod_note?: string;
+    removal_reason?: string;
+  } | null> {
+    try {
+      // Check cache first
+      const cacheKey = `reddit:post:${postId}`;
+      const cached = await cacheGet<any>(cacheKey);
+
+      if (cached) {
+        logger.debug('Cache hit for post', { postId });
+        return cached;
+      }
+
+      // Fetch via Snoowrap for full post details including removal status
+      // @ts-expect-error TS1062 false positive - circular dependency in snoowrap types
+      const submission = await this.snoowrap.getSubmission(postId);
+      
+      // Fetch full details
+      await submission.fetch();
+
+      const postData = {
+        id: submission.id,
+        removed: submission.removed || false,
+        spam: submission.spam || false,
+        removed_by_category: submission.removed_by_category || null,
+        score: submission.score || 0,
+        num_comments: submission.num_comments || 0,
+        mod_note: submission.mod_note,
+        removal_reason: submission.removal_reason,
+      };
+
+      // Cache for 5 minutes (removal status can change)
+      await cacheSet(cacheKey, postData, CACHE_TTL.FIVE_MINUTES);
+
+      logger.debug('Fetched post from Reddit', { postId, removed: postData.removed });
+
+      return postData;
+    } catch (error) {
+      logger.error('Failed to fetch post', {
+        postId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return null;
+    }
+  }
+
+  /**
    * Get the underlying Snoowrap instance for advanced operations
    * 
    * Use sparingly - prefer using the hybrid client methods

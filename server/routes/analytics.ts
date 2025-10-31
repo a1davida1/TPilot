@@ -591,3 +591,61 @@ analyticsRouter.post('/validate-post', authenticateToken(true), async (req: Auth
     res.status(500).json({ error: 'Failed to validate post' });
   }
 });
+
+// MISSING-1: Comment Engagement Tracker
+import { commentEngagementService } from '../services/comment-engagement-service.js';
+
+analyticsRouter.get('/comment-engagement', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Check tier access (Pro or Premium required)
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!user || !['pro', 'premium'].includes(user.tier)) {
+      return res.status(403).json({
+        error: 'Comment engagement tracking requires Pro or Premium tier',
+        requiredTier: 'pro'
+      });
+    }
+
+    const daysBack = parseInt(req.query.daysBack as string) || 30;
+    const limit = parseInt(req.query.limit as string) || 50;
+
+    const metrics = await commentEngagementService.getEngagementMetrics(userId, daysBack, limit);
+
+    res.json({ metrics });
+  } catch (error) {
+    logger.error('Failed to get comment engagement', { error });
+    res.status(500).json({ error: 'Failed to get comment engagement' });
+  }
+});
+
+analyticsRouter.get('/comment-engagement/stats', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Check tier access (Pro or Premium required)
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!user || !['pro', 'premium'].includes(user.tier)) {
+      return res.status(403).json({
+        error: 'Comment engagement statistics require Pro or Premium tier',
+        requiredTier: 'pro'
+      });
+    }
+
+    const daysBack = parseInt(req.query.daysBack as string) || 30;
+
+    const stats = await commentEngagementService.getEngagementStats(userId, daysBack);
+
+    res.json(stats);
+  } catch (error) {
+    logger.error('Failed to get comment engagement stats', { error });
+    res.status(500).json({ error: 'Failed to get comment engagement stats' });
+  }
+});
