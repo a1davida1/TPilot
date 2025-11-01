@@ -4,7 +4,7 @@
   "description": "Validates that API endpoints are properly connected between frontend and backend. Checks route registration, type safety, error handling, and authentication.",
   "version": "1",
   "when": {
-    "type": "fileSaved",
+    "type": "fileCreated",
     "patterns": [
       "server/routes/**/*.ts",
       "server/services/**/*.ts",

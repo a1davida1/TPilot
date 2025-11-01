@@ -8,7 +8,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { TrendingUp, AlertTriangle, Shield, MessageSquare } from 'lucide-react';
+import { TrendingUp, AlertTriangle, Shield, MessageSquare, Clock } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { SubredditHealthBadge } from '@/components/analytics/SubredditHealthBadge';
 import { RemovalHistory } from '@/components/analytics/RemovalHistory';
 import { CommentEngagement } from '@/components/analytics/CommentEngagement';
+import { EngagementHeatmap } from '@/components/analytics/EngagementHeatmap';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Performance: Extract repeated classNames to constants
@@ -108,7 +109,7 @@ export default function AnalyticsInsights() {
       </div>
 
       <Tabs defaultValue="health" className="space-y-6">
-        <TabsList className="grid w-full max-w-md grid-cols-3">
+        <TabsList className="grid w-full max-w-2xl grid-cols-4">
           <TabsTrigger value="health">
             <Shield className="h-4 w-4 mr-2" />
             Health Scores
@@ -120,6 +121,10 @@ export default function AnalyticsInsights() {
           <TabsTrigger value="engagement">
             <MessageSquare className="h-4 w-4 mr-2" />
             Engagement
+          </TabsTrigger>
+          <TabsTrigger value="timing">
+            <Clock className="h-4 w-4 mr-2" />
+            Best Times
           </TabsTrigger>
         </TabsList>
 
@@ -284,6 +289,11 @@ export default function AnalyticsInsights() {
         {/* Engagement Tab - Performance: Only render when tab is active */}
         <TabsContent value="engagement" className="space-y-6">
           <CommentEngagement />
+        </TabsContent>
+
+        {/* Best Times Tab - QW-9: Engagement Heatmap */}
+        <TabsContent value="timing" className="space-y-6">
+          <EngagementHeatmap />
         </TabsContent>
       </Tabs>
     </div>

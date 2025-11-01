@@ -56,6 +56,7 @@
         "npm run typecheck 2>&1 | grep -A 2 \"recommendation-service\"",
         "npm run typecheck 2>&1 | tail -30",
         "npx tsc --noEmit 2>&1 | head -50",
-        "grep -n \"removal\" server/routes/analytics.ts | head -20"
+        "grep -n \"removal\" server/routes/analytics.ts | head -20",
+        "npx tsc --noEmit 2>&1 | head -30"
     ]
 }

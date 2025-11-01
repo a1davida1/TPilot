@@ -775,3 +775,208 @@ analyticsRouter.get('/best-posting-times', authenticateToken(true), async (req: 
     res.status(500).json({ error: 'Failed to get best posting times' });
   }
 });
+
+// QW-10: Quick Stats Comparison
+analyticsRouter.get('/stats-comparison', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Check tier access (Pro or Premium required)
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!user || !['pro', 'premium'].includes(user.tier)) {
+      return res.status(403).json({
+        error: 'Stats comparison requires Pro or Premium tier',
+        requiredTier: 'pro'
+      });
+    }
+
+    const range = (req.query.range as string) || '30d';
+    const daysBack = range === '7d' ? 7 : range === '90d' ? 90 : 30;
+    const previousDaysBack = daysBack * 2; // Compare with previous period
+
+    const currentDate = new Date();
+    const currentStartDate = new Date(currentDate);
+    currentStartDate.setDate(currentStartDate.getDate() - daysBack);
+
+    const previousStartDate = new Date(currentStartDate);
+    previousStartDate.setDate(previousStartDate.getDate() - daysBack);
+
+    // Get current period stats
+    const currentPosts = await db
+      .select()
+      .from(redditPostOutcomes)
+      .where(
+        and(
+          eq(redditPostOutcomes.userId, userId),
+          gte(redditPostOutcomes.occurredAt, currentStartDate)
+        )
+      );
+
+    // Get previous period stats
+    const previousPosts = await db
+      .select()
+      .from(redditPostOutcomes)
+      .where(
+        and(
+          eq(redditPostOutcomes.userId, userId),
+          gte(redditPostOutcomes.occurredAt, previousStartDate),
+          sql`${redditPostOutcomes.occurredAt} < ${currentStartDate}`
+        )
+      );
+
+    // Calculate metrics
+    const calculateMetrics = (posts: typeof currentPosts) => {
+      const totalPosts = posts.length;
+      const successfulPosts = posts.filter(p => p.success).length;
+      const totalUpvotes = posts.reduce((sum, p) => sum + (p.upvotes || 0), 0);
+      const totalViews = posts.reduce((sum, p) => sum + (p.views || 0), 0);
+      const totalComments = posts.reduce((sum, p) => sum + (p.commentCount || 0), 0);
+      const removedPosts = posts.filter(p => p.removalType !== null).length;
+
+      return {
+        totalPosts,
+        successfulPosts,
+        successRate: totalPosts > 0 ? (successfulPosts / totalPosts) * 100 : 0,
+        avgUpvotes: totalPosts > 0 ? totalUpvotes / totalPosts : 0,
+        avgViews: totalPosts > 0 ? totalViews / totalPosts : 0,
+        avgComments: totalPosts > 0 ? totalComments / totalPosts : 0,
+        removalRate: totalPosts > 0 ? (removedPosts / totalPosts) * 100 : 0,
+      };
+    };
+
+    const current = calculateMetrics(currentPosts);
+    const previous = calculateMetrics(previousPosts);
+
+    // Calculate percentage changes
+    const calculateChange = (currentVal: number, previousVal: number) => {
+      if (previousVal === 0) return currentVal > 0 ? 100 : 0;
+      return ((currentVal - previousVal) / previousVal) * 100;
+    };
+
+    const metrics = [
+      {
+        label: 'Total Posts',
+        current: current.totalPosts,
+        previous: previous.totalPosts,
+        change: calculateChange(current.totalPosts, previous.totalPosts),
+        format: 'number' as const,
+      },
+      {
+        label: 'Success Rate',
+        current: current.successRate,
+        previous: previous.successRate,
+        change: calculateChange(current.successRate, previous.successRate),
+        format: 'percentage' as const,
+      },
+      {
+        label: 'Avg Upvotes',
+        current: current.avgUpvotes,
+        previous: previous.avgUpvotes,
+        change: calculateChange(current.avgUpvotes, previous.avgUpvotes),
+        format: 'decimal' as const,
+      },
+      {
+        label: 'Avg Comments',
+        current: current.avgComments,
+        previous: previous.avgComments,
+        change: calculateChange(current.avgComments, previous.avgComments),
+        format: 'decimal' as const,
+      },
+    ];
+
+    // Determine overall trend
+    const positiveChanges = metrics.filter(m => m.change > 5).length;
+    const negativeChanges = metrics.filter(m => m.change < -5).length;
+
+    let overallTrend: 'improving' | 'declining' | 'stable';
+    if (positiveChanges > negativeChanges) {
+      overallTrend = 'improving';
+    } else if (negativeChanges > positiveChanges) {
+      overallTrend = 'declining';
+    } else {
+      overallTrend = 'stable';
+    }
+
+    res.json({
+      metrics,
+      overallTrend,
+    });
+  } catch (error) {
+    logger.error('Failed to get stats comparison', { error });
+    res.status(500).json({ error: 'Failed to get stats comparison' });
+  }
+});
+
+
+// QW-1: Mod Detection & Safe Posting
+import { ModActivityService } from '../services/mod-activity-service.js';
+
+analyticsRouter.get('/mod-activity/:subreddit', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Check tier access (Pro or Premium required)
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!user || !['pro', 'premium'].includes(user.tier)) {
+      return res.status(403).json({
+        error: 'Mod activity tracking requires Pro or Premium tier',
+        requiredTier: 'pro'
+      });
+    }
+
+    const subreddit = req.params.subreddit;
+    if (!subreddit) {
+      return res.status(400).json({ error: 'Subreddit parameter required' });
+    }
+
+    const activity = await ModActivityService.getModActivity(userId, subreddit);
+
+    res.json(activity);
+  } catch (error) {
+    logger.error('Failed to get mod activity', { error });
+    res.status(500).json({ error: 'Failed to get mod activity' });
+  }
+});
+
+analyticsRouter.post('/mod-activity/bulk', authenticateToken(true), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Check tier access (Pro or Premium required)
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!user || !['pro', 'premium'].includes(user.tier)) {
+      return res.status(403).json({
+        error: 'Mod activity tracking requires Pro or Premium tier',
+        requiredTier: 'pro'
+      });
+    }
+
+    const { subreddits } = req.body;
+    if (!Array.isArray(subreddits) || subreddits.length === 0) {
+      return res.status(400).json({ error: 'Subreddits array required' });
+    }
+
+    const activities = await ModActivityService.getBulkModActivity(userId, subreddits);
+
+    // Convert Map to object for JSON response
+    const result: Record<string, any> = {};
+    activities.forEach((value, key) => {
+      result[key] = value;
+    });
+
+    res.json({ activities: result });
+  } catch (error) {
+    logger.error('Failed to get bulk mod activity', { error });
+    res.status(500).json({ error: 'Failed to get bulk mod activity' });
+  }
+});
+

@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { RemovalHistory } from '@/components/analytics/RemovalHistory';
 import { SubredditHealthBadge } from '@/components/analytics/SubredditHealthBadge';
+import { QuickStatsComparison } from '@/components/analytics/QuickStatsComparison';
 import { useQuery } from '@tanstack/react-query';
 
 interface AnalyticsData {
@@ -167,6 +168,9 @@ export function AnalyticsDashboard() {
           ))}
         </div>
       </div>
+
+      {/* Quick Stats Comparison - QW-10 */}
+      <QuickStatsComparison range={timeRange === '24h' ? '7d' : timeRange as '7d' | '30d' | '90d'} />
 
       {/* Overview Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">

@@ -57,6 +57,8 @@ import {
 import { TwoPane } from '@/components/layouts/TwoPane';
 import { PerformancePrediction } from '@/components/analytics/PerformancePrediction';
 import { SubredditHealthBadge } from '@/components/analytics/SubredditHealthBadge';
+import { RuleValidator } from '@/components/analytics/RuleValidator';
+import { ModActivityIndicator } from '@/components/analytics/ModActivityIndicator';
 
 interface CaptionOption {
   id: 'A' | 'B';
@@ -1307,18 +1309,46 @@ export default function QuickPostPage() {
 
                       {/* Performance Prediction - Show after caption is confirmed */}
                       {confirmedCaptionId && selectedCaptionOption && subreddit && (
-                        <div>
-                          <div className="flex items-center gap-2 mb-4">
-                            <Badge variant="outline">
-                              <Sparkles className="h-3 w-3 mr-1" />
-                            </Badge>
-                            <Label>Performance Prediction</Label>
+                        <div className="space-y-4">
+                          <div>
+                            <div className="flex items-center gap-2 mb-4">
+                              <Badge variant="outline">
+                                <Sparkles className="h-3 w-3 mr-1" />
+                              </Badge>
+                              <Label>Performance Prediction</Label>
+                            </div>
+                            <PerformancePrediction
+                              subreddit={subreddit}
+                              title={selectedCaptionOption.text}
+                              scheduledTime={new Date()}
+                            />
                           </div>
-                          <PerformancePrediction
-                            subreddit={subreddit}
-                            title={selectedCaptionOption.text}
-                            scheduledTime={new Date()}
-                          />
+
+                          {/* Rule Validator - QW-3: Enhanced Rule Validator */}
+                          <div>
+                            <div className="flex items-center gap-2 mb-4">
+                              <Badge variant="outline">
+                                <Shield className="h-3 w-3 mr-1" />
+                              </Badge>
+                              <Label>Rule Check</Label>
+                            </div>
+                            <RuleValidator
+                              subreddit={subreddit}
+                              title={selectedCaptionOption.text}
+                              autoValidate={true}
+                            />
+                          </div>
+
+                          {/* Mod Activity Indicator - QW-1: Mod Detection */}
+                          <div>
+                            <div className="flex items-center gap-2 mb-4">
+                              <Badge variant="outline">
+                                <Shield className="h-3 w-3 mr-1" />
+                              </Badge>
+                              <Label>Mod Activity</Label>
+                            </div>
+                            <ModActivityIndicator subreddit={subreddit} />
+                          </div>
                         </div>
                       )}
 

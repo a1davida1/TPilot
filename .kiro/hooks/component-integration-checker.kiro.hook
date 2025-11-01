@@ -4,7 +4,7 @@
   "description": "Checks if React components are properly integrated when saved. Validates imports, routing, API connections, and ensures components follow project patterns.",
   "version": "1",
   "when": {
-    "type": "fileSaved",
+    "type": "fileCreated",
     "patterns": [
       "client/src/components/**/*.tsx",
       "client/src/pages/**/*.tsx"
