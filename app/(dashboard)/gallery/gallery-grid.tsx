@@ -12,13 +12,6 @@ interface GalleryGridProps {
   onResetFilters: () => void;
 }
 
-const gridClass = 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
-const cardClass = 'relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-lg';
-const badgeBaseClass = 'absolute left-2 top-2 rounded-full px-3 py-1 text-xs font-medium text-white shadow';
-const selectionOutline = 'ring-4 ring-blue-500';
-const emptyStateContainer = 'rounded-lg border border-dashed border-gray-300 bg-white p-12 text-center';
-const emptyStateAction = 'mt-4 inline-flex items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2';
-
 function formatMegabytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
@@ -26,45 +19,56 @@ function formatMegabytes(bytes: number): string {
 export function GalleryGrid({ items, selectedIds, onToggleSelect, onRepost, isFiltered, onResetFilters }: GalleryGridProps) {
   if (items.length === 0) {
     return (
-      <div className={emptyStateContainer}>
-        <p className="text-sm font-medium text-gray-900">
+      <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/60 px-8 py-16 text-center text-slate-300">
+        <h2 className="text-lg font-semibold text-white">
           {isFiltered ? 'No media matches your filters yet.' : 'Your gallery is empty.'}
-        </p>
-        <p className="mt-2 text-sm text-gray-500">
+        </h2>
+        <p className="mt-3 text-sm">
           {isFiltered
-            ? 'Try adjusting the filters or search to locate the asset you need.'
-            : 'Upload media from the dashboard to see it here.'}
+            ? 'Adjust filters or search criteria to locate the content you need.'
+            : 'Upload protected assets from the dashboard to see them here.'}
         </p>
-        {isFiltered ? (
-          <button type="button" className={emptyStateAction} onClick={onResetFilters}>
-            Clear filters
+        {isFiltered && (
+          <button
+            type="button"
+            className="mt-6 inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-100 hover:border-slate-500"
+            onClick={onResetFilters}
+          >
+            Reset filters
           </button>
-        ) : null}
+        )}
       </div>
     );
   }
 
   return (
-    <div className={gridClass}>
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {items.map((item) => {
         const selected = selectedIds.has(item.id);
         const cooldown = getCooldownStatus(item.lastRepostedAt);
         const badgeLabel = cooldown.active
-          ? `${Math.ceil(cooldown.hoursRemaining)}h cooldown` 
+          ? `${Math.ceil(cooldown.hoursRemaining)}h cooldown`
           : item.lastRepostedAt
             ? 'Cooldown cleared'
             : 'Never reposted';
-        const badgeTone = cooldown.active ? 'bg-amber-600/90' : item.lastRepostedAt ? 'bg-emerald-600/90' : 'bg-blue-600/90';
+        const badgeTone = cooldown.active ? 'bg-amber-500/90' : item.lastRepostedAt ? 'bg-emerald-500/90' : 'bg-blue-500/90';
 
         return (
-          <div key={item.id} className={`${cardClass} ${selected ? selectionOutline : ''}`}>
-            <span className={`${badgeBaseClass} ${badgeTone}`}>{badgeLabel}</span>
-
+          <article
+            key={item.id}
+            className={`relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 transition-shadow hover:shadow-bubble ${
+              selected ? 'ring-2 ring-rose-400' : ''
+            }`}
+          >
+            <span className={`absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-semibold text-white ${badgeTone}`}>
+              {badgeLabel}
+            </span>
             <button
               type="button"
-              className="absolute right-2 top-2 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-gray-900 shadow transition-colors hover:bg-white"
+              className={`absolute right-3 top-3 rounded-full px-3 py-1 text-xs font-semibold transition ${
+                selected ? 'bg-rose-500 text-white' : 'bg-slate-900/90 text-slate-100 hover:bg-slate-800'
+              }`}
               onClick={() => onToggleSelect(item)}
-              aria-label={selected ? 'Deselect' : 'Select'}
             >
               {selected ? 'Selected' : 'Select'}
             </button>
@@ -76,44 +80,42 @@ export function GalleryGrid({ items, selectedIds, onToggleSelect, onRepost, isFi
               loading="lazy"
             />
 
-            <div className="space-y-3 p-4">
+            <div className="space-y-4 p-5">
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-gray-900" title={item.filename}>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-white" title={item.filename}>
                     {item.filename}
                   </p>
-                  <p className="text-xs text-gray-500">{formatMegabytes(item.bytes)} · {item.mime}</p>
+                  <p className="text-xs text-slate-400">
+                    {formatMegabytes(item.bytes)} · {item.mime}
+                  </p>
                 </div>
                 <button
                   type="button"
-                  className={`shrink-0 rounded-md px-3 py-1 text-xs font-semibold transition ${
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                     cooldown.active
-                      ? 'cursor-not-allowed bg-gray-200 text-gray-500'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                      ? 'cursor-not-allowed bg-slate-800 text-slate-500'
+                      : 'bg-rose-500 text-white hover:bg-rose-400'
                   }`}
                   onClick={() => {
-                    if (!cooldown.active) {
-                      onRepost(item);
-                    }
+                    if (!cooldown.active) onRepost(item);
                   }}
                   disabled={cooldown.active}
-                  title={cooldown.active ? 'Reddit cooldown is still active for this asset.' : 'Queue a quick repost'}
                 >
-                  {cooldown.active ? 'Cooling down' : 'Repost'}
+                  {cooldown.active ? 'Cooling down' : 'Queue repost'}
                 </button>
               </div>
-
-              <div className="space-y-1 text-xs text-gray-500">
-                <p>{new Date(item.createdAt).toLocaleDateString()}</p>
-                <p>{item.isWatermarked ? 'Watermarked via ImageShield' : 'Original upload'}</p>
+              <div className="space-y-1 text-xs text-slate-400">
+                <p>Uploaded {new Date(item.createdAt).toLocaleDateString()}</p>
+                <p>{item.isWatermarked ? 'Protected by ImageShield' : 'Requires watermark'}</p>
                 <p>
                   {item.lastRepostedAt
-                    ? `Last reposted ${new Date(item.lastRepostedAt).toLocaleDateString()}` 
-                    : 'Not reposted yet'}
+                    ? `Last repost ${new Date(item.lastRepostedAt).toLocaleDateString()}`
+                    : 'No repost history'}
                 </p>
               </div>
             </div>
-          </div>
+          </article>
         );
       })}
     </div>

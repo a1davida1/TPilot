@@ -1,6 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+import { WidgetErrorBoundary } from '../../_components/widget-error-boundary';
+import { useRiskAssessment } from '../../../../client/hooks/dashboard';
+
 import type { RateLimitInfo, RiskApiResponse, RiskApiSuccess, RiskEvaluationStats, RiskWarning } from './types';
 
 interface ScheduleClientProps { initialResponse: RiskApiSuccess | null; }
@@ -63,11 +67,26 @@ export function ScheduleClient({ initialResponse }: ScheduleClientProps) {
   const [stats, setStats] = useState<RiskEvaluationStats>(initialResponse?.data.stats ?? emptyStats);
   const [generatedAt, setGeneratedAt] = useState<string | null>(initialResponse?.data.generatedAt ?? null);
   const [rateLimit, setRateLimit] = useState<RateLimitInfo | null>(initialResponse?.rateLimit ?? null);
-  const [cached, setCached] = useState<boolean>(initialResponse?.cached ?? false);
-  const [loading, setLoading] = useState<boolean>(!initialResponse);
-  const [error, setError] = useState<string | null>(null);
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const timeoutMap = useRef<Map<number, number>>(new Map());
+  const riskQuery = useRiskAssessment({ enabled: !initialResponse, initialData: initialResponse ?? undefined });
+
+  useEffect(() => {
+    if (riskQuery.data) {
+      setWarnings(riskQuery.data.data.warnings);
+      setStats(riskQuery.data.data.stats);
+      setGeneratedAt(riskQuery.data.data.generatedAt);
+      setRateLimit(riskQuery.data.rateLimit ?? null);
+      setCached(riskQuery.data.cached);
+      setLoading(false);
+    }
+  }, [riskQuery.data]);
+
+  useEffect(() => {
+    if (riskQuery.error) {
+      setError(riskQuery.error instanceof Error ? riskQuery.error.message : 'Unable to load risk warnings');
+      setLoading(false);
+    }
+  }, [riskQuery.error]);
+
   const topSeverity = useMemo(() => highestSeverity(warnings), [warnings]);
 
   const pushToast = useCallback((toast: Omit<ToastMessage, 'id'>) => {
@@ -89,29 +108,62 @@ export function ScheduleClient({ initialResponse }: ScheduleClientProps) {
     try {
       setLoading(true);
       setError(null);
-      const query = forceRefresh ? '?refresh=true' : '';
-      const response = await fetch(`/api/reddit/risk${query}`, { credentials: 'include', cache: 'no-store' });
-      const payload = (await response.json()) as RiskApiResponse;
-      if (!response.ok || !('success' in payload) || !payload.success) {
-        const message = 'error' in payload && typeof payload.error === 'string' ? payload.error : 'Unable to load risk warnings';
-        setError(message);
-        setRateLimit('rateLimit' in payload ? payload.rateLimit ?? null : null);
+
+      if (forceRefresh) {
+        const response = await fetch('/api/reddit/risk?refresh=true', { credentials: 'include', cache: 'no-store' });
+        const payload = (await response.json()) as RiskApiResponse;
+        if (!response.ok || !('success' in payload) || !payload.success) {
+          const message = 'error' in payload && typeof payload.error === 'string' ? payload.error : 'Unable to load risk warnings';
+          setError(message);
+          setRateLimit('rateLimit' in payload ? payload.rateLimit ?? null : null);
+          return;
+        }
+        setWarnings(payload.data.warnings);
+        setStats(payload.data.stats);
+        setGeneratedAt(payload.data.generatedAt);
+        setRateLimit(payload.rateLimit);
+        setCached(payload.cached);
+        pushToast({
+          title: payload.cached ? 'Risk cache used' : 'Risk assessment updated',
+          description: payload.cached
+            ? 'No new risk factors since the last check. Cached safeguards applied.'
+            : 'Latest moderation signals loaded. Review warnings before you publish.',
+          variant: payload.cached ? 'info' : 'success',
+        });
         return;
       }
-      setWarnings(payload.data.warnings);
-      setStats(payload.data.stats);
-      setGeneratedAt(payload.data.generatedAt);
-      setRateLimit(payload.rateLimit);
-      setCached(payload.cached);
-      pushToast({ title: payload.cached ? 'Risk cache used' : 'Risk assessment updated', description: payload.cached ? 'No new risk factors since the last check. Cached safeguards applied.' : 'Latest moderation signals loaded. Review warnings before you publish.', variant: payload.cached ? 'info' : 'success' });
+
+      const result = await riskQuery.refetch();
+      if (result.data) {
+        setWarnings(result.data.data.warnings);
+        setStats(result.data.data.stats);
+        setGeneratedAt(result.data.data.generatedAt);
+        setRateLimit(result.data.rateLimit ?? null);
+        setCached(result.data.cached);
+        pushToast({
+          title: result.data.cached ? 'Risk cache used' : 'Risk assessment updated',
+          description: result.data.cached
+            ? 'No new risk factors since the last check. Cached safeguards applied.'
+            : 'Latest moderation signals loaded. Review warnings before you publish.',
+          variant: result.data.cached ? 'info' : 'success',
+        });
+      } else if (result.error) {
+        setError(result.error instanceof Error ? result.error.message : 'Unable to load risk warnings');
+      }
     } catch (fetchError) {
       setError(fetchError instanceof Error ? fetchError.message : 'Unexpected error loading warnings');
     } finally {
       setLoading(false);
     }
-  }, [pushToast]);
+  }, [pushToast, riskQuery]);
 
-  useEffect(() => { if (!initialResponse) void handleFetch(false); else setLoading(false); }, [initialResponse, handleFetch]);
+  useEffect(() => {
+    if (!initialResponse) {
+      void handleFetch(false);
+    } else {
+      setLoading(false);
+    }
+  }, [initialResponse, handleFetch]);
 
   const severityBanner = useMemo(() => {
     if (topSeverity === 'none') return null;
@@ -167,7 +219,8 @@ export function ScheduleClient({ initialResponse }: ScheduleClientProps) {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10">
+    <WidgetErrorBoundary>
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10">
       {severityBanner}
       {statsSection}
       <section className="flex flex-col gap-4">
@@ -204,5 +257,6 @@ export function ScheduleClient({ initialResponse }: ScheduleClientProps) {
       </section>
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
     </div>
+    </WidgetErrorBoundary>
   );
 }
